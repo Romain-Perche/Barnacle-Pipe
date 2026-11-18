@@ -24,3 +24,5 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - A record already imported is left as it is on a new import; the import ends with a report of what was not imported and why (kickoff)
 - A Pipedrive record that matches one already in the CRM (a person by email, an organisation by name) is linked to it, never copied (kickoff)
 - Pipedrive custom fields with no matching CRM field are not imported: the import report lists them (kickoff)
+- Every outside service (Google sign-in, Gmail, Google Calendar, Pipedrive, email sending) is reached through settings and has a fake: the whole app is built and tested without real accounts, and the real ones are set up before go-live (kickoff)
+- Open and click tracking is off by default and switched on per email or campaign (kickoff)
