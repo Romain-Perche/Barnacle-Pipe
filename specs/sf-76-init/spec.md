@@ -16,9 +16,17 @@ The repository holds the factory tooling: Spec Kit settings under `.specify/` an
 - There is no test recipe (`.factory/test-env.md`). The `write-tests` and `plan-review` steps read it.
 - Nothing stops downloaded schemas (`.factory/schemas/`) from being committed, but `write-tests` says git must never track them.
 - There is no place for AI test scenarios (`tests/ai/`) and no agent guidance file at the repository root.
-- The README holds only the repository name.
+- The product documents that the factory's clarify step reads (`docs/PRODUCT.md`, `docs/DESIGN.md`, `docs/DECISIONS.md`) do not exist.
 
-This feature adds the baseline files so that every later factory run (specify → plan → tasks → write-tests → plan review → build) starts from a known, valid project state. It does not add product features.
+The repository is for the product **Barnacle-Pipe**. This feature adds the baseline files so that every later factory run (specify → plan → tasks → write-tests → plan review → build) starts from a known, valid project state. It does not add product features.
+
+## Clarifications
+
+### Session 2026-11-18
+
+- Q: Must init also create starter files `docs/PRODUCT.md`, `docs/DESIGN.md` and `docs/DECISIONS.md`? → A: Yes, create all three with empty sections to fill later.
+- Q: What is this repository for? → A: A real product named Barnacle-Pipe. The README is out of scope ("don't care about the readme").
+- Q: What must the first constitution contain? → A: Process rules only: spec before code, tests before code, keep it simple. No technology stack.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -56,16 +64,16 @@ The `write-tests` step starts in a fresh VM. It reads the test recipe to learn w
 
 ### User Story 3 - Agents and people understand the repository at a glance (Priority: P3)
 
-A new agent session or a person opens the repository root. A guidance file and the README explain what the repository is, how the factory pipeline uses it, where specs, tests and factory files live, and which rules apply (for example: do not push from a step; the factory pushes).
+A new agent session or a person opens the repository root. A guidance file explains that the repository is for Barnacle-Pipe, how the factory pipeline uses it, where specs, tests, product documents and factory files live, and which rules apply (for example: do not push from a step; the factory pushes). The product documents give people a set place to record product rules, look and feel, and other decisions.
 
 **Why this priority**: This makes runs faster and more consistent, but runs can still work without it because each skill has its own rules.
 
-**Independent Test**: Read only the README and the guidance file and answer: what is this repo, where do specs go, where do tests go, and which file holds the project rules.
+**Independent Test**: Read only the guidance file and answer: what is this repo, where do specs go, where do tests go, and which file holds the project rules. Then open the three product documents and confirm that each has its empty sections.
 
 **Acceptance Scenarios**:
 
-1. **Given** the initialized repository, **When** an agent session starts at the repository root, **Then** a guidance file is loaded that names the folder layout (`specs/`, `tests/`, `tests/ai/`, `.factory/`, `.specify/`) and points to the constitution.
-2. **Given** the initialized repository, **When** a person opens the README, **Then** it describes the repository's purpose and the factory pipeline order in a few lines.
+1. **Given** the initialized repository, **When** an agent session starts at the repository root, **Then** a guidance file is loaded that names Barnacle-Pipe, the folder layout (`specs/`, `tests/`, `tests/ai/`, `docs/`, `.factory/`, `.specify/`) and the factory pipeline order, and points to the constitution.
+2. **Given** the initialized repository, **When** the factory's clarify step reads `docs/PRODUCT.md`, `docs/DESIGN.md` and `docs/DECISIONS.md`, **Then** all three exist, each with headed sections that are empty (marked "none yet") and ready to fill.
 3. **Given** the initialized repository, **When** `write-tests` writes its first AI scenario, **Then** the `tests/ai/` folder already exists.
 
 ### Edge Cases
@@ -79,21 +87,23 @@ A new agent session or a person opens the repository root. A guidance file and t
 
 ### Functional Requirements
 
-- **FR-001**: The repository MUST contain a completed project constitution with no template placeholder tokens. It MUST have a project name, at least three principles, a development workflow section, a governance section and a version line with dates.
-- **FR-002**: The constitution's principles MUST cover at least: specification before code, tests written before the implementation, and keeping solutions simple.
+- **FR-001**: The repository MUST contain a completed project constitution with no template placeholder tokens. It MUST have the project name Barnacle-Pipe, at least three principles, a development workflow section, a governance section and a version line with dates.
+- **FR-002**: The constitution's principles MUST cover: specification before code, tests written before the implementation, and keeping solutions simple. It MUST state process rules only and MUST NOT choose a technology stack.
 - **FR-003**: The repository MUST contain a test recipe at `.factory/test-env.md` with the sections `## Services`, `## Schemas` and `## Real runs`, each with an explicit "none yet" entry.
 - **FR-004**: Version control MUST ignore `.factory/schemas/` and `.specify/feature.json`, and MUST still track `.factory/test-env.md`.
 - **FR-005**: The repository MUST contain a `specs/` folder, a `tests/` folder and a `tests/ai/` folder, each tracked with a short README that says what goes in it.
-- **FR-006**: The repository MUST contain an agent guidance file at the root that describes the folder layout, points to the constitution and the test recipe, and states the factory rules that apply to every run (fresh VM, no reliance on earlier session memory, commit but do not push).
-- **FR-007**: The README MUST describe the repository purpose and list the factory pipeline steps in order.
+- **FR-006**: The repository MUST contain an agent guidance file at the root that names Barnacle-Pipe, describes the folder layout and the factory pipeline order, points to the constitution, the test recipe and the three product documents, and states the factory rules that apply to every run (fresh VM, no reliance on earlier session memory, commit but do not push).
+- **FR-007**: The repository MUST contain `docs/PRODUCT.md` (product rules), `docs/DESIGN.md` (look and feel) and `docs/DECISIONS.md` (other decisions). Each MUST have a title naming Barnacle-Pipe and headed sections marked "none yet". They MUST NOT contain invented product content.
 - **FR-008**: The feature MUST NOT change the factory tooling (`.claude/skills/`, `.specify/scripts/`, `.specify/templates/`, `.specify/extensions/`).
 - **FR-009**: Applying the initialization twice MUST leave the repository in the same state as applying it once.
+- **FR-010**: The root `README.md` is out of scope. The feature does not need to change it. This does not affect the folder READMEs in FR-005.
 
 ### Key Entities
 
 - **Constitution**: The project's governing principles and rules. Read by planning, analysis and review gates. Has a version and amendment dates.
 - **Test recipe**: The record of how each outside service is tested (fake plus schema), which schemas are used, and which real runs are allowed. Starts empty.
 - **Agent guidance file**: Short orientation for any agent session: layout, rules and pointers to the constitution and test recipe.
+- **Product documents**: `docs/PRODUCT.md`, `docs/DESIGN.md`, `docs/DECISIONS.md`. Where people record the choices the factory must not ask about again. Start with empty sections.
 - **Folder READMEs**: One-line purpose notes that keep `specs/`, `tests/` and `tests/ai/` tracked.
 
 ## Success Criteria *(mandatory)*
@@ -103,14 +113,15 @@ A new agent session or a person opens the repository root. A guidance file and t
 - **SC-001**: A search of the constitution for placeholder tokens (`[` followed by capital letters and `]`) finds 0 matches.
 - **SC-002**: The next factory feature runs specify, plan, tasks and write-tests with 0 steps that stop to create or ask for a missing baseline file.
 - **SC-003**: After a schema file is placed under `.factory/schemas/`, the working tree shows 0 changes to commit.
-- **SC-004**: A reviewer who reads only the README and the guidance file answers 4 of 4 orientation questions (repo purpose, where specs go, where tests go, where project rules are) in under 2 minutes.
+- **SC-004**: A reviewer who reads only the guidance file answers 4 of 4 orientation questions (repo purpose, where specs go, where tests go, where project rules are) in under 2 minutes.
 - **SC-005**: The feature's change set touches 0 files under the factory tooling folders listed in FR-008.
+- **SC-006**: The three product documents exist and contain 0 product statements that no person made (only headings and "none yet" entries).
 
 ## Assumptions
 
-- The repository has no product code yet. The constitution states process principles, not a technology stack. A later amendment adds stack rules when the first product feature chooses one.
+- The repository has no product code yet. The constitution states process principles, not a technology stack (confirmed). A later amendment adds stack rules when the first product feature chooses one.
 - The constitution starts at version 1.0.0, ratified on 2026-11-18.
-- The project name in the constitution comes from the repository name ("Alexis-testing").
+- The project name is Barnacle-Pipe (confirmed). No product description is given yet, so no file describes what Barnacle-Pipe does; `docs/PRODUCT.md` holds that later.
 - The agent guidance file is `CLAUDE.md`, because the factory's only installed integration is Claude.
 - No outside services exist yet, so the test recipe lists none. `write-tests` adds entries when a feature needs them.
 - The constitution is written to the template's structure, so the constitution step can amend it later.
