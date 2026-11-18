@@ -5,9 +5,10 @@ Product rules are in `docs/PRODUCT.md`, the look and feel in `docs/DESIGN.md`.
 Only choices people made: how the code works is in the wiki (`openwiki/`), how to run it in the README.
 - The CRM is built in steps, one Linear issue per feature, not in one task (kickoff)
 - TypeScript, with Postgres as the database (kickoff)
-- The app ships as a Docker container plus Postgres, so it runs the same locally and on any host; the host is chosen before go-live (kickoff)
+- The app is hosted on Vercel, and its database is Postgres on Supabase (kickoff)
+- Local runs and tests use a local Postgres: developing and testing needs no Vercel or Supabase account (kickoff)
 - The production database has a daily backup (kickoff)
-- No staging site before the first go-live; tests and local runs use generated fake data, never real customer data (kickoff)
+- No staging site before the first go-live; tests, local runs and Vercel preview deployments use generated fake data, never the production database (kickoff)
 - Sign-in is Google only, through an Internal OAuth app in the barnacle.ai Google Workspace: only barnacle.ai accounts can sign in (kickoff)
 - The OAuth client secret and every other secret stay out of the repo and out of issues; tests use a fake Google login (kickoff)
 - The first admin is Alexis; an admin can make another user an admin (kickoff)
