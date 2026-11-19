@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,5 +31,5 @@
 
 ## Notes
 
-- One open marker: FR-003, who manages pipelines and stages (PRODUCT §1 "Users can…" vs PRODUCT §7 "Admins manage pipelines, stages…"). It also decides where the "Pipelines" link sits (FR-018) and who sees the link in US1 scenario 5 and the refusal in US5 scenario 7.
+- FR-003 resolved in clarify (2026-11-19): admins only manage pipelines and stages. Design A chosen; no "No next activity" warning until activities exist.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`

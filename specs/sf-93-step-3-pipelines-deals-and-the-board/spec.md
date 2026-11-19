@@ -8,11 +8,19 @@
 
 **Input**: User description: "step 3 - Pipelines, deals and the board. Pipelines with their stages, deals, and the board view (`docs/PRODUCT.md` section 1). The list view and the full deal page come in the next issue."
 
+## Clarifications
+
+### Session 2026-11-19
+
+- Q: Who can create, rename, reorder and delete pipelines and stages? → A: Admins only, on a "Pipelines" page in the "// Admin" group.
+- Q: Which design for the deals board? → A: Design: A, rounded cards in stage columns, a pipeline picker above the board, and a deal drawer on the right (see `design-options.html`).
+- Q: Until activities exist (later issue), does every card show "No next activity"? → A: No: cards show no warning until the activities feature adds it.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - See a pipeline as a board (Priority: P1)
 
-A team member opens "Deals" from the sidebar and sees the board of a pipeline: one column per stage, in the pipeline's order, each headed by the stage name, the number of deals in it and their total value. Each deal is a card showing its title, organisation, main person, value, and a warning when it has no next activity. A pipeline picker above the board switches to any other pipeline (Sales, Ambassadors, Fractional CTO, Exec Dinner…).
+A team member opens "Deals" from the sidebar and sees the board of a pipeline: one column per stage, in the pipeline's order, each headed by the stage name, the number of deals in it and their total value. Each deal is a rounded card showing its title, organisation, main person and value (the "No next activity" warning comes with the activities feature). A pipeline picker above the board switches to any other pipeline (Sales, Ambassadors, Fractional CTO, Exec Dinner…).
 
 **Why this priority**: The board is how the team works its deals every day in Pipedrive today; it is the first screen they need to move over.
 
@@ -21,10 +29,10 @@ A team member opens "Deals" from the sidebar and sees the board of a pipeline: o
 **Acceptance Scenarios**:
 
 1. **Given** a signed-in user and pipelines with deals, **When** they open Deals, **Then** the board of the first pipeline (in pipeline order) is shown with one column per stage, in stage order, each headed "<stage name>", "<n> deals" and the total value ("£12,500").
-2. **Given** a deal "Fakeco website" worth £4,000 linked to "Fakeco Ltd" and main person "Ada Example", **When** the board is shown, **Then** its card shows "Fakeco website", "Fakeco Ltd", "Ada Example", "£4,000" and "No next activity".
+2. **Given** a deal "Fakeco website" worth £4,000 linked to "Fakeco Ltd" and main person "Ada Example", **When** the board is shown, **Then** its card shows "Fakeco website", "Fakeco Ltd", "Ada Example" and "£4,000", and no "No next activity" warning.
 3. **Given** the board of one pipeline, **When** the user picks another pipeline in the picker, **Then** that pipeline's board is shown and the page address names it, so reloading or sharing the address shows the same board.
 4. **Given** a stage with no deals, **When** the board is shown, **Then** its column shows "0 deals", "£0" and "No deals in this stage.".
-5. **Given** a CRM with no pipelines, **When** a user opens Deals, **Then** the page reads "No pipelines yet." (and, for those allowed to manage pipelines, links to the page where they are created).
+5. **Given** a CRM with no pipelines, **When** a user opens Deals, **Then** the page reads "No pipelines yet."; an admin also sees a `[ ADD PIPELINE ]` link to the Pipelines page, and other users see no link.
 
 ---
 
@@ -84,7 +92,7 @@ Selecting a card opens a drawer on the right (like the people preview drawer) sh
 
 ### User Story 5 - Manage pipelines and stages (Priority: P2)
 
-On a "Pipelines" page, pipelines and their stages are created, renamed, reordered and deleted. Deleting a stage or pipeline that still has deals asks where to move them.
+An admin, on the "Pipelines" page in the "// Admin" group, manages pipelines and their stages: they are are created, renamed, reordered and deleted. Deleting a stage or pipeline that still has deals asks where to move them.
 
 **Why this priority**: The team already has many pipelines and adds one per team member; they must be able to shape them. The fake data gives a working board without this page, so it comes after the board.
 
@@ -92,13 +100,13 @@ On a "Pipelines" page, pipelines and their stages are created, renamed, reordere
 
 **Acceptance Scenarios**:
 
-1. **Given** a user allowed to manage pipelines, **When** they add a pipeline "Partners", **Then** it has no stages, appears in the board's pipeline picker, and its board reads "This pipeline has no stages yet.".
+1. **Given** a signed-in admin, **When** they add a pipeline "Partners", **Then** it has no stages, appears in the board's pipeline picker, and its board reads "This pipeline has no stages yet.".
 2. **Given** a pipeline, **When** the user adds, renames or reorders its stages, **Then** the board shows the columns with the new names in the new order, and deals stay in their (renamed) stages.
 3. **Given** pipelines in the picker, **When** the user reorders pipelines, **Then** the picker lists them in the new order and the first one is the board shown by default.
 4. **Given** a stage with deals (archived ones included), **When** the user deletes it, **Then** they must pick another stage of the same pipeline; the deals move there, each deal's history records "Moved from <old stage> to <new stage> by <name> (stage deleted)", and the stage is gone.
 5. **Given** a pipeline with deals, **When** the user deletes it, **Then** they must pick a stage in another pipeline to move its deals to; a pipeline with no deals is deleted after a confirmation.
 6. **Given** a name already used by another pipeline (ignoring case and surrounding spaces), or by another stage in the same pipeline, **When** the user saves, **Then** "This name is already used." is shown and nothing is saved.
-7. **Given** a user not allowed to manage pipelines, **When** they open the page address or send a change directly, **Then** "You don't have access to this page." is shown and nothing changes.
+7. **Given** a signed-in user who is not an admin, **When** they open the Pipelines page address or send a change directly, **Then** "You don't have access to this page." is shown and nothing changes; their sidebar has no "Pipelines" link.
 
 ---
 
@@ -144,7 +152,7 @@ The person who added a deal can mark it private. A private deal is visible only 
 
 - **FR-001**: There MUST be any number of pipelines, each with a name (required, unique ignoring case and surrounding spaces) and a position in the pipeline order.
 - **FR-002**: Each pipeline MUST have its own ordered list of stages, each with a name (required, unique within its pipeline ignoring case and surrounding spaces).
-- **FR-003**: [NEEDS CLARIFICATION: Who can create, rename, reorder and delete pipelines and stages? PRODUCT §1 says "Users can…", PRODUCT §7 says "Admins manage pipelines, stages…"] can create, rename and reorder pipelines and stages, and delete them, on a "Pipelines" page; the app MUST enforce this on every request, not only by hiding links.
+- **FR-003**: Only admins MUST be able to create, rename, reorder and delete pipelines and stages, on a "Pipelines" page; the app MUST enforce this on every request, not only by hiding links. Every user sees and uses every pipeline's board.
 - **FR-004**: Deleting a stage or pipeline that holds deals (archived ones included) MUST require choosing a stage to move them to (same pipeline for a stage, another pipeline for a pipeline); each moved deal's history records the move. Deleting never deletes deals.
 
 **Deals**
@@ -157,7 +165,7 @@ The person who added a deal can mark it private. A private deal is visible only 
 **Board**
 
 - **FR-009**: The board MUST show one pipeline at a time: one column per stage in stage order, each with the stage name, the number of deals and their total value, counting only non-archived deals the viewer can see.
-- **FR-010**: Each card MUST show the deal's title, organisation name, main person's name, value, and "No next activity" when the deal has no planned activity. Until activities exist (later issue), every open deal shows the warning.
+- **FR-010**: Each card MUST show the deal's title, organisation name, main person's name and value. Cards MUST NOT show a "No next activity" warning in this issue; the activities feature adds it.
 - **FR-011**: Users MUST be able to move a deal to another stage by dragging its card onto another column, and also by choosing the stage (or pipeline and stage) in the deal's drawer, for users who cannot drag.
 - **FR-012**: A move MUST be refused, with the board refreshed and a message, when the deal changed (moved, edited, archived, deleted) since the board was loaded.
 - **FR-013**: The chosen pipeline and the open deal drawer MUST be kept in the page address. With no pipeline in the address, the board MUST show the first pipeline in pipeline order.
@@ -171,9 +179,9 @@ The person who added a deal can mark it private. A private deal is visible only 
 **Access, navigation, messages, look**
 
 - **FR-017**: Every board, deal and pipeline page and action MUST require a signed-in, active user.
-- **FR-018**: The sidebar's main navigation MUST gain "Deals"; the "Pipelines" page link sits in the main navigation or the "// Admin" group according to FR-003.
+- **FR-018**: The sidebar's main navigation MUST gain "Deals"; the "// Admin" group MUST gain "Pipelines".
 - **FR-019**: Every message shown to users MUST be one of the app's fixed messages; text from the page address MUST never be shown.
-- **FR-020**: The board, cards, drawer and forms MUST follow `docs/DESIGN.md` and the existing signed-in layout: cards are the one rounded surface, money in GBP, dates in UK format ("19 Nov 2026").
+- **FR-020**: The board, cards, drawer and forms MUST follow `docs/DESIGN.md` and the existing signed-in layout: design A in `design-options.html`: stage columns with a header (stage name, `+`, "<n> deals · £total"), rounded cards, a "Pipeline: <name>" picker and `[ ADD DEAL ]` above the board, and the deal drawer on the right (details, `[ EDIT ]`, `[ ARCHIVE ]`, `[ DELETE ]` for admins, "// HISTORY"); cards are the one rounded surface, money in GBP, dates in UK format ("19 Nov 2026").
 
 **Fake data**
 
@@ -196,13 +204,13 @@ The person who added a deal can mark it private. A private deal is visible only 
 - **SC-003**: A board with 10 stages and 500 open deals shows in under 2 seconds.
 - **SC-004**: In automated tests, every column's count and total equals the number and sum of the visible, non-archived deals in that stage, after adds, edits, moves, archives and deletes.
 - **SC-005**: In automated tests, a private deal never appears, and never counts, for any user other than its creator (admins included), on any board, total, drawer or direct address.
-- **SC-006**: 100% of deal deletes from non-admins, and of pipeline and stage changes from users not allowed to make them, are refused in automated tests, including direct requests that bypass the page.
+- **SC-006**: 100% of deal deletes from non-admins, and of pipeline and stage changes from non-admins, are refused in automated tests, including direct requests that bypass the page.
 - **SC-007**: Deleting a stage or pipeline never loses a deal: in automated tests the number of deals is the same before and after.
 
 ## Assumptions
 
 - The deals list view (sorting, filters, "show closed deals") and the full deal page (stage progress bar with days per stage, followers, other linked people, labels, Won and Lost buttons with a lost reason, full timeline, restore) are the next issue (user request). Until then every deal is open, and archived deals cannot be restored from the UI.
-- Activities do not exist yet, so every open card shows "No next activity"; the warning disappears for a deal once the activities feature gives it a planned activity.
+- Activities do not exist yet, so cards have no "No next activity" warning; the activities feature adds it to the card (PRODUCT §1).
 - Deals are shared across the team (PRODUCT §7): any user can view, edit and move any deal they can see, whoever the owner is. Owner is a label of responsibility, not a permission.
 - Money is GBP only (DECISIONS); values are not converted or shown in other currencies.
 - A fresh CRM starts with no pipelines; the fake data and, later, the Pipedrive import fill them.
