@@ -2,11 +2,12 @@
 //   phase A: NO_SEED=1 bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf90.js A
 //   phase B: bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf90.js B
 // Phase A starts from an empty CRM (only ada@barnacle.ai, the FIRST_ADMIN, plus users added by SQL); phase B uses the seed.
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const { chromium, results, check, signIn } = require("./lib");
 const BASE = process.env.BASE || "http://localhost:3000";
 const DB = process.env.DB || "crm_dev";
-const sql = (q) => execSync(`/usr/lib/postgresql/17/bin/psql -h localhost -U postgres -d ${DB} -Atc "${q.replace(/"/g, '\\"')}"`).toString().trim();
+// No shell: psql gets the query as one argument.
+const sql = (q) => execFileSync("/usr/lib/postgresql/17/bin/psql", ["-h", "localhost", "-U", "postgres", "-d", DB, "-Atc", q]).toString().trim();
 const TODAY = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/London" });
 const settle = (p) => p.waitForLoadState("networkidle").then(() => p.waitForTimeout(300));
 const text = async (p) => (await p.textContent("main").catch(() => null)) || (await p.textContent("body")) || "";
