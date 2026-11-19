@@ -15,6 +15,14 @@
 - Q: Who can create, rename, reorder and delete pipelines and stages? → A: Admins only, on a "Pipelines" page in the "// Admin" group.
 - Q: Which design for the deals board? → A: Design: A, rounded cards in stage columns, a pipeline picker above the board, and a deal drawer on the right (see `design-options.html`).
 - Q: Until activities exist (later issue), does every card show "No next activity"? → A: No: cards show no warning until the activities feature adds it.
+- Q: How does the page address name the chosen pipeline and the open deal? → A: By number, `/deals?pipeline=<id>&open=<deal id>`, never by name, so no text from the address is ever shown and a rename does not break shared links (decided by the factory, to confirm)
+- Q: Where is a deal edited and where is its stage changed from the drawer? → A: `[ EDIT ]` opens an edit form for title, value, organisation, person, owner, expected close date and Private (`/deals/<id>/edit`), which returns to the board with the drawer open; the stage (or pipeline and stage) is changed by a "Move to" picker with `[ MOVE ]` in the drawer itself, which works without dragging and without JavaScript (decided by the factory, to confirm)
+- Q: A user edits a deal whose main person is private to someone else (so the form shows no person): what happens to that link when they save? → A: It is kept: the user never sees it and an empty person field does not remove it; picking a person they can see replaces it (decided by the factory, to confirm)
+- Q: An admin deletes a pipeline with deals while no other pipeline has a stage: what happens? → A: Refused with "Add a stage to another pipeline first, so its deals have somewhere to go."; nothing is deleted (decided by the factory, to confirm)
+- Q: Does `[ ARCHIVE ]` in the drawer ask for confirmation? → A: No, as for people and organisations: archiving is undone from the deal page in the next issue (decided by the factory, to confirm)
+- Q: The creator of a private deal is deactivated: who sees the deal? → A: Nobody, admins included, as the team rule on private records says; it stays in the database and comes back if the user is reactivated (decided by the factory, to confirm)
+- Q: How are pipelines and stages reordered on the Pipelines page? → A: With `[ ↑ ]` and `[ ↓ ]` buttons on each row (works with a keyboard and without JavaScript), not by dragging (decided by the factory, to confirm)
+- Q: What is the largest deal value accepted? → A: £9,999,999,999.99; anything larger shows "Enter a value in pounds, for example 4000 or 4000.50." (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
