@@ -1,0 +1,33 @@
+// Next.js proxy: runs before every page. No session cookie on a protected path → sign-in page.
+// It only checks that the cookie is there; requireUser() checks the session itself.
+import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, sessionCookieOptions } from "@/server/auth/cookie";
+
+const PUBLIC = [/^\/sign-in\/?$/, /^\/auth(\/|$)/, /^\/dev\/fake-google\/?$/];
+
+export function proxy(req: NextRequest) {
+  const { pathname, search } = req.nextUrl;
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const isPublic = PUBLIC.some((re) => re.test(pathname));
+
+  if (!isPublic && !token) {
+    const url = new URL("/sign-in", req.url);
+    if (pathname !== "/" || search) url.searchParams.set("next", pathname + search);
+    return NextResponse.redirect(url);
+  }
+
+  const headers = new Headers(req.headers);
+  headers.set("x-pathname", pathname + search);
+  const res = NextResponse.next({ request: { headers } });
+  // Keep the cookie alive while the app is used (FR-006). Only on page loads: server actions and
+  // /auth routes set or delete the cookie themselves.
+  if (token && !isPublic && req.method === "GET") {
+    const secure = req.nextUrl.protocol === "https:" || req.headers.get("x-forwarded-proto") === "https";
+    res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(secure));
+  }
+  return res;
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.[a-zA-Z0-9]+$).*)"],
+};

@@ -1,0 +1,11 @@
+.specify/feature.json
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+.env
+.env*.local
+test-results/
+playwright-report/
+.factory/schemas/
+openwiki/.run.json

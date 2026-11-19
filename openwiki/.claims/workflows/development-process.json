@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:aaec827823be9318e3efe244f27977101400101a9e39bce1f19b79fe186054a7",
+  "claims": [
+    {
+      "id": "claim_9413d43d634c4ccd9fd571dc346e4773",
+      "statement": "The Spec Kit workflow runs specify, a spec review, plan, a plan review, tasks and implement.",
+      "evidence": [
+        {
+          "resource": "repo://.specify/workflows/speckit/workflow.yml#L39-L74",
+          "version": "repo-lines-v1:sha256:0739dac86a76ce2beeac6731c6a4c63fe6062643e14706ba3eece39c47e6e71f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjM2I1ZGFiZDk5YTk1MDY1YjA4YTRmZjFlM2Q0Mzg2MWE4NDdmZGU3ZTkxZTdiOTE2MDg4YjE3NDZjYTEwNGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiMWIwZTZkNjBhNDMxMjMzMTJmMGIyM2YzYThiYjY3NDk1ZjY3MDU1MjViNDIzODYxZjFkMmI5NWY0ZWZjNTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5N2NjMjIyZGE1YWIwNmUzZjM2NmI2MGRhOTQwMjRjZTZkMDc5YmRmOTUwOTIwZjI5MjE1NGZlMWYzY2JhNjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b1bcabac09084bd785dbec0573d4fbbc",
+      "statement": "docs/DECISIONS.md records one line per choice people made, tagged with the issue key, while how the code works belongs in the wiki and how to run it in the README.",
+      "evidence": [
+        {
+          "resource": "repo://docs/DECISIONS.md#L1-L5",
+          "version": "repo-lines-v1:sha256:f20575f65d514a99a3b34be5b540547952cbd33827b2d363702c7fdc27e4f524:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmNjZTk4NGZlYWM4OTUzNzkwYTM0Y2I5YTcxNzZlN2JiOWI3ZGMwOGQ4MTE0MGVlN2E0Mjc2NjU3MWFmYjI4ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWM3YzdhYmU4NTY5NjY0NWY5ZWNmZWMzNzM0NTVmMjY2NjdlYWY4ZTlhNWYzMTJmN2E1OWY2NmMzZGNhYzk1ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjhjOTM5YTNiNTIxYzQ3ODBkNjY4MjZiMzFkNjQwYzI4MjRmZjliYjA0ODc4ZTAzZDgzNDM2NjE2OWVlYzVjYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a9c5f9e928a64137a91bbf6d127eba99",
+      "statement": "The SF-80 feature is specified in specs/sf-80-app-skeleton-sign-in-users-and-admins with a spec, plan, research, data model, contracts and tasks.",
+      "evidence": [
+        {
+          "resource": "repo://specs/sf-80-app-skeleton-sign-in-users-and-admins/spec.md",
+          "version": "repo-file-v1:sha256:92db038b239e942f8c859e756c83cafd4148f1420747f0fe6d4bd7eb49c8fed8"
+        },
+        {
+          "resource": "repo://specs/sf-80-app-skeleton-sign-in-users-and-admins/tasks.md",
+          "version": "repo-file-v1:sha256:b7b2c18d342e6d40b71b3f4f0647cc8e079cdbd15d6df477b43f221a1b871d7f"
+        }
+      ]
+    },
+    {
+      "id": "claim_d961775beb0f41998bb25fd2e032b9ed",
+      "statement": "The project constitution is still the unfilled Spec Kit template.",
+      "evidence": [
+        {
+          "resource": "repo://.specify/memory/constitution.md#L1-L10",
+          "version": "repo-lines-v1:sha256:5431c63662d06d628f89c9ca38454acf2aa2f6c717e33573979ba09aca1022d3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4NTBiNDVkNTg4YWJhMjQwZjhiNWYwY2U4YjRlN2ZmOGMyYTM0YWEwMzZmN2E5OGJkMDJkZTBiYWFkMTk2MjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlNjQwYTE4YTM0NWQ0YjllYjgzYTBiOTE1NzQwYjIzNThhNmIwMDc2MjMyYjBkMmFhYzVlYzdmMzM1NGNiODQifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

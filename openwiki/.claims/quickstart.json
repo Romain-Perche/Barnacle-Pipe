@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:65a09c85c8f05db8882d797ea66fa89755ff9fb540c63e48f718e05e6e0e7f30",
+  "claims": [
+    {
+      "id": "claim_e3d558208d5a45c9a23192a85b0e7d60",
+      "statement": "The local setup copies .env.example to .env.local, migrates, seeds fake users and starts next dev, with no Google, Vercel or Supabase account needed.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L7-L35",
+          "version": "repo-lines-v1:sha256:f570b9ec322957e092420c4a0e330df65832f0784ca8a88ce961f9bd06e0b99e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3OTgxMWQxNmVjMTdmZDlhZWRiMzE0ZDg4MGU2NDFmYWRmZTg5YzBkNTc3MTMwNTAzMzM1OGViNWUyNTQ4NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3ZmIzOWVlZjhlYjgxNzVlNDRjOTNiMGQ3NzllOTIyMDE3YTFhNzBiZjk0MDI3MmIwZWY4NjI4MDU2NDkwZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2ODhjYmIwNjNhZjAxNjY5Zjc3MTM2MjdlNGYxYTRjYzc0ODdiZDk5ZDlmM2JmYTBlOTNkYzFhZmE1ZDQ0MGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJiN2VmMTI3NjM4NjI2ZWNiZTIxZWRjNjg4MzAyZDY4ZGRkY2I2YzE5NTAxMDYzZDM2YzIxNGQ5NmMwNWUwYWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4c45139e04814aeb93d30c8f9e91ab97",
+      "statement": "The package scripts provide db:migrate and db:seed through tsx reading .env.local when present, plus test, test:e2e and typecheck.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L7-L20",
+          "version": "repo-lines-v1:sha256:04d4c98c409999ffba6120684fa910552e8602d6478bbd976635068fafdf01d2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkwZGMyMDY5NjBlOGVlM2I2MzYzMGQ0NzRiOWJmZjg1NTlhNmYwNzg2NTBjMmUyYmJlYjMxOTQzNDY1YmQ3YjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwZjJlYjEzYWE5NzhkNDU0NzBkZTcwYjRlOWQ0ZWVhOGUyZDgwMDhhMjEwYTJmY2IwZjI0MzZmY2VkOTk5ZjMifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

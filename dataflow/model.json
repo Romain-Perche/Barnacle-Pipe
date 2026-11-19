@@ -1,0 +1,659 @@
+{
+  "version": 2,
+  "zones": [
+    {
+      "id": "browser",
+      "label": "Staff browser"
+    },
+    {
+      "id": "app",
+      "label": "Next.js app server (Vercel or local)"
+    },
+    {
+      "id": "postgres",
+      "label": "Postgres (Supabase or local)"
+    },
+    {
+      "id": "cli",
+      "label": "Command line (developer machine or Vercel build)"
+    },
+    {
+      "id": "google",
+      "label": "Google (third party)"
+    }
+  ],
+  "groups": [
+    {
+      "id": "sign-in",
+      "label": "Sign-in and sessions",
+      "description": "Signs barnacle.ai staff in with Google (or the fake login), keeps their session cookie and checks it on every page."
+    },
+    {
+      "id": "user-admin",
+      "label": "Signed-in app and user admin",
+      "description": "Draws the signed-in pages and lets admins add users, change roles and deactivate accounts."
+    },
+    {
+      "id": "database",
+      "label": "Database",
+      "description": "The Postgres tables every part reads and writes: users, sessions, the user change log and applied migrations."
+    },
+    {
+      "id": "db-tools",
+      "label": "Database commands",
+      "description": "Command-line tools that apply SQL migrations and load fake data into Postgres."
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "description": "Environment variables (.env.local or Vercel settings) that hold secrets and switch features on or off."
+    }
+  ],
+  "actors": [
+    {
+      "id": "staff",
+      "label": "Barnacle staff user"
+    },
+    {
+      "id": "admin",
+      "label": "Barnacle admin"
+    },
+    {
+      "id": "developer",
+      "label": "Developer or Vercel build"
+    },
+    {
+      "id": "google-oauth-api",
+      "label": "Google OAuth and userinfo API",
+      "zone": "google"
+    }
+  ],
+  "processes": [
+    {
+      "id": "proxy",
+      "label": "Request proxy (cookie gate)",
+      "zone": "app",
+      "group": "sign-in",
+      "sources": [
+        "src/proxy.ts"
+      ]
+    },
+    {
+      "id": "sign-in-page",
+      "label": "Sign-in page",
+      "zone": "app",
+      "group": "sign-in",
+      "sources": [
+        "src/app/sign-in/page.tsx",
+        "src/server/sign-in-page.ts"
+      ]
+    },
+    {
+      "id": "google-oauth",
+      "label": "Google sign-in routes",
+      "zone": "app",
+      "group": "sign-in",
+      "sources": [
+        "src/app/auth/google",
+        "src/server/auth/google.ts"
+      ]
+    },
+    {
+      "id": "fake-google",
+      "label": "Fake Google login (dev and test only)",
+      "zone": "app",
+      "group": "sign-in",
+      "sources": [
+        "src/app/dev/fake-google"
+      ]
+    },
+    {
+      "id": "complete-sign-in",
+      "label": "Sign-in rules and session creation",
+      "zone": "app",
+      "group": "sign-in",
+      "sources": [
+        "src/server/auth/sign-in.ts",
+        "src/server/auth/rules.ts"
+      ]
+    },
+    {
+      "id": "session-guard",
+      "label": "Session check, end and sign-out",
+      "zone": "app",
+      "group": "sign-in",
+      "sources": [
+        "src/server/auth/session.ts",
+        "src/app/auth/end/route.ts",
+        "src/app/(app)/actions.ts"
+      ]
+    },
+    {
+      "id": "app-shell",
+      "label": "Signed-in layout and sidebar",
+      "zone": "app",
+      "group": "user-admin",
+      "sources": [
+        "src/app/(app)/layout.tsx",
+        "src/app/(app)/nav.ts"
+      ]
+    },
+    {
+      "id": "users-admin",
+      "label": "Users admin page and actions",
+      "zone": "app",
+      "group": "user-admin",
+      "sources": [
+        "src/app/(app)/admin/users",
+        "src/server/users.ts"
+      ]
+    },
+    {
+      "id": "migrate",
+      "label": "db:migrate command",
+      "zone": "cli",
+      "group": "db-tools",
+      "sources": [
+        "scripts/migrate.ts"
+      ]
+    },
+    {
+      "id": "seed",
+      "label": "db:seed command (fake data)",
+      "zone": "cli",
+      "group": "db-tools",
+      "sources": [
+        "scripts/seed.ts",
+        "src/seed"
+      ]
+    }
+  ],
+  "stores": [
+    {
+      "id": "browser-cookies",
+      "label": "Browser cookies (crm_session, crm_oauth)",
+      "zone": "browser",
+      "group": "sign-in",
+      "sources": [
+        "src/server/auth/cookie.ts"
+      ]
+    },
+    {
+      "id": "users-table",
+      "label": "users table",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0001_users_sessions.sql"
+      ]
+    },
+    {
+      "id": "sessions-table",
+      "label": "sessions table (token hashes)",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0001_users_sessions.sql"
+      ]
+    },
+    {
+      "id": "user-changes-table",
+      "label": "user_changes log",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0001_users_sessions.sql"
+      ]
+    },
+    {
+      "id": "schema-migrations-table",
+      "label": "schema_migrations table",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "scripts/migrate.ts"
+      ]
+    },
+    {
+      "id": "migration-files",
+      "label": "SQL migration files",
+      "group": "db-tools",
+      "sources": [
+        "migrations"
+      ]
+    },
+    {
+      "id": "env-settings",
+      "label": "Environment settings (.env.local / Vercel)",
+      "group": "settings",
+      "sources": [
+        "src/server/env.ts",
+        ".env.example"
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "staff",
+      "to": "proxy",
+      "data": "page requests with session cookie",
+      "sources": [
+        "src/proxy.ts"
+      ]
+    },
+    {
+      "from": "proxy",
+      "to": "browser-cookies",
+      "data": "refreshed session cookie",
+      "sources": [
+        "src/proxy.ts"
+      ]
+    },
+    {
+      "from": "proxy",
+      "to": "session-guard",
+      "data": "requested path (x-pathname header)",
+      "sources": [
+        "src/proxy.ts",
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "users-table",
+      "to": "sign-in-page",
+      "data": "user count (first-run setup notice)",
+      "sources": [
+        "src/server/sign-in-page.ts"
+      ]
+    },
+    {
+      "from": "sign-in-page",
+      "to": "staff",
+      "data": "sign-in form, error messages",
+      "sources": [
+        "src/app/sign-in/page.tsx"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "sign-in-page",
+      "data": "session still valid (skip sign-in)",
+      "sources": [
+        "src/app/sign-in/page.tsx"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "google-oauth",
+      "data": "sign-in start, OAuth code and state",
+      "sources": [
+        "src/app/auth/google/start/route.ts",
+        "src/app/auth/google/callback/route.ts"
+      ]
+    },
+    {
+      "from": "google-oauth",
+      "to": "browser-cookies",
+      "data": "OAuth state, PKCE verifier, session token",
+      "sources": [
+        "src/app/auth/google/start/route.ts",
+        "src/app/auth/google/callback/route.ts"
+      ]
+    },
+    {
+      "from": "browser-cookies",
+      "to": "google-oauth",
+      "data": "OAuth state and PKCE verifier",
+      "sources": [
+        "src/app/auth/google/callback/route.ts"
+      ]
+    },
+    {
+      "from": "google-oauth",
+      "to": "google-oauth-api",
+      "data": "auth code, PKCE verifier, client id and secret",
+      "sources": [
+        "src/server/auth/google.ts"
+      ]
+    },
+    {
+      "from": "google-oauth-api",
+      "to": "google-oauth",
+      "data": "access token, then email, domain and name",
+      "sources": [
+        "src/server/auth/google.ts"
+      ]
+    },
+    {
+      "from": "google-oauth",
+      "to": "staff",
+      "data": "redirect to Google account chooser",
+      "sources": [
+        "src/app/auth/google/start/route.ts",
+        "src/server/auth/google.ts"
+      ]
+    },
+    {
+      "from": "google-oauth",
+      "to": "complete-sign-in",
+      "data": "Google identity (email, verified, domain, name)",
+      "sources": [
+        "src/app/auth/google/callback/route.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "fake-google",
+      "data": "chosen fake account email and name",
+      "sources": [
+        "src/app/dev/fake-google/actions.ts"
+      ]
+    },
+    {
+      "from": "users-table",
+      "to": "fake-google",
+      "data": "accounts to choose from",
+      "sources": [
+        "src/app/dev/fake-google/page.tsx"
+      ]
+    },
+    {
+      "from": "fake-google",
+      "to": "complete-sign-in",
+      "data": "fake identity (email, name)",
+      "sources": [
+        "src/app/dev/fake-google/actions.ts"
+      ]
+    },
+    {
+      "from": "fake-google",
+      "to": "browser-cookies",
+      "data": "session token cookie",
+      "sources": [
+        "src/app/dev/fake-google/actions.ts",
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "users-table",
+      "to": "complete-sign-in",
+      "data": "existing user role and status",
+      "sources": [
+        "src/server/auth/sign-in.ts"
+      ]
+    },
+    {
+      "from": "complete-sign-in",
+      "to": "users-table",
+      "data": "first admin, name, last sign-in time",
+      "sources": [
+        "src/server/auth/sign-in.ts"
+      ]
+    },
+    {
+      "from": "complete-sign-in",
+      "to": "user-changes-table",
+      "data": "first admin added",
+      "sources": [
+        "src/server/auth/sign-in.ts"
+      ]
+    },
+    {
+      "from": "complete-sign-in",
+      "to": "sessions-table",
+      "data": "new session token hash, expiry",
+      "sources": [
+        "src/server/auth/sign-in.ts",
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "complete-sign-in",
+      "to": "google-oauth",
+      "data": "session token or refusal code",
+      "sources": [
+        "src/server/auth/sign-in.ts",
+        "src/app/auth/google/callback/route.ts"
+      ]
+    },
+    {
+      "from": "browser-cookies",
+      "to": "session-guard",
+      "data": "session token",
+      "sources": [
+        "src/server/auth/session.ts",
+        "src/app/auth/end/route.ts"
+      ]
+    },
+    {
+      "from": "sessions-table",
+      "to": "session-guard",
+      "data": "session state with user role and status",
+      "sources": [
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "sessions-table",
+      "data": "extended expiry, deleted ended sessions",
+      "sources": [
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "browser-cookies",
+      "data": "cleared session cookie",
+      "sources": [
+        "src/app/auth/end/route.ts",
+        "src/app/(app)/actions.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "session-guard",
+      "data": "sign-out request",
+      "sources": [
+        "src/app/(app)/actions.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "app-shell",
+      "data": "signed-in user (name, role)",
+      "sources": [
+        "src/app/(app)/layout.tsx",
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "app-shell",
+      "to": "staff",
+      "data": "sidebar and signed-in pages",
+      "sources": [
+        "src/app/(app)/layout.tsx"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "users-admin",
+      "data": "signed-in user and admin check",
+      "sources": [
+        "src/app/(app)/admin/users",
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "admin",
+      "to": "users-admin",
+      "data": "new user email, role and status changes",
+      "sources": [
+        "src/app/(app)/admin/users"
+      ]
+    },
+    {
+      "from": "users-table",
+      "to": "users-admin",
+      "data": "user list",
+      "sources": [
+        "src/server/users.ts"
+      ]
+    },
+    {
+      "from": "users-admin",
+      "to": "admin",
+      "data": "users table and error messages",
+      "sources": [
+        "src/app/(app)/admin/users/page.tsx"
+      ]
+    },
+    {
+      "from": "users-admin",
+      "to": "users-table",
+      "data": "added users, role and status changes",
+      "sources": [
+        "src/server/users.ts"
+      ]
+    },
+    {
+      "from": "users-admin",
+      "to": "user-changes-table",
+      "data": "who changed which user, and how",
+      "sources": [
+        "src/server/users.ts"
+      ]
+    },
+    {
+      "from": "users-admin",
+      "to": "sessions-table",
+      "data": "revoked sessions of deactivated users",
+      "sources": [
+        "src/server/users.ts",
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "developer",
+      "to": "migrate",
+      "data": "migrate command",
+      "sources": [
+        "scripts/migrate.ts",
+        "package.json"
+      ]
+    },
+    {
+      "from": "migration-files",
+      "to": "migrate",
+      "data": "SQL migration text",
+      "sources": [
+        "scripts/migrate.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "schema-migrations-table",
+      "data": "applied migration names",
+      "sources": [
+        "scripts/migrate.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "users-table",
+      "data": "table definitions",
+      "sources": [
+        "scripts/migrate.ts",
+        "migrations/0001_users_sessions.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "sessions-table",
+      "data": "table definitions",
+      "sources": [
+        "scripts/migrate.ts",
+        "migrations/0001_users_sessions.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "user-changes-table",
+      "data": "table definitions",
+      "sources": [
+        "scripts/migrate.ts",
+        "migrations/0001_users_sessions.sql"
+      ]
+    },
+    {
+      "from": "developer",
+      "to": "seed",
+      "data": "seed command",
+      "sources": [
+        "scripts/seed.ts",
+        "package.json"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "users-table",
+      "data": "fake users",
+      "sources": [
+        "src/seed/users.ts"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "user-changes-table",
+      "data": "fake users added",
+      "sources": [
+        "src/seed/users.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "google-oauth",
+      "data": "Google client id and secret, APP_URL",
+      "sources": [
+        "src/server/env.ts",
+        "src/server/auth/google.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "complete-sign-in",
+      "data": "FIRST_ADMIN_EMAIL",
+      "sources": [
+        "src/server/env.ts",
+        "src/server/auth/sign-in.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "fake-google",
+      "data": "APP_ENV, VERCEL_ENV (fake login switch)",
+      "sources": [
+        "src/server/env.ts",
+        "src/app/dev/fake-google/actions.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "seed",
+      "data": "APP_ENV, VERCEL_ENV, DATABASE_URL",
+      "sources": [
+        "scripts/seed.ts",
+        "src/server/db.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "migrate",
+      "data": "DATABASE_URL",
+      "sources": [
+        "scripts/migrate.ts",
+        "src/server/db.ts"
+      ]
+    }
+  ]
+}

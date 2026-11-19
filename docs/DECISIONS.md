@@ -36,3 +36,6 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - The fake Google login and the fake data command work only when APP_ENV is exactly "development" or "test"; they are refused everywhere else, including when APP_ENV is not set (SF-80)
 - The repo has Playwright browser tests, with a command to run them (SF-80)
 - Signed-in pages use design B: a blue left sidebar with the wordmark, the navigation, an "// Admin" group, and the user's name with [ Sign out ] at the bottom (SF-80)
+- The Users page uses design A: a table with the actions on each row and the add field above it (SF-80)
+- Every table has Row Level Security on with no policies, so Supabase's Data API cannot read or write app data (SF-80)
+- Users are deactivated, never deleted (SF-80)
