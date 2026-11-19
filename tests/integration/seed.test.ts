@@ -70,3 +70,81 @@ describe("fake data", () => {
     expect(run.stdout.trim()).toBe("Fake data can only be loaded when APP_ENV is development or test.");
   });
 });
+
+// covers FR-027, SC-007: fake people and organisations
+import { listOrganisations, organisationFilterOptions } from "@/server/records/organisations";
+import { ORGANISATION_SORTS, PEOPLE_SORTS, parseOrganisationsQuery, parsePeopleQuery } from "@/server/records/list-query";
+import { listPeople, peopleFilterOptions } from "@/server/records/people";
+import { SIZES } from "@/server/records/rules";
+
+describe("fake people and organisations", () => {
+  async function counts() {
+    const tables = ["persons", "organisations", "labels", "person_emails", "person_phones", "person_labels", "timeline_events"] as const;
+    return Object.fromEntries(await Promise.all(tables.map(async (t) => [t, await count(t)])));
+  }
+
+  it("adds at least 30 people and 8 organisations, and running it again adds nothing", async () => {
+    await runSeeders(sql);
+    const first = await counts();
+    expect(first.persons).toBeGreaterThanOrEqual(30);
+    expect(first.organisations).toBeGreaterThanOrEqual(8);
+    expect(first.labels).toBe(3);
+    const again = await runSeeders(sql);
+    expect(again.every((l) => l.startsWith("already there "))).toBe(true);
+    expect(await counts()).toEqual(first);
+  });
+
+  it("covers every lead source, label, consent, size, owner, archived and private case with fake names", async () => {
+    await runSeeders(sql);
+    const [c] = await sql`
+      select (select count(distinct lead_source_id) from persons) as sources,
+             (select count(distinct label_id) from person_labels) as labels,
+             (select count(distinct consent) from persons) as consents,
+             (select count(distinct size) from organisations where archived_at is null) as sizes,
+             (select count(distinct owner_id) from persons) as owners,
+             (select count(*) from persons where organisation_id is null) as no_org,
+             (select count(*) from persons where archived_at is not null) as archived_people,
+             (select count(*) from organisations where archived_at is not null) as archived_orgs,
+             (select count(*) from persons p join users u on u.id = p.created_by where p.private and u.name = 'Ada Fake') as private_by_ada,
+             (select count(*) from persons p where (select count(*) from person_emails e where e.person_id = p.id) > 1) as many_emails,
+             (select count(*) from person_emails where email not like '%@example.com' and email not like '%@example.net') as real_looking`;
+    expect(Number(c.sources)).toBe(6);
+    expect(Number(c.labels)).toBe(3);
+    expect(Number(c.consents)).toBe(2);
+    expect(Number(c.sizes)).toBe(SIZES.length);
+    expect(Number(c.owners)).toBe(4);
+    expect(Number(c.no_org)).toBeGreaterThan(0);
+    expect(Number(c.archived_people)).toBeGreaterThan(0);
+    expect(Number(c.archived_orgs)).toBeGreaterThan(0);
+    expect(Number(c.private_by_ada)).toBeGreaterThan(0);
+    expect(Number(c.many_emails)).toBeGreaterThan(0);
+    expect(Number(c.real_looking)).toBe(0);
+  });
+
+  it("gives every filter and sort option of both lists at least one row (SC-007)", async () => {
+    await runSeeders(sql);
+    const [ada] = await sql<{ id: number }[]>`select id::int as id from users where name = 'Ada Fake'`;
+    const p = await peopleFilterOptions(ada.id, null);
+    const checks: Record<string, string>[] = [
+      ...p.owners.map((o) => ({ owner: String(o.id) })),
+      ...p.labels.map((o) => ({ label: String(o.id) })),
+      ...p.sources.map((o) => ({ source: String(o.id) })),
+      ...p.organisations.map((o) => ({ org: String(o.id) })),
+      { consent: "subscribed" },
+      { consent: "unsubscribed" },
+      ...PEOPLE_SORTS.flatMap((sort) => [{ sort }, { sort, dir: "desc" }]),
+    ];
+    for (const q of checks) expect((await listPeople(ada.id, parsePeopleQuery(q))).total, JSON.stringify(q)).toBeGreaterThan(0);
+    const o = await organisationFilterOptions();
+    const orgChecks: Record<string, string>[] = [
+      ...o.owners.map((x) => ({ owner: String(x.id) })),
+      ...o.sectors.map((sector) => ({ sector })),
+      ...SIZES.map((size) => ({ size })),
+      ...ORGANISATION_SORTS.flatMap((sort) => [{ sort }, { sort, dir: "desc" }]),
+    ];
+    for (const q of orgChecks) expect((await listOrganisations(ada.id, parseOrganisationsQuery(q))).total, JSON.stringify(q)).toBeGreaterThan(0);
+    // The acceptance example of US3: lead source "Exec dinner" and owner "Ada Fake".
+    const exec = p.sources.find((s) => s.name === "Exec dinner")!;
+    expect((await listPeople(ada.id, parsePeopleQuery({ source: String(exec.id), owner: String(ada.id) }))).total).toBeGreaterThan(0);
+  });
+});

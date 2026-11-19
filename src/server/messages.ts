@@ -14,7 +14,42 @@ export const messages = {
   forbidden: "You don't have access to this page.",
   not_found: "Page not found.",
   seed_refused: "Fake data can only be loaded when APP_ENV is development or test.",
+  // People and organisations (SF-90)
+  name_required: "Enter a first or last name.",
+  email_invalid: "Enter a valid email address.",
+  email_twice: "This email address is listed twice.",
+  phone_invalid: "Enter a valid phone number.",
+  linkedin_invalid: "Enter a LinkedIn profile link (linkedin.com/…).",
+  website_invalid: "Enter a valid website address.",
+  duplicate_email_hidden: "Another person already has this email address.",
+  organisation_name_required: "Enter the organisation's name.",
+  edit_conflict: "Someone else changed this person while you were editing. Reload to see their changes.",
+  edit_conflict_organisation: "Someone else changed this organisation while you were editing. Reload to see their changes.",
+  choice_exists: "This name is already on the list.",
+  choice_name_required: "Enter a name.",
+  no_people_match: "No people match these filters.",
+  no_organisations_match: "No organisations match these filters.",
+  no_people_yet: "No people yet.",
 } as const;
+
+// Messages built from a record's name, always read from the database. Kept apart from `messages` so a
+// code taken from a URL can never produce them.
+export const templates = {
+  duplicate_email: (name: string) => `${name} already has this email address.`,
+  organisation_exists: (name: string) => `${name} already exists.`,
+  person_deleted: (name: string) => `${name} was deleted.`,
+  organisation_deleted: (name: string) => `${name} was deleted.`,
+} as const;
+
+export type TemplateCode = keyof typeof templates;
+
+// A form field's message: a template when the server gave a name, else a fixed text.
+export function fieldMessage(error: { code: string; name?: string }): string | undefined {
+  if (error.name !== undefined && (error.code === "duplicate_email" || error.code === "organisation_exists")) {
+    return templates[error.code](error.name);
+  }
+  return messageFor(error.code);
+}
 
 export type MessageCode = keyof typeof messages;
 

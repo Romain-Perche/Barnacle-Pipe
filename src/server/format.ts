@@ -9,11 +9,25 @@ const parts = new Intl.DateTimeFormat("en-GB", {
   hourCycle: "h23",
 });
 
+function ukParts(date: Date): Record<string, string> {
+  return Object.fromEntries(parts.formatToParts(date).map((x) => [x.type, x.value]));
+}
+
+// UK date: "19 Nov 2026" ("Date added", "Last contacted").
+export function formatDate(date: Date): string {
+  const p = ukParts(date);
+  return `${p.day} ${MONTHS[Number(p.month) - 1]} ${p.year}`;
+}
+
+// UK date and time: "19 Nov 2026, 09:12" (timelines, last sign-in).
+export function formatDateTime(date: Date): string {
+  const p = ukParts(date);
+  return `${formatDate(date)}, ${p.hour}:${p.minute}`;
+}
+
 // Last sign-in on the Users page: UK time, "19 Nov 2026, 09:12", or "Never".
 export function formatLastSignIn(date: Date | null): string {
-  if (!date) return "Never";
-  const p = Object.fromEntries(parts.formatToParts(date).map((x) => [x.type, x.value]));
-  return `${p.day} ${MONTHS[Number(p.month) - 1]} ${p.year}, ${p.hour}:${p.minute}`;
+  return date ? formatDateTime(date) : "Never";
 }
 
 // Users page header counts: "1 USER", "2 USERS", "0 ADMINS".
