@@ -157,3 +157,47 @@ RFC 7636) and are not in that file; see research.md §2.
 ## Complexity Tracking
 
 No constitution violations to justify.
+
+## Fix round 1
+
+**Problem** (AI review, US4 scenario 3 and FR-031): a developer who follows the README on a fresh
+checkout gets failing tests.
+1. `npm test`: 2 files fail with ENOENT on `.factory/schemas/oauth2-api.json`. The file is git-ignored
+   (factory rule: schemas are never committed) and the README does not say how to get it.
+2. `npm run test:e2e`: 1 test fails, `gated: APP_ENV unset`. The README tells the developer to
+   `cp .env.example .env.local` (APP_ENV=development). `next start` reads `.env.local`, so the server that
+   must run with APP_ENV unset runs with APP_ENV=development and shows the fake login link.
+3. `docs/DECISIONS.md` misses three choices this issue made (code review).
+4. Minor (feature test): the Users header reads "1 ADMINS".
+
+**Cause**
+1. The schema is fetched only by the factory's recipe; nothing in the repo fetches it.
+2. The gating test removes APP_ENV from the process environment, but Next.js still loads the developer's
+   `.env.local` from the project folder. The app behaves correctly; the test setup is not isolated.
+3. Decisions taken in Clarifications and plan review were not copied to `docs/DECISIONS.md`.
+4. The header always adds "S" to the count.
+
+**Fix**
+1. Add `npm run test:schemas` (a small script, `scripts/fetch-schemas.ts` or a shell script): when
+   `.factory/schemas/oauth2-api.json` is missing, download exactly the pinned file
+   (googleapis/google-api-go-client, commit `fb095823b5150e5301d201e7f19a5119edbbbdfd`, path
+   `oauth2/v2/oauth2-api.json`) into `.factory/schemas/`; when present, do nothing. Run it as `pretest`
+   so `npm test` gets the file by itself. When the download fails, print one clear line saying the schema
+   is missing and the command to fetch it, and exit 1. The schema test (`tests/fakes/google.ts`) also
+   names that command in its error when the file is missing. The file stays git-ignored. The README's
+   Tests section says the first `npm test` downloads the schema from GitHub (needs network once).
+2. The gated e2e servers never read the developer's `.env.local`, `.env.development.local` or `.env`:
+   start each gated server so Next.js cannot see those files (for example, run `next start` with
+   `NODE_ENV=test`, for which Next.js skips `.env.local`, after checking this holds for Next 16.4.6; or run
+   it from a temporary folder that holds the build without any `.env*` file). Do the same for the main
+   e2e `webServer` so a developer's `.env.local` never changes what the e2e app sees. Do not change the
+   app's environment rules. The README's Tests section says the test commands ignore `.env.local`.
+3. Add to `docs/DECISIONS.md` (one line each, `(SF-80)`): the Users page uses design A (a table with
+   actions on each row and the add field above it); every table has Row Level Security on with no
+   policies, so Supabase's Data API cannot read or write app data; users are deactivated, never deleted.
+4. The Users header says "1 ADMIN" / "2 ADMINS" and "1 USER" / "2 USERS".
+
+**Files to change**: `package.json` (scripts), a new `scripts/fetch-schemas.*`, `tests/fakes/google.ts`
+(error text), `tests/e2e/fake-data.spec.ts`, `playwright.config.ts`, `README.md`, `docs/DECISIONS.md`,
+`src/app/(app)/admin/users/page.tsx`, a new test under `tests/` (T048), and `.factory/test-env.md`
+(drop the "Fresh checkout notes" workaround once fixed). No new dependency.

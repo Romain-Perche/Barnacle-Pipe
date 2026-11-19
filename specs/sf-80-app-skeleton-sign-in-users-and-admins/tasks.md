@@ -224,3 +224,15 @@ Task: "Implement src/app/auth/end/route.ts"
 - Use the message texts of `contracts/routes.md` verbatim.
 - Never use the real team's names or any real account in tests or fake data.
 - Do not commit `.factory/schemas/` (git-ignored by T003).
+
+---
+
+## Fix round 1: a fresh checkout's test commands pass (US4 scenario 3, FR-031)
+
+- [ ] T048 [US4] Write the failing checks first (`// covers US4 scenario 3, FR-031, US3 scenario 4`): (a) an e2e check that creates a `.env.local` with `APP_ENV=development` in the project folder for the duration of the test (restoring any existing file afterwards), then runs the `gated: APP_ENV unset` server and asserts no `[ FAKE GOOGLE LOGIN ]` link and a 404 on `/dev/fake-google` — fails now because `next start` loads `.env.local`; (b) a test that runs `npm run test:schemas` in a temporary copy of the repo without `.factory/schemas/` and asserts the file appears with a `Userinfo` schema, and that a second run makes no download — fails now because the script does not exist. Then, in a fresh clone with `.env.local` from the README and no `.factory/schemas/`, run `npm test` and `npm run test:e2e`: record the failures (2 files, 1 test) before fixing
+- [ ] T049 [US4] Add `npm run test:schemas` (fetch `oauth2/v2/oauth2-api.json` at commit `fb095823b5150e5301d201e7f19a5119edbbbdfd` of googleapis/google-api-go-client into `.factory/schemas/` only when missing; on failure print the missing file and the command, exit 1) and run it as `pretest`; make `tests/fakes/google.ts` name that command when the file is missing. `.factory/schemas/` stays git-ignored
+- [ ] T050 [US4] Isolate the e2e servers from the developer's env files: the gated servers in `tests/e2e/fake-data.spec.ts` and the main `webServer` in `playwright.config.ts` must not load `.env`, `.env.local` or `.env.*.local` (verify the chosen way against Next.js 16.4.6). Do not change the app's environment rules
+- [ ] T051 [P] [US4] README Tests section: the first `npm test` downloads the Google schema from GitHub (`npm run test:schemas`); the test commands ignore `.env.local`. Update `.factory/test-env.md`: remove the "Fresh checkout notes" workaround
+- [ ] T052 [P] Add three lines to `docs/DECISIONS.md`, each ending `(SF-80)`: the Users page uses design A (a table with actions on each row, the add field above it); every table has Row Level Security on with no policies, so Supabase's Data API cannot read or write app data; users are deactivated, never deleted
+- [ ] T053 [P] [US2] Users page header: singular for 1 ("1 USER · 1 ADMIN"), plural otherwise; add a unit or e2e check (`// covers US2 scenario 1`)
+- [ ] T054 In a fresh clone with the README's `.env.local` and no `.factory/schemas/`, follow the README: `npm test`, `npm run test:e2e` and `npm run typecheck` report 0 failures
