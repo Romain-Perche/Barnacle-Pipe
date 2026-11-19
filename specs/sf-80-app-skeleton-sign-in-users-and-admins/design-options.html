@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SF-80 · Users page · design options</title>
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626; --success: #16A34A;
+    --wash: rgba(43,0,255,.04); --panel: #FFFFFF; --page: #EDE7DF;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.10); --panel: #232323; --page: #0E0E0E;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .label .c { color: var(--orange); }
+  h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(560px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  figcaption { margin-top: 10px; font-size: 14px; line-height: 1.45; }
+  figcaption .label { display: block; margin-bottom: 4px; color: var(--muted); }
+
+  /* App frame */
+  .app { display: grid; grid-template-columns: 190px 1fr; height: 520px; border: .5px solid var(--line); overflow: hidden; position: relative; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 18px 14px; font-family: var(--mono); }
+  .wm { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .2em; font-size: 11px; margin-bottom: 26px; }
+  .wm .u { color: var(--orange); }
+  .nav a { display: block; color: rgba(255,255,255,.75); text-decoration: none; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 7px 8px; }
+  .nav a.on { color: #fff; background: var(--blue-deep); }
+  .grp { margin-top: 22px; font-size: 10px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .grp .c { color: var(--orange); }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 12px; font-size: 11px; }
+  .me .n { font-family: var(--sans); font-size: 13px; margin-bottom: 6px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 22px 22px; overflow: hidden; position: relative; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 12px; margin-bottom: 14px; }
+  .ph h2 { margin: 4px 0 0; font-size: 22px; font-weight: 600; }
+  .count { font-family: var(--mono); font-size: 10px; letter-spacing: .25em; font-weight: 700; color: var(--muted); }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 10px; text-transform: uppercase; border: .5px solid var(--line); padding: 6px 9px; background: transparent; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.red { color: var(--danger); border-color: var(--danger); }
+  .br { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 10px; text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+  .br.red { color: var(--danger); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { font-family: var(--mono); font-size: 9px; letter-spacing: .25em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 6px 6px; border-bottom: .5px solid var(--line-soft); }
+  td { padding: 8px 6px; border-bottom: .5px solid var(--line-list); vertical-align: middle; }
+  td .em { color: var(--muted); font-size: 11px; }
+  .badge { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; font-weight: 700; text-transform: uppercase; border: .5px solid var(--line); padding: 2px 5px; }
+  .badge.admin { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .badge.off { color: var(--muted); border-style: dashed; }
+  tr.off td { color: var(--muted); }
+  .addrow { display: flex; gap: 8px; margin-bottom: 14px; }
+  .input { flex: 1; border: .5px solid var(--line); background: var(--panel); padding: 7px 9px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .err { border-left: 4px solid var(--orange); background: rgba(255,66,0,.07); border-radius: 0 8px 8px 0; padding: 7px 10px; font-size: 12px; margin-bottom: 12px; }
+  .acts { text-align: right; white-space: nowrap; }
+  .acts .br + .br { margin-left: 10px; }
+  tr.sel td { background: var(--wash); }
+  .drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 210px; background: var(--panel); border-left: .5px solid var(--line); padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; font-size: 12px; }
+  .drawer .k { font-family: var(--mono); font-size: 9px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 3px; }
+  .seg { display: flex; }
+  .seg span { flex: 1; text-align: center; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; font-weight: 700; padding: 6px 0; border: .5px solid var(--line); text-transform: uppercase; }
+  .seg span.on { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { background: var(--panel); border: .5px solid var(--line-soft); border-radius: 8px; padding: 12px; font-size: 12px; position: relative; }
+  .card .n { font-weight: 600; font-size: 13px; }
+  .card .meta { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--muted); margin-top: 8px; text-transform: uppercase; }
+  .card .row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .sect { font-family: var(--mono); font-size: 10px; letter-spacing: .25em; font-weight: 700; color: var(--muted); margin: 14px 0 8px; text-transform: uppercase; }
+  .sect .c { color: var(--orange); }
+  .menu { position: absolute; right: 10px; top: 34px; background: var(--panel); border: .5px solid var(--line); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,.18); padding: 4px 0; z-index: 3; width: 150px; }
+  .menu div { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; font-weight: 700; padding: 7px 12px; text-transform: uppercase; }
+  .menu div.red { color: var(--danger); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-80 · USERS PAGE · 3 DESIGNS</div>
+  <h1>Which design for the Users page?</h1>
+  <p>Same sidebar (design B) in all three. Only the page content changes. Shown as an admin (Alexis) with the fake data team.</p>
+</header>
+
+<div class="grid">
+
+<!-- ============ A ============ -->
+<figure>
+  <div class="tag"><b>A</b>Table with actions on each row</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="#FF4201"><polygon points="12,0 13.6,8.2 20.5,3.5 15.8,10.4 24,12 15.8,13.6 20.5,20.5 13.6,15.8 12,24 10.4,15.8 3.5,20.5 8.2,13.6 0,12 8.2,10.4 3.5,3.5 10.4,8.2"/></g><circle cx="12" cy="12" r="3.2" fill="#2B00FF"/></svg>
+        <span>BARNACLE<span class="u">_</span>LABS</span>
+      </div>
+      <nav class="nav"><a href="#">Home</a></nav>
+      <div class="grp"><span class="c">//</span> ADMIN</div>
+      <nav class="nav"><a class="on" href="#">Users</a></nav>
+      <div class="me"><div class="n">Alexis</div><span class="so">[ SIGN OUT ]</span></div>
+    </aside>
+    <main class="main">
+      <div class="ph"><div><div class="count">// ADMIN</div><h2>Users</h2></div><div class="count">6 USERS · 2 ADMINS</div></div>
+      <div class="addrow"><div class="input">name@barnacle.ai</div><span class="btn solid">[ ADD USER ]</span></div>
+      <div class="err">This person is already a user.</div>
+      <table>
+        <tr><th>Name</th><th>Role</th><th>Status</th><th>Last sign-in</th><th></th></tr>
+        <tr><td>Alexis<br><span class="em">alexis@barnacle.ai</span></td><td><span class="badge admin">Admin</span></td><td>Active</td><td>Today 09:12</td><td class="acts"><span class="br">[ REMOVE ADMIN ]</span></td></tr>
+        <tr><td>Mikey<br><span class="em">mikey@barnacle.ai</span></td><td><span class="badge admin">Admin</span></td><td>Active</td><td>Yesterday</td><td class="acts"><span class="br">[ REMOVE ADMIN ]</span><span class="br red">[ DEACTIVATE ]</span></td></tr>
+        <tr><td>JD<br><span class="em">jd@barnacle.ai</span></td><td><span class="badge">User</span></td><td>Active</td><td>17 Nov</td><td class="acts"><span class="br">[ MAKE ADMIN ]</span><span class="br red">[ DEACTIVATE ]</span></td></tr>
+        <tr><td>Duncan<br><span class="em">duncan@barnacle.ai</span></td><td><span class="badge">User</span></td><td>Active</td><td>Never</td><td class="acts"><span class="br">[ MAKE ADMIN ]</span><span class="br red">[ DEACTIVATE ]</span></td></tr>
+        <tr class="off"><td>sam<br><span class="em">sam@barnacle.ai</span></td><td><span class="badge">User</span></td><td><span class="badge off">Deactivated</span></td><td>02 Oct</td><td class="acts"><span class="br">[ REACTIVATE ]</span></td></tr>
+      </table>
+    </main>
+  </div>
+  <figcaption><span class="label">// GOOD FOR</span>Fastest: every action is one click from the list, and the whole team fits on one screen.</figcaption>
+</figure>
+
+<!-- ============ B ============ -->
+<figure>
+  <div class="tag"><b>B</b>Table plus a side panel for the chosen user</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="#FF4201"><polygon points="12,0 13.6,8.2 20.5,3.5 15.8,10.4 24,12 15.8,13.6 20.5,20.5 13.6,15.8 12,24 10.4,15.8 3.5,20.5 8.2,13.6 0,12 8.2,10.4 3.5,3.5 10.4,8.2"/></g><circle cx="12" cy="12" r="3.2" fill="#2B00FF"/></svg>
+        <span>BARNACLE<span class="u">_</span>LABS</span>
+      </div>
+      <nav class="nav"><a href="#">Home</a></nav>
+      <div class="grp"><span class="c">//</span> ADMIN</div>
+      <nav class="nav"><a class="on" href="#">Users</a></nav>
+      <div class="me"><div class="n">Alexis</div><span class="so">[ SIGN OUT ]</span></div>
+    </aside>
+    <main class="main">
+      <div style="margin-right:214px">
+        <div class="ph"><div><div class="count">// ADMIN</div><h2>Users</h2></div><span class="btn solid">[ + ADD USER ]</span></div>
+        <table>
+          <tr><th>Name</th><th>Role</th><th>Status</th><th>Last sign-in</th></tr>
+          <tr><td>Alexis</td><td><span class="badge admin">Admin</span></td><td>Active</td><td>Today</td></tr>
+          <tr><td>Mikey</td><td><span class="badge admin">Admin</span></td><td>Active</td><td>Yesterday</td></tr>
+          <tr class="sel"><td>JD</td><td><span class="badge">User</span></td><td>Active</td><td>17 Nov</td></tr>
+          <tr><td>Duncan</td><td><span class="badge">User</span></td><td>Active</td><td>Never</td></tr>
+          <tr class="off"><td>sam</td><td><span class="badge">User</span></td><td><span class="badge off">Deactivated</span></td><td>02 Oct</td></tr>
+        </table>
+      </div>
+      <div class="drawer">
+        <div><div class="k">// USER</div><div style="font-size:16px;font-weight:600">JD</div><div class="em" style="color:var(--muted)">jd@barnacle.ai</div></div>
+        <div><div class="k">Role</div><div class="seg"><span>Admin</span><span class="on">User</span></div></div>
+        <div><div class="k">Last sign-in</div>17 Nov 2026, 16:40</div>
+        <div><div class="k">Added</div>12 Nov 2026 by Alexis</div>
+        <div style="margin-top:auto"><span class="btn red" style="display:block;text-align:center">[ DEACTIVATE ]</span></div>
+      </div>
+    </main>
+  </div>
+  <figcaption><span class="label">// GOOD FOR</span>Room to grow: the panel can later hold more about a user (history, pipelines they own) without crowding the list.</figcaption>
+</figure>
+
+<!-- ============ C ============ -->
+<figure>
+  <div class="tag"><b>C</b>Cards grouped by Active and Deactivated</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="#FF4201"><polygon points="12,0 13.6,8.2 20.5,3.5 15.8,10.4 24,12 15.8,13.6 20.5,20.5 13.6,15.8 12,24 10.4,15.8 3.5,20.5 8.2,13.6 0,12 8.2,10.4 3.5,3.5 10.4,8.2"/></g><circle cx="12" cy="12" r="3.2" fill="#2B00FF"/></svg>
+        <span>BARNACLE<span class="u">_</span>LABS</span>
+      </div>
+      <nav class="nav"><a href="#">Home</a></nav>
+      <div class="grp"><span class="c">//</span> ADMIN</div>
+      <nav class="nav"><a class="on" href="#">Users</a></nav>
+      <div class="me"><div class="n">Alexis</div><span class="so">[ SIGN OUT ]</span></div>
+    </aside>
+    <main class="main">
+      <div class="ph"><div><div class="count">// ADMIN</div><h2>Users</h2></div><span class="btn solid">[ + ADD USER ]</span></div>
+      <div class="sect"><span class="c">01</span> / ACTIVE · 4</div>
+      <div class="cards">
+        <div class="card"><div class="n">Alexis</div><div class="em" style="color:var(--muted)">alexis@barnacle.ai</div><div class="row"><span class="badge admin">Admin</span><span class="br">[ ··· ]</span></div><div class="meta">Last sign-in · today</div></div>
+        <div class="card"><div class="n">Mikey</div><div class="em" style="color:var(--muted)">mikey@barnacle.ai</div><div class="row"><span class="badge admin">Admin</span><span class="br">[ ··· ]</span></div><div class="meta">Last sign-in · yesterday</div></div>
+        <div class="card"><div class="n">JD</div><div class="em" style="color:var(--muted)">jd@barnacle.ai</div><div class="row"><span class="badge">User</span><span class="br">[ ··· ]</span></div><div class="meta">Last sign-in · 17 Nov</div>
+          <div class="menu"><div>Make admin</div><div class="red">Deactivate</div></div></div>
+        <div class="card"><div class="n">Duncan</div><div class="em" style="color:var(--muted)">duncan@barnacle.ai</div><div class="row"><span class="badge">User</span><span class="br">[ ··· ]</span></div><div class="meta">Last sign-in · never</div></div>
+      </div>
+      <div class="sect"><span class="c">02</span> / DEACTIVATED · 1</div>
+      <div class="cards">
+        <div class="card" style="opacity:.6"><div class="n">sam</div><div class="em" style="color:var(--muted)">sam@barnacle.ai</div><div class="row"><span class="badge off">Deactivated</span><span class="br">[ REACTIVATE ]</span></div></div>
+      </div>
+    </main>
+  </div>
+  <figcaption><span class="label">// GOOD FOR</span>Calm and clear for a small team: who has access stands apart from who doesn't, and risky actions sit behind a menu.</figcaption>
+</figure>
+
+</div>
+</body>
+</html>
