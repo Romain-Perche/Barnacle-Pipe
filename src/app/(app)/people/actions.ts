@@ -11,10 +11,15 @@ import type { SaveResult } from "@/server/records/common";
 import type { PersonForm } from "@/server/records/rules";
 import type { FormState } from "../records/form-state";
 
-function answer(result: SaveResult, values: PersonForm, prev: FormState<PersonForm>, id: number | null): FormState<PersonForm> {
+async function answer(result: SaveResult, values: PersonForm, prev: FormState<PersonForm>, id: number | null): Promise<FormState<PersonForm>> {
   if (result.status === "saved") {
     revalidatePath("/people");
     revalidatePath("/organisations");
+    // The actor's own save hid the person from them (SF-92 FR-003): the People list says so, once.
+    if (result.visible === false) {
+      await setFlash({ code: "person_no_longer_visible", name: result.name ?? "" });
+      redirect("/people");
+    }
     redirect(`/people/${result.id}`);
   }
   // Gone or not visible: its address shows "Page not found.".

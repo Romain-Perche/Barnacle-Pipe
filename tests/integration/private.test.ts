@@ -1,5 +1,6 @@
 // covers FR-018, FR-019, FR-028, SC-005, US5 scenarios 1–4, edge case "private person's creator deactivated",
-// clarifications "owner of a private person does not see them" and "organisation events about a private person"
+// clarification "organisation events about a private person"; SF-92: covers FR-001, FR-002, FR-003, SC-001,
+// US1 scenarios 1–4 and 6 (the owner of a private person sees them; nobody else does, admins included)
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { parseOrganisationsQuery, parsePeopleQuery } from "@/server/records/list-query";
@@ -19,7 +20,8 @@ import { leadSourceId, makeLabel, makeOrganisation, makeUser, resetDb, type Test
 import { emails, personForm, saved } from "./record-helpers";
 
 let linus: TestUser; // creator (A)
-let margaret: TestUser; // another user (B), also chosen as owner
+let margaret: TestUser; // the owner (B)
+let grace: TestUser; // another user (C), neither creator nor owner
 let ada: TestUser; // admin
 let org: number;
 let secret: number;
@@ -31,6 +33,7 @@ beforeEach(async () => {
   ada = await makeUser({ email: "ada@barnacle.ai", name: "Ada Fake", role: "admin" });
   linus = await makeUser({ email: "linus@barnacle.ai", name: "Linus Fake" });
   margaret = await makeUser({ email: "margaret@barnacle.ai", name: "Margaret Fake" });
+  grace = await makeUser({ email: "grace@barnacle.ai", name: "Grace Fake" });
   org = await makeOrganisation({ name: "Fakeco Ltd", ownerId: ada.id });
   secretLabel = await makeLabel("Secret label", true);
   removedSource = await leadSourceId("Event");
@@ -92,21 +95,49 @@ async function seesNothing(viewerId: number) {
   expect(await readTimeline(viewerId, { personId: secret })).toEqual([]);
 }
 
+async function seesEverything(viewerId: number) {
+  const queries = [
+    { q: "secret" },
+    { q: "secret@example.com" },
+    { q: "fakeco" },
+    { owner: String(margaret.id) },
+    { label: String(secretLabel) },
+    { source: String(removedSource) },
+    { org: String(org) },
+    { consent: "unsubscribed" },
+  ];
+  for (const q of queries) {
+    const r = await listPeople(viewerId, parsePeopleQuery(q));
+    expect(r.rows.map((x) => x.id), JSON.stringify(q)).toEqual([secret]);
+    expect(r.total, JSON.stringify(q)).toBe(1);
+  }
+  const options = await peopleFilterOptions(viewerId, null);
+  expect(options.labels.map((l) => l.id)).toContain(secretLabel);
+  expect(options.sources.map((s) => s.id)).toContain(removedSource);
+  expect(options.organisations.map((o) => o.id)).toContain(org);
+  expect(options.owners.map((o) => o.id)).toContain(margaret.id);
+  expect((await getPerson(viewerId, secret))!.private).toBe(true);
+  expect((await peopleOf(viewerId, org)).map((p) => p.id)).toEqual([secret]);
+  expect((await getOrganisation(viewerId, org))!.peopleCount).toBe(1);
+  const orgs = await listOrganisations(viewerId, parseOrganisationsQuery({}));
+  expect(orgs.rows.find((o) => o.id === org)!.people).toBe(1);
+  expect((await readTimeline(viewerId, { organisationId: org }))[0]).toMatchObject({ kind: "person_linked", relatedPerson: { id: secret } });
+  expect((await readTimeline(viewerId, { personId: secret })).map((e) => e.kind)).toEqual(["added"]);
+}
+
 describe("a private person", () => {
-  it("is seen everywhere, marked private, by their creator (US5 scenario 1)", async () => {
-    expect((await getPerson(linus.id, secret))!.private).toBe(true);
-    expect((await listPeople(linus.id, parsePeopleQuery({ q: "secret" }))).rows.map((r) => r.id)).toEqual([secret]);
-    expect((await peopleOf(linus.id, org)).map((p) => p.id)).toEqual([secret]);
-    expect((await readTimeline(linus.id, { organisationId: org }))[0]).toMatchObject({ kind: "person_linked", relatedPerson: { id: secret } });
+  it("is seen everywhere, marked private, by their creator and their owner (US5 scenario 1, SF-92 US1 scenario 1, FR-001)", async () => {
+    await seesEverything(linus.id);
+    await seesEverything(margaret.id);
   });
 
-  it("is invisible to another user, even the owner, and to an admin (US5 scenario 2, SC-005)", async () => {
-    await seesNothing(margaret.id);
+  it("is invisible to any other user and to an admin who is neither (US5 scenario 2, SC-005, SF-92 US1 scenario 2, SC-001)", async () => {
+    await seesNothing(grace.id);
     await seesNothing(ada.id);
   });
 
   it("cannot be changed by anyone else: edit, archive, restore and delete answer not found (FR-019)", async () => {
-    for (const actor of [margaret.id, ada.id]) {
+    for (const actor of [grace.id, ada.id]) {
       expect(await updatePerson(actor, secret, 1, personForm({ firstName: "Hacked" }))).toEqual({ status: "not_found" });
       expect(await archivePerson(actor, secret)).toBe("not_found");
       expect(await restorePerson(actor, secret)).toBe("not_found");
@@ -121,7 +152,7 @@ describe("a private person", () => {
     await seesNothing(ada.id);
   });
 
-  it("only the creator changes the private flag (FR-018, US5 scenario 3)", async () => {
+  it("someone neither creator nor owner cannot change the private flag (FR-018, US5 scenario 3, SF-92 FR-002)", async () => {
     const shared = saved(await createPerson(linus.id, personForm({ firstName: "Shared", emails: emails("shared@example.com") })));
     await updatePerson(ada.id, shared, 1, personForm({ firstName: "Shared", private: true, emails: emails("shared@example.com"), ownerId: String(linus.id) }));
     expect((await getPerson(ada.id, shared))!.private).toBe(false);
@@ -129,5 +160,57 @@ describe("a private person", () => {
     await updatePerson(linus.id, secret, 1, personForm({ firstName: "Secret", lastName: "Person", private: false, organisationId: String(org), ownerId: String(margaret.id), emails: emails("secret@example.com"), consent: "unsubscribed", leadSourceId: String(removedSource), labelIds: [String(secretLabel)] }));
     expect(await getPerson(ada.id, secret)).not.toBeNull();
     expect((await readTimeline(linus.id, { personId: secret }))[0]).toMatchObject({ kind: "edited", fields: ["Private"] });
+  });
+});
+
+// covers FR-002, FR-003, US1 scenarios 3, 4, 6 (SF-92)
+describe("the owner of a private person", () => {
+  const form = (over: Parameters<typeof personForm>[0] = {}) =>
+    personForm({
+      firstName: "Secret",
+      lastName: "Person",
+      private: true,
+      organisationId: String(org),
+      ownerId: String(margaret.id),
+      emails: emails("secret@example.com"),
+      consent: "unsubscribed",
+      leadSourceId: String(removedSource),
+      labelIds: [String(secretLabel)],
+      ...over,
+    });
+
+  it("edits the person; the timeline names the owner and the field (US1 scenario 3)", async () => {
+    expect(await updatePerson(margaret.id, secret, 1, form({ role: "COO" }))).toEqual({ status: "saved", id: secret });
+    expect((await getPerson(margaret.id, secret))!.role).toBe("COO");
+    expect((await readTimeline(margaret.id, { personId: secret }))[0]).toMatchObject({ kind: "edited", actorName: "Margaret Fake", fields: ["Role"] });
+  });
+
+  it("makes the person shared: the whole team sees them (US1 scenario 4)", async () => {
+    expect(await updatePerson(margaret.id, secret, 1, form({ private: false }))).toEqual({ status: "saved", id: secret });
+    expect((await getPerson(grace.id, secret))!.private).toBe(false);
+    expect((await readTimeline(grace.id, { personId: secret }))[0]).toMatchObject({ kind: "edited", fields: ["Private"] });
+  });
+
+  it("makes a shared person they own private (FR-002)", async () => {
+    const shared = saved(await createPerson(linus.id, personForm({ firstName: "Shared", ownerId: String(margaret.id) })));
+    await updatePerson(margaret.id, shared, 1, personForm({ firstName: "Shared", ownerId: String(margaret.id), private: true }));
+    expect((await getPerson(margaret.id, shared))!.private).toBe(true);
+    expect(await getPerson(grace.id, shared)).toBeNull();
+  });
+
+  it("gives the person to someone else and can no longer see them (US1 scenario 6, FR-003)", async () => {
+    expect(await updatePerson(margaret.id, secret, 1, form({ ownerId: String(grace.id) }))).toEqual({
+      status: "saved",
+      id: secret,
+      visible: false,
+      name: "Secret Person",
+    });
+    expect(await getPerson(margaret.id, secret)).toBeNull();
+    expect((await getPerson(linus.id, secret))!.owner.id).toBe(grace.id);
+    expect((await getPerson(grace.id, secret))!.owner.id).toBe(grace.id);
+  });
+
+  it("the creator changing the owner still sees the person", async () => {
+    expect(await updatePerson(linus.id, secret, 1, form({ ownerId: String(grace.id) }))).toEqual({ status: "saved", id: secret });
   });
 });

@@ -1,6 +1,7 @@
 // People (data-model.md): read, add, edit, archive, restore, delete, list, filter options.
-// Every read of `persons` goes through visiblePerson(); every change loads the person through it first, inside
-// its transaction, so a private person of someone else behaves exactly like a missing one.
+// Every read of `persons` goes through visiblePerson() (a private person: their creator and owner only); every
+// change loads the person through it first, inside its transaction, so a private person the actor cannot see
+// behaves exactly like a missing one.
 import { sql, type Sql } from "@/server/db";
 import {
   direction,
@@ -252,8 +253,8 @@ export async function updatePerson(actorId: number, id: number, version: number,
         ownerId: await resolveOwner(db, value.ownerId, current.owner.id, current.owner.id),
         leadSourceId: await allowedLeadSource(db, value.leadSourceId, before.leadSourceId),
         labelIds: await allowedLabels(db, value.labelIds, before.labelIds),
-        // Only the creator may change the private flag (FR-018).
-        private: current.createdBy === actorId ? value.private : current.private,
+        // The creator or the owner (as before the save) may change the private flag (SF-92 FR-002).
+        private: current.createdBy === actorId || current.owner.id === actorId ? value.private : current.private,
       };
       await db`
         update persons set first_name = ${after.firstName}, last_name = ${after.lastName}, organisation_id = ${after.organisationId},
@@ -271,6 +272,10 @@ export async function updatePerson(actorId: number, id: number, version: number,
           await recordEvent(db, { organisationId: after.organisationId, kind: "person_linked", actorId, relatedPersonId: id });
         }
       }
+      // The save may hide the person from the actor (private, now neither creator nor owner): SF-92 FR-003.
+      const [still] = await db<{ name: string; visible: boolean }[]>`
+        select ${NAME()} as name, ${visiblePerson(db, actorId)} as visible from persons p where p.id = ${id}`;
+      if (!still.visible) return { status: "saved" as const, id, visible: false as const, name: still.name };
       return { status: "saved" as const, id };
     });
   } catch (err) {
@@ -298,15 +303,20 @@ async function setArchived(actorId: number, id: number, archived: boolean): Prom
 export const archivePerson = (actorId: number, id: number) => setArchived(actorId, id, true);
 export const restorePerson = (actorId: number, id: number) => setArchived(actorId, id, false);
 
-// Admins only, re-checked here. Emails, phones, labels, its events and organisation events about the person
-// go with it (on delete cascade).
+// Admins only, re-checked here (SF-92 data-model.md § Deleting a person). Emails, phones, labels and the
+// person's own events go with it (on delete cascade). Events about the person on other records stay, with
+// related_person_id set to null ("A deleted person …"), unless the person was private: then they go too
+// (FR-007). No "unlinked" event is written.
 export async function deletePerson(actorId: number, id: number): Promise<DeleteResult> {
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     if (!(await isActiveAdmin(db, actorId))) return { status: "forbidden" as const };
-    const [row] = await db<{ name: string }[]>`
-      delete from persons p where p.id = ${id} and ${visiblePerson(db, actorId)} returning ${NAME()} as name`;
-    return row ? { status: "deleted" as const, name: row.name } : { status: "not_found" as const };
+    const [cur] = await db<{ private: boolean }[]>`
+      select p.private from persons p where p.id = ${id} and ${visiblePerson(db, actorId)} for update`;
+    if (!cur) return { status: "not_found" as const };
+    if (cur.private) await db`delete from timeline_events where related_person_id = ${id}`;
+    const [row] = await db<{ name: string }[]>`delete from persons p where p.id = ${id} returning ${NAME()} as name`;
+    return { status: "deleted" as const, name: row.name };
   });
 }
 

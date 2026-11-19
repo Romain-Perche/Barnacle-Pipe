@@ -34,7 +34,20 @@ export const messages = {
   delete_confirm_label: "Confirm delete",
   delete_for_good: "[ DELETE FOR GOOD ]",
   delete_cancel: "[ CANCEL ]",
+  // Private and deleted people follow-ups (SF-92)
+  private_label: "Private (only the creator and the owner can see this person)",
+  deleted_person_linked: "A deleted person was linked",
+  deleted_person_unlinked: "A deleted person was unlinked",
+  handover_choose: "Choose a user",
+  handover_choose_user: "Choose an active user.",
+  handover_not_deactivated: "Only a deactivated user's private people can be handed over.",
+  handover_explain_unchosen: "They stay private. The user you choose becomes their owner and can see them. You will not see who they are.",
+  handover_button: "[ HAND OVER ]",
+  handover_cancel: "[ CANCEL ]",
+  handover_to_label: "Hand over to",
 } as const;
+
+const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} private people`);
 
 // Messages built from a record's name, always read from the database. Kept apart from `messages` so a
 // code taken from a URL can never produce them.
@@ -44,6 +57,14 @@ export const templates = {
   person_deleted: (name: string) => `${name} was deleted.`,
   organisation_deleted: (name: string) => `${name} was deleted.`,
   delete_confirm: (name: string) => `Delete ${name} for good? This can't be undone.`,
+  // SF-92
+  private_people: privatePeople,
+  handover_question: (from: string, n: number, to: string) => `Hand ${from}'s ${privatePeople(n)} to ${to}?`,
+  handover_explain: (to: string) => `They stay private. ${to} becomes their owner and can see them. You will not see who they are.`,
+  handed_over: (name: string, n: number) => `${privatePeople(n)} handed to ${name}.`,
+  handover_none: (name: string) => `${name} has no private people to hand over.`,
+  handed_over_event: (name: string) => `Handed to ${name}`,
+  person_no_longer_visible: (name: string) => `You can no longer see ${name}: only their creator and owner can.`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

@@ -154,7 +154,7 @@ export function PersonForm({ action, initial, choices, canSetPrivate, id, versio
       </fieldset>
       {canSetPrivate && (
         <label className="check private">
-          <input type="checkbox" name="private" defaultChecked={v.private} /> Private (only you can see this person)
+          <input type="checkbox" name="private" defaultChecked={v.private} /> {messages.private_label}
         </label>
       )}
       <div className="form-acts">

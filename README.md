@@ -36,17 +36,19 @@ shell wins over the file (`APP_ENV=production npm run db:seed` is refused even w
 Sign in: open http://localhost:3000, press `[ FAKE GOOGLE LOGIN ]` and pick **Ada Fake** (an admin).
 The fake data team is Ada Fake and Grace Fake (admins), Linus Fake and Margaret Fake (users) and
 Alan Fake (deactivated), all `@barnacle.ai`. On the fake login you can also type any email and name.
-The fake data also has 32 fake people (`@example.com` / `@example.net`, one archived, one private person
-created by Ada Fake), 9 fake organisations (one archived) and the labels Hot, Investor and Partner. A fresh
+The fake data also has 35 fake people (`@example.com` / `@example.net`, one archived, one private person
+created by Ada Fake; private Pat Privatefake, created by Ada Fake and owned by Linus Fake; private Robin and
+Sam Leftfake, owned by deactivated Alan Fake, to try the hand-over), 9 fake organisations (one archived) and the labels Hot, Investor and Partner. A fresh
 database (no fake data) starts with the six lead sources Duncan's LinkedIn, Referral, Exec dinner, Inbound,
 Event and Ambassador, and no labels.
 
 | Page | Who | What |
 |---|---|---|
 | `/people`, `/organisations` | everyone | Lists: search, filters, sort, "Show archived", preview drawer (`?open=<id>`); all in the address |
-| `/people/new`, `/people/<id>`, `/people/<id>/edit` | everyone (a private person: only their creator) | Add, view, edit, archive/restore; admins delete |
+| `/people/new`, `/people/<id>`, `/people/<id>/edit` | everyone (a private person: only their creator and their owner) | Add, view, edit, archive/restore; admins delete (events about a deleted person stay on organisations as "A deleted person …") |
 | `/organisations/new`, `/organisations/<id>`, `/organisations/<id>/edit` | everyone | Same for organisations, with their people |
 | `/admin/lead-sources-and-labels` | admins | Add, rename and remove lead sources and labels |
+| `/admin/users` | admins | Add, make admin, deactivate, reactivate; `[ HAND OVER ]` on a deactivated user who owns private people gives all of them to one active user (the admin sees only how many) |
 
 ## Tests
 

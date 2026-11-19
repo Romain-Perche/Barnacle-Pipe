@@ -22,6 +22,13 @@ const FIRST = ["Abe", "Bob", "Cleo", "Dev", "Eve", "Finn", "Gail", "Hugo", "Iris
 const LAST = ["Example", "Placeholder", "Testperson", "Sample", "Dummy", "Fakename", "Mockup", "Lorem"];
 const ROLES = ["COO", "CEO", "Head of Ops", "Site Manager", "CFO", null, "Marketing Lead", "CTO"];
 const DAY = 24 * 60 * 60 * 1000;
+// SF-92: private people seen by an owner who is not their creator, and private people left with deactivated
+// Alan Fake for the Users page hand-over.
+const PRIVATE_PEOPLE = [
+  { first: "Pat", last: "Privatefake", email: "pat.privatefake@example.com", creator: "Ada Fake", owner: "Linus Fake", org: null },
+  { first: "Robin", last: "Leftfake", email: "robin.leftfake@example.com", creator: "Alan Fake", owner: "Alan Fake", org: "Fakeco Ltd" },
+  { first: "Sam", last: "Leftfake", email: "sam.leftfake@example.net", creator: "Alan Fake", owner: "Alan Fake", org: null },
+];
 
 export async function seedPeople(sql: Sql): Promise<string[]> {
   const users = new Map((await sql<{ id: number; name: string }[]>`select id::int as id, name from users`).map((u) => [u.name, u.id]));
@@ -91,6 +98,27 @@ export async function seedPeople(sql: Sql): Promise<string[]> {
         if (id) await db`insert into person_labels (person_id, label_id) values (${row.id}, ${id})`;
       }
       await db`insert into timeline_events (person_id, kind, actor_id, created_at) values (${row.id}, 'added', null, ${new Date(now - (i * 3 + 1) * DAY)})`;
+      peopleAdded++;
+    }
+
+    for (const [i, p] of PRIVATE_PEOPLE.entries()) {
+      const creator = users.get(p.creator);
+      const owner = users.get(p.owner);
+      if (!creator || !owner) continue;
+      const taken = await db`select 1 from person_emails where email = ${p.email}`;
+      if (taken.length > 0) continue;
+      const org = p.org ? orgId(p.org) : null;
+      const created = new Date(now - (40 + i) * DAY);
+      const [row] = await db<{ id: number }[]>`
+        insert into persons (first_name, last_name, organisation_id, owner_id, private, created_by, created_at)
+        values (${p.first}, ${p.last}, ${org}, ${owner}, true, ${creator}, ${created})
+        returning id::int as id`;
+      await db`insert into person_emails (person_id, email, kind, position) values (${row.id}, ${p.email}, 'work', 0)`;
+      await db`insert into timeline_events (person_id, kind, actor_id, created_at) values (${row.id}, 'added', null, ${created})`;
+      if (org !== null) {
+        await db`insert into timeline_events (organisation_id, kind, actor_id, related_person_id, created_at)
+                 values (${org}, 'person_linked', null, ${row.id}, ${created})`;
+      }
       peopleAdded++;
     }
   });
