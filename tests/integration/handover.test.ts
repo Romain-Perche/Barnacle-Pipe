@@ -3,9 +3,10 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { parsePeopleQuery } from "@/server/records/list-query";
-import { handOverPrivatePeople, privatePeopleCounts } from "@/server/records/handover";
+import { handOverPrivatePeople } from "@/server/records/handover";
 import { createPerson, getPerson, listPeople, updatePerson } from "@/server/records/people";
 import { readTimeline } from "@/server/records/timeline";
+import { listUsers } from "@/server/users";
 import { makeOrganisation, makePerson, makeUser, resetDb, type TestUser } from "./db-helpers";
 import { emails, personForm } from "./record-helpers";
 
@@ -44,10 +45,13 @@ async function snapshot() {
   return { persons, events };
 }
 
-describe("privatePeopleCounts", () => {
-  it("counts private people, archived included, owned by deactivated users only", async () => {
-    const counts = await privatePeopleCounts();
-    expect([...counts.entries()]).toEqual([[alan.id, 3]]);
+async function privatePeopleByUser() {
+  return Object.fromEntries((await listUsers()).map((u) => [u.id, u.private_people]));
+}
+
+describe("listUsers private_people", () => {
+  it("counts private people, archived included, owned by deactivated users only (US3 scenario 1)", async () => {
+    expect(await privatePeopleByUser()).toEqual({ [ada.id]: 0, [grace.id]: 0, [linus.id]: 0, [margaret.id]: 0, [alan.id]: 3 });
   });
 });
 
@@ -74,7 +78,7 @@ describe("handOverPrivatePeople", () => {
     expect(await getPerson(ada.id, sam)).toBeNull();
 
     expect(await handOverPrivatePeople(ada.id, alan.id, margaret.id)).toEqual({ status: "none", fromName: "Alan Fake" });
-    expect(await privatePeopleCounts()).toEqual(new Map());
+    expect((await privatePeopleByUser())[alan.id]).toBe(0);
   });
 
   it("lets the new owner see the addresses in duplicate messages and free them (US3 scenarios 5, 6)", async () => {

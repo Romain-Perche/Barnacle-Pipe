@@ -11,14 +11,6 @@ export type HandOverResult =
   | { status: "not_deactivated" }
   | { status: "choose_user" };
 
-// Private people (archived included) per deactivated owner; active users never appear.
-export async function privatePeopleCounts(db: Sql = sql): Promise<Map<number, number>> {
-  const rows = await db<{ owner_id: number; n: number }[]>`
-    select p.owner_id::int as owner_id, count(*)::int as n from persons p join users u on u.id = p.owner_id
-    where p.private and u.status = 'deactivated' group by p.owner_id`;
-  return new Map(rows.map((r) => [r.owner_id, r.n]));
-}
-
 // All or nothing, in one transaction; every rule is re-checked on the locked user rows.
 export async function handOverPrivatePeople(actorId: number, fromUserId: number, toUserId: number): Promise<HandOverResult> {
   return sql.begin(async (tx) => {

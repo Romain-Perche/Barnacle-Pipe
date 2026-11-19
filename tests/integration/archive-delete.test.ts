@@ -1,5 +1,6 @@
 // covers FR-016, FR-017, SC-006, US4 scenarios 1–5, clarification "deleting a person removes their timeline and
-// every organisation event about them" (SF-92 changes it: those events stay, without the person)
+// every organisation event about them" (SF-92 changes it: those events stay, without the person); SF-92 FR-005–FR-007,
+// US2 scenarios 1, 2, 4, edge cases "still linked" and "never linked"
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { archiveOrganisation, deleteOrganisation, getOrganisation, restoreOrganisation } from "@/server/records/organisations";
@@ -104,7 +105,7 @@ describe("deleting a person keeps the history on other records", () => {
     for (const t of ["person_emails", "person_phones", "person_labels"] as const) expect(await count(t), t).toBe(0);
   });
 
-  it("adds no unlinked event when the person is still linked (US2 scenario 3)", async () => {
+  it("adds no unlinked event when the person is still linked (edge case: still linked)", async () => {
     await deletePerson(ada.id, person);
     expect((await readTimeline(ada.id, { organisationId: org })).map((e) => e.kind)).toEqual(["person_linked"]);
   });
@@ -122,7 +123,7 @@ describe("deleting a person keeps the history on other records", () => {
     }
   });
 
-  it("leaves other records' events unchanged when the person was never linked (US2 scenario 4)", async () => {
+  it("leaves other records' events unchanged when the person was never linked (edge case: never linked)", async () => {
     const lone = saved(await createPerson(linus.id, personForm({ firstName: "Lone" })));
     const before = await sql`select * from timeline_events where person_id is distinct from ${lone} order by id`;
     await deletePerson(ada.id, lone);

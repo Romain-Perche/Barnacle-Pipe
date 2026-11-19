@@ -45,3 +45,5 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - A private person is visible to their creator and their current owner, nobody else, admins included; either of them can make the person private or shared (SF-92)
 - When a person is deleted, events about them on other records are kept without their name ("A deleted person …"); events about a person who was private when deleted are removed (SF-92)
 - An admin can hand all of a deactivated user's private people to one active user, who becomes their owner; the admin only sees how many there are (SF-92)
+- Handing over a deactivated user's private people uses design B: [ HAND OVER ] on the user's row opens a panel above the Users table with the user choice and the question (SF-92)
+- Handing over private people removes nothing automatically: the new owner sees the people and their email addresses and can remove an address or make the person shared (SF-92)
