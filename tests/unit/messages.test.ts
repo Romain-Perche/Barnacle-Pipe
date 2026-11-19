@@ -22,14 +22,22 @@ describe("record messages", () => {
     expect(messageFor("no_organisations_match")).toBe("No organisations match these filters.");
     expect(messageFor("no_people_yet")).toBe("No people yet.");
   });
+  it("holds the delete confirmation labels and the removed-name message (Fix round 1)", () => {
+    // covers FR-025, Fix round 1
+    expect(messageFor("choice_removed_exists")).toBe("A removed entry already has this name. Add it again to bring it back.");
+    expect(messageFor("delete_confirm_label")).toBe("Confirm delete");
+    expect(messageFor("delete_for_good")).toBe("[ DELETE FOR GOOD ]");
+    expect(messageFor("delete_cancel")).toBe("[ CANCEL ]");
+  });
   it("builds the template messages from a name", () => {
     expect(templates.duplicate_email("Ada Example")).toBe("Ada Example already has this email address.");
     expect(templates.organisation_exists("Fakeco Ltd")).toBe("Fakeco Ltd already exists.");
     expect(templates.person_deleted("Ada Example")).toBe("Ada Example was deleted.");
     expect(templates.organisation_deleted("Fakeco Ltd")).toBe("Fakeco Ltd was deleted.");
+    expect(templates.delete_confirm("Ada Example")).toBe("Delete Ada Example for good? This can't be undone.");
   });
   it("never answers a template code from messageFor (a URL code cannot produce them)", () => {
-    for (const code of ["duplicate_email", "organisation_exists", "person_deleted", "organisation_deleted", "toString", "__proto__"]) {
+    for (const code of ["duplicate_email", "organisation_exists", "person_deleted", "organisation_deleted", "delete_confirm", "toString", "__proto__"]) {
       expect(messageFor(code), code).toBeUndefined();
     }
   });

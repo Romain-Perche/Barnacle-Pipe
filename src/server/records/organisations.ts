@@ -51,9 +51,9 @@ function peopleCount(viewerId: number) {
               where p.organisation_id = o.id and p.archived_at is null and ${visiblePerson(sql, viewerId)})`;
 }
 
-async function findByName(db: Sql, name: string): Promise<{ id: number; name: string } | undefined> {
-  const [row] = await db<{ id: number; name: string }[]>`
-    select id::int as id, name from organisations where lower(name) = lower(${name})`;
+async function findByName(db: Sql, name: string): Promise<{ id: number; name: string; archived: boolean } | undefined> {
+  const [row] = await db<{ id: number; name: string; archived: boolean }[]>`
+    select id::int as id, name, archived_at is not null as archived from organisations where lower(name) = lower(${name})`;
   return row;
 }
 
@@ -81,11 +81,14 @@ export async function resolveOrganisation(
     if (!row || (row.archived && choice.organisationId !== currentId)) return { ok: true, id: null };
     return { ok: true, id: choice.organisationId };
   }
-  if (choice.newOrganisationName) {
-    const existing = await findByName(db, choice.newOrganisationName);
+  const newName = choice.newOrganisationName?.trim();
+  if (newName) {
+    // A typed name that an organisation already has (ignoring case) links it; an archived one is refused.
+    const existing = await findByName(db, newName);
+    if (existing && !existing.archived) return { ok: true, id: existing.id };
     if (existing) return { ok: false, error: exists(existing) };
     const [row] = await db<{ id: number }[]>`
-      insert into organisations (name, owner_id, created_by) values (${choice.newOrganisationName}, ${actorId}, ${actorId})
+      insert into organisations (name, owner_id, created_by) values (${newName}, ${actorId}, ${actorId})
       returning id::int as id`;
     await recordEvent(db, { organisationId: row.id, kind: "added", actorId });
     return { ok: true, id: row.id };

@@ -1,9 +1,9 @@
 // One-shot notice after a delete ("Ada Example was deleted."), research.md §8. The name is the server's copy
-// of the deleted record, never text from the URL; the cookie lives 60 seconds.
+// of the deleted record, never text from the URL; the cookie lives 60 seconds and
+// src/proxy.ts deletes it on the next page load, so it shows once.
 import { cookies } from "next/headers";
 import { templates } from "@/server/messages";
-
-const COOKIE = "crm_flash";
+import { FLASH_COOKIE as COOKIE } from "@/server/records/flash-cookie";
 const CODES = ["person_deleted", "organisation_deleted"] as const;
 type FlashCode = (typeof CODES)[number];
 

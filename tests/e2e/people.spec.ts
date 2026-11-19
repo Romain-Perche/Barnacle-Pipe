@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { formatDate } from "@/server/format";
-import { closeDb, resetAndSeed, signInAs } from "./helpers";
+import { closeDb, db, resetAndSeed, signInAs } from "./helpers";
 import { countPeople, details, email, personId, phone, row, save, timeline } from "./records";
 
 test.beforeEach(resetAndSeed);
@@ -86,4 +86,50 @@ test("another person with ADA@example.com is refused, naming and linking Ada Exa
   expect(await countPeople()).toBe(before);
   await link.click();
   await expect(page.getByRole("heading", { name: "Ada Example" })).toBeVisible();
+});
+
+// covers FR-008, Fix round 1 (the organisation field saves what it shows)
+test("typed organisation text is saved without choosing an option; Enter keeps a new name; CLEAR saves none", async ({ page }) => {
+  const field = () => page.getByRole("combobox", { name: "Organisation" });
+  await signInAs(page, "Linus Fake", "/people/new");
+  await page.getByLabel("First name").fill("Nell");
+  await field().fill("Brand New Org");
+  await expect(page.getByText("A new organisation \u201cBrand New Org\u201d will be added.")).toBeVisible();
+  await save(page);
+  await expect(page).toHaveURL(/\/people\/\d+$/);
+  await expect(details(page).getByRole("link", { name: "Brand New Org" })).toBeVisible();
+
+  // Editing a person linked to Sample Studios Fake: the typed "Fake" replaces it.
+  const cleo = await personId("Cleo Testperson");
+  await page.goto(`/people/${cleo}/edit`);
+  await expect(field()).toHaveValue("Sample Studios Fake");
+  await field().fill("Fake");
+  await save(page);
+  await expect(page).toHaveURL(new RegExp(`/people/${cleo}$`));
+  await expect(details(page).getByRole("link", { name: "Fake", exact: true })).toBeVisible();
+
+  // Enter on a partial match keeps the typed text as a new name.
+  await page.goto(`/people/${cleo}/edit`);
+  await field().fill("Sample");
+  await field().press("Enter");
+  await expect(field()).toHaveValue("Sample");
+  await expect(page.getByText("A new organisation \u201cSample\u201d will be added.")).toBeVisible();
+
+  // CLEAR then save: no organisation.
+  await page.getByRole("button", { name: "[ CLEAR ]" }).click();
+  await save(page);
+  await expect(page).toHaveURL(new RegExp(`/people/${cleo}$`));
+  await expect(details(page).getByRole("link", { name: "Fake", exact: true })).toHaveCount(0);
+  const [c] = await db()<{ org: number | null }[]>`select organisation_id::int as org from persons where id = ${cleo}`;
+  expect(c.org).toBeNull();
+
+  // An existing name typed with other case and spaces links that organisation; no hint, no copy.
+  await page.goto(`/people/${cleo}/edit`);
+  await field().fill("  sample studios fake  ");
+  await expect(page.getByText(/will be added/)).toHaveCount(0);
+  await save(page);
+  await expect(page).toHaveURL(new RegExp(`/people/${cleo}$`));
+  await expect(details(page).getByRole("link", { name: "Sample Studios Fake" })).toBeVisible();
+  await page.goto("/organisations?q=Sample Studios Fake");
+  await expect(page.locator("tbody tr")).toHaveCount(1);
 });

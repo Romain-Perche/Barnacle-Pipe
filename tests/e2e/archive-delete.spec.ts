@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { templates } from "@/server/messages";
 import { closeDb, db, resetAndSeed, signInAs } from "./helpers";
 import { actionField, details, email, expectNotFound, personId, save, timeline } from "./records";
 
@@ -36,7 +37,7 @@ test("an admin deletes Ada Example after confirming; a replayed delete from a us
   const id = await personId("Ada Example");
 
   await page.getByRole("link", { name: "[ DELETE ]" }).click();
-  await expect(page.getByText("Delete Ada Example for good? This can't be undone.")).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "Confirm delete" }).locator("p")).toHaveText(templates.delete_confirm("Ada Example"));
   const field = await actionField(page, "[ DELETE FOR GOOD ]");
 
   // Linus replays the admin's delete form post.
@@ -54,6 +55,11 @@ test("an admin deletes Ada Example after confirming; a replayed delete from a us
   await page.getByRole("button", { name: "[ DELETE FOR GOOD ]" }).click();
   await expect(page).toHaveURL(/\/people$/);
   await expect(page.getByText("Ada Example was deleted.")).toBeVisible();
+  // covers Fix round 1: the notice shows once. The page's own follow-up requests drop the cookie; then reload.
+  await expect.poll(async () => (await page.context().cookies()).some((c) => c.name === "crm_flash")).toBe(false);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "People" })).toBeVisible();
+  await expect(page.getByText("Ada Example was deleted.")).toHaveCount(0);
   await expectNotFound(page, `/people/${id}`);
 });
 

@@ -114,18 +114,23 @@ describe("people and their organisation", () => {
     expect((await readTimeline(linus.id, { organisationId: org!.id })).map((e) => e.kind)).toEqual(["person_linked", "added"]);
   });
 
-  it("refuses a new organisation name that exists, archived included, and saves nothing", async () => {
-    const live = await makeOrganisation({ name: "Fakeco Ltd", ownerId: ada.id });
-    const old = await makeOrganisation({ name: "Old Co", ownerId: ada.id, archived: true });
-    expect(await createPerson(linus.id, personForm({ newOrganisationName: "fakeco LTD" }))).toEqual({
+  it("links an existing organisation typed as a new name, ignoring case and outer spaces; adds nothing (FR-008, Fix round 1)", async () => {
+    // covers FR-008, Fix round 1
+    const acme = await makeOrganisation({ name: "Acme Ltd", ownerId: ada.id });
+    const p = saved(await createPerson(linus.id, personForm({ newOrganisationName: "  acme ltd  " })));
+    expect((await getPerson(linus.id, p))!.organisation).toMatchObject({ id: acme, name: "Acme Ltd" });
+    expect(await count("organisations")).toBe(1);
+  });
+
+  it("refuses a new organisation name that an archived organisation has, and saves nothing (FR-008, Fix round 1)", async () => {
+    // covers FR-008, Fix round 1, clarification Q3
+    const old = await makeOrganisation({ name: "Acme Ltd", ownerId: ada.id, archived: true });
+    expect(await createPerson(linus.id, personForm({ newOrganisationName: "  acme ltd  " }))).toEqual({
       status: "invalid",
-      errors: { organisation: { code: "organisation_exists", name: "Fakeco Ltd", href: `/organisations/${live}` } },
-    });
-    expect(await createPerson(linus.id, personForm({ newOrganisationName: "Old Co" }))).toMatchObject({
-      errors: { organisation: { code: "organisation_exists", name: "Old Co", href: `/organisations/${old}` } },
+      errors: { organisation: { code: "organisation_exists", name: "Acme Ltd", href: `/organisations/${old}` } },
     });
     expect(await count("persons")).toBe(0);
-    expect(await count("organisations")).toBe(2);
+    expect(await count("organisations")).toBe(1);
   });
 
   it("offers only non-archived organisations; an archived id is kept only when it is the person's current one", async () => {

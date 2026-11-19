@@ -5,7 +5,7 @@ import { isActiveAdmin, isUniqueViolation, type Option } from "@/server/records/
 import { validateChoiceName } from "@/server/records/rules";
 
 export type ChoiceKind = "lead_source" | "label";
-export type ChoiceResult = { ok: true } | { ok: false; code: "forbidden" | "choice_exists" | "choice_name_required" | "not_found" };
+export type ChoiceResult = { ok: true } | { ok: false; code: "forbidden" | "choice_exists" | "choice_removed_exists" | "choice_name_required" | "not_found" };
 
 const TABLES: Record<ChoiceKind, string> = { lead_source: "lead_sources", label: "labels" };
 const KEYS: Record<ChoiceKind, string> = { lead_source: "lead_sources_name_key", label: "labels_name_key" };
@@ -57,8 +57,10 @@ export function renameChoice(actorId: number, kind: ChoiceKind, id: number, raw:
   const v = validateChoiceName(raw);
   if (!v.ok) return Promise.resolve({ ok: false, code: v.code });
   return asAdmin(actorId, kind, async (db, table) => {
-    const other = await db`select 1 from ${db(table)} where lower(name) = lower(${v.name}) and id <> ${id}`;
-    if (other.length > 0) return { ok: false, code: "choice_exists" };
+    const [other] = await db<{ removed: boolean }[]>`
+      select removed_at is not null as removed from ${db(table)} where lower(name) = lower(${v.name}) and id <> ${id}`;
+    // A removed entry keeps its name: adding that name again brings it back (clarification Q4).
+    if (other) return { ok: false, code: other.removed ? "choice_removed_exists" : "choice_exists" };
     const rows = await db`update ${db(table)} set name = ${v.name} where id = ${id} returning id`;
     return rows.length === 1 ? { ok: true } : { ok: false, code: "not_found" };
   });

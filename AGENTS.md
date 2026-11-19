@@ -18,7 +18,7 @@ OAuth code flow and database sessions.
   `users.ts`, `env.ts` (`isFakeAllowed`, `isPreview`), `messages.ts` (every user-facing message; `templates` for
   messages built from a database name). `records/`: people, organisations, lead sources and labels —
   `rules.ts` and `list-query.ts` (pure), `visibility.ts` (the one private-person rule: every `persons` read uses
-  `visiblePerson()`), `people.ts`, `organisations.ts`, `choices.ts`, `timeline.ts`, `flash.ts`, `form-data.ts`.
+  `visiblePerson()`), `people.ts`, `organisations.ts`, `choices.ts`, `timeline.ts`, `flash.ts` (one-shot delete notice; `src/proxy.ts` drops its cookie on the next page load), `form-data.ts`.
 - `src/app/(app)/records/` — UI shared by people and organisations (forms, picker, drawer, timeline, filter row).
 - `src/seed/` — fake data; `index.ts` is the seeder registry.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.

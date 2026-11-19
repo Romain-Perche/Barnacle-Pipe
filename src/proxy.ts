@@ -2,6 +2,7 @@
 // It only checks that the cookie is there; requireUser() checks the session itself.
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/server/auth/cookie";
+import { FLASH_COOKIE } from "@/server/records/flash-cookie";
 
 const PUBLIC = [/^\/sign-in\/?$/, /^\/auth(\/|$)/, /^\/dev\/fake-google\/?$/];
 
@@ -24,6 +25,11 @@ export function proxy(req: NextRequest) {
   if (token && !isPublic && req.method === "GET") {
     const secure = req.nextUrl.protocol === "https:" || req.headers.get("x-forwarded-proto") === "https";
     res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(secure));
+  }
+  // The delete notice shows once: the browser drops the cookie, but the page still reads it from this request.
+  // A raw header, after any res.cookies change: res.cookies also rewrites the cookies the page sees.
+  if (req.method === "GET" && req.cookies.has(FLASH_COOKIE)) {
+    res.headers.append("set-cookie", `${FLASH_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`);
   }
   return res;
 }

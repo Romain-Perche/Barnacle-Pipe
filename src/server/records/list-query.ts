@@ -93,6 +93,13 @@ export function parseOrganisationsQuery(params: Params): OrganisationsQuery {
   };
 }
 
+// The sector filter only keeps a value that is one of the sectors in use (matched ignoring case), so text
+// from the address is never shown back on the page (FR-025); an unknown sector filters nothing.
+export function knownSector(sector: string | null, inUse: readonly string[]): string | null {
+  if (sector === null) return null;
+  return inUse.find((s) => s.toLowerCase() === sector.toLowerCase()) ?? null;
+}
+
 type AnyQuery = PeopleQuery | OrganisationsQuery;
 const ORDER = ["q", "owner", "label", "source", "org", "consent", "sector", "size", "sort", "dir", "page", "archived", "open"];
 const DEFAULTS: Record<string, unknown> = { q: "", sort: "name", dir: "asc", page: 1, archived: false };

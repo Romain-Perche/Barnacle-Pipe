@@ -4,7 +4,7 @@ import { requireUser } from "@/server/auth/session";
 import { countLabel } from "@/server/format";
 import { messages } from "@/server/messages";
 import { readFlash } from "@/server/records/flash";
-import { hasFilters, parseOrganisationsQuery, withParams, type Params } from "@/server/records/list-query";
+import { hasFilters, knownSector, parseOrganisationsQuery, withParams, type Params } from "@/server/records/list-query";
 import { getOrganisation, listOrganisations, organisationFilterOptions } from "@/server/records/organisations";
 import { SIZES, websiteHost } from "@/server/records/rules";
 import { Drawer, Field } from "../records/Drawer";
@@ -24,18 +24,18 @@ function Website({ url }: { url: string | null }) {
 
 export default async function OrganisationsPage({ searchParams }: { searchParams: Promise<Params> }) {
   const user = await requireUser();
-  const query = parseOrganisationsQuery(await searchParams);
-  const [list, options, flash, open] = await Promise.all([
+  const parsed = parseOrganisationsQuery(await searchParams);
+  const options = await organisationFilterOptions();
+  // An unknown sector is dropped before it is used or shown (FR-025): it filters nothing.
+  const query = { ...parsed, sector: knownSector(parsed.sector, options.sectors) };
+  const [list, flash, open] = await Promise.all([
     listOrganisations(user.id, query),
-    organisationFilterOptions(),
     readFlash("organisation_deleted"),
     query.open ? getOrganisation(user.id, query.open) : null,
   ]);
   const shown = { ...query, page: list.page };
   const link = (changes: Partial<typeof query>) => withParams(PATH, shown, changes);
   const preview = (id: number) => link({ open: id });
-  const sectors = query.sector && !options.sectors.some((s) => s.toLowerCase() === query.sector!.toLowerCase()) ? [...options.sectors, query.sector] : options.sectors;
-  const selectedSector = sectors.find((s) => s.toLowerCase() === query.sector?.toLowerCase()) ?? null;
 
   return (
     <>
@@ -62,7 +62,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
 
       <FilterRow id="organisation-filters" path={PATH} q={query.q} searchLabel="Search organisations" archived={query.archived}>
         <Select name="owner" label="Owner" value={query.owner} options={[{ value: "", label: "Any owner" }, ...options.owners.map((o) => ({ value: o.id, label: o.name }))]} />
-        <Select name="sector" label="Sector" value={selectedSector} options={[{ value: "", label: "Any sector" }, ...sectors.map((s) => ({ value: s, label: s }))]} />
+        <Select name="sector" label="Sector" value={query.sector} options={[{ value: "", label: "Any sector" }, ...options.sectors.map((s) => ({ value: s, label: s }))]} />
         <Select name="size" label="Size" value={query.size} options={[{ value: "", label: "Any size" }, ...SIZES.map((s) => ({ value: s, label: s }))]} />
         <Select
           name="sort"

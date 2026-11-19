@@ -1,7 +1,7 @@
 // covers FR-012, FR-013, FR-014, contracts/list-query.md (both lists), edge cases "page beyond the last" and
 // "search text is never echoed as a message"
 import { describe, expect, it } from "vitest";
-import { parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
+import { knownSector, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
 
 describe("parsePeopleQuery", () => {
   it("has the defaults: sort by name A–Z, page 1, no filter", () => {
@@ -82,5 +82,15 @@ describe("withParams", () => {
     expect(withParams("/organisations", parseOrganisationsQuery({ q: "50% & co", size: "1,000+" }), {})).toBe(
       "/organisations?q=50%25+%26+co&size=1%2C000%2B",
     );
+  });
+});
+
+describe("knownSector", () => {
+  // covers FR-025, Edge Cases: unknown sector (Fix round 1)
+  it("returns the in-use sector it matches ignoring case, else null", () => {
+    const inUse = ["Fitness", "Media"];
+    expect(knownSector("fitness", inUse)).toBe("Fitness");
+    expect(knownSector("Your account is locked, call 0800 000", inUse)).toBeNull();
+    expect(knownSector(null, inUse)).toBeNull();
   });
 });

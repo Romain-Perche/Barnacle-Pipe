@@ -65,6 +65,23 @@ describe("lead sources and labels", () => {
     expect(await count("lead_sources")).toBe(6);
   });
 
+  it("refuses renaming to a removed entry's name with its own message; nothing changes (Fix round 1, clarification Q4)", async () => {
+    // covers FR-022, Fix round 1
+    const inbound = await leadSourceId("Inbound");
+    const event = await leadSourceId("Event");
+    await removeChoice(ada.id, "lead_source", inbound);
+    expect(await renameChoice(ada.id, "lead_source", event, " inbound ")).toEqual({ ok: false, code: "choice_removed_exists" });
+    expect(await addChoice(ada.id, "label", "Hot")).toEqual({ ok: true });
+    expect(await addChoice(ada.id, "label", "Cold")).toEqual({ ok: true });
+    const labels = await listChoices("label");
+    const hot = labels.find((c) => c.name === "Hot")!.id;
+    const cold = labels.find((c) => c.name === "Cold")!.id;
+    await removeChoice(ada.id, "label", cold);
+    expect(await renameChoice(ada.id, "label", hot, "COLD")).toEqual({ ok: false, code: "choice_removed_exists" });
+    expect(await names("lead_source")).toContain("Event");
+    expect(await names("label")).toEqual(["Hot"]);
+  });
+
   it("refuses every change from a non-admin or a deactivated admin; nothing changes (US6 scenario 5, SC-006)", async () => {
     const grace = await makeUser({ email: "grace@barnacle.ai", role: "admin", status: "deactivated" });
     const event = await leadSourceId("Event");

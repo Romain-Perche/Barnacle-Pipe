@@ -5,7 +5,7 @@ import { listChoices } from "@/server/records/choices";
 import { Forbidden } from "../../Forbidden";
 import { addLabel, addLeadSource, removeLabel, removeLeadSource, renameLabel, renameLeadSource } from "./actions";
 
-const PAGE_ERRORS = new Set(["choice_exists", "choice_name_required"]);
+const PAGE_ERRORS = new Set(["choice_exists", "choice_removed_exists", "choice_name_required"]);
 type Action = (fd: FormData) => Promise<void>;
 
 function ChoiceList({ title, noun, items, add, rename, remove }: { title: string; noun: string; items: { id: number; name: string }[]; add: Action; rename: Action; remove: Action }) {

@@ -26,10 +26,14 @@ export const messages = {
   edit_conflict: "Someone else changed this person while you were editing. Reload to see their changes.",
   edit_conflict_organisation: "Someone else changed this organisation while you were editing. Reload to see their changes.",
   choice_exists: "This name is already on the list.",
+  choice_removed_exists: "A removed entry already has this name. Add it again to bring it back.",
   choice_name_required: "Enter a name.",
   no_people_match: "No people match these filters.",
   no_organisations_match: "No organisations match these filters.",
   no_people_yet: "No people yet.",
+  delete_confirm_label: "Confirm delete",
+  delete_for_good: "[ DELETE FOR GOOD ]",
+  delete_cancel: "[ CANCEL ]",
 } as const;
 
 // Messages built from a record's name, always read from the database. Kept apart from `messages` so a
@@ -39,6 +43,7 @@ export const templates = {
   organisation_exists: (name: string) => `${name} already exists.`,
   person_deleted: (name: string) => `${name} was deleted.`,
   organisation_deleted: (name: string) => `${name} was deleted.`,
+  delete_confirm: (name: string) => `Delete ${name} for good? This can't be undone.`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

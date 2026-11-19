@@ -108,3 +108,13 @@ test("more than 50 people: 50 rows, the total and a next page; a page beyond the
   await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(second);
 });
+
+// covers FR-025, Edge Cases: unknown sector (Fix round 1)
+test("an unknown sector in the address is ignored and never shown on the page", async ({ page }) => {
+  await signInAs(page, "Ada Fake", "/organisations?sector=Your account is locked, call 0800 000");
+  await expect(page.getByRole("heading", { name: "Organisations" })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Your account is locked");
+  await expect(page.getByLabel("Sector").locator("option:checked")).toHaveText("Any sector");
+  const [{ n }] = await db()<{ n: number }[]>`select count(*)::int as n from organisations where archived_at is null`;
+  await expect(page.locator("tbody tr")).toHaveCount(n);
+});
