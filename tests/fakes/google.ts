@@ -4,7 +4,7 @@
 // The userinfo method, path, query parameters and response properties come from the schema file:
 // a request or a response that the schema does not allow fails.
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 export const SCHEMA_PATH = path.join(process.cwd(), ".factory/schemas/oauth2-api.json");
@@ -20,6 +20,7 @@ type Discovery = {
 
 // Throws when the schema is missing: the tests fail, never skip.
 export function loadSchema(): Discovery {
+  if (!existsSync(SCHEMA_PATH)) throw new Error(`${SCHEMA_PATH} is missing: run "npm run test:schemas" to download it.`);
   const text = readFileSync(SCHEMA_PATH, "utf8");
   if (text.trim() === "") throw new Error(`${SCHEMA_PATH} is empty`);
   return JSON.parse(text) as Discovery;

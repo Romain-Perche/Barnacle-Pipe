@@ -18,7 +18,9 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "npm run build && npm start -- -p 3000",
+    // The app reads its settings at runtime; it starts from a folder without the developer's .env* files
+    // (scripts/start-isolated.mjs), so it sees only the env below.
+    command: "npm run build && node scripts/start-isolated.mjs 3000",
     url: "http://localhost:3000/sign-in",
     timeout: 240_000,
     reuseExistingServer: false,

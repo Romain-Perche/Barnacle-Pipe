@@ -48,6 +48,11 @@ npm run typecheck    # TypeScript
 
 The test database is emptied and reloaded by the tests: never point `DATABASE_URL` at a database you care about.
 
+The first `npm test` downloads the Google userinfo schema the fake Google sign-in is checked against
+(`npm run test:schemas`, a pinned file from GitHub, into the git-ignored `.factory/schemas/`): it needs
+network access once. The test commands ignore `.env.local`: the browser tests start the app from a
+temporary folder without any `.env*` file, so it sees only the settings the tests give it.
+
 ## Commands
 
 | Command | Does |
@@ -57,7 +62,8 @@ The test database is emptied and reloaded by the tests: never point `DATABASE_UR
 | `npm run vercel-build` | Vercel's build: runs `db:migrate` only when `VERCEL_ENV=production`, then `next build`. |
 | `npm run db:migrate` | Apply the pending `migrations/*.sql`. Prints each one applied, or "Database is up to date.". Safe to run twice, or twice at once. |
 | `npm run db:seed` | Load fake data. Only when `APP_ENV` is exactly `development` or `test` and `VERCEL_ENV` is not `production`/`preview`; otherwise prints "Fake data can only be loaded when APP_ENV is development or test." and exits 1. Safe to run again. |
-| `npm test` | Unit and integration tests. |
+| `npm test` | Unit and integration tests (runs `test:schemas` first). |
+| `npm run test:schemas` | Download the pinned Google schema into `.factory/schemas/` when it is missing; does nothing otherwise. |
 | `npm run test:e2e` | Browser tests. |
 | `npm run typecheck` | `tsc --noEmit`. |
 

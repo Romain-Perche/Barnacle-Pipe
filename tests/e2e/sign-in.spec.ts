@@ -41,6 +41,8 @@ test("the first admin signs in on an empty system and gets the Admin group", asy
   await sidebar(page).getByRole("link", { name: "Users" }).click();
   const row = page.getByRole("row").filter({ hasText: "boss@barnacle.ai" });
   await expect(row).toContainText("Admin");
+  // covers US2 scenario 1 (singular header for one user and one admin)
+  await expect(page.getByText("1 USER · 1 ADMIN", { exact: true })).toBeVisible();
 });
 
 // covers US1 scenario 4

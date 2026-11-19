@@ -18,6 +18,8 @@ OAuth code flow and database sessions.
   `users.ts`, `env.ts` (`isFakeAllowed`, `isPreview`), `messages.ts` (every user-facing message).
 - `src/seed/` — fake data; `index.ts` is the seeder registry.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
+- `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google schema) and
+  `scripts/start-isolated.mjs` (browser tests start the app without the developer's `.env*` files).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/e2e` (Playwright), `tests/fakes` (outside services only).
 
 ## Rules

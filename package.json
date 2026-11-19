@@ -12,7 +12,9 @@
     "vercel-build": "if [ \"$VERCEL_ENV\" = production ]; then npm run db:migrate; fi && next build",
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
+    "pretest": "npm run test:schemas",
     "test": "vitest run",
+    "test:schemas": "node scripts/fetch-schemas.mjs",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },

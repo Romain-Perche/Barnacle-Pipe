@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { closeDb, expectSignInPage, resetAndSeed, sidebar, signInAs, signInTyped } from "./helpers";
 
@@ -55,7 +56,8 @@ async function startApp(port: number, env: Record<string, string>): Promise<Chil
   const clean = Object.fromEntries(
     Object.entries(process.env).filter(([k]) => !["APP_ENV", "VERCEL_ENV", "DATABASE_URL", "FIRST_ADMIN_EMAIL"].includes(k)),
   );
-  const child = spawn("npx", ["next", "start", "-p", String(port)], { env: { ...clean, ...env } as NodeJS.ProcessEnv, stdio: "ignore", detached: true });
+  // Started without the developer's .env* files (scripts/start-isolated.mjs).
+  const child = spawn("node", ["scripts/start-isolated.mjs", String(port)], { env: { ...clean, ...env } as NodeJS.ProcessEnv, stdio: "ignore", detached: true });
   for (let i = 0; i < 120; i++) {
     try {
       const res = await fetch(`http://localhost:${port}/sign-in`);
@@ -66,15 +68,27 @@ async function startApp(port: number, env: Record<string, string>): Promise<Chil
   throw new Error(`app on port ${port} did not start`);
 }
 
+// covers US4 scenario 3, FR-031: a developer's .env.local (from the README: APP_ENV=development) must not
+// change what the gated servers see. Written while each gated server starts, then put back as it was.
+const ENV_LOCAL = ".env.local";
+function writeDeveloperEnvLocal(): () => void {
+  const saved = existsSync(ENV_LOCAL) ? readFileSync(ENV_LOCAL) : undefined;
+  writeFileSync(ENV_LOCAL, "APP_ENV=development\nVERCEL_ENV=\nFIRST_ADMIN_EMAIL=ada@barnacle.ai\n");
+  return () => (saved === undefined ? rmSync(ENV_LOCAL, { force: true }) : writeFileSync(ENV_LOCAL, saved));
+}
+
 for (const g of gated) {
   test.describe(`gated: ${g.title}`, () => {
     let app: ChildProcess;
+    let restoreEnvLocal: (() => void) | undefined;
     test.beforeAll(async () => {
       await resetAndSeed();
+      restoreEnvLocal = writeDeveloperEnvLocal();
       app = await startApp(g.port, g.env);
     });
     test.afterAll(() => {
       if (app?.pid) process.kill(-app.pid, "SIGTERM");
+      restoreEnvLocal?.();
     });
 
     test("no fake login link, and the fake login address shows Page not found.", async ({ page }) => {

@@ -14,3 +14,14 @@ describe("formatLastSignIn", () => {
     expect(formatLastSignIn(null)).toBe("Never");
   });
 });
+
+// covers US2 scenario 1 (Users header: "1 USER · 1 ADMIN", "2 USERS · 2 ADMINS")
+import { countLabel } from "@/server/format";
+describe("countLabel", () => {
+  it("is singular for 1 and plural otherwise", () => {
+    expect(countLabel(1, "USER")).toBe("1 USER");
+    expect(countLabel(1, "ADMIN")).toBe("1 ADMIN");
+    expect(countLabel(2, "ADMIN")).toBe("2 ADMINS");
+    expect(countLabel(0, "ADMIN")).toBe("0 ADMINS");
+  });
+});

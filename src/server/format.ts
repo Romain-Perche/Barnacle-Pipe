@@ -15,3 +15,8 @@ export function formatLastSignIn(date: Date | null): string {
   const p = Object.fromEntries(parts.formatToParts(date).map((x) => [x.type, x.value]));
   return `${p.day} ${MONTHS[Number(p.month) - 1]} ${p.year}, ${p.hour}:${p.minute}`;
 }
+
+// Users page header counts: "1 USER", "2 USERS", "0 ADMINS".
+export function countLabel(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "S"}`;
+}

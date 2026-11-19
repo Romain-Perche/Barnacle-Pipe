@@ -1,6 +1,6 @@
 // Users page, design A: a table with the actions on each row (spec Clarifications, design-options.html).
 import { requireAdmin } from "@/server/auth/session";
-import { formatLastSignIn } from "@/server/format";
+import { countLabel, formatLastSignIn } from "@/server/format";
 import { messageFor } from "@/server/messages";
 import { listUsers } from "@/server/users";
 import { Forbidden } from "../../Forbidden";
@@ -40,7 +40,7 @@ export default async function UsersPage({ searchParams }: Props) {
           <h1>Users</h1>
         </div>
         <div className="label">
-          {users.length} USERS · {admins} ADMINS
+          {countLabel(users.length, "USER")} · {countLabel(admins, "ADMIN")}
         </div>
       </div>
 

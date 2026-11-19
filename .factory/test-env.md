@@ -24,10 +24,10 @@
   binaries in `/usr/lib/postgresql/17/bin` still work), then as the normal user:
   `initdb -D /tmp/pgdata -U postgres --auth=trust && pg_ctl -D /tmp/pgdata -o "-k /tmp -c listen_addresses=localhost" -l /tmp/pg.log start`
   and `psql -h localhost -U postgres -c "create database crm_test" -c "create database crm_dev"`.
-- Schema: `.factory/schemas/oauth2-api.json` (download command in the test-recipe skill, commit above).
+- Schema: `.factory/schemas/oauth2-api.json`, downloaded by `npm run test:schemas` (run by `npm test` as `pretest`; commit above, sha256 checked).
 - Browsers: Playwright's Chromium 1254 is in `~/.cache/ms-playwright` (matches `@playwright/test` 1.65.0).
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
-  `npm test` and `npm run test:e2e` (builds, starts on port 3000 with `FIRST_ADMIN_EMAIL=boss@barnacle.ai`,
+  `npm test` and `npm run test:e2e` (builds, starts on port 3000 from a temporary folder without `.env*` files via `scripts/start-isolated.mjs` with `FIRST_ADMIN_EMAIL=boss@barnacle.ai`,
   migrates and seeds; the gating tests start extra servers on ports 3101–3104).
 - Manual run: `npm run db:migrate && npm run db:seed && npm run build && npm start` with
   `APP_ENV=development DATABASE_URL=postgres://postgres@localhost:5432/crm_dev FIRST_ADMIN_EMAIL=ada@barnacle.ai`,
@@ -46,9 +46,6 @@
     FIRST_ADMIN, :3103 VERCEL_ENV=preview, :3104 APP_ENV empty, :3105 production, :3106 development+VERCEL_ENV
     production, :3107 "Development"), `scenarios-seed.js` (:3108 on a fresh crm_seed). Helpers in `lib.js`.
   - Stop servers by pid (`ss -ltnp | grep next-server`), not `pkill -f next…`: that also kills the calling shell.
-- Fresh checkout notes (seen in review): `npm test` needs `.factory/schemas/oauth2-api.json` (untracked; fetch it
-  as above); with the README's `.env.local` present, `next start` loads APP_ENV=development from it, so the e2e
-  "APP_ENV unset" gating test fails. Run the suites without `.env.local`.
 
 ## Smoke checks
 1. test -s .factory/schemas/oauth2-api.json
