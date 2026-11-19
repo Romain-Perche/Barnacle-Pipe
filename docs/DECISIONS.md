@@ -42,3 +42,7 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - People and organisation lists and pages use design C: a filter row above the table, a preview drawer when a row is selected, and a one-column record page (SF-90)
 - A person added by hand is Subscribed to email until they unsubscribe (SF-90)
 - Only admins add, rename and remove lead sources and labels, on an admin page; everyone picks from the lists (SF-90)
+- Only admins create, rename, reorder and delete pipelines and stages, on a Pipelines admin page (SF-93)
+- The deals board uses design A: rounded cards in stage columns, a pipeline picker and a deal drawer (SF-93)
+- Deal cards show no "No next activity" warning until activities exist (SF-93)
+- A private deal is visible to its creator and its owner, nobody else, admins included; both can turn Private on or off (SF-93)
