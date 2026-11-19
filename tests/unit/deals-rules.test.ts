@@ -123,3 +123,25 @@ describe("changedDealFields", () => {
     ).toEqual(["Title", "Value", "Organisation", "Person", "Owner", "Expected close date", "Private"]);
   });
 });
+
+// covers FR-013, FR-019, edge case "an address naming a pipeline or deal that does not exist: no text from the address is shown"
+import { boardHref, parseBoardQuery } from "@/server/deals/rules";
+describe("parseBoardQuery and boardHref", () => {
+  it("reads numeric ids only and allow-listed error codes", () => {
+    expect(parseBoardQuery({ pipeline: "3", open: "12", confirm: "delete", error: "deal_changed" })).toEqual({
+      pipeline: 3, open: 12, confirmDelete: true, error: "deal_changed",
+    });
+    expect(parseBoardQuery({ pipeline: "abc", open: "<script>", confirm: "delete", error: "Hello there" })).toEqual({
+      pipeline: null, open: null, confirmDelete: false, error: null,
+    });
+    expect(parseBoardQuery({ pipeline: ["4", "5"], error: "deal_deleted" })).toMatchObject({ pipeline: 4, error: null });
+    expect(parseBoardQuery({})).toEqual({ pipeline: null, open: null, confirmDelete: false, error: null });
+  });
+  it("builds board addresses from ids", () => {
+    expect(boardHref(null)).toBe("/deals");
+    expect(boardHref(3)).toBe("/deals?pipeline=3");
+    expect(boardHref(3, { open: 12 })).toBe("/deals?pipeline=3&open=12");
+    expect(boardHref(3, { open: 12, confirm: "delete" })).toBe("/deals?pipeline=3&open=12&confirm=delete");
+    expect(boardHref(3, { error: "deal_changed" })).toBe("/deals?pipeline=3&error=deal_changed");
+  });
+});

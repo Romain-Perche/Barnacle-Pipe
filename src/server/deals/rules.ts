@@ -108,3 +108,37 @@ export const DEAL_FIELDS: FieldList<DealFields> = [
 export function changedDealFields(before: DealFields, after: DealFields): string[] {
   return changedFields(DEAL_FIELDS, before, after);
 }
+
+// --- The board's address (contracts/routes.md § Pages, research.md §9) ------------------------------------------
+
+export type BoardParams = Record<string, string | string[] | undefined>;
+export const BOARD_ERRORS = ["deal_changed", "deal_move_failed"] as const;
+export type BoardQuery = { pipeline: number | null; open: number | null; confirmDelete: boolean; error: (typeof BOARD_ERRORS)[number] | null };
+
+function firstOf(params: BoardParams, key: string): string {
+  const v = params[key];
+  return (Array.isArray(v) ? v[0] : v) ?? "";
+}
+
+// Ids only, read as numbers; `error` only from the allow-list. Anything else is ignored, never shown.
+export function parseBoardQuery(params: BoardParams): BoardQuery {
+  const error = firstOf(params, "error");
+  const open = toId(firstOf(params, "open"));
+  return {
+    pipeline: toId(firstOf(params, "pipeline")),
+    open,
+    confirmDelete: open !== null && firstOf(params, "confirm") === "delete",
+    error: (BOARD_ERRORS as readonly string[]).includes(error) ? (error as BoardQuery["error"]) : null,
+  };
+}
+
+// "/deals?pipeline=3&open=12", built from numeric ids only.
+export function boardHref(pipelineId: number | null, extra: { open?: number | null; confirm?: "delete"; error?: BoardQuery["error"] } = {}): string {
+  const q = new URLSearchParams();
+  if (pipelineId !== null) q.set("pipeline", String(pipelineId));
+  if (extra.open) q.set("open", String(extra.open));
+  if (extra.confirm) q.set("confirm", extra.confirm);
+  if (extra.error) q.set("error", extra.error);
+  const s = q.toString();
+  return s ? `/deals?${s}` : "/deals";
+}
