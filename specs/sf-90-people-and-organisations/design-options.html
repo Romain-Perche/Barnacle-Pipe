@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SF-90 · People and organisations · design options</title>
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626; --success: #16A34A;
+    --wash: rgba(43,0,255,.04); --panel: #FFFFFF; --page: #EDE7DF;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.10); --panel: #232323; --page: #0E0E0E;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .label .c, .c { color: var(--orange); }
+  h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(600px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  .sub { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .25em; text-transform: uppercase; color: var(--muted); }
+  figcaption { font-size: 14px; line-height: 1.45; }
+  figcaption .label { display: block; margin-bottom: 4px; color: var(--muted); }
+
+  .app { display: grid; grid-template-columns: 160px 1fr; height: 470px; border: .5px solid var(--line); overflow: hidden; position: relative; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 12px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 10px; margin-bottom: 22px; }
+  .wm .u { color: var(--orange); }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .grp { margin-top: 18px; font-size: 9px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .grp .c { color: var(--orange); }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 10px; }
+  .me .n { font-family: var(--sans); font-size: 12px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 18px; overflow: hidden; position: relative; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 10px; margin-bottom: 12px; gap: 8px; }
+  .ph h2 { margin: 3px 0 0; font-size: 20px; font-weight: 700; }
+  .count { font-family: var(--mono); font-size: 9px; letter-spacing: .25em; font-weight: 700; color: var(--muted); }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 5px 8px; background: transparent; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .br { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; white-space: nowrap; }
+  .br.red { color: var(--danger); }
+  .input { border: .5px solid var(--line); background: var(--panel); padding: 5px 7px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .sel { border: .5px solid var(--line); background: var(--panel); padding: 5px 7px; font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .sel.on { border-color: var(--blue); color: var(--blue); }
+  .bar { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th { font-family: var(--mono); font-size: 8px; letter-spacing: .2em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 5px; border-bottom: .5px solid var(--line-soft); white-space: nowrap; }
+  td { padding: 6px 5px; border-bottom: .5px solid var(--line-list); vertical-align: top; }
+  td .em { display: block; color: var(--muted); font-size: 10px; }
+  td a, .lk { color: var(--blue); text-decoration: none; }
+  .badge { font-family: var(--mono); font-size: 8px; letter-spacing: .1em; font-weight: 700; text-transform: uppercase; border: .5px solid var(--line); padding: 1px 4px; white-space: nowrap; }
+  .badge.blue { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .badge.off { color: var(--muted); border-style: dashed; }
+  tr.selrow td { background: var(--wash); }
+  .k { font-family: var(--mono); font-size: 8px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 2px; }
+  .v { font-size: 12px; margin-bottom: 9px; }
+  .v .em { color: var(--muted); font-size: 10px; font-family: var(--mono); letter-spacing: .05em; }
+  .card { background: var(--panel); border: .5px solid var(--line-soft); border-radius: 8px; padding: 12px; }
+  .tl { list-style: none; margin: 0; padding: 0; font-size: 11px; }
+  .tl li { border-bottom: .5px solid var(--line-list); padding: 6px 0; }
+  .tl .when { display: block; font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .05em; }
+  .two { display: grid; grid-template-columns: 210px 1fr; gap: 14px; }
+  .facts { display: flex; gap: 18px; flex-wrap: wrap; border-bottom: .5px solid var(--line-soft); padding-bottom: 10px; margin-bottom: 10px; }
+  .facts .v { margin: 0; }
+  .tabs { display: flex; gap: 16px; border-bottom: .5px solid var(--line-soft); margin-bottom: 10px; }
+  .tabs span { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; padding: 5px 0; color: var(--muted); }
+  .tabs span.on { color: var(--ink); border-bottom: 2px solid var(--orange); }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  .filters { width: 130px; flex: none; border-right: .5px solid var(--line-soft); padding-right: 10px; }
+  .filters .k { margin-top: 8px; }
+  .filters .opt { font-size: 10px; padding: 2px 0; }
+  .filters .opt.on { color: var(--blue); font-weight: 600; }
+  .row { display: flex; gap: 12px; }
+  .drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 230px; background: var(--panel); border-left: .5px solid var(--line); padding: 14px; font-size: 11px; overflow: hidden; }
+  .drawer h3 { margin: 2px 0 8px; font-size: 16px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-90 · PEOPLE AND ORGANISATIONS</div>
+  <h1>Which design for the People list and the person page?</h1>
+  <p>Each design shows the People list (filters, search, rows) and a person's page. Organisations use the same layout.</p>
+</header>
+<div class="grid">
+
+<!-- ================= A ================= -->
+<figure>
+  <div class="tag"><b>A</b> Filter row · two-column page</div>
+  <div class="sub">People list</div>
+  <div class="app">
+    <div class="side">
+      <div class="wm"><span style="color:var(--orange)">✸</span> BARNACLE<span class="u">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">People</span><span>Organisations</span></div>
+      <div class="grp"><span class="c">//</span> ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </div>
+    <div class="main">
+      <div class="ph"><div><div class="label"><span class="c">//</span> CONTACTS</div><h2>People</h2></div><div style="text-align:right"><span class="btn solid">[ ADD PERSON ]</span><div class="count" style="margin-top:6px">// 132 PEOPLE</div></div></div>
+      <div class="bar"><span class="input" style="flex:1">Search name, email or organisation</span></div>
+      <div class="bar"><span class="sel on">Owner: Ada Fake ▾</span><span class="sel">Label ▾</span><span class="sel on">Lead source: Exec dinner ▾</span><span class="sel">Organisation ▾</span><span class="sel">Consent ▾</span><span class="br" style="color:var(--muted)">☐ SHOW ARCHIVED</span><span class="br lk">[ CLEAR FILTERS ]</span></div>
+      <table>
+        <tr><th>Name ▲</th><th>Organisation</th><th>Role</th><th>Email</th><th>Owner</th><th>Labels</th><th>Consent</th><th>Last contacted</th></tr>
+        <tr><td><a>Ada Example</a></td><td><a>Fakeco Ltd</a></td><td>COO</td><td>ada@example.com</td><td>Ada Fake</td><td><span class="badge">Hot</span></td><td>Subscribed</td><td>Never</td></tr>
+        <tr><td><a>Bob Placeholder</a></td><td><a>Sample Gyms</a></td><td>CEO</td><td>bob@example.net</td><td>Ada Fake</td><td></td><td>Subscribed</td><td>Never</td></tr>
+        <tr><td><a>Cleo Testperson</a> <span class="badge">Private</span></td><td>—</td><td>Founder</td><td>cleo@example.org</td><td>Ada Fake</td><td><span class="badge">VIP</span></td><td>Unsubscribed</td><td>Never</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="sub">Person page</div>
+  <div class="app">
+    <div class="side">
+      <div class="wm"><span style="color:var(--orange)">✸</span> BARNACLE<span class="u">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">People</span><span>Organisations</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </div>
+    <div class="main">
+      <div class="ph"><div><div class="label"><span class="c">//</span> PERSON</div><h2>Ada Example</h2><div style="font-size:11px;color:var(--muted)">COO at <span class="lk">Fakeco Ltd</span></div></div><div><span class="btn">[ EDIT ]</span> <span class="btn">[ ARCHIVE ]</span> <span class="btn" style="color:var(--danger);border-color:var(--danger)">[ DELETE ]</span></div></div>
+      <div class="two">
+        <div class="card">
+          <div class="k">Email</div><div class="v">ada@example.com <span class="em">WORK</span><br>ada.home@example.net <span class="em">PERSONAL</span></div>
+          <div class="k">Phone</div><div class="v">+44 20 7946 0000 <span class="em">WORK</span></div>
+          <div class="k">Lead source</div><div class="v">Referral</div>
+          <div class="k">LinkedIn</div><div class="v"><span class="lk">linkedin.com/in/ada-example</span></div>
+          <div class="k">Owner</div><div class="v">Ada Fake</div>
+          <div class="k">Labels</div><div class="v"><span class="badge">Hot</span></div>
+          <div class="k">Consent</div><div class="v">Subscribed</div>
+          <div class="k">Added · Last contacted</div><div class="v">19 Nov 2026 · Never</div>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:6px"><span class="c">//</span> TIMELINE</div>
+          <ul class="tl">
+            <li>Edited by Ada Fake: Role, Phone numbers<span class="when">19 Nov 2026, 10:42</span></li>
+            <li>Added by Ada Fake<span class="when">19 Nov 2026, 09:12</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <figcaption><span class="label">Good for</span>Seeing every detail and the history at once, like Pipedrive; filters always visible above the table.</figcaption>
+</figure>
+
+<!-- ================= B ================= -->
+<figure>
+  <div class="tag"><b>B</b> Filter column · page with tabs</div>
+  <div class="sub">People list</div>
+  <div class="app">
+    <div class="side">
+      <div class="wm"><span style="color:var(--orange)">✸</span> BARNACLE<span class="u">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">People</span><span>Organisations</span></div>
+      <div class="grp"><span class="c">//</span> ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </div>
+    <div class="main">
+      <div class="ph"><div><div class="label"><span class="c">//</span> CONTACTS</div><h2>People</h2></div><div style="text-align:right"><span class="btn solid">[ ADD PERSON ]</span><div class="count" style="margin-top:6px">// 132 PEOPLE</div></div></div>
+      <div class="row">
+        <div class="filters">
+          <span class="input" style="display:block">Search…</span>
+          <div class="k">Owner</div><div class="opt on">● Ada Fake</div><div class="opt">○ Linus Fake</div>
+          <div class="k">Lead source</div><div class="opt on">● Exec dinner</div><div class="opt">○ Referral</div><div class="opt">○ Inbound</div>
+          <div class="k">Label</div><div class="opt">○ Hot</div><div class="opt">○ VIP</div>
+          <div class="k">Consent</div><div class="opt">○ Subscribed</div><div class="opt">○ Unsubscribed</div>
+          <div class="br lk" style="display:block;margin-top:8px">[ CLEAR FILTERS ]</div>
+        </div>
+        <table style="flex:1">
+          <tr><th>Name ▲</th><th>Organisation</th><th>Email</th><th>Owner</th><th>Consent</th></tr>
+          <tr><td><a>Ada Example</a><span class="em">COO</span></td><td><a>Fakeco Ltd</a></td><td>ada@example.com</td><td>Ada Fake</td><td>Subscribed</td></tr>
+          <tr><td><a>Bob Placeholder</a><span class="em">CEO</span></td><td><a>Sample Gyms</a></td><td>bob@example.net</td><td>Ada Fake</td><td>Subscribed</td></tr>
+          <tr><td><a>Cleo Testperson</a> <span class="badge">Private</span><span class="em">Founder</span></td><td>—</td><td>cleo@example.org</td><td>Ada Fake</td><td>Unsubscribed</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="sub">Person page</div>
+  <div class="app">
+    <div class="side">
+      <div class="wm"><span style="color:var(--orange)">✸</span> BARNACLE<span class="u">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">People</span><span>Organisations</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </div>
+    <div class="main">
+      <div class="ph"><div><div class="label"><span class="c">//</span> PERSON</div><h2>Ada Example</h2><div style="font-size:11px;color:var(--muted)">COO at <span class="lk">Fakeco Ltd</span></div></div><div><span class="btn">[ EDIT ]</span> <span class="btn">[ ARCHIVE ]</span> <span class="btn" style="color:var(--danger);border-color:var(--danger)">[ DELETE ]</span></div></div>
+      <div class="facts">
+        <div><div class="k">Email</div><div class="v">ada@example.com</div></div>
+        <div><div class="k">Phone</div><div class="v">+44 20 7946 0000</div></div>
+        <div><div class="k">Owner</div><div class="v">Ada Fake</div></div>
+        <div><div class="k">Consent</div><div class="v">Subscribed</div></div>
+      </div>
+      <div class="tabs"><span class="on">Timeline</span><span>Details</span></div>
+      <ul class="tl">
+        <li>Edited by Ada Fake: Role, Phone numbers<span class="when">19 Nov 2026, 10:42</span></li>
+        <li>Added by Ada Fake<span class="when">19 Nov 2026, 09:12</span></li>
+      </ul>
+    </div>
+  </div>
+  <figcaption><span class="label">Good for</span>Lots of filter values visible at once; the page focuses on the timeline, with all details one tab away.</figcaption>
+</figure>
+
+<!-- ================= C ================= -->
+<figure>
+  <div class="tag"><b>C</b> Filter row · preview drawer · one-column page</div>
+  <div class="sub">People list, a row selected</div>
+  <div class="app">
+    <div class="side">
+      <div class="wm"><span style="color:var(--orange)">✸</span> BARNACLE<span class="u">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">People</span><span>Organisations</span></div>
+      <div class="grp"><span class="c">//</span> ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </div>
+    <div class="main">
+      <div class="ph"><div><div class="label"><span class="c">//</span> CONTACTS</div><h2>People</h2></div><div class="count">// 132 PEOPLE</div></div>
+      <div class="bar"><span class="input" style="flex:1">Search…</span><span class="sel on">Owner ▾</span><span class="sel">Label ▾</span><span class="sel on">Source ▾</span></div>
+      <table style="width:58%">
+        <tr><th>Name ▲</th><th>Organisation</th><th>Owner</th></tr>
+        <tr class="selrow"><td><a>Ada Example</a><span class="em">ada@example.com</span></td><td>Fakeco Ltd</td><td>Ada Fake</td></tr>
+        <tr><td><a>Bob Placeholder</a><span class="em">bob@example.net</span></td><td>Sample Gyms</td><td>Ada Fake</td></tr>
+        <tr><td><a>Cleo Testperson</a><span class="em">cleo@example.org</span></td><td>—</td><td>Ada Fake</td></tr>
+      </table>
+      <div class="drawer">
+        <div class="k">// PERSON</div><h3>Ada Example</h3>
+        <div class="k">Organisation</div><div class="v"><span class="lk">Fakeco Ltd</span> · COO</div>
+        <div class="k">Email</div><div class="v">ada@example.com</div>
+        <div class="k">Phone</div><div class="v">+44 20 7946 0000</div>
+        <div class="k">Lead source</div><div class="v">Referral</div>
+        <div class="k">Consent</div><div class="v">Subscribed</div>
+        <span class="btn solid">[ OPEN PAGE ]</span>
+      </div>
+    </div>
+  </div>
+  <div class="sub">Person page</div>
+  <div class="app">
+    <div class="side">
+      <div class="wm"><span style="color:var(--orange)">✸</span> BARNACLE<span class="u">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">People</span><span>Organisations</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </div>
+    <div class="main">
+      <div class="ph"><div><div class="label"><span class="c">//</span> PERSON</div><h2>Ada Example</h2></div><div><span class="btn">[ EDIT ]</span> <span class="btn">[ ARCHIVE ]</span></div></div>
+      <div class="label" style="margin-bottom:6px"><span class="c">//</span> DETAILS</div>
+      <div class="cols">
+        <div><div class="k">Organisation</div><div class="v"><span class="lk">Fakeco Ltd</span> · COO</div></div>
+        <div><div class="k">Owner</div><div class="v">Ada Fake</div></div>
+        <div><div class="k">Email</div><div class="v">ada@example.com</div></div>
+        <div><div class="k">Phone</div><div class="v">+44 20 7946 0000</div></div>
+        <div><div class="k">Lead source</div><div class="v">Referral</div></div>
+        <div><div class="k">Consent</div><div class="v">Subscribed</div></div>
+      </div>
+      <div class="label" style="margin:6px 0"><span class="c">//</span> TIMELINE</div>
+      <ul class="tl">
+        <li>Edited by Ada Fake: Role, Phone numbers<span class="when">19 Nov 2026, 10:42</span></li>
+        <li>Added by Ada Fake<span class="when">19 Nov 2026, 09:12</span></li>
+      </ul>
+    </div>
+  </div>
+  <figcaption><span class="label">Good for</span>Checking many people quickly without leaving the list; the full page reads top to bottom.</figcaption>
+</figure>
+
+</div>
+</body>
+</html>
