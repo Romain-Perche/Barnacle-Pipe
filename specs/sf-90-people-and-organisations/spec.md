@@ -155,6 +155,7 @@ An admin opens "Lead sources and labels" in the "// Admin" group and adds, renam
 - In the person form, a user types "Brand New Org" in the organisation field without choosing anything from the list and presses `[ SAVE ]`: the person is saved linked to a new organisation "Brand New Org". Before saving, the field shows "A new organisation "Brand New Org" will be added.".
 - Editing a person linked to "Sample Studios Fake", a user replaces the organisation text with "Fake" and presses `[ SAVE ]` without choosing from the list: the person is saved linked to a new organisation "Fake"; the person is never silently left with no organisation. Clearing the field with `[ CLEAR ]` and saving leaves the person with no organisation.
 - In the organisation field, a user types "Sample" (which only partly matches "Sample Studios Fake") and presses Enter: the field keeps "Sample" and shows that a new organisation "Sample" will be added; it does not switch to "Sample Studios Fake". Typing "sample studios fake" and pressing Enter chooses the existing "Sample Studios Fake".
+- In the person form, a user types "  sample studios fake  " (other case, spaces around it) in the organisation field without choosing from the list and presses `[ SAVE ]`: the person is linked to the existing "Sample Studios Fake", no "will be added" hint shows, and the Organisations list still has exactly one "Sample Studios Fake". Typing the name of an archived organisation in another case and saving shows "<name> already exists." with a link to it, and nothing is saved.
 - After "Ada Example was deleted." shows on the People list, reloading the page no longer shows it.
 - An admin renames a lead source or label to the name of one removed earlier: the form shows "A removed entry already has this name. Add it again to bring it back." and nothing is saved.
 - The person form has no "Last contacted" or "Date added" field; the person's page shows "Last contacted: Never" until later features (email, activities) fill it in.
@@ -175,7 +176,7 @@ An admin opens "Lead sources and labels" in the "// Admin" group and adds, renam
 **Organisations**
 
 - **FR-007**: Signed-in users MUST be able to add, view and edit organisations. An organisation has: name (required, unique ignoring case and surrounding spaces, archived organisations included), website, sector (free text), size (one of 1–10, 11–50, 51–200, 201–1,000, 1,000+, or not set), location (free text), owner (an active user; defaults to whoever adds it) and date added.
-- **FR-008**: When adding or editing a person, users MUST be able to pick an existing organisation by typing part of its name, or create a new one by name in the same step.
+- **FR-008**: When adding or editing a person, users MUST be able to pick an existing organisation by typing part of its name, or create a new one by name in the same step. Text typed but not chosen from the list is saved as shown: it links the non-archived organisation with that name (ignoring case and spaces at the start or end), else adds a new organisation with that name; an empty field means no organisation.
 - **FR-009**: An organisation's page MUST list the people linked to it that the viewer can see, with each person's name, role and main email address, linking to their pages.
 
 **Pages and timeline**

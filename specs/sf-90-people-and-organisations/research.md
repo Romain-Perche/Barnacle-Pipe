@@ -76,9 +76,11 @@ factory, to confirm").
 - **Decision**: the person form gets the non-archived organisations (`id`, `name`) embedded by the server
   page; `OrganisationPicker` filters them as the user types and offers, when no name matches exactly
   (ignoring case and surrounding spaces), "Add organisation '<typed>'". It submits either `organisationId`
-  or `newOrganisationName`. The server resolves `newOrganisationName` against all organisations (archived
-  included): an existing name is refused with `organisation_exists` + link; otherwise the organisation is
-  created in the same transaction, owned by the user.
+  or `newOrganisationName`. With text typed and nothing chosen, it posts the exact match's id or the typed
+  text as `newOrganisationName` and shows "A new organisation "<typed>" will be added." (Fix round 1). The
+  server trims `newOrganisationName` and resolves it against all organisations ignoring case: a non-archived
+  match is linked; an archived match is refused with `organisation_exists` + link; otherwise the
+  organisation is created in the same transaction, owned by the user.
 - **Rationale**: one step, no endpoint to secure; ≤ 500 names is a few KB.
 - **Alternatives considered**: a search endpoint (another access-checked route), native `<datalist>`
   (cannot show the "Add organisation" choice).

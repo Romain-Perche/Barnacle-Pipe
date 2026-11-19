@@ -159,12 +159,16 @@ with no organisation and no message (on edit, the existing link is silently remo
 *partial* match, so a new name that starts like an existing one cannot be added from the keyboard.
 **Cause:** `src/app/(app)/records/OrganisationPicker.tsx` only posts `newOrganisationName` after an explicit
 "Add organisation" choice, and Enter takes `matches[0]`.
-**Fix (what you see is what is saved):** when the text is not empty and no option is chosen, the picker
-posts the existing non-archived organisation whose name matches exactly (case-insensitive, trimmed), else
+**Fix (what you see is what is saved; option A chosen 2026-11-19, matching ignores case and outer spaces):** when the text is not empty and no option is chosen, the picker
+posts the existing non-archived organisation whose name matches ignoring case and spaces at the start or end
+(so "acme ltd " links "Acme Ltd", reply of 2026-11-19), else
 posts the typed text as `newOrganisationName` and shows the hint "A new organisation "<text>" will be
-added." The server already resolves `newOrganisationName` against all organisations (exact non-archived →
-that organisation; exact archived → "<name> already exists." with a link, nothing saved; research.md §7),
-so no server change is needed beyond keeping that. Enter picks only an exact match, else the typed text as
+added." The server matches the same way so a stale embedded list or a form posted without the picker's
+script cannot add a copy: `resolveOrganisation` (`src/server/records/organisations.ts`) trims
+`newOrganisationName`, and when a non-archived organisation has that name ignoring case it links that
+organisation (today it refuses with "<name> already exists."); an archived one with that name is still
+refused with "<name> already exists." and its link, nothing saved (Clarification Q3). research.md §7 is
+updated to say so. Enter picks only an exact match, else the typed text as
 a new name; partial matches stay clickable/tabbable buttons. Empty text (or `[ CLEAR ]`) posts no
 organisation.
 
@@ -181,8 +185,9 @@ organisation.
 
 **Files:** `src/app/(app)/organisations/page.tsx`, `src/server/records/list-query.ts` (if the helper goes
 there), `src/app/(app)/records/OrganisationPicker.tsx`, `src/app/(app)/records/DeleteConfirm.tsx`,
-`src/server/messages.ts`, `src/proxy.ts`, `src/server/records/choices.ts`; tests in `tests/unit/list-query.test.ts`,
-`tests/integration/choices.test.ts`, `tests/e2e/lists.spec.ts`, `tests/e2e/people.spec.ts`,
+`src/server/messages.ts`, `src/proxy.ts`, `src/server/records/choices.ts`, `src/server/records/organisations.ts`; tests in `tests/unit/list-query.test.ts`,
+`tests/integration/choices.test.ts`, the person/organisation integration test that covers
+`resolveOrganisation`, `tests/e2e/lists.spec.ts`, `tests/e2e/people.spec.ts`,
 `tests/e2e/archive-delete.spec.ts`. No new dependency, no migration, no new outside service.
 
 ## Outside services
