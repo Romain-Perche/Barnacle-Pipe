@@ -201,3 +201,33 @@ checkout gets failing tests.
 (error text), `tests/e2e/fake-data.spec.ts`, `playwright.config.ts`, `README.md`, `docs/DECISIONS.md`,
 `src/app/(app)/admin/users/page.tsx`, a new test under `tests/` (T048), and `.factory/test-env.md`
 (drop the "Fresh checkout notes" workaround once fixed). No new dependency.
+
+## Fix round 2
+
+**Problem** (security review, MEDIUM, open redirect, FR-009): `isSafeNext()` in `src/server/auth/rules.ts`
+rejects only `next` values that start with `//` or `/\`. A value such as `"/\t/evil.com"`, `"/\n/evil.com"`,
+`"/\r/evil.com"` or `"/\t\\evil.com"` passes. `new URL(next, req.url)` then strips the tab/CR/LF (WHATWG URL
+rule) and resolves `//evil.com`, so the response is `Location: https://evil.com/`. Paths:
+`/auth/end?next=%2F%09%2Fevil.com` with a valid session (route.ts line 16), and
+`/auth/google/start?next=%2F%0A%2Fevil.com`, stored in the OAuth cookie and used by the callback after a
+real sign-in. Same guard in `sign-in/page.tsx`, `dev/fake-google`, and `session.ts` (x-pathname).
+
+**Cause**: the guard checks the raw string, but the browser-style URL parser removes ASCII tab, LF and CR
+anywhere in the input and treats `\` like `/`. Observed with Node:
+`new URL("/\t/evil.com", "https://crm.example/auth/end").href === "https://evil.com/"` (also `\n`, `\r`,
+`/\t\\evil.com`). Percent-encoded forms (`/%09/evil.com`) stay on the app.
+
+**Fix** (one place, every caller benefits): in `isSafeNext()`, return `"/"` when `next` contains any
+ASCII control character (U+0000–U+001F, U+007F) or any backslash, before the other checks:
+`if (/[\x00-\x1f\x7f\\]/.test(next)) return "/";`. Keep the existing `//`, `/\` and `/auth` checks.
+Real in-app paths never hold these characters raw (the app's own links percent-encode them), so FR-009
+is unchanged for real pages. No change to the routes. No new dependency.
+
+**Check**: unit tests (pure function) for the four reported values plus `"/\x00/evil.com"`, `"/\x7f"`,
+`"/admin\\users"`, and a property-style check that, for every accepted value, `new URL(isSafeNext(v),
+"https://crm.example/x").origin === "https://crm.example"`. Integration/e2e check through the real route:
+`GET /auth/end?next=%2F%09%2Fevil.com` with a valid session answers a redirect whose `Location` is on the
+app's own origin (path `/`). Spec edge case added.
+
+**Files to change**: `src/server/auth/rules.ts`, `tests/unit/rules.test.ts`, one route-level test under
+`tests/integration` or `tests/e2e`.

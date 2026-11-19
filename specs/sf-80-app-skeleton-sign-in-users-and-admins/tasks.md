@@ -236,3 +236,11 @@ Task: "Implement src/app/auth/end/route.ts"
 - [x] T052 [P] Add three lines to `docs/DECISIONS.md`, each ending `(SF-80)`: the Users page uses design A (a table with actions on each row, the add field above it); every table has Row Level Security on with no policies, so Supabase's Data API cannot read or write app data; users are deactivated, never deleted
 - [x] T053 [P] [US2] Users page header: singular for 1 ("1 USER · 1 ADMIN"), plural otherwise; add a unit or e2e check (`// covers US2 scenario 1`)
 - [x] T054 In a fresh clone with the README's `.env.local` and no `.factory/schemas/`, follow the README: `npm test`, `npm run test:e2e` and `npm run typecheck` report 0 failures
+
+---
+
+## Fix round 2: no open redirect through control characters in `next` (FR-009, security review)
+
+- [ ] T055 [US1] Write the failing checks first (`// covers FR-009, edge case "next with a tab or newline"`): (a) in `tests/unit/rules.test.ts`, `isSafeNext` returns `"/"` for `"/\t/evil.com"`, `"/\n/evil.com"`, `"/\r/evil.com"`, `"/\t\\evil.com"`, `"/\x00/evil.com"`, `"/\x7f"` and `"/admin\\users"`, and still keeps `"/admin/users?error=duplicate"` and `"/%09/evil.com"`-style encoded paths only if they resolve on the app; plus a loop asserting that for every test input, `new URL(isSafeNext(v), "https://crm.example/x").origin === "https://crm.example"`; (b) a route-level check: signed in (fake login), `GET /auth/end?next=%2F%09%2Fevil.com` without following redirects answers a redirect whose `Location` has the app's own origin and path `/`. Both fail now (the unit returns the value unchanged; the route answers `https://evil.com/`)
+- [ ] T056 [US1] In `isSafeNext()` (`src/server/auth/rules.ts`), return `"/"` when `next` contains any ASCII control character (U+0000–U+001F, U+007F) or a backslash, before the existing checks; keep the `//`, `/\` and `/auth` rules. No route changes
+- [ ] T057 Run `npm test`, `npm run test:e2e` and `npm run typecheck`: 0 failures
