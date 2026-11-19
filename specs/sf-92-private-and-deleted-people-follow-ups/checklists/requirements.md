@@ -32,5 +32,4 @@
 ## Notes
 
 - Validation passed on the first iteration.
-- No [NEEDS CLARIFICATION] markers. Three informed defaults are marked "(decided by the factory, to confirm)" in Assumptions; `/speckit-clarify` should confirm them:
-  what "frees the email addresses" means, whether the owner can change "Private", and whether events about a person who was private when deleted are hidden.
+- No [NEEDS CLARIFICATION] markers. Clarify session 2026-11-19 answered 3 questions (design B for the hand-over, creator and owner change "Private", addresses kept for the new owner to manage); recorded in spec.md Clarifications.

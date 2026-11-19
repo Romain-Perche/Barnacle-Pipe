@@ -8,6 +8,14 @@
 
 **Input**: User description: "Private and deleted people: follow-ups. Needs SF-90 merged first. Changes to the people rules from SF-90: a private person is also visible to their owner, not only their creator. Deleting a person keeps the events about them on other records, without their name (for example "A deleted person was linked by Linus Fake"). An admin can hand a deactivated user's private people to another user, who becomes their owner. This also frees the email addresses those people hold."
 
+## Clarifications
+
+### Session 2026-11-19
+
+- Q: Which design for handing over a deactivated user's private people on the Users page? → A: Design: B, `[ HAND OVER ]` opens a panel above the Users table with the user choice and the question "Hand Alan Fake's 2 private people to Margaret Fake?" (see `design-options.html`).
+- Q: Who can turn "Private" on or off for a person? → A: The creator and the current owner.
+- Q: What does "frees the email addresses" mean after a hand-over? → A: The new owner sees the people and their addresses and can remove an address or make the person shared; nothing is removed automatically.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The owner of a private person sees them (Priority: P1)
@@ -20,7 +28,7 @@ A team member adds a contact, marks them private and makes a colleague their own
 
 **Acceptance Scenarios**:
 
-1. **Given** user A adds "Ada Example", ticks "Private" and chooses B as owner, **When** B opens the People list, searches "Ada", opens the person's organisation page, opens the preview drawer or opens Ada's page address, **Then** Ada appears everywhere A would see her, with the "Private" badge, and counts the organisation's people including her.
+1. **Given** user A adds "Ada Example", ticks "Private" and chooses B as owner, **When** B opens the People list, searches "Ada", opens the person's organisation page, opens the preview drawer or opens Ada's page address, **Then** Ada appears everywhere A would see her, with the "Private" badge, and the organisation's people count includes her.
 2. **Given** the same private person, **When** user C or an admin (neither creator nor owner) opens any list, search, organisation page, drawer or Ada's page address, **Then** Ada does not appear, the organisation's people count excludes her and her page address shows "Page not found." (unchanged from SF-90).
 3. **Given** B owns private Ada (created by A), **When** B edits her role and saves, **Then** the page shows the new role and the timeline shows "Edited by <B's name>: Role".
 4. **Given** B owns private Ada, **When** B opens the edit form, **Then** the "Private" option is offered to B as it is to A; when B unticks it and saves, Ada becomes visible to the whole team and the timeline shows "Edited by <B's name>: Private".
@@ -57,11 +65,12 @@ When someone leaves, an admin deactivates them. Their private people are then se
 **Acceptance Scenarios**:
 
 1. **Given** deactivated user Alan Fake owns 2 private people, **When** an admin opens the Users page, **Then** Alan's row shows "2 private people" and `[ HAND OVER ]`; the admin is not shown their names or any other detail.
-2. **Given** that row, **When** the admin presses `[ HAND OVER ]`, chooses Margaret Fake from the list of active users and confirms "Hand Alan Fake's 2 private people to Margaret Fake?", **Then** the Users page shows "2 private people handed to Margaret Fake." and Alan's row no longer shows a count or `[ HAND OVER ]`.
-3. **Given** the handover is done, **When** Margaret opens the People list, filters by owner "Margaret Fake" or opens one of those people, **Then** both people appear, stay private, show Margaret as owner and their timelines show "Handed to Margaret Fake by <admin's name>".
-4. **Given** the handover is done and one of the people holds `secret@example.com`, **When** Margaret adds a person with that address, **Then** the form shows "<name> already has this email address." with a link to the existing person; after Margaret removes `secret@example.com` from that person and saves, Linus Fake adds a new person with `secret@example.com` and it saves and opens the new person's page.
-5. **Given** an active user, or a deactivated user who owns no private people, **When** an admin views the Users page, **Then** their row has no `[ HAND OVER ]`.
-6. **Given** a signed-in user who is not an admin, **When** they send a handover request directly, **Then** they see "You don't have access to this page." and nothing changes.
+2. **Given** that row, **When** the admin presses `[ HAND OVER ]`, **Then** a panel opens above the Users table with a choice of active users (Alan Fake not offered), `[ HAND OVER ]`, `[ CANCEL ]` and the line "They stay private. <chosen user> becomes their owner and can see them. You will not see who they are."; after choosing Margaret Fake it asks "Hand Alan Fake's 2 private people to Margaret Fake?".
+3. **Given** that panel with Margaret Fake chosen, **When** the admin presses `[ HAND OVER ]` in the panel, **Then** the Users page shows "2 private people handed to Margaret Fake." and Alan's row no longer shows a count or `[ HAND OVER ]`.
+4. **Given** the handover is done, **When** Margaret opens the People list, filters by owner "Margaret Fake" or opens one of those people, **Then** both people appear, stay private, show Margaret as owner and their timelines show "Handed to Margaret Fake by <admin's name>".
+5. **Given** the handover is done and one of the people holds `secret@example.com`, **When** Margaret adds a person with that address, **Then** the form shows "<name> already has this email address." with a link to the existing person; after Margaret removes `secret@example.com` from that person and saves, Linus Fake adds a new person with `secret@example.com` and it saves and opens the new person's page.
+6. **Given** an active user, or a deactivated user who owns no private people, **When** an admin views the Users page, **Then** their row has no `[ HAND OVER ]`.
+7. **Given** a signed-in user who is not an admin, **When** they send a handover request directly, **Then** they see "You don't have access to this page." and nothing changes.
 
 ---
 
@@ -69,6 +78,8 @@ When someone leaves, an admin deactivates them. Their private people are then se
 
 - A private person whose creator is deactivated but whose owner is active: the owner still sees and manages them; they are not counted as the deactivated user's private people and are not handed over.
 - A private person created by active user A and owned by deactivated user Alan: counted as Alan's and handed over; A still sees them afterwards as their creator.
+- The admin presses `[ CANCEL ]` in the hand-over panel: the panel closes, Alan's row still shows "2 private people" and `[ HAND OVER ]`, and nobody's people change.
+- The admin presses `[ HAND OVER ]` in the panel without choosing a user: the panel stays open with "Choose an active user." and nothing is handed over.
 - An admin hands over to themselves: allowed (they are an active user); the admin then sees those people as their owner.
 - The chosen recipient is deactivated between opening the form and confirming: nothing is handed over and the form shows "Choose an active user.".
 - A request to hand over an active user's private people, or to hand them to the deactivated user themselves: refused with "Choose an active user." or "Only a deactivated user's private people can be handed over.", nothing changes.
@@ -100,7 +111,7 @@ When someone leaves, an admin deactivates them. Their private people are then se
 **Handing over a deactivated user's private people**
 
 - **FR-009**: The Users page MUST show, on the row of each deactivated user who owns at least one private person, the number of those people ("1 private person", "N private people") and `[ HAND OVER ]`. No other detail about those people may be shown to the admin.
-- **FR-010**: `[ HAND OVER ]` MUST let the admin choose one active user and confirm; on confirming, every private person the deactivated user owns at that moment MUST get the chosen user as owner, stay private and keep their creator, all at once (either all are handed over or none).
+- **FR-010**: `[ HAND OVER ]` MUST open a panel above the Users table (design B, like the delete confirmation on a record page) where the admin chooses one active user and confirms "Hand <deactivated user>'s N private people to <chosen user>?"; on confirming, every private person the deactivated user owns at that moment MUST get the chosen user as owner, stay private and keep their creator, all at once (either all are handed over or none).
 - **FR-011**: Each handed-over person's timeline MUST show "Handed to <new owner> by <admin>" with the date and time; the Users page MUST show "N private people handed to <name>.".
 - **FR-012**: Only admins MAY hand over; the app MUST refuse handover requests from non-admins ("You don't have access to this page."), to a user who is not active ("Choose an active user."), or for a user who is not deactivated ("Only a deactivated user's private people can be handed over."), on every request, not only by hiding the button.
 - **FR-013**: After a handover the new owner MUST be able to see and manage those people, including their email addresses and private status, so the addresses they hold no longer block the team without anyone able to act on them.
@@ -131,8 +142,8 @@ When someone leaves, an admin deactivates them. Their private people are then se
 
 - Builds on SF-90 (merged): every SF-90 rule not changed here stays as it is.
 - "A deactivated user's private people" means the private people they own. People they created but someone active owns are already visible to that owner and need no handover; people owned by them but created by an active user are handed over too (their creator keeps sight of them).
-- "Frees the email addresses" means: once an active user owns those people, the addresses are no longer held by contacts nobody can see. The new owner is named in duplicate messages and can remove the address or make the person not private. The addresses are not removed automatically, and other users still see the anonymous duplicate message while the person stays private. (decided by the factory, to confirm)
-- The owner, as well as the creator, can change "Private". Otherwise handed-over people could never be made shared again. This widens the DECISIONS line "the person who created a contact … can set it to private". (decided by the factory, to confirm)
+- "Frees the email addresses" means: once an active user owns those people, the addresses are no longer held by contacts nobody can see. The new owner is named in duplicate messages and can remove the address or make the person not private. The addresses are not removed automatically, and other users still see the anonymous duplicate message while the person stays private (Clarifications).
+- The owner, as well as the creator, can change "Private". Otherwise handed-over people could never be made shared again. This widens the DECISIONS line "the person who created a contact … can set it to private" (Clarifications; FR-014 updates DECISIONS).
 - Events about a person who was private when deleted are hidden from everyone: DECISIONS says a private contact is hidden from everyone but its creator, and even an anonymous event would show that one existed.
 - The admin sees only how many private people a deactivated user owns, never who they are, so DECISIONS ("hidden from everyone … admins included") still holds.
 - Handover is all at once; choosing some of a user's private people, or handing over their shared people or organisations, is out of scope (shared records can already be reassigned by anyone).
