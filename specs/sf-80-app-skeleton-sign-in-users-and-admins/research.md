@@ -89,8 +89,11 @@ signed in.
 
 ## 6. Fake Google login and environment gating
 
-- `isFakeAllowed()` = `process.env.APP_ENV === "development" || process.env.APP_ENV === "test"`, exact
-  string compare, nothing else (FR-026). Used by the fake login page (`notFound()` → "Page not found."),
+- `isFakeAllowed()` = (`process.env.APP_ENV === "development" || process.env.APP_ENV === "test"`, exact
+  string compare) **and** `process.env.VERCEL_ENV` is neither `"production"` nor `"preview"` (FR-026,
+  reviewer request 2026-11-19). A mistyped `APP_ENV` on a Vercel deployment therefore can never open the
+  fake login. `VERCEL_ENV` unset or `"development"` (`vercel dev` on a laptop) leaves the `APP_ENV` rule
+  alone. Used by the fake login page (`notFound()` → "Page not found."),
   its server actions, the sign-in page link, and `scripts/seed.ts`.
 - `/dev/fake-google` mimics Google's chooser: one button per user in the database (name + email), a form
   for any email and name, and `[ CANCEL ]` → `/sign-in?error=cancelled`. It calls the same
@@ -111,9 +114,28 @@ signed in.
 
 - **Decision**: `postgres` (postgres.js) 4.1 with tagged-template SQL; one module-level client,
   `prepare: false` (required by Supabase's transaction-mode pooler), `max: 5`, `idle_timeout: 20`.
-- **Migrations**: numbered plain SQL files in `migrations/`; `scripts/migrate.ts` takes
-  `pg_advisory_lock`, creates `schema_migrations(name, applied_at)` if missing, applies each new file in
-  its own transaction, prints what it applied. `npm run db:migrate`. Never called by the app.
+- **Migrations**: numbered plain SQL files in `migrations/`; `npm run db:migrate`; never called by the
+  app. `scripts/migrate.ts` reads the file list, then for each file runs ONE transaction (`sql.begin`):
+  1. `select pg_advisory_xact_lock(<fixed 64-bit key>)` — waits for any other migration run;
+  2. `create table if not exists schema_migrations (…)` and
+     `alter table schema_migrations enable row level security` (idempotent);
+  3. skip the file if its name is already in `schema_migrations` (another run applied it while we waited);
+  4. run the file (`tx.unsafe(fileText)`), insert its name, commit.
+  It prints each applied name, or "Database is up to date." when none was applied.
+- **Why a transaction-level lock** (reviewer request 2026-11-19): in production `DATABASE_URL` is
+  Supabase's transaction-mode pooler (Supavisor). A session-level `pg_advisory_lock` belongs to the server
+  connection, and the pooler hands that connection back to its pool when the transaction ends; the unlock
+  can then go to a different server connection, the lock stays held after the command exits, and the next
+  deploy's migration waits forever. `pg_advisory_xact_lock` is released by Postgres itself at commit or
+  rollback, and a transaction stays on one server connection in transaction mode, so nothing outlives the
+  transaction. No second connection setting is needed.
+- **Rule for migration files**: every statement must be allowed inside a transaction (no
+  `create index concurrently`, no `vacuum`). Every `create table` is followed in the same file by
+  `alter table … enable row level security` (§12).
+- **Alternatives**: a separate `MIGRATION_DATABASE_URL` on Supabase's direct or session-mode connection
+  with the session lock (rejected: one more secret to set in Vercel, and the direct connection is IPv6-only
+  on Supabase's free plan, which Vercel's build cannot always reach); one transaction for all files
+  (rejected: a long lock, and one failed file would undo the files before it).
 - **Vercel**: `"vercel-build"` script runs `db:migrate` only when `VERCEL_ENV=production`, then
   `next build`. Previews skip it and have no `DATABASE_URL`.
 - **Scripts runner**: `tsx` runs `scripts/*.ts` so they can import `src/server/*` with the `@/` alias.
@@ -150,7 +172,26 @@ signed in.
 - `npm test` → Vitest: unit tests for `rules.ts`, `env.ts`, email normalisation, `isSafeNext`; integration
   tests for `completeSignIn`, sessions and `users.ts` against `DATABASE_URL` of a local test database
   (global setup runs migrations, each test truncates tables).
+- Migration tests (integration): on a scratch database the test creates and drops, run the migration
+  command twice in a row, then twice at the same time; every run exits 0 within 30 s, each file is in
+  `schema_migrations` once, and `pg_locks` shows no advisory lock afterwards.
+- RLS tests (integration): every table in `public` has `relrowsecurity = true` and `pg_policies` is
+  empty for `public` (this test also covers tables added by later features); as a non-owner role with
+  `select, insert` granted, a `select` returns 0 rows and an `insert` is refused.
 - `npm run test:e2e` → Playwright (Chromium): `webServer` starts the app with `APP_ENV=test`; global setup
   migrates and seeds; tests sign in through `/dev/fake-google`. Covers sign-in, sign-out, Users page
   actions, deactivation, gating, layout and not-found.
 - The exact database and browser setup in the factory VM is Build's test recipe, not this plan.
+
+## 12. Row Level Security on every table
+
+- **Decision** (reviewer request 2026-11-19): every `create table` in `migrations/` is followed by
+  `alter table <t> enable row level security;`, with no policy; `scripts/migrate.ts` does the same for
+  `schema_migrations`. Not `force row level security`.
+- **Rationale**: Supabase exposes the `public` schema through its Data API (PostgREST) as the `anon` and
+  `authenticated` roles. With RLS enabled and no policy, those roles see no rows and cannot write. The app
+  connects as the table owner, and an owner is not subject to RLS unless it is forced, so the app's own
+  queries are unchanged. Locally there is no Data API; a test stands in for it with a non-owner role.
+- **Alternatives**: revoking grants from `anon`/`authenticated` (rejected: Supabase's default privileges
+  re-grant on new tables, and those roles do not exist in a local Postgres); a private schema (rejected:
+  more setup for every later feature).

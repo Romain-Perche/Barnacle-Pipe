@@ -2,6 +2,11 @@
 
 One migration, `migrations/0001_users_sessions.sql`. Postgres. All times are `timestamptz` (UTC).
 
+**Row Level Security** (FR-032): the migration ends with `alter table users enable row level security;`,
+the same for `sessions` and `user_changes`, and no policy. `scripts/migrate.ts` does the same for
+`schema_migrations`. The app's database user owns the tables, so its own queries are not affected; any
+other role (Supabase's Data API) sees no rows and cannot write. Later migrations follow the same rule.
+
 ## users
 
 | Column | Type | Rules |
@@ -69,7 +74,9 @@ Append-only (FR-018). Not shown in the UI in this feature.
 
 ## schema_migrations
 
-Created by `scripts/migrate.ts`: `name text primary key`, `applied_at timestamptz not null default now()`.
+Created by `scripts/migrate.ts`: `name text primary key`, `applied_at timestamptz not null default now()`,
+Row Level Security enabled. Written inside each migration's transaction, under `pg_advisory_xact_lock`
+(research.md §8).
 
 ## Validation summary
 

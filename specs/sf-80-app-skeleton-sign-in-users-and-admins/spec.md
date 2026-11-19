@@ -19,6 +19,9 @@
 - Q: Does `[ Sign out ]` end the session on every browser or only the current one? → A: Only the current browser; deactivation ends all of the user's sessions (decided by the factory, to confirm)
 - Q: In development and test, what does the sign-in page offer? → A: The normal "Sign in with Google" button plus a `[ FAKE GOOGLE LOGIN ]` link; the link never appears in any other environment (decided by the factory, to confirm)
 - Q: Which fake users does the fake data command create? → A: Clearly fake names, not the real team: Ada Fake and Grace Fake (admins), Linus Fake and Margaret Fake (users), Alan Fake (deactivated), all @barnacle.ai (decided by the factory, to confirm)
+- Q: How must the migration command lock against a second run, given that production reaches the database through Supabase's transaction pooler? → A: Not with a session-level lock, which can stay held on a pooled server connection after the command exits and make the next deploy's migration wait forever. Each migration takes a transaction-level lock inside its own transaction, and a test shows that two migration runs in a row both finish. (alexis@barnacle.ai)
+- Q: Can Supabase's Data API read or write the app's tables? → A: No. Row Level Security is enabled, with no policies, on every table the migrations create; the app's own database user owns the tables and is not affected. (alexis@barnacle.ai)
+- Q: Can the fake Google login and the fake data command work on a Vercel deployment? → A: No. They are refused when VERCEL_ENV is "production" or "preview", whatever APP_ENV says. (alexis@barnacle.ai)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -77,7 +80,7 @@ A developer (or the automated build factory) runs a single command on a local or
 1. **Given** an empty local or test copy of the app, **When** the developer runs the fake data command, **Then** the command prints the users it created (at least two admins, at least two regular users and one deactivated user, all @barnacle.ai), and signed in as a fake admin the Users page shows those rows.
 2. **Given** a copy that already has fake data, **When** the command is run again, **Then** it ends without an error and the Users page shows the same number of rows as before.
 3. **Given** a running local or test copy with fake data, **When** the developer uses the fake Google login, **Then** they can pick a fake user from a list or type any email address and name; picking an active user shows the home page, and picking the deactivated user or typing an unlisted address shows the same messages as real sign-in.
-4. **Given** an app copy whose environment is anything other than exactly "development" or "test" (including when the environment is not set), **When** someone runs the fake data command or tries the fake Google login, **Then** the command prints "Fake data can only be loaded when APP_ENV is development or test." and changes nothing, and the sign-in page shows no fake login option (opening the fake login address directly shows "Page not found.").
+4. **Given** an app copy whose environment is anything other than exactly "development" or "test" (including when the environment is not set), or a Vercel production or preview deployment whatever its environment says, **When** someone runs the fake data command or tries the fake Google login, **Then** the command prints "Fake data can only be loaded when APP_ENV is development or test." and changes nothing, and the sign-in page shows no fake login option (opening the fake login address directly shows "Page not found.").
 
 ---
 
@@ -110,6 +113,10 @@ A developer building the next feature (for example Pipelines and deals) adds a n
 - An admin removes their own admin rights while another active admin exists: the home page is shown and their sidebar has no "// Admin" group.
 - Admins A and B both have the Users page open. A removes B's admin rights; B, without reloading, then presses the button to remove A's admin rights: B sees "You don't have access to this page." and A's row still shows "Admin".
 - A preview deployment is opened: the sign-in page shows "Sign-in is turned off on preview deployments." and no sign-in button.
+- The fake data command is run with APP_ENV "development" but VERCEL_ENV "production" (or "preview"): it prints "Fake data can only be loaded when APP_ENV is development or test." and changes nothing; the app started with the same settings shows no `[ FAKE GOOGLE LOGIN ]` link, and opening the fake login address shows "Page not found.".
+- The migration command is run twice in a row on the same database: both runs finish within 30 seconds; the second prints "Database is up to date.".
+- Two migration commands start at the same time on an empty database: both finish within 30 seconds, each migration is applied exactly once, and no database lock is still held after both have exited.
+- A database role other than the app's own (as Supabase's Data API uses) reads any app table: it gets no rows; it tries to add a row: the database refuses it.
 - Someone opens an app address that does not exist while signed in: the page shows "Page not found." inside the normal sidebar layout, with a link back to Home.
 
 ## Requirements *(mandatory)*
@@ -152,12 +159,13 @@ A developer building the next feature (for example Pipelines and deals) adds a n
 
 - **FR-024**: The app MUST provide a fake Google login that lets a developer or test sign in as a chosen user without a real Google account, applying the same access rules as real sign-in.
 - **FR-025**: The app MUST provide a single command that loads fake data; in this feature it creates fake users (at least two admins, at least two regular users and one deactivated user) and later features extend it. Running it twice MUST NOT create duplicates.
-- **FR-026**: The fake Google login and the fake data command MUST work only when the app environment setting is exactly "development" or "test", and MUST be refused everywhere else, including when the setting is missing.
-- **FR-027**: The app MUST provide an explicit command to bring the database structure up to date, separate from starting the app; it MUST NOT happen automatically when the app starts.
+- **FR-026**: The fake Google login and the fake data command MUST work only when the app environment setting is exactly "development" or "test", and MUST be refused everywhere else, including when the setting is missing. They MUST also be refused on a Vercel production or preview deployment (VERCEL_ENV "production" or "preview"), whatever the app environment setting says.
+- **FR-027**: The app MUST provide an explicit command to bring the database structure up to date, separate from starting the app; it MUST NOT happen automatically when the app starts. Its lock against a second run MUST be released when each migration's transaction ends (never held by a pooled connection after the command exits), so a run started after another has finished, or alongside it, always finishes.
 - **FR-028**: Preview deployments MUST only build the app: no database is used and nobody can sign in.
 - **FR-029**: All secrets (Google client secret, database credentials, session secrets) MUST come from settings outside the repository; none may be committed.
 - **FR-030**: The repository MUST include automated tests for the sign-in rules and user management, browser tests covering sign-in, sign-out and the Users page, and a single command to run each.
 - **FR-031**: The README MUST explain how to set up a local copy, update the database, load fake data, run the app and run the tests, and list every setting the app reads.
+- **FR-032**: Every table the migrations create MUST have Row Level Security enabled with no policies, so Supabase's Data API cannot read or write it. The app's own database user owns the tables and keeps full access.
 
 ### Key Entities
 
@@ -175,7 +183,9 @@ A developer building the next feature (for example Pipelines and deals) adds a n
 - **SC-004**: An admin can add a new teammate and that person can sign in, in under 1 minute in total.
 - **SC-005**: A deactivated user loses access on their very next action, with no wait.
 - **SC-006**: A new developer with no Google, Vercel or Supabase account can go from a fresh checkout to a running local app with fake data, signed in as a fake admin, by following the README in under 15 minutes.
-- **SC-007**: The fake login and fake data command are refused in 100% of tested environments other than "development" and "test", including an unset environment.
+- **SC-007**: The fake login and fake data command are refused in 100% of tested environments other than "development" and "test", including an unset environment, and on every tested Vercel production or preview setting.
+- **SC-009**: Two migration runs in a row, and two at the same time, both finish in 100% of automated test runs.
+- **SC-010**: 100% of the tables the migrations create have Row Level Security enabled, checked by an automated test that covers tables added by later features too.
 - **SC-008**: The CRM can never reach a state with zero active admins through the app.
 
 ## Assumptions

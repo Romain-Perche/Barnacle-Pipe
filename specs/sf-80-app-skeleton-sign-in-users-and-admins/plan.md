@@ -20,7 +20,7 @@ registries: the sidebar navigation list and the fake-data seeder list.
 
 **Primary Dependencies**: Next.js 16.4 (App Router, server components, server actions, `proxy.ts`), React 19.3, `postgres` (postgres.js) 4.1 for SQL, `geist` fonts. No auth library, no ORM, no CSS framework (see research.md).
 
-**Storage**: PostgreSQL — local Postgres for development and tests, Supabase Postgres through its connection pooler in production. Schema managed by plain SQL migration files and an explicit `npm run db:migrate` command.
+**Storage**: PostgreSQL — local Postgres for development and tests, Supabase Postgres through its connection pooler in production. Schema managed by plain SQL migration files and an explicit `npm run db:migrate` command; each migration runs in its own transaction under `pg_advisory_xact_lock` (never a session-level lock, which the transaction pooler can leave held). Row Level Security is enabled, with no policies, on every table so Supabase's Data API cannot read or write them.
 
 **Testing**: Vitest 5 (unit tests for the pure rules, integration tests against a real local Postgres test database), Playwright 1.65 (browser tests through the fake Google login).
 
@@ -47,11 +47,12 @@ is checked against them instead:
 | TypeScript + Postgres; Vercel + Supabase; local Postgres for dev/tests | Next.js/TS, postgres.js, local Postgres in README/tests | ✅ |
 | Next.js App Router, server components by default, client only where needed | Only the sidebar link (active highlight) is a client component | ✅ |
 | No Docker image, no long-running server; Supabase through its pooler | Serverless functions; `prepare: false` for the transaction pooler | ✅ |
-| Migrations: explicit command, run in production build, never at start, never on previews | `db:migrate` script; `vercel-build` runs it only when `VERCEL_ENV=production` | ✅ |
+| Migrations: explicit command, run in production build, never at start, never on previews | `db:migrate` script; `vercel-build` runs it only when `VERCEL_ENV=production`; transaction-level lock per migration, safe through the pooler | ✅ |
+| Supabase's Data API must not reach app data (review 2026-11-19) | Row Level Security enabled, no policies, on every table; test checks all tables | ✅ |
 | Previews only build: no database, nobody signs in | `VERCEL_ENV=preview` short-circuits before any DB access | ✅ |
 | Own Google sign-in and database sessions, not Supabase Auth | Hand-written OAuth code flow + `sessions` table | ✅ |
 | Only admin-added barnacle.ai accounts + first admin from settings | `decideSignIn` rule + `FIRST_ADMIN_EMAIL` | ✅ |
-| Fake login & fake data only when `APP_ENV` is exactly development/test | Single `isFakeAllowed()` check used by page, action and command | ✅ |
+| Fake login & fake data only when `APP_ENV` is exactly development/test | Single `isFakeAllowed()` check used by page, action and command; also false when `VERCEL_ENV` is `production` or `preview` | ✅ |
 | Secrets out of the repo; every outside service via settings with a fake | `.env.example` only; fake Google login | ✅ |
 | Playwright browser tests with a command | `npm run test:e2e` | ✅ |
 | Design B sidebar | Shared `(app)` layout | ✅ |
@@ -87,10 +88,10 @@ playwright.config.ts
 README.md                # setup, migrate, seed, run, test, settings list
 
 migrations/
-└── 0001_users_sessions.sql   # users, sessions, user_changes
+└── 0001_users_sessions.sql   # users, sessions, user_changes; RLS enabled on each, no policies
 
 scripts/
-├── migrate.ts           # applies migrations/*.sql in order, records them in schema_migrations
+├── migrate.ts           # per file: one transaction, pg_advisory_xact_lock, skip if applied, apply, record
 └── seed.ts              # fake data command: APP_ENV gate, then runs every seeder
 
 src/
@@ -120,7 +121,7 @@ src/
 │           ├── page.tsx     # design A table
 │           └── actions.ts   # addUser, makeAdmin, removeAdmin, deactivate, reactivate
 ├── server/
-│   ├── env.ts           # reads/validates settings; isFakeAllowed(); isPreview()
+│   ├── env.ts           # reads/validates settings; isFakeAllowed() (APP_ENV dev/test AND VERCEL_ENV not production/preview); isPreview()
 │   ├── db.ts            # postgres.js client (singleton, prepare:false)
 │   ├── auth/
 │   │   ├── rules.ts     # PURE: decideSignIn(), normalizeEmail(), isSafeNext(), firstName()
@@ -135,7 +136,7 @@ src/
 
 tests/
 ├── unit/                # rules.ts, env gate, email normalisation, safe next
-├── integration/         # sign-in, sessions, users.ts against the test database
+├── integration/         # sign-in, sessions, users.ts, migrations (twice in a row / at once), RLS on every table
 └── e2e/                 # Playwright: sign-in, sign-out, Users page, gating, layout
 ```
 

@@ -78,4 +78,5 @@ An unknown `error` code in a URL shows nothing. Text from the URL is never displ
   of each server action.
 - Add one entry to `mainNav` or `adminNav` in `src/app/(app)/nav.ts` (`{ href, label }`).
 - Add a seeder to the list in `src/seed/index.ts`.
-- Add a numbered SQL file to `migrations/`.
+- Add a numbered SQL file to `migrations/`: only statements allowed inside a transaction, and
+  `alter table … enable row level security` after every `create table` (a test fails otherwise).
