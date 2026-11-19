@@ -47,3 +47,17 @@ describe("countLabel with an irregular plural", () => {
     expect(countLabel(2, "ORGANISATION")).toBe("2 ORGANISATIONS");
   });
 });
+
+// covers FR-020 (money in GBP), edge case "whole pounds as £4,000, otherwise £4,000.50; empty value shows —" (SF-93)
+import { formatMoney } from "@/server/format";
+describe("formatMoney", () => {
+  it("writes GBP with pence only when there are some", () => {
+    expect(formatMoney(null)).toBe("—");
+    expect(formatMoney(0)).toBe("£0");
+    expect(formatMoney(400000)).toBe("£4,000");
+    expect(formatMoney(400050)).toBe("£4,000.50");
+    expect(formatMoney(1250000)).toBe("£12,500");
+    expect(formatMoney(5)).toBe("£0.05");
+    expect(formatMoney(999999999999)).toBe("£9,999,999,999.99");
+  });
+});

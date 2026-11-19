@@ -1,10 +1,10 @@
-// One-shot notice after a delete ("Ada Example was deleted."), research.md §8. The name is the server's copy
+// One-shot notice after a delete ("Ada Example was deleted.") or a save that hides a private deal, research.md §8. The name is the server's copy
 // of the deleted record, never text from the URL; the cookie lives 60 seconds and
 // src/proxy.ts deletes it on the next page load, so it shows once.
 import { cookies } from "next/headers";
 import { templates } from "@/server/messages";
 import { FLASH_COOKIE as COOKIE } from "@/server/records/flash-cookie";
-const CODES = ["person_deleted", "organisation_deleted"] as const;
+const CODES = ["person_deleted", "organisation_deleted", "deal_deleted", "deal_no_longer_visible"] as const;
 type FlashCode = (typeof CODES)[number];
 
 export async function setFlash(flash: { code: FlashCode; name: string }): Promise<void> {

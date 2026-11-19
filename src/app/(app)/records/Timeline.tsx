@@ -1,4 +1,4 @@
-// // TIMELINE: newest first, who and when (UK time). Later features add their own event kinds here.
+// // TIMELINE (// HISTORY on deals): newest first, who and when (UK time). Later features add their own event kinds here.
 import Link from "next/link";
 import { formatDateTime } from "@/server/format";
 import type { TimelineEvent } from "@/server/records/timeline";
@@ -22,6 +22,14 @@ function Line({ e }: { e: TimelineEvent }) {
       return <>Archived{by(e.actorName)}</>;
     case "restored":
       return <>Restored{by(e.actorName)}</>;
+    case "moved":
+      return (
+        <>
+          Moved from {e.fromStage} to {e.toStage}
+          {by(e.actorName)}
+          {e.cause === "stage_deleted" ? " (stage deleted)" : e.cause === "pipeline_deleted" ? " (pipeline deleted)" : ""}
+        </>
+      );
     case "person_linked":
     case "person_unlinked":
       return (
@@ -34,11 +42,13 @@ function Line({ e }: { e: TimelineEvent }) {
   }
 }
 
-export function Timeline({ events }: { events: TimelineEvent[] }) {
+// `heading` is "TIMELINE" on people and organisations, "HISTORY" on deals (design A).
+export function Timeline({ events, heading = "TIMELINE" }: { events: TimelineEvent[]; heading?: "TIMELINE" | "HISTORY" }) {
+  const name = heading === "HISTORY" ? "History" : "Timeline";
   return (
-    <section aria-label="Timeline">
+    <section aria-label={name}>
       <div className="label sect">
-        <span className="c">//</span> TIMELINE
+        <span className="c">//</span> {heading}
       </div>
       <ul className="tl">
         {events.map((e) => (
