@@ -63,6 +63,13 @@
     `a.card`, the drawer is the `complementary` named "Deal" with a "History" region; the admin pages' rows are
     `table.order` with buttons named "Rename <name>", "Move <name> up/down" and links "Delete <name>". Non-admin
     pages answer "You don't have access to this page." with HTTP 200 (as the other admin pages).
+  - SF-93 AI-review scenario script `scenarios-sf93.js` (all 33 US1–US6 scenarios and edge cases 1–16, 49 checks,
+    ~4 min, against :3000/crm_dev, run in order on fresh fake data; it ends by emptying pipelines/deals for US1-5):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf93.js`.
+    Notes: sign in with the user's real name (`signIn(page, base, email, "Linus Fake")`): an empty name renames the
+    fake user. Use a wide viewport (1900px): with a sideways-scrolled board `dragTo` can grab a card of another column.
+    Next's route announcer is also `role="alert"`: the board's messages are `p.err[role=alert]`. Leak checks read
+    `innerText` (the page's `<script>` payload holds the address). Deactivation is done by SQL (`users.status`).
   - People and organisations scenarios (SF-90) are covered by `tests/e2e/{people,organisations,lists,archive-delete,private,choices}.spec.ts`;
     a "direct request" check replays a server action form post (`$ACTION_ID_…` field from the server-rendered
     page, see `tests/e2e/records.ts` `actionField`) as a non-admin.
