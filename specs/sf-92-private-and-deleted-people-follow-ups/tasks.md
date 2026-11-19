@@ -130,6 +130,14 @@ description: "Tasks for SF-92 Private and deleted people: follow-ups"
 
 ---
 
+## Fix round 1 (AI review: DECISIONS.md lacks two choices)
+
+- [ ] T039 Write `tests/unit/decisions.test.ts` (`// covers FR-014, spec.md Clarifications (SF-92 fix round 1)`): read `docs/DECISIONS.md` and expect an `(SF-92)` line that names "design B" and "a panel above the Users table" for the hand-over, and an `(SF-92)` line that says the hand-over removes nothing automatically and the new owner can remove an address or make the person shared. It fails now (neither line exists) and passes after T040
+- [ ] T040 Append to `docs/DECISIONS.md`, after the three SF-92 lines, the two lines from plan.md § Fix round 1
+- [ ] T041 Delete `privatePeopleCounts()` from `src/server/records/handover.ts`; in `tests/integration/handover.test.ts` replace its uses with `listUsers()` rows' `private_people` (Alan's count before and 0 after the hand-over, archived private people included)
+- [ ] T042 [P] In `tests/integration/archive-delete.test.ts` rename "adds no unlinked event when the person is still linked (US2 scenario 3)" to "… (edge case: still linked)" and "leaves other records' events unchanged when the person was never linked (US2 scenario 4)" to "… (edge case: never linked)"; update the file's `// covers` line to match
+- [ ] T043 Run `npm test && npm run test:e2e && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

@@ -184,6 +184,32 @@ which stays about user accounts; the Users page only reads a count from it and c
     Also each factory choice from spec.md Clarifications that the Plan Review confirms. README: mention the
     handover on the Users page and the new fake people.
 
+## Fix round 1
+
+**Problem.** The AI review failed: `docs/DECISIONS.md` lacks two choices from spec.md Clarifications.
+(1) The hand-over uses design B, a panel above the Users table (DECISIONS records each screen's design:
+SF-80 Users page design A, SF-90 design C). (2) "Frees the email addresses" means nothing is removed
+automatically: the new owner can remove an address or make the person shared. Not blocking, fixed in the
+same round: `privatePeopleCounts()` in `src/server/records/handover.ts` is used only by tests and repeats the
+count `listUsers()` already makes; two test names in `tests/integration/archive-delete.test.ts` cite
+"US2 scenario 3/4" for cases that are spec.md Edge Cases (still linked, never linked).
+
+**Cause.** T035 appended only the three lines of Build step 15; plan.md did not list the two design and
+meaning choices from Clarifications, so Build left them out.
+
+**Fix.**
+- Append two lines to `docs/DECISIONS.md`, after the three SF-92 lines:
+  - `- Handing over a deactivated user's private people uses design B: [ HAND OVER ] on the user's row opens a panel above the Users table with the user choice and the question (SF-92)`
+  - `- Handing over private people removes nothing automatically: the new owner sees the people and their email addresses and can remove an address or make the person shared (SF-92)`
+- Delete `privatePeopleCounts()` from `src/server/records/handover.ts`; `listUsers().private_people` stays the
+  one count. `tests/integration/handover.test.ts` checks counts through `listUsers()` instead.
+- Rename the two archive-delete tests to cite the spec's edge cases: "still linked" → `(edge case: still
+  linked)`, "never linked" → `(edge case: never linked)`.
+- No spec change: the user gets the same app.
+
+**Files.** `docs/DECISIONS.md`, `src/server/records/handover.ts`, `tests/integration/handover.test.ts`,
+`tests/integration/archive-delete.test.ts`, new `tests/unit/decisions.test.ts`.
+
 ## Outside services
 
 - Supabase Postgres (through the Supavisor connection pooler): no public schema found on GitHub (looked in github.com/supabase/supabase and github.com/supabase/supavisor for SF-90; the app speaks the standard Postgres protocol, this change only alters the app's own tables, and tests use a real local Postgres rather than a fake)
