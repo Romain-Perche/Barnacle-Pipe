@@ -151,6 +151,12 @@ An admin opens "Lead sources and labels" in the "// Admin" group and adds, renam
 - After an admin deletes a person, adding a new person with that person's email address saves and opens the new person's page.
 - A private person whose creator is later deactivated stays private: an admin's People list and search do not show them, and their page address shows "Page not found." (DECISIONS).
 - Someone opens a person or organisation address that does not exist or is not a number: the page shows "Page not found." inside the normal sidebar layout.
+- The Organisations list address `/organisations?sector=Your account is locked, call 0800 000` shows every organisation, the Sector filter shows "Any sector", and the text "Your account is locked" appears nowhere on the page (unknown sector values are ignored, like other unknown filter values).
+- In the person form, a user types "Brand New Org" in the organisation field without choosing anything from the list and presses `[ SAVE ]`: the person is saved linked to a new organisation "Brand New Org". Before saving, the field shows "A new organisation "Brand New Org" will be added.".
+- Editing a person linked to "Sample Studios Fake", a user replaces the organisation text with "Fake" and presses `[ SAVE ]` without choosing from the list: the person is saved linked to a new organisation "Fake"; the person is never silently left with no organisation. Clearing the field with `[ CLEAR ]` and saving leaves the person with no organisation.
+- In the organisation field, a user types "Sample" (which only partly matches "Sample Studios Fake") and presses Enter: the field keeps "Sample" and shows that a new organisation "Sample" will be added; it does not switch to "Sample Studios Fake". Typing "sample studios fake" and pressing Enter chooses the existing "Sample Studios Fake".
+- After "Ada Example was deleted." shows on the People list, reloading the page no longer shows it.
+- An admin renames a lead source or label to the name of one removed earlier: the form shows "A removed entry already has this name. Add it again to bring it back." and nothing is saved.
 - The person form has no "Last contacted" or "Date added" field; the person's page shows "Last contacted: Never" until later features (email, activities) fill it in.
 
 ## Requirements *(mandatory)*

@@ -141,6 +141,50 @@ C for people/organisation lists and pages; hand-added people are Subscribed; onl
 source and label lists) plus any factory choice the Plan Review confirms; README lists the new pages and
 fake data.
 
+## Fix round 1
+
+AI review failed (2 must-fix, 3 minor).
+
+**Problem 1 — address text shown on the Organisations list.** `/organisations?sector=<any text>` puts that
+text into the Sector filter as an option and selects it, so text from the address shows on the page
+(breaks FR-025, AGENTS.md, `contracts/list-query.md`: unknown values are ignored).
+**Cause:** `src/app/(app)/organisations/page.tsx` appends an unknown `query.sector` to the sector options.
+**Fix:** the page (or a pure helper next to `parseOrganisationsQuery`) matches `query.sector` against the
+sectors in use (case-insensitive); an unknown value becomes `null` before it is used, both for the select
+and for `listOrganisations` (an unknown sector filters nothing, it is not shown back). Remove the append.
+
+**Problem 2 — the organisation picker drops typed text.** Typing a name in the person form's organisation
+field clears the choice; unless an option is clicked, both hidden fields post empty, so the person is saved
+with no organisation and no message (on edit, the existing link is silently removed). Enter picks the first
+*partial* match, so a new name that starts like an existing one cannot be added from the keyboard.
+**Cause:** `src/app/(app)/records/OrganisationPicker.tsx` only posts `newOrganisationName` after an explicit
+"Add organisation" choice, and Enter takes `matches[0]`.
+**Fix (what you see is what is saved):** when the text is not empty and no option is chosen, the picker
+posts the existing non-archived organisation whose name matches exactly (case-insensitive, trimmed), else
+posts the typed text as `newOrganisationName` and shows the hint "A new organisation "<text>" will be
+added." The server already resolves `newOrganisationName` against all organisations (exact non-archived →
+that organisation; exact archived → "<name> already exists." with a link, nothing saved; research.md §7),
+so no server change is needed beyond keeping that. Enter picks only an exact match, else the typed text as
+a new name; partial matches stay clickable/tabbable buttons. Empty text (or `[ CLEAR ]`) posts no
+organisation.
+
+**Minor (fixed in the same round):**
+- `src/app/(app)/records/DeleteConfirm.tsx` hard-codes "Delete {name} for good? This can't be undone." and
+  small labels: move them to `src/server/messages.ts` (`templates.delete_confirm(name)` and fixed messages).
+- The "<name> was deleted." notice survives a reload (60 s cookie): `src/proxy.ts` deletes the `crm_flash`
+  cookie on the response of the GET page load that carries it (the page still reads it from that request),
+  so the notice shows once.
+- Renaming a lead source or label to a removed entry's name shows "This name is already on the list.":
+  `src/server/records/choices.ts` returns a new message `choice_removed_exists` ("A removed entry already has
+  this name. Add it again to bring it back.") in that case; nothing is saved (adding keeps restoring it,
+  Clarification Q4).
+
+**Files:** `src/app/(app)/organisations/page.tsx`, `src/server/records/list-query.ts` (if the helper goes
+there), `src/app/(app)/records/OrganisationPicker.tsx`, `src/app/(app)/records/DeleteConfirm.tsx`,
+`src/server/messages.ts`, `src/proxy.ts`, `src/server/records/choices.ts`; tests in `tests/unit/list-query.test.ts`,
+`tests/integration/choices.test.ts`, `tests/e2e/lists.spec.ts`, `tests/e2e/people.spec.ts`,
+`tests/e2e/archive-delete.spec.ts`. No new dependency, no migration, no new outside service.
+
 ## Outside services
 
 - Supabase Postgres (through the Supavisor connection pooler): no public schema found on GitHub (looked in github.com/supabase/supabase and github.com/supabase/supavisor; the app speaks the standard Postgres protocol, the new code only adds tables to the app's own database, and tests use a real local Postgres rather than a fake)
