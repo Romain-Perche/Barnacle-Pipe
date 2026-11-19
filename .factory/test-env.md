@@ -11,7 +11,10 @@
 - Supabase Postgres (through the Supavisor pooler): no fake — a real local PostgreSQL 17. No public schema
   on GitHub; follows Supabase's docs (https://supabase.com/docs/guides/database/connecting-to-postgres):
   transaction-mode pooler copied by always connecting with `prepare: false` and taking only
-  transaction-level advisory locks in migrations; connection limit copied by `max: 5`.
+  transaction-level advisory locks in migrations; connection limit copied by `max: 5`. The people and
+  organisations code (SF-90) keeps to the same limits: no session state (`set`, `listen`, session locks),
+  every multi-statement change in one `sql.begin()` transaction; tables come from
+  `migrations/0002_people_organisations.sql`, checked on a fresh database by `tests/integration/migrate.test.ts`.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -40,7 +43,23 @@
     background (log `/tmp/app-$PORT.log`). Env: `PORT` (3000), `APP_ENV` (development; `APP_ENV=` for empty),
     `DATABASE_URL` (crm_dev), `FIRST_ADMIN_EMAIL` (ada@barnacle.ai; `FIRST_ADMIN_EMAIL=` for none), `VERCEL_ENV`,
     `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
-  - `bash .factory/run/reset-db.sh [db]` — empties users/sessions/user_changes and seeds again (`NO_SEED=1`: empty).
+  - `bash .factory/run/reset-db.sh [db]` — empties every app table (users, sessions, people, organisations,
+    labels, timeline…), puts back the six starting lead sources, and seeds again (`NO_SEED=1`: empty).
+    The seed adds 5 fake users, 32 fake people (Gus Lorem is private, created by Ada Fake; Fay Mockup is
+    archived) and 9 fake organisations ("Old Fakeco Archive" is archived), labels Hot/Investor/Partner.
+  - People and organisations scenarios (SF-90) are covered by `tests/e2e/{people,organisations,lists,archive-delete,private,choices}.spec.ts`;
+    a "direct request" check replays a server action form post (`$ACTION_ID_…` field from the server-rendered
+    page, see `tests/e2e/records.ts` `actionField`) as a non-admin.
+  - SF-90 scenario script `scenarios-sf90.js` (all 47 US1–US6 and edge-case scenarios, against :3000/crm_dev):
+    phase A on an empty CRM: `NO_SEED=1 bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf90.js A`
+    (US1, US2, US6-1, edge 1–4, 10, 11, 13, 14; adds Linus by SQL); phase B on the seed:
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf90.js B`.
+    Selector notes: CSS text-transform makes `innerText` upper-case (use `textContent`); list name links are `td:first-child a.nm`
+    (each cell also holds an empty `a.cell-link` that opens the drawer); form selects are `select[name=leadSourceId|ownerId]`;
+    lead source/label names on the admin page are input values; the sidebar has two `nav`s.
+  - SF-90 fix round 1 (edge cases 14–20: unknown sector, organisation picker typed text/Enter/case, one-shot delete
+    notice, rename to a removed name): `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf90-fix1.js`.
+    The spec renumbered the edge cases: `scenarios-sf90.js`'s "Edge case 14" (no Last contacted/Date added field) is now Edge case 21.
   - Playwright scenario scripts (`NODE_PATH=/opt/playwright/node_modules node <script>`): `scenarios-main.js`
     (:3000, crm_dev freshly reset), `scenarios-env.js` (:3101 empty DB + FIRST_ADMIN boss@, :3102 empty DB no
     FIRST_ADMIN, :3103 VERCEL_ENV=preview, :3104 APP_ENV empty, :3105 production, :3106 development+VERCEL_ENV

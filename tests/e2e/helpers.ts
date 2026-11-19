@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import postgres from "postgres";
 import { runSeeders } from "@/seed";
+import { resetAppTables } from "../support/reset";
 
 let client: postgres.Sql | null = null;
 export function db() {
@@ -13,7 +14,7 @@ export async function closeDb() {
 }
 
 export async function emptyDb() {
-  await db()`truncate user_changes, sessions, users restart identity cascade`;
+  await resetAppTables(db());
 }
 
 // Back to the fake data team of data-model.md: Ada, Grace (admins), Linus, Margaret (users), Alan (deactivated).

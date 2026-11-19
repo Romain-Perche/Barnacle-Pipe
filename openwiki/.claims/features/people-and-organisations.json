@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:dff7468cee05fb116291cb8f6fc92813e8e933a31ff4eec902d6c62a90b58e79",
+  "claims": [
+    {
+      "id": "claim_b9a6846b426a47ee91c2102f9bbd3bfa",
+      "statement": "A private person is visible only to their creator; every persons read uses visiblePerson().",
+      "evidence": [
+        {
+          "resource": "repo://src/server/records/visibility.ts",
+          "version": "repo-file-v1:sha256:568d351b165b38aec488f079e9692a32532da083cf7c79973c7581134af5778f"
+        }
+      ]
+    },
+    {
+      "id": "claim_dc1c074c7f0244f884e6a01127bd90ce",
+      "statement": "After a delete a 60-second httpOnly crm_flash cookie carries the notice, and src/proxy.ts clears it on the next GET.",
+      "evidence": [
+        {
+          "resource": "repo://src/proxy.ts",
+          "version": "repo-file-v1:sha256:454c2e1ae3cf430a6fcbc089099fb3cddc733fde1c008bca9d5fc1c78a19ba42"
+        },
+        {
+          "resource": "repo://src/server/records/flash.ts",
+          "version": "repo-file-v1:sha256:1da6535aeece9b36254ee3fee5ac05003c389bc5e4c6daff796227f024e236c4"
+        }
+      ]
+    },
+    {
+      "id": "claim_073174519ebe44d7a116c47962b22649",
+      "statement": "Deleting a person is admin only and re-checked inside the transaction.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/records/people.ts#L300-L311",
+          "version": "repo-lines-v1:sha256:a28f0cd83373b6992bd31dcca52f47825ee0cfcdd7e1e50d5951a7dc4174069b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T16:37:06.027Z"
+  }
+}

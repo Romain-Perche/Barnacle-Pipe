@@ -58,3 +58,22 @@ test("the sign-in page uses the app's design", async ({ page }) => {
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   expect(bg).toBe("rgb(250, 246, 241)");
 });
+
+// covers FR-024, edge case "address that does not exist or is not a number" (SF-90)
+test("People and Organisations are in everyone's sidebar; Lead sources and labels only for admins", async ({ page, browser }) => {
+  await signInAs(page, "Linus Fake", "/people");
+  await expect(sidebar(page).getByRole("link", { name: "People" })).toHaveAttribute("aria-current", "page");
+  await expect(sidebar(page).getByRole("link", { name: "Organisations" })).toBeVisible();
+  await expect(sidebar(page).getByRole("link", { name: "Lead sources and labels" })).toHaveCount(0);
+  for (const path of ["/people/abc", "/organisations/999999", "/people/0", "/people/99999999999999999999"]) {
+    const res = await page.goto(path);
+    expect(res?.status(), path).toBe(404);
+    await expect(page.getByText("Page not found.")).toBeVisible();
+    await expect(sidebar(page)).toBeVisible();
+  }
+  const ctx = await browser.newContext();
+  const ada = await ctx.newPage();
+  await signInAs(ada, "Ada Fake");
+  await expect(sidebar(ada).getByRole("link", { name: "Lead sources and labels" })).toBeVisible();
+  await ctx.close();
+});

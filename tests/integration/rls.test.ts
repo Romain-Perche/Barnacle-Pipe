@@ -1,4 +1,4 @@
-// covers FR-032, SC-010, edge case "another database role reads any app table"
+// covers FR-032, SC-010, edge case "another database role reads any app table"; SF-90 T016 (8 new tables)
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { makeUser, resetDb } from "./db-helpers";
@@ -15,7 +15,12 @@ describe("Row Level Security", () => {
       select c.relname, c.relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'public' and c.relkind in ('r', 'p')`;
     const names = tables.map((t) => t.relname);
-    expect(names).toEqual(expect.arrayContaining(["users", "sessions", "user_changes", "schema_migrations"]));
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "users", "sessions", "user_changes", "schema_migrations",
+        "organisations", "persons", "person_emails", "person_phones", "lead_sources", "labels", "person_labels", "timeline_events",
+      ]),
+    );
     expect(tables.filter((t) => !t.relrowsecurity).map((t) => t.relname)).toEqual([]);
   });
 

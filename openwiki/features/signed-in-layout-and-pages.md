@@ -5,7 +5,7 @@ description: The sidebar shell shared by every signed-in page, the nav registry,
 tags: [ui, layout, navigation, messages, sign-in-page]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T12:52:49.147Z
+    at: 2026-11-19T16:37:06.027Z
 sources:
   - id: openwiki-source-9c37e70856dfc7e98b60d790
     resource: repo://src/app/(app)/%5B...missing%5D/page.tsx
@@ -21,7 +21,7 @@ sources:
     resource: repo://src/server/messages.ts
   - id: openwiki-source-8bf427df8e393c62d99adf6b
     resource: repo://src/server/sign-in-page.ts
-generated: { by: "claude-code", at: "2026-11-19T12:52:49.147Z" }
+generated: { by: "claude-code", at: "2026-11-19T16:37:06.027Z" }
 ---
 
 # Signed-in layout, pages and messages
@@ -31,8 +31,8 @@ generated: { by: "claude-code", at: "2026-11-19T12:52:49.147Z" }
 Every signed-in page lives under `src/app/(app)/` and gets `layout.tsx`:
 
 - a blue left sidebar with the Barnacle wordmark (`src/app/Wordmark.tsx`);
-- the **Main** nav from `mainNav` in `nav.ts` (today only `Home`);
-- an `// ADMIN` group with `adminNav` (today `Users`), rendered only when the user's role is `admin`;
+- the **Main** nav from `mainNav` in `nav.ts` (today `Home`, `People` and `Organisations`);
+- an `// ADMIN` group with `adminNav` (today `Users` and `Lead sources and labels`), rendered only when the user's role is `admin`;
 - the user's name and a `[ Sign out ]` button (the `signOut` server action, see
   [Sessions and access control](../auth/sessions-and-access-control.md)).
 
@@ -78,5 +78,10 @@ unknown codes and inherited object keys. Text from a URL is never displayed.
 
 `src/server/format.ts` formats the Users page's "Last sign-in" in UK time (`19 Nov 2026, 09:12`, or
 `Never`) and the header counts (`1 USER`, `2 ADMINS`).
+
+`src/server/messages.ts` also holds `templates` (messages built from a name, such as the delete notices) and
+`fieldMessage()` for form field errors; `src/server/format.ts` formats UK dates and times and header counts.
+The People, Organisations and Lead sources pages are described in
+[People and organisations](people-and-organisations.md).
 
 New pages and nav links: see [Adding a feature](../workflows/adding-a-feature.md).

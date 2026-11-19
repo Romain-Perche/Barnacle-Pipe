@@ -25,3 +25,25 @@ describe("countLabel", () => {
     expect(countLabel(0, "ADMIN")).toBe("0 ADMINS");
   });
 });
+
+// covers US1 scenario 1 ("Date added" shows "19 Nov 2026"), FR-011 (timeline times in UK time)
+import { formatDate, formatDateTime } from "@/server/format";
+describe("formatDate / formatDateTime", () => {
+  it("writes the UK date as '19 Nov 2026'", () => {
+    expect(formatDate(new Date("2026-11-19T09:12:00Z"))).toBe("19 Nov 2026");
+    expect(formatDate(new Date("2026-06-30T23:30:00Z"))).toBe("01 Jul 2026"); // BST: already 1 July in the UK
+  });
+  it("writes the UK date and time like the Users page", () => {
+    expect(formatDateTime(new Date("2026-11-19T09:12:00Z"))).toBe("19 Nov 2026, 09:12");
+    expect(formatDateTime(new Date("2026-07-01T08:05:00Z"))).toBe(formatLastSignIn(new Date("2026-07-01T08:05:00Z")));
+  });
+});
+
+// covers US3 scenario 1 ("// 132 PEOPLE")
+describe("countLabel with an irregular plural", () => {
+  it("uses the plural given", () => {
+    expect(countLabel(132, "PERSON", "PEOPLE")).toBe("132 PEOPLE");
+    expect(countLabel(1, "PERSON", "PEOPLE")).toBe("1 PERSON");
+    expect(countLabel(2, "ORGANISATION")).toBe("2 ORGANISATIONS");
+  });
+});

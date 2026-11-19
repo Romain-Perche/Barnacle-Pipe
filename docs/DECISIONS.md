@@ -39,3 +39,6 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - The Users page uses design A: a table with the actions on each row and the add field above it (SF-80)
 - Every table has Row Level Security on with no policies, so Supabase's Data API cannot read or write app data (SF-80)
 - Users are deactivated, never deleted (SF-80)
+- People and organisation lists and pages use design C: a filter row above the table, a preview drawer when a row is selected, and a one-column record page (SF-90)
+- A person added by hand is Subscribed to email until they unsubscribe (SF-90)
+- Only admins add, rename and remove lead sources and labels, on an admin page; everyone picks from the lists (SF-90)

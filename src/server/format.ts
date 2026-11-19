@@ -9,14 +9,28 @@ const parts = new Intl.DateTimeFormat("en-GB", {
   hourCycle: "h23",
 });
 
-// Last sign-in on the Users page: UK time, "19 Nov 2026, 09:12", or "Never".
-export function formatLastSignIn(date: Date | null): string {
-  if (!date) return "Never";
-  const p = Object.fromEntries(parts.formatToParts(date).map((x) => [x.type, x.value]));
-  return `${p.day} ${MONTHS[Number(p.month) - 1]} ${p.year}, ${p.hour}:${p.minute}`;
+function ukParts(date: Date): Record<string, string> {
+  return Object.fromEntries(parts.formatToParts(date).map((x) => [x.type, x.value]));
 }
 
-// Users page header counts: "1 USER", "2 USERS", "0 ADMINS".
-export function countLabel(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "S"}`;
+// UK date: "19 Nov 2026" ("Date added", "Last contacted").
+export function formatDate(date: Date): string {
+  const p = ukParts(date);
+  return `${p.day} ${MONTHS[Number(p.month) - 1]} ${p.year}`;
+}
+
+// UK date and time: "19 Nov 2026, 09:12" (timelines, last sign-in).
+export function formatDateTime(date: Date): string {
+  const p = ukParts(date);
+  return `${formatDate(date)}, ${p.hour}:${p.minute}`;
+}
+
+// Last sign-in on the Users page: UK time, "19 Nov 2026, 09:12", or "Never".
+export function formatLastSignIn(date: Date | null): string {
+  return date ? formatDateTime(date) : "Never";
+}
+
+// Header counts: "1 USER", "2 USERS", "0 ADMINS"; an irregular plural is given: "132 PEOPLE".
+export function countLabel(n: number, word: string, plural = `${word}S`): string {
+  return `${n} ${n === 1 ? word : plural}`;
 }

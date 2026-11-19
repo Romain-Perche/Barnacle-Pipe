@@ -43,7 +43,13 @@ async function check(db: string) {
     const dupes = await c`select name, count(*)::int as n from schema_migrations group by name having count(*) > 1`;
     const applied = await c`select name from schema_migrations order by name`;
     const tables = await c`select count(*)::int as n from pg_tables where schemaname = 'public' and tablename = 'users'`;
-    return { dupes: dupes.length, applied: applied.map((r) => r.name as string), users: tables[0].n as number };
+    const sources = await c`select name from lead_sources order by id`;
+    return {
+      dupes: dupes.length,
+      applied: applied.map((r) => r.name as string),
+      users: tables[0].n as number,
+      leadSources: sources.map((r) => r.name as string),
+    };
   } finally {
     await c.end();
   }
@@ -65,6 +71,8 @@ describe("npm run db:migrate", () => {
     const first = await runMigrate(db);
     expect(first.code, first.out).toBe(0);
     expect(first.out).toContain("0001_users_sessions.sql");
+    // covers SF-90 T016: the people and organisations migration applies on a fresh database
+    expect(first.out).toContain("Applied 0002_people_organisations.sql");
     const second = await runMigrate(db);
     expect(second.code, second.out).toBe(0);
     expect(second.out).toContain("Database is up to date.");
@@ -73,7 +81,9 @@ describe("npm run db:migrate", () => {
     const state = await check(db);
     expect(state.dupes).toBe(0);
     expect(state.applied).toContain("0001_users_sessions.sql");
+    expect(state.applied).toContain("0002_people_organisations.sql");
     expect(state.users).toBe(1);
+    expect(state.leadSources).toEqual(["Duncan's LinkedIn", "Referral", "Exec dinner", "Inbound", "Event", "Ambassador"]);
     expect(await advisoryLocks()).toBe(0);
   });
 

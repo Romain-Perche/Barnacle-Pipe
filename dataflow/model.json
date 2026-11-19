@@ -47,6 +47,11 @@
       "id": "settings",
       "label": "Settings",
       "description": "Environment variables (.env.local or Vercel settings) that hold secrets and switch features on or off."
+    },
+    {
+      "id": "records",
+      "label": "People and organisations",
+      "description": "Staff list, search, create, edit, archive and delete people and organisations, with a timeline and shared lead sources and labels."
     }
   ],
   "actors": [
@@ -166,6 +171,47 @@
         "scripts/seed.ts",
         "src/seed"
       ]
+    },
+    {
+      "id": "people-pages",
+      "label": "People pages and actions",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/app/(app)/people",
+        "src/server/records/people.ts",
+        "src/server/records/visibility.ts"
+      ]
+    },
+    {
+      "id": "organisations-pages",
+      "label": "Organisation pages and actions",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/app/(app)/organisations",
+        "src/server/records/organisations.ts"
+      ]
+    },
+    {
+      "id": "choices-admin",
+      "label": "Lead sources and labels admin",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/app/(app)/admin/lead-sources-and-labels",
+        "src/server/records/choices.ts"
+      ]
+    },
+    {
+      "id": "record-flash",
+      "label": "One-shot delete notice",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/server/records/flash.ts",
+        "src/server/records/flash-cookie.ts"
+      ]
     }
   ],
   "stores": [
@@ -229,6 +275,42 @@
       "sources": [
         "src/server/env.ts",
         ".env.example"
+      ]
+    },
+    {
+      "id": "persons-table",
+      "label": "persons, emails, phones and person_labels tables",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0002_people_organisations.sql"
+      ]
+    },
+    {
+      "id": "organisations-table",
+      "label": "organisations table",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0002_people_organisations.sql"
+      ]
+    },
+    {
+      "id": "choices-table",
+      "label": "lead_sources and labels tables",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0002_people_organisations.sql"
+      ]
+    },
+    {
+      "id": "timeline-table",
+      "label": "timeline_events table",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0002_people_organisations.sql"
       ]
     }
   ],
@@ -653,6 +735,206 @@
       "sources": [
         "scripts/migrate.ts",
         "src/server/db.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "people-pages",
+      "data": "signed-in user and admin check",
+      "sources": [
+        "src/server/auth/session.ts",
+        "src/app/(app)/people/actions.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "organisations-pages",
+      "data": "signed-in user and admin check",
+      "sources": [
+        "src/server/auth/session.ts",
+        "src/app/(app)/organisations/actions.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "choices-admin",
+      "data": "admin check",
+      "sources": [
+        "src/app/(app)/admin/lead-sources-and-labels/actions.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "people-pages",
+      "data": "person form fields, search and filters",
+      "sources": [
+        "src/app/(app)/people/actions.ts",
+        "src/server/records/list-query.ts"
+      ]
+    },
+    {
+      "from": "people-pages",
+      "to": "staff",
+      "data": "person lists, details and timeline",
+      "sources": [
+        "src/app/(app)/people/page.tsx"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "organisations-pages",
+      "data": "organisation form fields, search and filters",
+      "sources": [
+        "src/app/(app)/organisations/actions.ts",
+        "src/server/records/list-query.ts"
+      ]
+    },
+    {
+      "from": "organisations-pages",
+      "to": "staff",
+      "data": "organisation lists, details and timeline",
+      "sources": [
+        "src/app/(app)/organisations/page.tsx"
+      ]
+    },
+    {
+      "from": "admin",
+      "to": "choices-admin",
+      "data": "new, renamed and removed lead sources and labels",
+      "sources": [
+        "src/app/(app)/admin/lead-sources-and-labels/actions.ts"
+      ]
+    },
+    {
+      "from": "people-pages",
+      "to": "persons-table",
+      "data": "person details, emails, phones, labels",
+      "sources": [
+        "src/server/records/people.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "people-pages",
+      "data": "visible persons (private ones hidden)",
+      "sources": [
+        "src/server/records/visibility.ts",
+        "src/server/records/people.ts"
+      ]
+    },
+    {
+      "from": "organisations-pages",
+      "to": "organisations-table",
+      "data": "organisation details",
+      "sources": [
+        "src/server/records/organisations.ts"
+      ]
+    },
+    {
+      "from": "organisations-table",
+      "to": "organisations-pages",
+      "data": "organisations and their people",
+      "sources": [
+        "src/server/records/organisations.ts"
+      ]
+    },
+    {
+      "from": "choices-admin",
+      "to": "choices-table",
+      "data": "lead source and label changes",
+      "sources": [
+        "src/server/records/choices.ts"
+      ]
+    },
+    {
+      "from": "choices-table",
+      "to": "people-pages",
+      "data": "lead source and label choices",
+      "sources": [
+        "src/server/records/choices.ts"
+      ]
+    },
+    {
+      "from": "people-pages",
+      "to": "timeline-table",
+      "data": "person timeline events",
+      "sources": [
+        "src/server/records/timeline.ts"
+      ]
+    },
+    {
+      "from": "organisations-pages",
+      "to": "timeline-table",
+      "data": "organisation timeline events",
+      "sources": [
+        "src/server/records/timeline.ts"
+      ]
+    },
+    {
+      "from": "organisations-pages",
+      "to": "record-flash",
+      "data": "delete notice",
+      "sources": [
+        "src/server/records/flash.ts"
+      ]
+    },
+    {
+      "from": "record-flash",
+      "to": "browser-cookies",
+      "data": "crm_flash cookie",
+      "sources": [
+        "src/server/records/flash.ts"
+      ]
+    },
+    {
+      "from": "browser-cookies",
+      "to": "proxy",
+      "data": "crm_flash cookie to clear",
+      "sources": [
+        "src/proxy.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "persons-table",
+      "data": "table definitions",
+      "sources": [
+        "scripts/migrate.ts",
+        "migrations/0002_people_organisations.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "organisations-table",
+      "data": "table definitions",
+      "sources": [
+        "scripts/migrate.ts",
+        "migrations/0002_people_organisations.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "persons-table",
+      "data": "fake people",
+      "sources": [
+        "src/seed/people.ts"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "organisations-table",
+      "data": "fake organisations",
+      "sources": [
+        "src/seed/people.ts"
+      ]
+    },
+    {
+      "from": "people-pages",
+      "to": "record-flash",
+      "data": "delete notice",
+      "sources": [
+        "src/app/(app)/people/actions.ts",
+        "src/server/records/flash.ts"
       ]
     }
   ]
