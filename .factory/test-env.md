@@ -33,7 +33,24 @@
   `APP_ENV=development DATABASE_URL=postgres://postgres@localhost:5432/crm_dev FIRST_ADMIN_EMAIL=ada@barnacle.ai`,
   then open http://localhost:3000 and use `[ FAKE GOOGLE LOGIN ]`.
 
+- Scripts (AI review, `.factory/run/`):
+  - `bash .factory/run/start-postgres.sh` — installs PostgreSQL 17 if missing (apt's post-install error is
+    harmless), starts it on localhost:5432 (trust auth, data in /tmp/pgdata), creates crm_dev and crm_test.
+  - `bash .factory/run/start-app.sh` — starts Postgres, migrates, seeds, builds and runs `next start` in the
+    background (log `/tmp/app-$PORT.log`). Env: `PORT` (3000), `APP_ENV` (development; `APP_ENV=` for empty),
+    `DATABASE_URL` (crm_dev), `FIRST_ADMIN_EMAIL` (ada@barnacle.ai; `FIRST_ADMIN_EMAIL=` for none), `VERCEL_ENV`,
+    `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
+  - `bash .factory/run/reset-db.sh [db]` — empties users/sessions/user_changes and seeds again (`NO_SEED=1`: empty).
+  - Playwright scenario scripts (`NODE_PATH=/opt/playwright/node_modules node <script>`): `scenarios-main.js`
+    (:3000, crm_dev freshly reset), `scenarios-env.js` (:3101 empty DB + FIRST_ADMIN boss@, :3102 empty DB no
+    FIRST_ADMIN, :3103 VERCEL_ENV=preview, :3104 APP_ENV empty, :3105 production, :3106 development+VERCEL_ENV
+    production, :3107 "Development"), `scenarios-seed.js` (:3108 on a fresh crm_seed). Helpers in `lib.js`.
+  - Stop servers by pid (`ss -ltnp | grep next-server`), not `pkill -f next…`: that also kills the calling shell.
+- Fresh checkout notes (seen in review): `npm test` needs `.factory/schemas/oauth2-api.json` (untracked; fetch it
+  as above); with the README's `.env.local` present, `next start` loads APP_ENV=development from it, so the e2e
+  "APP_ENV unset" gating test fails. Run the suites without `.env.local`.
+
 ## Smoke checks
 1. test -s .factory/schemas/oauth2-api.json
-2. pg_isready -h localhost -p 5432
+2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in
