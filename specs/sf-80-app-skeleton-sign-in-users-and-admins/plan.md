@@ -217,17 +217,36 @@ anywhere in the input and treats `\` like `/`. Observed with Node:
 `new URL("/\t/evil.com", "https://crm.example/auth/end").href === "https://evil.com/"` (also `\n`, `\r`,
 `/\t\\evil.com`). Percent-encoded forms (`/%09/evil.com`) stay on the app.
 
-**Fix** (one place, every caller benefits): in `isSafeNext()`, return `"/"` when `next` contains any
-ASCII control character (U+0000–U+001F, U+007F) or any backslash, before the other checks:
-`if (/[\x00-\x1f\x7f\\]/.test(next)) return "/";`. Keep the existing `//`, `/\` and `/auth` checks.
-Real in-app paths never hold these characters raw (the app's own links percent-encode them), so FR-009
-is unchanged for real pages. No change to the routes. No new dependency.
+**Fix** (chosen by alexis@barnacle.ai: both checks, in this order; one place, every caller benefits).
+`isSafeNext(next, appUrl)` in `src/server/auth/rules.ts` stays a pure function and gains the app's base URL:
 
-**Check**: unit tests (pure function) for the four reported values plus `"/\x00/evil.com"`, `"/\x7f"`,
-`"/admin\\users"`, and a property-style check that, for every accepted value, `new URL(isSafeNext(v),
-"https://crm.example/x").origin === "https://crm.example"`. Integration/e2e check through the real route:
-`GET /auth/end?next=%2F%09%2Fevil.com` with a valid session answers a redirect whose `Location` is on the
-app's own origin (path `/`). Spec edge case added.
+1. `next` not a string, or not starting with `/` → `"/"`.
+2. **Refuse (A)**: `next` holds any ASCII control character (U+0000–U+001F, U+007F) or any backslash →
+   `"/"` (`/[\x00-\x1f\x7f\\]/`). Keep the `//` check.
+3. **Parse (B)**: `url = new URL(next, appUrl)` (a throw → `"/"`); keep it only when
+   `url.origin === new URL(appUrl).origin`, else `"/"`.
+4. The result is the **parsed** `url.pathname + url.search + url.hash`, never the original text, so the
+   page the person lands on is exactly the one that was checked (e.g. `"/a b"` → `"/a%20b"`).
+5. The `/auth` rule runs on the parsed pathname (`=== "/auth"` or starts with `"/auth/"` → `"/"`), so
+   `"/x/../auth/end"` and `"/%2e%2e/auth/end"` are refused too.
 
-**Files to change**: `src/server/auth/rules.ts`, `tests/unit/rules.test.ts`, one route-level test under
-`tests/integration` or `tests/e2e`.
+Anything refused is `"/"` (the home page). New `appBaseUrl()` in `src/server/env.ts`: `APP_URL` without a
+trailing slash, or `"http://localhost:3000"` when unset (APP_URL is required only for real Google sign-in,
+so a fake-login-only copy may not set it; the base only anchors the parse, the result is always a path).
+Every caller passes `appBaseUrl()`: `auth/end/route.ts`, `auth/google/start/route.ts`,
+`auth/google/callback/route.ts`, `sign-in/page.tsx`, `server/sign-in-page.ts`, `dev/fake-google/page.tsx`,
+`dev/fake-google/actions.ts`, `server/auth/session.ts`. FR-009 is unchanged for real pages. No new
+dependency.
+
+**Check**: unit tests (pure function, base `"https://crm.example"`): `"/"` for the four reported values
+plus `"/\x00/evil.com"`, `"/\x7f"`, `"/admin\\users"`; `"/"` for links to another site with no hidden
+character (`"//evil.com"`, `"https://evil.com/"`, `"http://crm.example.evil.com/"`); `"/"` for
+`"/x/../auth/end"` and `"/%2e%2e/auth/end"`; `"/admin/users?error=duplicate#top"` kept as is; `"/a b"` →
+`"/a%20b"` (the parsed form). A loop asserts that for every input,
+`new URL(isSafeNext(v, base), "https://crm.example/x").origin === "https://crm.example"`. Route-level
+check through the real app (signed in with the fake login, redirects not followed):
+`GET /auth/end?next=%2F%09%2Fevil.com` and `GET /auth/end?next=https%3A%2F%2Fevil.com%2F` both answer a
+redirect whose `Location` is on the app's own origin with path `/`. Spec edge case updated.
+
+**Files to change**: `src/server/auth/rules.ts`, `src/server/env.ts`, the eight callers above,
+`tests/unit/rules.test.ts`, one route-level test under `tests/integration` or `tests/e2e`.

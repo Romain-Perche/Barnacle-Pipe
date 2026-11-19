@@ -117,7 +117,7 @@ A developer building the next feature (for example Pipelines and deals) adds a n
 - The migration command is run twice in a row on the same database: both runs finish within 30 seconds; the second prints "Database is up to date.".
 - Two migration commands start at the same time on an empty database: both finish within 30 seconds, each migration is applied exactly once, and no database lock is still held after both have exited.
 - A database role other than the app's own (as Supabase's Data API uses) reads any app table: it gets no rows; it tries to add a row: the database refuses it.
-- A signed-in person opens `/auth/end?next=%2F%09%2Fexample.com` (or `%0A`, `%0D`, or a backslash in place of the second slash): the app shows its own home page, never another site. A signed-out person who starts sign-in from `/auth/google/start?next=%2F%0A%2Fexample.com` and signs in lands on the home page.
+- A signed-in person opens `/auth/end?next=%2F%09%2Fexample.com` (or `%0A`, `%0D`, or a backslash in place of the second slash): the app shows its own home page, never another site. A signed-out person who starts sign-in from `/auth/google/start?next=%2F%0A%2Fexample.com` and signs in lands on the home page. The same holds for a link to another site with no hidden character (`/auth/end?next=https%3A%2F%2Fexample.com%2F`): the home page.
 - Someone opens an app address that does not exist while signed in: the page shows "Page not found." inside the normal sidebar layout, with a link back to Home.
 
 ## Requirements *(mandatory)*
