@@ -93,7 +93,7 @@ test("remove admin: that person loses the Admin group and the Users page", async
   await grace.reload();
   await expect(sidebar(grace).getByRole("link", { name: "Users" })).toHaveCount(0);
   await grace.goto("/admin/users");
-  await expect(grace.getByText(FORBIDDEN)).toBeVisible();
+  await expect(grace.getByRole("heading", { name: FORBIDDEN })).toBeVisible();
   await ctx.close();
 });
 
@@ -166,7 +166,7 @@ test("row buttons follow design A", async ({ page }) => {
 // covers US2 scenario 9, FR-011, SC-003
 test("a non-admin gets the forbidden page and no Admin group", async ({ page }) => {
   await signInAs(page, "Margaret Fake", "/admin/users");
-  await expect(page.getByText(FORBIDDEN)).toBeVisible();
+  await expect(page.getByRole("heading", { name: FORBIDDEN })).toBeVisible();
   await expect(page.getByRole("table")).toHaveCount(0);
   await expect(sidebar(page).getByText(/\/\/\s*Admin/i)).toHaveCount(0);
 });
@@ -184,7 +184,7 @@ test("a non-admin's direct action request is refused and changes no row", async 
   await signInAs(page, "Ada Fake", "/admin/users");
   await page.context().addCookies([{ ...margaretCookie }]);
   await userRow(page, "linus@barnacle.ai").getByRole("button", { name: "[ DEACTIVATE ]" }).click();
-  await expect(page.getByText(FORBIDDEN)).toBeVisible();
+  await expect(page.getByRole("heading", { name: FORBIDDEN })).toBeVisible();
   const [linus] = await db()`select status from users where email = 'linus@barnacle.ai'`;
   expect(linus.status).toBe("active");
   expect((await db()`select count(*)::int as n from user_changes where action <> 'added'`)[0].n).toBe(0);
@@ -201,7 +201,7 @@ test("a demoted admin's stale page cannot demote the other admin", async ({ page
   await expect(userRow(page, "grace@barnacle.ai")).not.toContainText("Admin");
 
   await userRow(grace, "ada@barnacle.ai").getByRole("button", { name: "[ REMOVE ADMIN ]" }).click();
-  await expect(grace.getByText(FORBIDDEN)).toBeVisible();
+  await expect(grace.getByRole("heading", { name: FORBIDDEN })).toBeVisible();
   await page.reload();
   await expect(userRow(page, "ada@barnacle.ai")).toContainText("Admin");
   await ctx.close();
