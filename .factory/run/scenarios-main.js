@@ -163,10 +163,28 @@ const fs = require("fs"); const os = require("os"); const path = require("path")
   const e7t = await bodyText(e7);
   check("Edge case 7", e7t.includes("Sign-in was cancelled or failed. Please try again.") && (await e7.locator("text=Sign in with Google").count()) > 0, `→ ${e7.url().replace(B,"")}; msg=${e7t.includes("cancelled or failed")}`);
 
-  // Edge 16 + US4 sc2
-  await ln2.goto(B + "/no/such/page"); const e16 = await bodyText(ln2); const homeLink = await ln2.locator("main a[href='/']").count();
+
+  // Edge 16: open redirect through /auth/end and /auth/google/start (raw Location, then followed in the browser)
+  const e16c = await (await browser.newContext()); const e16p = await e16c.newPage(); await signIn(e16p, B, "grace@barnacle.ai", "Grace Hopper");
+  const e16out = [];
+  for (const n of ["%2F%09%2Fexample.com", "%2F%0A%2Fexample.com", "%2F%0D%2Fexample.com", "%2F%5Cexample.com", "%2F%09%5Cexample.com", "https%3A%2F%2Fexample.com%2F"]) {
+    const r = await e16c.request.get(B + "/auth/end?next=" + n, { maxRedirects: 0 });
+    await e16p.goto(B + "/auth/end?next=" + n); const u = new URL(e16p.url());
+    e16out.push(`${n}: ${r.status()} Location=${r.headers()["location"]} → ${u.origin === B ? u.pathname : u.href} hello=${(await bodyText(e16p)).includes("Hello, Grace")}`);
+  }
+  const e16ok1 = e16out.every(x => x.includes("→ / ") && x.includes("hello=true"));
+  // signed-out: start sign-in with a hidden-character next; the fake login is the in-app Google stand-in
+  const s16 = await ctx(); await s16.goto(B + "/auth/google/start?next=%2F%0A%2Fexample.com", { waitUntil: "commit" }).catch(() => {});
+  const startUrl = s16.url();
+  const s16b = await ctx(); await signIn(s16b, B, "grace@barnacle.ai", "Grace Hopper", "/\n/example.com");
+  const s16u = new URL(s16b.url());
+  e16out.push(`start → ${startUrl.slice(0, 120)}; fake login with next "/\\n/example.com" → ${s16u.origin === B ? s16u.pathname : s16u.href}`);
+  check("Edge case 16", e16ok1 && s16u.origin === B && s16u.pathname === "/", e16out.join("; "));
+
+  // Edge 17 + US4 sc2
+  await ln2.goto(B + "/no/such/page"); const e17 = await bodyText(ln2); const homeLink = await ln2.locator("main a[href='/']").count();
   const hasAside = (await ln2.locator("text=[ Sign out ]").count()) > 0;
-  check("Edge case 16", e16.includes("Page not found.") && hasAside && homeLink > 0, `signed-in /no/such/page: msg=${e16.includes("Page not found.")}, sidebar=${hasAside}, Home link in main=${homeLink}`);
+  check("Edge case 17", e17.includes("Page not found.") && hasAside && homeLink > 0, `signed-in /no/such/page: msg=${e17.includes("Page not found.")}, sidebar=${hasAside}, Home link in main=${homeLink}`);
   const lay = async (pg, url) => { await pg.goto(B + url); return pg.evaluate(() => {
     const side = document.querySelector("aside") || document.querySelector("nav");
     const cur = [...document.querySelectorAll("a[aria-current], a.active, a.on, a[data-active='true']")].map(a => a.textContent.trim());
