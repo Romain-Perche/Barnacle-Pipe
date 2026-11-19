@@ -52,6 +52,11 @@
       "id": "records",
       "label": "People and organisations",
       "description": "Staff list, search, create, edit, archive and delete people and organisations, with a timeline and shared lead sources and labels."
+    },
+    {
+      "id": "deals",
+      "label": "Deals and pipelines",
+      "description": "The deals board, deal forms and the admin pages for pipelines and stages."
     }
   ],
   "actors": [
@@ -212,6 +217,26 @@
         "src/server/records/flash.ts",
         "src/server/records/flash-cookie.ts"
       ]
+    },
+    {
+      "id": "deals-pages",
+      "label": "Deals board, drawer and forms",
+      "zone": "app",
+      "group": "deals",
+      "sources": [
+        "src/app/(app)/deals",
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "id": "pipelines-admin",
+      "label": "Pipelines and stages admin",
+      "zone": "app",
+      "group": "deals",
+      "sources": [
+        "src/app/(app)/admin/pipelines",
+        "src/server/deals/pipelines.ts"
+      ]
     }
   ],
   "stores": [
@@ -311,6 +336,33 @@
       "group": "database",
       "sources": [
         "migrations/0002_people_organisations.sql"
+      ]
+    },
+    {
+      "id": "pipelines-table",
+      "label": "Postgres pipelines and stages",
+      "zone": "postgres",
+      "group": "deals",
+      "sources": [
+        "migrations/0004_pipelines_deals.sql"
+      ]
+    },
+    {
+      "id": "deals-table",
+      "label": "Postgres deals",
+      "zone": "postgres",
+      "group": "deals",
+      "sources": [
+        "migrations/0004_pipelines_deals.sql"
+      ]
+    },
+    {
+      "id": "deal-periods-table",
+      "label": "Postgres deal stage periods",
+      "zone": "postgres",
+      "group": "deals",
+      "sources": [
+        "migrations/0004_pipelines_deals.sql"
       ]
     }
   ],
@@ -935,6 +987,150 @@
       "sources": [
         "src/app/(app)/people/actions.ts",
         "src/server/records/flash.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "deals-pages",
+      "data": "signed-in user and admin check",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "pipelines-admin",
+      "data": "admin check",
+      "sources": [
+        "src/server/deals/pipelines.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "deals-pages",
+      "data": "deal form fields, card moves, archive and delete",
+      "sources": [
+        "src/app/(app)/deals/actions.ts"
+      ]
+    },
+    {
+      "from": "deals-pages",
+      "to": "staff",
+      "data": "board, deal drawer and messages",
+      "sources": [
+        "src/app/(app)/deals/page.tsx"
+      ]
+    },
+    {
+      "from": "admin",
+      "to": "pipelines-admin",
+      "data": "pipeline and stage changes",
+      "sources": [
+        "src/app/(app)/admin/pipelines/actions.ts"
+      ]
+    },
+    {
+      "from": "pipelines-admin",
+      "to": "admin",
+      "data": "pipelines, stages and deal counts",
+      "sources": [
+        "src/app/(app)/admin/pipelines/page.tsx"
+      ]
+    },
+    {
+      "from": "deals-pages",
+      "to": "deals-table",
+      "data": "deal saves, moves, archive, delete",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "deals-table",
+      "to": "deals-pages",
+      "data": "visible deals for board and drawer",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "deals-pages",
+      "to": "deal-periods-table",
+      "data": "stage periods for every stage move",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "pipelines-table",
+      "to": "deals-pages",
+      "data": "pipelines and stages for board and form",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "pipelines-admin",
+      "to": "pipelines-table",
+      "data": "pipeline and stage changes",
+      "sources": [
+        "src/server/deals/pipelines.ts"
+      ]
+    },
+    {
+      "from": "pipelines-admin",
+      "to": "deals-table",
+      "data": "deals moved to another stage on delete",
+      "sources": [
+        "src/server/deals/pipelines.ts"
+      ]
+    },
+    {
+      "from": "pipelines-admin",
+      "to": "deal-periods-table",
+      "data": "stage periods for moved deals",
+      "sources": [
+        "src/server/deals/pipelines.ts"
+      ]
+    },
+    {
+      "from": "deals-pages",
+      "to": "timeline-table",
+      "data": "deal events on person and organisation timelines",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "deals-pages",
+      "data": "visible people and organisations for deal form",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "pipelines-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0004_pipelines_deals.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "deals-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0004_pipelines_deals.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "deals-table",
+      "data": "fake pipelines and deals",
+      "sources": [
+        "src/seed/deals.ts"
       ]
     }
   ]
