@@ -8,6 +8,14 @@
 
 **Input**: User description: "People and organisations with their pages and lists (`docs/PRODUCT.md` section 2). Leave custom fields, imports and ambassador tracking for later issues."
 
+## Clarifications
+
+### Session 2026-11-19
+
+- Q: Which design do you want for the People list and the person page? → A: Design: C, a filter row above the table, a preview drawer when a row is selected, and a one-column record page (details, then timeline) (see `design-options.html`).
+- Q: What email consent does a new person get when someone adds them by hand? → A: Subscribed: campaigns can reach them until they unsubscribe.
+- Q: Who can add, rename and remove lead sources and labels? → A: Admins only, on an admin page; everyone picks from the lists.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Add a person and find them again (Priority: P1)
@@ -20,9 +28,9 @@ A team member meets someone (for example at an exec dinner), opens People from t
 
 **Acceptance Scenarios**:
 
-1. **Given** a signed-in user, **When** they add a person with first name "Ada", last name "Example", email addresses `ada@example.com` and `ada.home@example.net`, phone `+44 20 7946 0000`, role "COO", lead source "Referral", **Then** the person's page shows all those values, the owner is the user who added them, consent shows "Subscribed", "Date added" shows today's date and "Last contacted" shows "Never".
+1. **Given** a signed-in user, **When** they add a person with first name "Ada", last name "Example", email addresses `ada@example.com` and `ada.home@example.net`, phone `+44 20 7946 0000`, role "COO", lead source "Referral", **Then** the person's page shows all those values, the owner is the user who added them, consent shows "Subscribed", "Date added" shows today's date (for example "19 Nov 2026") and "Last contacted" shows "Never".
 2. **Given** a person saved with several email addresses, **When** any user searches the People list for any one of them (or part of the name, or the organisation name), **Then** the person appears in the results.
-3. **Given** a signed-in user editing a person, **When** they change the role, add a phone number, remove an email address and save, **Then** the page shows the new values and the person's timeline shows "Edited by <user's name>" with the date and the fields that changed.
+3. **Given** a signed-in user editing a person, **When** they change the role, add a phone number, remove an email address and save, **Then** the page shows the new values and the person's timeline shows, at the top, "Edited by <user's name>: Role, Email addresses, Phone numbers" with the date and time.
 4. **Given** a user adding a person, **When** they leave both first and last name empty, or type an email address or LinkedIn link that is not valid, **Then** the form shows a message next to the field ("Enter a first or last name.", "Enter a valid email address.", "Enter a LinkedIn profile link (linkedin.com/…).") and nothing is saved.
 5. **Given** a person already in the CRM with `ada@example.com`, **When** any user adds or edits another person with `ADA@example.com`, **Then** the form shows "Ada Example already has this email address." with a link to that person's page, and nothing is saved (duplicate detection).
 
@@ -56,11 +64,14 @@ A team member opens the People list to see everyone, sorted and filtered: by own
 
 **Acceptance Scenarios**:
 
-1. **Given** the People list, **When** a user opens it, **Then** each person is one row showing name, organisation, role, first email address, first phone number, owner, labels, lead source, consent and last contacted, sorted by name A–Z, 50 rows per page, with the total count shown ("// 132 PEOPLE").
+1. **Given** the People list, **When** a user opens it, **Then** a search field and a row of filters sit above the table, and each person is one row showing name (with their main email address beneath), organisation, role, owner, labels, lead source, consent and last contacted, sorted by name A–Z, 50 rows per page, with the total count shown ("// 132 PEOPLE").
 2. **Given** the People list, **When** a user picks filters (owner, label, lead source, organisation, consent status) and a sort column, **Then** only matching people are shown in that order, the count updates, and copying the page address into a new tab shows the same filtered, sorted list.
 3. **Given** filters that match nobody, **When** the list is shown, **Then** it reads "No people match these filters." with a `[ CLEAR FILTERS ]` link.
 4. **Given** the Organisations list, **When** a user opens it, **Then** each organisation is one row showing name, website, sector, size, location, owner and number of people, with filters for owner, sector and size and sorting by name, number of people and date added.
 5. **Given** archived people and organisations, **When** a user ticks "Show archived", **Then** archived records appear marked "Archived"; when unticked they are hidden from the list and from search.
+6. **Given** the People list, **When** a user selects a row (anywhere except the name link), **Then** the row is highlighted and a preview drawer opens on the right showing the person's name, organisation and role, main email address, main phone number, lead source and consent, with `[ OPEN PAGE ]`; the list keeps its filters, and pressing `[ OPEN PAGE ]` or the name link opens the person's page.
+7. **Given** the Organisations list, **When** a user selects a row, **Then** a preview drawer shows the organisation's name, website, sector, size, location, owner and number of people, with `[ OPEN PAGE ]`.
+8. **Given** a preview drawer is open, **When** the user presses `[ CLOSE ]`, **Then** the drawer closes and the same list page, filters and sort order are shown; the open drawer is part of the page address, so reloading shows it again.
 
 ---
 
@@ -121,19 +132,19 @@ An admin opens "Lead sources and labels" in the "// Admin" group and adds, renam
 ### Edge Cases
 
 - A person is saved with the same email address twice on their own record (`a@x.com` and `A@x.com `): the form shows "This email address is listed twice." and nothing is saved.
-- Email addresses are stored trimmed and lower-case; phone numbers are stored as typed (trimmed), and only digits, spaces, `+`, `(`, `)`, `-` and `.` are accepted, otherwise "Enter a valid phone number.".
-- A website typed as `fakeco.example` is saved as `https://fakeco.example`; anything that is not a web address shows "Enter a valid website address.". LinkedIn links get `https://` added the same way and must be on linkedin.com.
-- A link typed as `javascript:…` or any non-web scheme for website or LinkedIn is refused with the same messages; links on pages always open the saved http(s) address only.
+- A person saved with the email address ` Ada@Example.COM ` shows `ada@example.com` on their page. A phone number shows as typed, without surrounding spaces; a phone number with anything other than digits, spaces, `+`, `(`, `)`, `-` and `.` shows "Enter a valid phone number." and nothing is saved.
+- A website typed as `fakeco.example` is saved as `https://fakeco.example`; `not a site` shows "Enter a valid website address." and nothing is saved. A LinkedIn link typed as `linkedin.com/in/ada-example` shows as `https://linkedin.com/in/ada-example`; `https://example.com/ada` shows "Enter a LinkedIn profile link (linkedin.com/…)." and nothing is saved.
+- A website or LinkedIn link typed as `javascript:alert(1)` (or any address not starting with http or https) shows the same message as above and nothing is saved.
 - A person's owner is deactivated: the person keeps that owner, shown with "(deactivated)"; deactivated users are not offered when choosing a new owner.
-- Two users edit the same person at the same time: the second save shows "Someone else changed this person while you were editing. Reload to see their changes." and does not overwrite the first.
-- The search field gets text with `%`, `_` or quotes: it is matched literally.
-- A search returns more than 50 people: the results are paged like the list.
-- A list page number beyond the last page shows the last page.
-- An archived person's email address still counts for duplicate detection; the message links to the archived person so they can be restored instead.
-- A deleted person's email address can be used again for a new person.
-- A private person whose creator is later deactivated stays private and invisible to everyone (admins included); this is accepted (DECISIONS).
-- Someone opens a person or organisation address that does not exist or is not a number: "Page not found." inside the normal layout.
-- "Last contacted" cannot be typed in; it stays "Never" until later features (email, activities) fill it in.
+- Two users edit the same person at the same time: the second save shows "Someone else changed this person while you were editing. Reload to see their changes." and does not overwrite the first: after reloading, the page shows the first user's values.
+- The search field gets text with `%`, `_` or quotes: searching `50%` lists only people whose name, email address or organisation contains `50%`, and an unmatched search shows "No people match these filters.".
+- A search that matches more than 50 people shows 50 rows, the total count of matches and a link to the next page.
+- A list address with a page number beyond the last page shows the last page's rows, and the page number shown is the last one.
+- Adding a person with the email address of an archived person shows "Ada Example already has this email address." with a link to the archived person's page, which shows "Archived" and `[ RESTORE ]`; nothing is saved.
+- After an admin deletes a person, adding a new person with that person's email address saves and opens the new person's page.
+- A private person whose creator is later deactivated stays private: an admin's People list and search do not show them, and their page address shows "Page not found." (DECISIONS).
+- Someone opens a person or organisation address that does not exist or is not a number: the page shows "Page not found." inside the normal sidebar layout.
+- The person form has no "Last contacted" or "Date added" field; the person's page shows "Last contacted: Never" until later features (email, activities) fill it in.
 
 ## Requirements *(mandatory)*
 
@@ -163,7 +174,7 @@ An admin opens "Lead sources and labels" in the "// Admin" group and adds, renam
 
 - **FR-012**: The People list MUST show the columns in US3 scenario 1, 50 rows per page, with a total count, search by any part of a name, any email address or the organisation name, filters for owner, label, lead source, organisation and consent status, and sorting by name, organisation, date added and last contacted (either direction).
 - **FR-013**: The Organisations list MUST show name, website, sector, size, location, owner and number of people, 50 rows per page, with a total count, search by name or website, filters for owner, sector and size, and sorting by name, number of people and date added.
-- **FR-014**: Search, filters, sort order, page and "Show archived" MUST be kept in the page address, so a list view can be reloaded, bookmarked or shared.
+- **FR-014**: Search, filters, sort order, page, "Show archived" and the open preview drawer MUST be kept in the page address, so a list view can be reloaded, bookmarked or shared.
 - **FR-015**: Lists and search MUST hide archived records unless "Show archived" is ticked, and MUST always hide private people from everyone but their creator.
 
 **Archive and delete**
@@ -187,11 +198,12 @@ An admin opens "Lead sources and labels" in the "// Admin" group and adds, renam
 - **FR-023**: Every people and organisation page and action MUST require a signed-in, active user; the lead source and label page and its actions MUST require an admin.
 - **FR-024**: The sidebar's main navigation MUST gain "People" and "Organisations" entries; the "// Admin" group MUST gain "Lead sources and labels".
 - **FR-025**: Every message shown to users MUST be one of the app's fixed messages; text from the page address (search terms aside, shown back only inside the search field) MUST never be shown as a message.
-- **FR-026**: Lists, forms and pages MUST follow `docs/DESIGN.md` and the existing signed-in layout; lists use the same table style as the Users page.
+- **FR-026**: Lists, forms and pages MUST follow `docs/DESIGN.md`, the existing signed-in layout and design C in `design-options.html`: on both lists, a search field and a row of filters above a table in the Users page style, and selecting a row opens a preview drawer on the right with `[ OPEN PAGE ]` and `[ CLOSE ]`; a person's or organisation's page is one column: the header (name, "Archived"/"Private" badges, `[ EDIT ]`, `[ ARCHIVE ]` or `[ RESTORE ]`, and `[ DELETE ]` for admins), then "// DETAILS" with the fields in two columns, then (organisations only) "// PEOPLE", then "// TIMELINE".
 
 **Fake data**
 
 - **FR-027**: The fake data command MUST add, without creating duplicates when run again, at least 30 fake people and 8 fake organisations with clearly fake names and `example.com`/`example.net`-style addresses, covering every lead source, several labels, both consent statuses, several owners, people with no organisation, at least one archived person and organisation, and at least one private person.
+- **FR-028**: A private person MUST NOT be shown in a preview drawer to anyone but their creator; a page address asking for one shows the list without a drawer.
 
 ### Key Entities
 
@@ -219,8 +231,8 @@ An admin opens "Lead sources and labels" in the "// Admin" group and adds, renam
 - Deals, notes, emails, activities and files do not exist yet; the timeline shows only record events until those features add theirs, and "Last contacted" stays "Never".
 - People and organisations are shared across the team (PRODUCT §7): any user can view and edit any record they can see, whoever the owner is. Owner is a label of responsibility, not a permission.
 - Only people can be private (DECISIONS: "a private contact or deal"); organisations are always shared.
-- New people default to "Subscribed"; the team is responsible for only adding contacts it may email (UK B2B soft opt-in). Unsubscribing from campaign emails arrives with the mass email feature.
-- Labels apply to people only (PRODUCT §2 lists labels for people, not organisations), and both lead sources and labels are kept by admins, like other shared settings (PRODUCT §7).
+- The team is responsible for only adding contacts it may email (UK B2B, with an opt-out in every campaign). Unsubscribing from campaign emails arrives with the mass email feature.
+- Labels apply to people only (PRODUCT §2 lists labels for people, not organisations).
 - A person belongs to at most one organisation, as in Pipedrive.
 - Organisation names are unique, matching the decision that Pipedrive import links organisations by name.
 - Duplicate detection refuses the save rather than offering a merge; merging people is left for a later issue.
