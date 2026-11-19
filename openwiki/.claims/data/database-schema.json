@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b818f8ea74064f7718227d91b2b4effdf7cae43fde2ba724c085ae3018bca4c1",
+  "pageVersion": "sha256:28c6983380ead774700cd9d0e8c565e133c2869c6183bb7786d04a5fd67fa2e5",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -71,10 +71,20 @@
           "version": "repo-file-v1:sha256:f950b975b57d1971c6e43a33dfabb008e67966acc238e8d9f30b757e1b0f7e43"
         }
       ]
+    },
+    {
+      "id": "claim_a3279ca45e04437a8e1a1eae644325d5",
+      "statement": "Migration 0003 makes timeline_events.related_person_id on delete set null, adds a handed_over event kind with related_user_id, and a partial index on private persons' owner_id.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0003_private_owner_handover.sql",
+          "version": "repo-file-v1:sha256:750c5e3a21f7fc73665cd3b3f56998fd4e4d63f2e63bf2bdcac602dc8bfbd07f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-19T16:37:06.027Z"
+    "at": "2026-11-19T18:23:26.676Z"
   }
 }

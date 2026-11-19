@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cc86fa3143bf8e7149f1c9f83b762f611ee50472d820206d2a65953dcb247d06",
+  "pageVersion": "sha256:eecdd07f3c3a6823ff938d1525177fef414dded3f13504b4002c8db5bd1ec0bd",
   "claims": [
     {
       "id": "claim_26b62d5547a04f739c5de7a27afe6de7",
       "statement": "Every user change runs in one transaction that locks the actor and all active admins in id order, refuses unless the actor is an active admin, and rolls back with last_admin if no active admin would remain.",
       "evidence": [
         {
-          "resource": "repo://src/server/users.ts#L32-L51",
+          "resource": "repo://src/server/users.ts#L37-L56",
           "version": "repo-lines-v1:sha256:2df3901f9b0c8abcc0d618816c90a0759da7a9fe70ba1ef5a4b91ec67646acb0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MGVjNmM4YTA5YjYyMGMzNTY1ZmQ3MmQyY2U2NjExNDg3NzM4MzQ5NjhjNTYxZDAzM2MxNjc2MTU1M2UwMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQzNTM4MjY4M2Y3MjgwNjNlMWZlNTNkZjM5ZTJlNGU5ZTMxNjM0ZTdmM2IzMzdkNTM5NzA0ZDUzMmU2MWE1ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjMTcyZDEwNGU2ZjdmZjU0NDM2NzAyNGNkODkxYzAyM2QxNjc3MDdlZWZkNTU4ZmQwYzcxZjhhOThmYmMzZjYifQ"
         }
       ]
@@ -17,11 +17,11 @@
       "statement": "Each successful change writes a user_changes row with the acting admin.",
       "evidence": [
         {
-          "resource": "repo://src/server/users.ts#L53-L55",
+          "resource": "repo://src/server/users.ts#L58-L60",
           "version": "repo-lines-v1:sha256:e98e8152a1fff4ce0f4fc08ed214c8db5ce8ce2707573dc7a369bb63a5eb82ce:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzA1ZTgzMmE2MjRmOGVmNTEzMWZjZTYzOTA5MWYwY2M0ZjE5ZTBlNzVkZGY5N2MzNDJlNTQ0NzU0ZDA1MTAzMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmI1ODBlOTY0ZjgzYTQ3M2Y0M2Q0NDM4NDYyOTQ5ZDY4YjU2MDBmZGE3ODdmMTYzNzQ1ZDAwZGU4OWNiZjM2YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODg0MWFhYTY0NWM1NGE1MmI4ZTdkMzI2Mjc5NWQ4M2MyZGZmZTIxOTVkNWJhZWQ3NTdjYWQ4YWQ1NGIzOTA4NSJ9"
         },
         {
-          "resource": "repo://src/server/users.ts#L62-L102",
+          "resource": "repo://src/server/users.ts#L67-L107",
           "version": "repo-lines-v1:sha256:63c2bad766842ce2cdd64ce8a78e60264bb78758c8d382401060cb5240a56ed0:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5MDhhYzQyYjFhNjhlYzZhN2I3NGI4ZDU3N2RiNzNiZjZkMTk1MjNhNmM0NDVmODI2MDRhNzEzMmQzNTU0N2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJmYzJjMGJhZjcxMTc1ZDg4OGVlOTgwOWJkOTBmNTFiMzgxM2Y5N2NhMTM5Y2E1MzcyNDAyNGI4ZDg1OGMzY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
@@ -31,7 +31,7 @@
       "statement": "addUser refuses non-barnacle.ai addresses as invalid_domain and existing emails as duplicate.",
       "evidence": [
         {
-          "resource": "repo://src/server/users.ts#L62-L72",
+          "resource": "repo://src/server/users.ts#L67-L77",
           "version": "repo-lines-v1:sha256:7d9d7921153996ff7a3c6fc554c1becee379fee3b58be81ba90078496aaa78b6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5MDhhYzQyYjFhNjhlYzZhN2I3NGI4ZDU3N2RiNzNiZjZkMTk1MjNhNmM0NDVmODI2MDRhNzEzMmQzNTU0N2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJmYzJjMGJhZjcxMTc1ZDg4OGVlOTgwOWJkOTBmNTFiMzgxM2Y5N2NhMTM5Y2E1MzcyNDAyNGI4ZDg1OGMzY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVjNmFkNDJmNDNlZjIxZDIxZWNiOTIxMTUyZDFjZjYwMzQ5YzFiZmFhNTIzOTdjMmM2NTIzYmY1N2FhNjJlOTgifQ"
         }
       ]
@@ -41,7 +41,7 @@
       "statement": "Deactivating a user revokes all of their sessions, and an admin cannot deactivate themselves.",
       "evidence": [
         {
-          "resource": "repo://src/server/users.ts#L88-L95",
+          "resource": "repo://src/server/users.ts#L93-L100",
           "version": "repo-lines-v1:sha256:ed3e98143c37c9409bc33167ac8ea85349c0b93d5e3b60cc4d9352bebb367b89:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2Q1YmY1MDE4NDk0ZjUwYjhiOTY3OGZjMDgxZjJjNjU3YmZkZmYzY2Y2YjllNGUzYmMzZmU1N2IyMjcyM2Q5YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmQwZjJkM2EzYWFkYTI3NTg2NDU3OGQwYTQzOTE1NjM4ZDU0M2ZlY2EyYzk0ODU4ZGI5NDEyMTFlODZjZWYyYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjQyODdmMjNjZWZiMWIxZjljNWMxNzcyNDk5OGU2NWY1MWZmMDkxOGYwODNhYzg2MjNjOWU5YjMyYjc2ZjY5OSJ9"
         }
       ]
@@ -51,7 +51,7 @@
       "statement": "The Users page actions check admin rights first, revalidate the whole layout, and redirect with an error code or, for forbidden, to the page itself.",
       "evidence": [
         {
-          "resource": "repo://src/app/(app)/admin/users/actions.ts#L16-L37",
+          "resource": "repo://src/app/(app)/admin/users/actions.ts#L18-L39",
           "version": "repo-lines-v1:sha256:e88ee092f0eea781c36d85b288b6d173c4f36bedbb4e491fe3eb6581ff17f955:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1NTZlMzE0N2JkMzUxYjg3YmUxNGNmNzU5MmJkNTJkNjZhMjdkODQ4Y2QzMTBiYTcwNGMzYzRlZjJjY2Q2ZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NzZjY2JiOGExOWZiY2ZkNzNkYjdmYjlhODhjNGEzNDkzMmY5Y2M0MTllM2Q2N2NjNjExNzg4ZDVlM2FlNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY4OTZhMTA2MDQwZjhmNTc2MjlmOTE2Zjc0YzQwNGQ3NTc1YWNmOTM2M2Q0ODM1NjRhYzYwYzY3MTMzZGY4ZTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFlZmE1MTJmNmRmMjIzMTY5YWM2ZmE2MTc4MmM5NGI5M2Q2OTRhNTIwYWYwYzFmNGEyZTg1NjljZWM2YTIzYjkifQ"
         }
       ]
@@ -61,18 +61,28 @@
       "statement": "The Users page shows the Forbidden message to non-admins and offers Deactivate only for active users other than the current admin.",
       "evidence": [
         {
-          "resource": "repo://src/app/(app)/admin/users/page.tsx#L24-L26",
-          "version": "repo-lines-v1:sha256:4665fac5b662586e6c606647acc1d4ad3f5320c3759d25b54cfbf51ac4292db3:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWJiN2Y3ODY3YmQ5ZmZiNzg3YWI1NGExYzA2MjhhZTIyZTdkMDRiZTk4ODU0NjM1ZTdiMDMwZjkyZGM1YzRmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODFlYTViODk1MDkyNzkxNmY3NTcxZGYxMzZhMWVlMmE0N2FkNDdiNzUzMjc3MDBiODkzY2IzNzQxZmNjZWQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDk0ZmMwYzE3M2QxZWMzZmM1MDFkN2RmYTkyODU1MDFjNTI3Y2ZiNDcxMjU4M2RhM2NjMzYxODA1NjZiNGJlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2Q5Njk3ODhlMzQyYjAzNzRhMjBiNTIzZjMyZDhjMTczYjk3ZmI5YzRhMjUyNTVjZWI2YTZmOWI5ZmQwZWUyMCJ9"
+          "resource": "repo://src/app/(app)/admin/users/page.tsx",
+          "version": "repo-file-v1:sha256:4194f0793aad28fb52816f249116e7c96bbb379f3244b9e5e66e4c5c47a434e2"
+        }
+      ]
+    },
+    {
+      "id": "claim_2325790b110346d5a46f1d998924fbc3",
+      "statement": "The users admin page offers HAND OVER for deactivated users who own private people; the handOver action calls handOverPrivatePeople, which re-checks all rules in a locked transaction.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/(app)/admin/users/actions.ts",
+          "version": "repo-file-v1:sha256:99ddf030238c9f89502abab0323e08eab156662a027a96b87dd62c32ad038fea"
         },
         {
-          "resource": "repo://src/app/(app)/admin/users/page.tsx#L85-L90",
-          "version": "repo-lines-v1:sha256:3fd79293cf59007ac8e976782cf5e2094618ad2eeaff4ea812c3d161386b27a4:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjlmNDU0NDk2OTQxOTVhOGNjZjE3MjEzZThiMGJmZGE2OTEwMmQ0MmFkMjBmZTcyZjE0NGY2NzI2OGQ5YzBmZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODQwMjRkODRkNzAzOTM4ZDA5ODlmOGZlMDQ1NThiNDNjY2I0ZTVkMDMzYThkODBhNWZhZjk0ZDNmOWQzNzQzZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjhjZGFiYWJiYzlhYmE5ZTY4MmRkOWU4MzQxYzlhMDEzZjA3NTMzMTkxYjYzNTQwY2ViZGEyMGQ5MTNiYzg4OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmZhMTU0ZDIzNjhlZGI1NDhmODZjZDIwNmFlY2Q4ODY1MmI2NWJjYWZhYzBlZGVhYjg1ZDhlNzI1ZTkwMGJiYSJ9"
+          "resource": "repo://src/server/records/handover.ts",
+          "version": "repo-file-v1:sha256:2911c3c16132d81a51c9268ccb42f95e6d07897bfc80b344904b7a1a3434a659"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-19T12:52:49.147Z"
+    "at": "2026-11-19T18:23:26.676Z"
   }
 }

@@ -47,7 +47,8 @@ flowchart LR
     n9 -->|"4 flows"| n5
     n9 -->|"2 flows"| n3
     n6 -->|"users table and error messages"| n7
-    n6 -->|"3 flows"| n1
+    n6 -->|"5 flows"| n1
+    n6 -->|"hand-over notice"| n3
     n1 -->|"user list"| n6
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -94,7 +95,7 @@ flowchart LR
     n5 -->|"2 flows"| n1
     n1 -->|"5 flows"| n9
     n2 -->|"3 flows"| n1
-    n1 -->|"12 flows"| n4
+    n1 -->|"14 flows"| n4
     n4 -->|"8 flows"| n1
     n6 -->|"migrate command / seed command"| n3
     n7 -->|"3 flows"| n1
@@ -161,7 +162,9 @@ flowchart LR
     n10 -->|"person details, emails, phones, labels"| n3
     n3 -->|"visible persons (private ones hidden)"| n10
     n5 -->|"session state with user role and status"| n11
+    n12 -->|"private people handed to a new owner"| n3
     n12 -->|"revoked sessions of deactivated users"| n5
+    n12 -->|"hand-over events on each person"| n6
     n12 -->|"who changed which user, and how"| n7
     n12 -->|"added users, role and status changes"| n8
     n8 -->|"3 flows"| n11
@@ -235,6 +238,7 @@ flowchart LR
     end
     n7[["Database"]]
     n8[["Sign-in and sessions"]]
+    n9[["Signed-in app and user admin"]]
     n1 -->|"new, renamed and removed lead sources and labels"| n3
     n3 -->|"lead source and label changes"| n7
     n7 -->|"2 flows"| n5
@@ -251,6 +255,7 @@ flowchart LR
     n8 -->|"signed-in user and admin check"| n5
     n2 -->|"organisation form fields, search and filters"| n4
     n2 -->|"person form fields, search and filters"| n5
+    n9 -->|"hand-over notice"| n6
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -259,7 +264,7 @@ flowchart LR
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1,n2 actor
     class n3,n4,n5,n6 process
-    class n7,n8 stub
+    class n7,n8,n9 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -381,13 +386,15 @@ flowchart LR
         n4("Users admin page and actions")
     end
     n5[["Database"]]
-    n6[["Sign-in and sessions"]]
+    n6[["People and organisations"]]
+    n7[["Sign-in and sessions"]]
     n1 -->|"new user email, role and status changes"| n4
     n3 -->|"sidebar and signed-in pages"| n2
-    n6 -->|"signed-in user (name, role)"| n3
-    n6 -->|"signed-in user and admin check"| n4
+    n7 -->|"signed-in user (name, role)"| n3
+    n7 -->|"signed-in user and admin check"| n4
     n4 -->|"users table and error messages"| n1
-    n4 -->|"3 flows"| n5
+    n4 -->|"5 flows"| n5
+    n4 -->|"hand-over notice"| n6
     n5 -->|"user list"| n4
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -397,7 +404,7 @@ flowchart LR
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1,n2 actor
     class n3,n4 process
-    class n5,n6 stub
+    class n5,n6,n7 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -506,7 +513,10 @@ flowchart LR
 | Barnacle staff user | Request proxy (cookie gate) | page requests with session cookie | `src/proxy.ts` |
 | Barnacle staff user | Session check, end and sign-out | sign-out request | `src/app/(app)/actions.ts` |
 | Users admin page and actions | Barnacle admin | users table and error messages | `src/app/(app)/admin/users/page.tsx` |
+| Users admin page and actions | persons, emails, phones and person_labels tables | private people handed to a new owner | `src/app/(app)/admin/users/actions.ts`, `src/server/records/handover.ts` |
+| Users admin page and actions | One-shot delete notice | hand-over notice | `src/app/(app)/admin/users/actions.ts`, `src/server/records/flash.ts` |
 | Users admin page and actions | sessions table (token hashes) | revoked sessions of deactivated users | `src/server/auth/session.ts`, `src/server/users.ts` |
+| Users admin page and actions | timeline_events table | hand-over events on each person | `src/server/records/handover.ts`, `src/server/records/timeline.ts` |
 | Users admin page and actions | user_changes log | who changed which user, and how | `src/server/users.ts` |
 | Users admin page and actions | users table | added users, role and status changes | `src/server/users.ts` |
 | users table | Sign-in rules and session creation | existing user role and status | `src/server/auth/sign-in.ts` |
