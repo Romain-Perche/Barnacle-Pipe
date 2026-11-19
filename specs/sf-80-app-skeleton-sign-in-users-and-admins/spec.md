@@ -8,6 +8,12 @@
 
 **Input**: User description: "App skeleton: sign-in, users and admins. The first piece of the CRM described in `docs/PRODUCT.md`: the app itself, Google sign-in for the team, and an admin page to manage users (section 7). Set it up so later features slot in easily, with a command to load fake data."
 
+## Clarifications
+
+### Session 2026-11-19
+
+- Q: Which design do you want for the Users page? → A: Design: A, a table with the actions on each row ([ MAKE ADMIN ] / [ REMOVE ADMIN ], [ DEACTIVATE ] / [ REACTIVATE ]) and an add field with [ ADD USER ] above it (see `design-options.html`).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Team member signs in with their barnacle.ai Google account (Priority: P1)
@@ -94,6 +100,7 @@ A developer building the next feature (for example Pipelines and deals) adds a n
 - A user signs in with a different name on their Google account (with the fake login: the same email, a new name): the sidebar and their Users row show the new name.
 - A user added by an admin has never signed in: their row shows the part of the email before `@` as the name and "Never" as the last sign-in.
 - Google sign-in is cancelled or fails part-way (with the fake login: press Cancel): the sign-in page shows "Sign-in was cancelled or failed. Please try again." with the "Sign in with Google" button.
+- An admin looks at their own row on the Users page: it shows `[ REMOVE ADMIN ]` but no `[ DEACTIVATE ]` button.
 - An admin removes their own admin rights while another active admin exists: the home page is shown and their sidebar has no "// Admin" group.
 - Admins A and B both have the Users page open. A removes B's admin rights; B, without reloading, then presses the button to remove A's admin rights: B sees "You don't have access to this page." and A's row still shows "Admin".
 - A preview deployment is opened: the sign-in page shows "Sign-in is turned off on preview deployments." and no sign-in button.
@@ -119,10 +126,10 @@ A developer building the next feature (for example Pipelines and deals) adds a n
 
 - **FR-010**: Each user MUST have exactly one role, admin or user, and a status, active or deactivated.
 - **FR-011**: Only admins MUST be able to open the Users page and perform any user management action; the app MUST enforce this on every action, not only by hiding links.
-- **FR-012**: The Users page MUST list all users with name, email, role, status and last sign-in time.
+- **FR-012**: The Users page MUST list all users with name, email, role, status and last sign-in time. It MUST follow design A in `design-options.html`: one table row per user, a field and an `[ ADD USER ]` button above the table, error messages shown above the table, and each row's actions shown on the row itself: `[ MAKE ADMIN ]` or `[ REMOVE ADMIN ]`, and `[ DEACTIVATE ]` or `[ REACTIVATE ]`. Deactivated rows are greyed out.
 - **FR-013**: Admins MUST be able to add a user by barnacle.ai email address; new users start as active, non-admin users. Addresses MUST be trimmed, compared case-insensitively, restricted to barnacle.ai, and unique.
 - **FR-014**: Admins MUST be able to give admin rights to a user and remove them from a user (including themselves).
-- **FR-015**: Admins MUST be able to deactivate and reactivate users. Users are never deleted, so their name stays attached to anything they created in later features.
+- **FR-015**: Admins MUST be able to deactivate and reactivate users. Users are never deleted, so their name stays attached to anything they created in later features. An admin cannot deactivate themselves: their own row has no `[ DEACTIVATE ]` button, and a direct request to do so shows "You can't deactivate yourself."
 - **FR-016**: The app MUST refuse any change that would leave the CRM with no active admin.
 - **FR-017**: Changes to a user's role or status MUST take effect on that user's next request, without them having to sign out.
 - **FR-018**: The app MUST record who made each change to a user (added, role changed, deactivated, reactivated) and when.
