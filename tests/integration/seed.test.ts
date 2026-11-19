@@ -132,7 +132,7 @@ describe("fake people and organisations", () => {
       ...p.organisations.map((o) => ({ org: String(o.id) })),
       { consent: "subscribed" },
       { consent: "unsubscribed" },
-      ...PEOPLE_SORTS.flatMap((sort) => [{ sort }, { sort, dir: "desc" }]),
+      ...PEOPLE_SORTS.flatMap((sort): Record<string, string>[] => [{ sort }, { sort, dir: "desc" }]),
     ];
     for (const q of checks) expect((await listPeople(ada.id, parsePeopleQuery(q))).total, JSON.stringify(q)).toBeGreaterThan(0);
     const o = await organisationFilterOptions();
@@ -140,7 +140,7 @@ describe("fake people and organisations", () => {
       ...o.owners.map((x) => ({ owner: String(x.id) })),
       ...o.sectors.map((sector) => ({ sector })),
       ...SIZES.map((size) => ({ size })),
-      ...ORGANISATION_SORTS.flatMap((sort) => [{ sort }, { sort, dir: "desc" }]),
+      ...ORGANISATION_SORTS.flatMap((sort): Record<string, string>[] => [{ sort }, { sort, dir: "desc" }]),
     ];
     for (const q of orgChecks) expect((await listOrganisations(ada.id, parseOrganisationsQuery(q))).total, JSON.stringify(q)).toBeGreaterThan(0);
     // The acceptance example of US3: lead source "Exec dinner" and owner "Ada Fake".

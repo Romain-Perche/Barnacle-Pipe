@@ -1,0 +1,106 @@
+// An organisation's page, design C: header, // DETAILS, // PEOPLE, // TIMELINE.
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { requireUser } from "@/server/auth/session";
+import { formatDate } from "@/server/format";
+import { messages } from "@/server/messages";
+import { parseId } from "@/server/records/list-query";
+import { getOrganisation, peopleOf } from "@/server/records/organisations";
+import { readTimeline } from "@/server/records/timeline";
+import { DeleteConfirm } from "../../records/DeleteConfirm";
+import { RecordHeader } from "../../records/RecordHeader";
+import { Timeline } from "../../records/Timeline";
+import { archiveOrganisation, deleteOrganisation, restoreOrganisation } from "../actions";
+
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ confirm?: string }> };
+
+export default async function OrganisationPage({ params, searchParams }: Props) {
+  const user = await requireUser();
+  const id = parseId((await params).id);
+  if (id === null) notFound();
+  const org = await getOrganisation(user.id, id);
+  if (!org) notFound();
+  const [people, events] = await Promise.all([peopleOf(user.id, id), readTimeline(user.id, { organisationId: id })]);
+  const isAdmin = user.role === "admin";
+  const confirming = isAdmin && (await searchParams).confirm === "delete";
+  const href = `/organisations/${id}`;
+  const rows: [string, React.ReactNode][] = [
+    [
+      "Website",
+      org.website ? (
+        <a href={org.website} target="_blank" rel="noopener noreferrer">
+          {org.website}
+        </a>
+      ) : (
+        "—"
+      ),
+    ],
+    ["Sector", org.sector ?? "—"],
+    ["Size", org.size ?? "—"],
+    ["Location", org.location ?? "—"],
+    ["Owner", org.owner.active ? org.owner.name : `${org.owner.name} (deactivated)`],
+    ["Date added", formatDate(org.createdAt)],
+  ];
+
+  return (
+    <>
+      <RecordHeader
+        kind="ORGANISATION"
+        name={org.name}
+        archived={org.archived}
+        editHref={`${href}/edit`}
+        deleteHref={isAdmin ? `${href}?confirm=delete` : null}
+        id={id}
+        archive={archiveOrganisation}
+        restore={restoreOrganisation}
+      />
+      {confirming && <DeleteConfirm name={org.name} id={id} action={deleteOrganisation} cancelHref={href} />}
+
+      <section aria-label="Details">
+        <div className="label sect">
+          <span className="c">//</span> DETAILS
+        </div>
+        <dl className="details">
+          {rows.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section aria-label="People">
+        <div className="label sect">
+          <span className="c">//</span> PEOPLE
+        </div>
+        {people.length === 0 ? (
+          <p className="muted">{messages.no_people_yet}</p>
+        ) : (
+          <table className="users">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              {people.map((p) => (
+                <tr key={p.id}>
+                  <td>
+                    <Link href={`/people/${p.id}`}>{p.name}</Link>
+                  </td>
+                  <td>{p.role ?? "—"}</td>
+                  <td>{p.email ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <Timeline events={events} />
+    </>
+  );
+}

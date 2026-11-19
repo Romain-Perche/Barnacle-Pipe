@@ -15,12 +15,17 @@ OAuth code flow and database sessions.
 - `src/app/sign-in`, `src/app/auth/*`, `src/app/dev/fake-google` — public sign-in pages and routes.
 - `src/server/` — domain code, tested without the UI: `auth/rules.ts` (pure rules), `auth/session.ts`
   (`requireUser`, `requireAdmin`, `assertAdminForAction`), `auth/sign-in.ts`, `auth/google.ts`,
-  `users.ts`, `env.ts` (`isFakeAllowed`, `isPreview`), `messages.ts` (every user-facing message).
+  `users.ts`, `env.ts` (`isFakeAllowed`, `isPreview`), `messages.ts` (every user-facing message; `templates` for
+  messages built from a database name). `records/`: people, organisations, lead sources and labels —
+  `rules.ts` and `list-query.ts` (pure), `visibility.ts` (the one private-person rule: every `persons` read uses
+  `visiblePerson()`), `people.ts`, `organisations.ts`, `choices.ts`, `timeline.ts`, `flash.ts`, `form-data.ts`.
+- `src/app/(app)/records/` — UI shared by people and organisations (forms, picker, drawer, timeline, filter row).
 - `src/seed/` — fake data; `index.ts` is the seeder registry.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google schema) and
   `scripts/start-isolated.mjs` (browser tests start the app without the developer's `.env*` files).
-- `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/e2e` (Playwright), `tests/fakes` (outside services only).
+- `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/e2e` (Playwright), `tests/fakes` (outside services only),
+  `tests/support/reset.ts` (empties every app table; lead sources back to the six starting ones).
 
 ## Rules
 

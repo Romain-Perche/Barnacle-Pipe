@@ -30,7 +30,7 @@ export function formatLastSignIn(date: Date | null): string {
   return date ? formatDateTime(date) : "Never";
 }
 
-// Users page header counts: "1 USER", "2 USERS", "0 ADMINS".
-export function countLabel(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "S"}`;
+// Header counts: "1 USER", "2 USERS", "0 ADMINS"; an irregular plural is given: "132 PEOPLE".
+export function countLabel(n: number, word: string, plural = `${word}S`): string {
+  return `${n} ${n === 1 ? word : plural}`;
 }

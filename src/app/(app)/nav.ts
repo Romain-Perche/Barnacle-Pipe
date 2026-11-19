@@ -2,6 +2,13 @@
 // mainNav for everyone, adminNav for the "// Admin" group (shown to admins only).
 export type NavItem = { href: string; label: string };
 
-export const mainNav: NavItem[] = [{ href: "/", label: "Home" }];
+export const mainNav: NavItem[] = [
+  { href: "/", label: "Home" },
+  { href: "/people", label: "People" },
+  { href: "/organisations", label: "Organisations" },
+];
 
-export const adminNav: NavItem[] = [{ href: "/admin/users", label: "Users" }];
+export const adminNav: NavItem[] = [
+  { href: "/admin/users", label: "Users" },
+  { href: "/admin/lead-sources-and-labels", label: "Lead sources and labels" },
+];

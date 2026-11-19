@@ -38,3 +38,12 @@ describe("formatDate / formatDateTime", () => {
     expect(formatDateTime(new Date("2026-07-01T08:05:00Z"))).toBe(formatLastSignIn(new Date("2026-07-01T08:05:00Z")));
   });
 });
+
+// covers US3 scenario 1 ("// 132 PEOPLE")
+describe("countLabel with an irregular plural", () => {
+  it("uses the plural given", () => {
+    expect(countLabel(132, "PERSON", "PEOPLE")).toBe("132 PEOPLE");
+    expect(countLabel(1, "PERSON", "PEOPLE")).toBe("1 PERSON");
+    expect(countLabel(2, "ORGANISATION")).toBe("2 ORGANISATIONS");
+  });
+});

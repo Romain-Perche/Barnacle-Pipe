@@ -1,7 +1,9 @@
 # Barnacle-Pipe
 
 The Barnacle CRM: a Next.js (App Router, TypeScript) app on Postgres. The team signs in with their
-barnacle.ai Google account; admins manage who has access on the Users page. Product rules are in
+barnacle.ai Google account; admins manage who has access on the Users page. Everyone keeps the team's
+people and organisations (`/people`, `/organisations`); admins keep the lead source and label lists
+(`/admin/lead-sources-and-labels`). Product rules are in
 `docs/PRODUCT.md`, the look in `docs/DESIGN.md`, the team's choices in `docs/DECISIONS.md`.
 
 You need **no Google, Vercel or Supabase account** to develop or test: a fake Google login and fake
@@ -24,7 +26,7 @@ npm install
 npx playwright install chromium     # browser for the browser tests
 cp .env.example .env.local          # APP_ENV=development, DATABASE_URL=…/crm_dev, FIRST_ADMIN_EMAIL=ada@barnacle.ai
 npm run db:migrate                  # update the database structure
-npm run db:seed                     # load fake data (prints the fake users)
+npm run db:seed                     # load fake data (fake users, people and organisations)
 npm run dev                         # http://localhost:3000
 ```
 
@@ -34,6 +36,17 @@ shell wins over the file (`APP_ENV=production npm run db:seed` is refused even w
 Sign in: open http://localhost:3000, press `[ FAKE GOOGLE LOGIN ]` and pick **Ada Fake** (an admin).
 The fake data team is Ada Fake and Grace Fake (admins), Linus Fake and Margaret Fake (users) and
 Alan Fake (deactivated), all `@barnacle.ai`. On the fake login you can also type any email and name.
+The fake data also has 32 fake people (`@example.com` / `@example.net`, one archived, one private person
+created by Ada Fake), 9 fake organisations (one archived) and the labels Hot, Investor and Partner. A fresh
+database (no fake data) starts with the six lead sources Duncan's LinkedIn, Referral, Exec dinner, Inbound,
+Event and Ambassador, and no labels.
+
+| Page | Who | What |
+|---|---|---|
+| `/people`, `/organisations` | everyone | Lists: search, filters, sort, "Show archived", preview drawer (`?open=<id>`); all in the address |
+| `/people/new`, `/people/<id>`, `/people/<id>/edit` | everyone (a private person: only their creator) | Add, view, edit, archive/restore; admins delete |
+| `/organisations/new`, `/organisations/<id>`, `/organisations/<id>/edit` | everyone | Same for organisations, with their people |
+| `/admin/lead-sources-and-labels` | admins | Add, rename and remove lead sources and labels |
 
 ## Tests
 
