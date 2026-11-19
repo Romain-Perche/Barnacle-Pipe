@@ -10,7 +10,7 @@ Add pipelines with ordered stages, deals, and the deals board (design A: rounded
 "Pipeline: <name>" picker and `[ ADD DEAL ]` above, a deal drawer on the right with `// HISTORY`). Admins
 manage pipelines and stages on a new "Pipelines" admin page; anyone adds, edits, moves (drag, or the drawer's
 "Move to" form) and archives deals they can see; only admins delete. Private deals are seen only by their
-creator. Plain SQL on the existing Postgres (one migration: `pipelines`, `stages`, `deals`,
+creator and their owner (admins included). Plain SQL on the existing Postgres (one migration: `pipelines`, `stages`, `deals`,
 `deal_stage_periods`, and a `deal_id` + `moved` kind on the existing `timeline_events`), domain code in
 `src/server/deals/` (pure rules unit-tested, data functions integration-tested), thin server pages, and four
 client components (`Board` for drag and drop, `DealForm`, `PersonPicker`, `StageSelect`). Money stored as whole
@@ -22,7 +22,7 @@ pence. No new dependency: drag and drop uses the browser's own drag events.
 
 **Primary Dependencies**: Next.js 16.4 (App Router, server actions, `useActionState`, `useOptimistic`), React 19.3, `postgres` 4.1 — all already in the repo. Nothing added (research.md §1).
 
-**Storage**: PostgreSQL (local for dev/tests, Supabase through its pooler in production). New migration `migrations/0003_pipelines_deals.sql` (data-model.md).
+**Storage**: PostgreSQL (local for dev/tests, Supabase through its pooler in production). New migration `migrations/0004_pipelines_deals.sql` (data-model.md); `0003` is SF-92's `0003_private_owner_handover.sql`, built at the same time.
 
 **Testing**: Vitest (unit: money parse/format, deal and name validation, changed fields; integration against real Postgres: board counts/totals, visibility, admin checks, moves, deletes, concurrency, seed, RLS), Playwright (US1–US6 through the fake Google login, including a real drag).
 
@@ -32,7 +32,7 @@ pence. No new dependency: drag and drop uses the browser's own drag events.
 
 **Performance Goals**: SC-003 board with 10 stages × 500 open deals < 2 s: three indexed queries per board (research.md §7). SC-002: card moves at once (optimistic), server confirms in well under 1 s.
 
-**Constraints**: private deals and private people on deals never visible to anyone but their creator (SC-005); deal count unchanged by stage/pipeline deletes, enforced by a no-cascade FK (SC-007); admin checks inside the transaction (SC-006); every message from `messages.ts`; pipeline and open deal in the page address (FR-013).
+**Constraints**: private deals and private people on deals never visible to anyone but their creator and owner (SC-005); deal count unchanged by stage/pipeline deletes, enforced by a no-cascade FK (SC-007); admin checks inside the transaction (SC-006); every message from `messages.ts`; pipeline and open deal in the page address (FR-013).
 
 **Scale/Scope**: ≤ 10 users, ~10 pipelines, ≤ 10 stages each, a few thousand deals; 5 new screens (board + drawer, add deal, edit deal, pipelines, stages of a pipeline).
 
@@ -48,10 +48,10 @@ The binding rules are `docs/DECISIONS.md` and `AGENTS.md`; the plan is checked a
 | Server components by default, client only where needed | Board page, drawer, pipeline picker, admin pages are server-rendered (links, GET/POST forms). Client: `Board` (drag and drop), `DealForm` (`useActionState`), `PersonPicker`, `StageSelect` (stage list follows the chosen pipeline); `OrganisationPicker` and `AutoSubmit` reused | ✅ |
 | Every page `requireUser()`/`requireAdmin()`; every action `requireUser()`/`assertAdminForAction()` first | Per route in contracts/routes.md; domain functions re-check visibility, `isActiveAdmin` and versions inside the transaction | ✅ |
 | Messages only from `messages.ts`; never text from the URL; redirects via `isSafeNext` | New codes in contracts/routes.md § Messages; `?error=` allow-listed per page; ids parsed with `parseId`; deleted title via the `crm_flash` cookie; redirects go to fixed paths built from numeric ids | ✅ |
-| Migrations transaction-safe, RLS after every `create table`, never at app start | `0003_pipelines_deals.sql`: DDL only, RLS on the 4 new tables, added to `tests/integration/rls.test.ts` | ✅ |
+| Migrations transaction-safe, RLS after every `create table`, never at app start | `0004_pipelines_deals.sql`: DDL only, kind check keeps SF-92's `'handed_over'`, RLS on the 4 new tables, added to `tests/integration/rls.test.ts` | ✅ |
 | Fake data only when `isFakeAllowed()`, clearly fake names | `src/seed/deals.ts` registered in `src/seed/index.ts` (command already gated); "Fakeco"-style titles, owners are the fake users | ✅ |
 | Anyone archives a deal; only an admin deletes (kickoff) | `archiveDeal` for any viewer; `deleteDeal` via `assertAdminForAction()` + `isActiveAdmin` in the transaction | ✅ |
-| A private contact or deal hides it from everyone but its creator, admins included (kickoff) | `visibleDeal` in every deals query; people on deals through `visiblePerson` | ✅ |
+| A private contact or deal hides it from everyone but its creator and its owner, admins included (kickoff, widened by SF-92 and the Plan Review) | `visibleDeal` (creator or owner) in every deals query; people on deals through `visiblePerson` | ✅ |
 | Money in GBP only (kickoff) | `value_pence`, `formatMoney` in GBP only | ✅ |
 | A deal has one main contact (+ others later) (kickoff) | `deals.person_id`; other linked people and followers left for the next issue (spec Assumptions) | ✅ |
 | Users are deactivated, never deleted (SF-80) | owner/creator/actor FKs to `users` without cascade; "(deactivated)" shown | ✅ |
@@ -81,7 +81,7 @@ specs/sf-93-step-3-pipelines-deals-and-the-board/
 
 ```text
 migrations/
-└── 0003_pipelines_deals.sql        # pipelines, stages, deals, deal_stage_periods; timeline_events changes; RLS
+└── 0004_pipelines_deals.sql        # pipelines, stages, deals, deal_stage_periods; timeline_events changes; RLS
 
 src/
 ├── app/(app)/
@@ -112,7 +112,7 @@ src/
 │   ├── records/
 │   │   ├── visibility.ts            # + visibleDeal(db, viewerId, alias = "d")
 │   │   ├── timeline.ts              # + dealId target, "moved" kind, from/to stage, cause; deal visibility check
-│   │   ├── flash.ts                 # + "deal_deleted" in CODES
+│   │   ├── flash.ts                 # + "deal_deleted", "deal_no_longer_visible" in CODES
 │   │   └── form-data.ts             # + dealFormFromData
 │   ├── format.ts                    # + formatMoney(pence | null)
 │   └── messages.ts                  # + codes and templates (contracts/routes.md § Messages)
@@ -137,7 +137,7 @@ the flash cookie and the drawer styles. The privacy rules for people and deals l
 
 ## Build steps (in order)
 
-1. **Migration** `migrations/0003_pipelines_deals.sql` exactly as data-model.md (confirm the two default
+1. **Migration** `migrations/0004_pipelines_deals.sql` exactly as data-model.md (kind check with `'handed_over'` and `'moved'`) — migrations run in name order and skip applied files, so if this change reaches a database before SF-92, SF-92's `0003` would later replace the kind check without `'moved'` and fail on existing `moved` events: SF-92 must merge first, or its `0003` must also list `'moved'` (confirm the two default
    constraint names on `timeline_events` first); add `pipelines`, `stages`, `deals`, `deal_stage_periods` to
    `tests/integration/rls.test.ts`; `tests/support/reset.ts` empties the four new tables.
 2. **Pure rules** `src/server/deals/rules.ts` + `formatMoney` in `src/server/format.ts` (research.md §2,

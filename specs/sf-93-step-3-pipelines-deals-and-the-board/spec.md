@@ -20,7 +20,9 @@
 - Q: A user edits a deal whose main person is private to someone else (so the form shows no person): what happens to that link when they save? → A: It is kept: the user never sees it and an empty person field does not remove it; picking a person they can see replaces it (decided by the factory, to confirm)
 - Q: An admin deletes a pipeline with deals while no other pipeline has a stage: what happens? → A: Refused with "Add a stage to another pipeline first, so its deals have somewhere to go."; nothing is deleted (decided by the factory, to confirm)
 - Q: Does `[ ARCHIVE ]` in the drawer ask for confirmation? → A: No, as for people and organisations: archiving is undone from the deal page in the next issue (decided by the factory, to confirm)
-- Q: The creator of a private deal is deactivated: who sees the deal? → A: Nobody, admins included, as the team rule on private records says; it stays in the database and comes back if the user is reactivated (decided by the factory, to confirm)
+- Q: The creator of a private deal is deactivated: who sees the deal? → A: A private deal is visible to its creator and its owner, nobody else, admins included, as SF-92 does for private people. So the owner still sees it when the creator is deactivated; when neither creator nor owner is active, nobody sees it, and it comes back if one of them is reactivated (alexis@barnacle.ai)
+- Q: How does this migration fit with SF-92, which runs at the same time and changes the same table? → A: Name it `migrations/0004_pipelines_deals.sql`. SF-92's `0003_private_owner_handover.sql` also replaces `timeline_events_kind_check` to add 'handed_over'; the new check keeps it: ('added', 'edited', 'archived', 'restored', 'person_linked', 'person_unlinked', 'handed_over', 'moved') (alexis@barnacle.ai)
+- Q: Who can turn "Private" on or off for a deal, and what happens when the owner gives a private deal to someone else? → A: As SF-92 for people: the creator and the current owner can; a user who saves a private deal so that they are neither its creator nor its owner is taken back to the board with "You can no longer see <title>: only its creator and owner can." (follows the reply "Do the same for deals") (alexis@barnacle.ai)
 - Q: How are pipelines and stages reordered on the Pipelines page? → A: With `[ ↑ ]` and `[ ↓ ]` buttons on each row (works with a keyboard and without JavaScript), not by dragging (decided by the factory, to confirm)
 - Q: What is the largest deal value accepted? → A: £9,999,999,999.99; anything larger shows "Enter a value in pounds, for example 4000 or 4000.50." (decided by the factory, to confirm)
 
@@ -120,18 +122,20 @@ An admin, on the "Pipelines" page in the "// Admin" group, manages pipelines and
 
 ### User Story 6 - Private deals (Priority: P3)
 
-The person who added a deal can mark it private. A private deal is visible only to them — admins included — on boards, in column counts and totals, and by address.
+The person who added a deal, or its owner, can mark it private. A private deal is visible only to its creator and its owner — nobody else, admins included — on boards, in column counts and totals, and by address.
 
 **Why this priority**: Required by the team decision on private contacts and deals; it must exist from the start so emails and notes attached to deals later never leak.
 
-**Independent Test**: As user A, add a deal and mark it private; as user B and as an admin, confirm the card is absent, the column count and total exclude it, and its drawer address shows the board with no drawer.
+**Independent Test**: As user A, add a deal, mark it private and make user B its owner; as B, confirm the card and drawer show it with the "Private" badge; as user C and as an admin, confirm the card is absent, the column count and total exclude it, and its drawer address shows the board with no drawer.
 
 **Acceptance Scenarios**:
 
 1. **Given** user A created a deal, **When** A ticks "Private" and saves, **Then** A's card and drawer show a "Private" badge.
-2. **Given** a private deal of A, **When** any other user (admins included) views the board, **Then** the card is not shown, the column count and total do not include it, and an address naming its drawer shows the board with no drawer.
-3. **Given** a deal created by A, **When** another user edits it, **Then** the "Private" option is not offered to them, and no edit, move, archive or delete request from them changes a private deal.
-4. **Given** a deal whose main person is private to A, **When** another user views the deal's card or drawer, **Then** no person is shown (the private person is never named).
+2. **Given** a private deal created by A and owned by A, **When** any other user (admins included) views the board, **Then** the card is not shown, the column count and total do not include it, and an address naming its drawer shows the board with no drawer.
+3. **Given** a deal created by A and owned by B, **When** user C (neither creator nor owner) edits it, **Then** the "Private" option is not offered to C, and once the deal is private no edit, move, archive or delete request from C (or from an admin who is neither) changes it.
+4. **Given** a deal whose main person is private to A (A is that person's creator and owner), **When** another user views the deal's card or drawer, **Then** no person is shown (the private person is never named).
+5. **Given** user A adds a private deal "Fakeco website" and chooses B as owner, **When** B opens the board, **Then** B sees the card with the "Private" badge, it counts in B's column total, and B can open the drawer, edit, move, archive it and untick "Private"; user C and an admin still do not see it.
+6. **Given** B owns private "Fakeco website" (created by A), **When** B changes its owner to C and saves, **Then** B is taken to the board showing "You can no longer see Fakeco website: only its creator and owner can." and the card is gone for B, while A and C see it.
 
 ---
 
@@ -142,6 +146,8 @@ The person who added a deal can mark it private. A private deal is visible only 
 - A long title or organisation name wraps on the card; it never widens the column.
 - The deal's person or organisation is archived: the card and drawer still show it, marked "Archived" in the drawer. An admin deletes the organisation or person: the deal stays, with no organisation or person.
 - A deal's owner is deactivated: the deal keeps that owner, shown with "(deactivated)"; deactivated users are not offered as new owners.
+- The creator of a private deal is deactivated while its owner is active: the owner still sees, counts and manages the deal; admins still do not see it. When both creator and owner are deactivated, nobody sees it; it stays saved and comes back if one of them is reactivated.
+- A private deal's owner is changed again (A creates, B owns, then C owns): only A and C see it; B no longer does.
 - Two users edit the same deal in the drawer at the same time: the second save shows "Someone else changed this deal while you were editing. Reload to see their changes." and does not overwrite the first.
 - A board address naming a pipeline that does not exist, or a drawer for a deal that does not exist, is archived, is in another pipeline or is private to someone else: the first pipeline's board (or the named board) is shown with no drawer, and no text from the address is shown.
 - A pipeline has 10 or more stages: the board scrolls sideways, and every column header still shows its full stage name, count and total.
@@ -181,8 +187,8 @@ The person who added a deal can mark it private. A private deal is visible only 
 
 **Private deals**
 
-- **FR-015**: The user who created a deal MUST be able to mark it private or not private; nobody else may change it.
-- **FR-016**: A private deal MUST be invisible to everyone except its creator, admins included: not on boards, in counts or totals, in drawers or by address, and no edit, move, archive or delete request from anyone else may change it. A private person linked to a deal MUST never be shown to anyone but that person's creator.
+- **FR-015**: The user who created a deal and its current owner MUST be able to mark it private or not private; nobody else may change it.
+- **FR-016**: A private deal MUST be visible to its creator and its current owner and invisible to everyone else, admins included: not on boards, in counts or totals, in drawers or by address, and no edit, move, archive or delete request from anyone else may change it. A user who saves a private deal so that they are neither its creator nor its owner MUST be taken to the board with "You can no longer see <title>: only its creator and owner can.". A private person linked to a deal MUST never be shown to anyone the people rules hide them from (their creator and, once SF-92 is merged, their owner see them).
 
 **Access, navigation, messages, look**
 
@@ -211,7 +217,7 @@ The person who added a deal can mark it private. A private deal is visible only 
 - **SC-002**: Moving a deal to another stage takes one drag; the card shows in its new column within 1 second.
 - **SC-003**: A board with 10 stages and 500 open deals shows in under 2 seconds.
 - **SC-004**: In automated tests, every column's count and total equals the number and sum of the visible, non-archived deals in that stage, after adds, edits, moves, archives and deletes.
-- **SC-005**: In automated tests, a private deal never appears, and never counts, for any user other than its creator (admins included), on any board, total, drawer or direct address.
+- **SC-005**: In automated tests, a private deal appears and counts for its creator and its owner, and never appears or counts for any other user (admins included), on any board, total, drawer or direct address.
 - **SC-006**: 100% of deal deletes from non-admins, and of pipeline and stage changes from non-admins, are refused in automated tests, including direct requests that bypass the page.
 - **SC-007**: Deleting a stage or pipeline never loses a deal: in automated tests the number of deals is the same before and after.
 

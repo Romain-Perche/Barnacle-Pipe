@@ -75,12 +75,14 @@ CLARIFICATION. Each decision below follows the patterns already in `src/server/r
 ## 5. Visibility of private deals and private people on deals
 
 - **Decision**: one SQL fragment `visibleDeal(db, viewerId, alias = "d")` =
-  `(not d.private or d.created_by = viewerId)` in `src/server/records/visibility.ts`, next to
+  `(not d.private or d.created_by = viewerId or d.owner_id = viewerId)` in `src/server/records/visibility.ts`, next to
   `visiblePerson`. Every `deals` read (board cards, column totals, drawer, edit form, every change) uses it;
   every person shown on a deal is joined with `visiblePerson` (`left join persons p on p.id = d.person_id and
   <visiblePerson>`), so a private person is never named (FR-016, US6 scenario 4).
 - Changes from someone else on a private deal find no row → `not_found` (nothing changes, nothing leaks).
-- Only the creator may change `private` (as for people).
+- The creator and the current owner may change `private` (as SF-92 for people). Saving a private deal so that the actor is neither creator nor owner redirects to the board with `deal_no_longer_visible` (SF-92 FR-003 for people).
+- Plan Review (alexis@barnacle.ai): a private deal is visible to its creator and its owner, nobody else, admins included. `visiblePerson` itself is changed by SF-92; deal code only calls it, so people on deals follow whichever rule is merged.
+- The migration is `0004_pipelines_deals.sql` and its kind check includes SF-92's `'handed_over'` (Plan Review).
 - A hidden main person is kept on edit when the person field comes back empty (spec Clarifications).
 
 ## 6. Pipelines and stages: order, names, delete

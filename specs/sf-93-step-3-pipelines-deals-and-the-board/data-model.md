@@ -1,6 +1,6 @@
 # Data model: Pipelines, deals and the board
 
-One new migration, `migrations/0003_pipelines_deals.sql`. Only statements allowed in a transaction;
+One new migration, `migrations/0004_pipelines_deals.sql`. Only statements allowed in a transaction;
 `alter table … enable row level security` (no policy) after every `create table`. Add the four new tables to
 the list in `tests/integration/rls.test.ts`.
 
@@ -39,7 +39,7 @@ Index: `stages (pipeline_id, position)`.
 | `person_id` | `bigint null references persons (id) on delete set null` | main person |
 | `owner_id` | `bigint not null references users (id)` | active user when set; kept when deactivated |
 | `expected_close_on` | `date null` | |
-| `private` | `boolean not null default false` | changed only by `created_by` |
+| `private` | `boolean not null default false` | changed only by `created_by` or the current `owner_id` |
 | `created_by` | `bigint not null references users (id)` | |
 | `created_at` | `timestamptz not null default now()` | "Date added" |
 | `archived_at` | `timestamptz null` | archived deals stay in their stage, never shown or counted on the board |
@@ -74,14 +74,14 @@ alter table timeline_events add column to_stage text null;
 alter table timeline_events add column cause text null check (cause in ('stage_deleted', 'pipeline_deleted'));
 alter table timeline_events drop constraint timeline_events_kind_check;
 alter table timeline_events add constraint timeline_events_kind_check
-  check (kind in ('added', 'edited', 'archived', 'restored', 'person_linked', 'person_unlinked', 'moved'));
+  check (kind in ('added', 'edited', 'archived', 'restored', 'person_linked', 'person_unlinked', 'handed_over', 'moved'));
 alter table timeline_events drop constraint timeline_events_check;   -- num_nonnulls(person_id, organisation_id) = 1
 alter table timeline_events add constraint timeline_events_target_check
   check (num_nonnulls(person_id, organisation_id, deal_id) = 1);
 create index timeline_events_deal_idx on timeline_events (deal_id, created_at desc);
 ```
 
-The two dropped constraint names are Postgres's defaults for the unnamed checks in `0002`; Build confirms them
+The kind list keeps SF-92's `'handed_over'` (its `0003_private_owner_handover.sql` replaces the same check), so the file is right whichever of the two is merged first; it is numbered `0004` so it runs after SF-92's `0003`. The two dropped constraint names are Postgres's defaults for the unnamed checks in `0002`; Build confirms them
 (`select conname from pg_constraint where conrelid = 'timeline_events'::regclass`) before writing the file.
 
 `moved` events: `from_stage` / `to_stage` hold the names shown ("Qualified", or "Sales · Qualified" when the
@@ -90,7 +90,7 @@ pipeline changes), `cause` the reason for admin-driven moves. `edited` events on
 
 ## Visibility (FR-016)
 
-`visibleDeal(db, viewerId, alias = "d")` → `(not d.private or d.created_by = viewerId)`, in
+`visibleDeal(db, viewerId, alias = "d")` → `(not d.private or d.created_by = viewerId or d.owner_id = viewerId)` (creator and current owner, as SF-92 for people), in
 `src/server/records/visibility.ts`. Used by every query that reads `deals` (cards, column counts and totals,
 drawer, edit form, timeline of a deal, every change). Person names on deals always come through
 `left join persons p on p.id = d.person_id and <visiblePerson(p)>`. Organisations are always shared.
@@ -106,7 +106,7 @@ drawer, edit form, timeline of a deal, every change). Person names on deals alwa
 | person | visible, non-archived person, or the current one; a hidden current person is kept when the field is empty | — (anything else is ignored → no person) |
 | owner | `resolveOwner` (existing) | — |
 | expected close | empty or `YYYY-MM-DD`, a real date | `deal_close_date_invalid` |
-| private | only from the creator | — |
+| private | only from the creator or the current owner | — |
 | pipeline / stage name | trimmed, 1–100 chars, unique ignoring case (stage: within its pipeline) | `pipeline_name_required`, `pipeline_name_exists` |
 
 `changedDealFields(before, after)` returns the field labels above (`Value`, …) for the history line.
@@ -116,7 +116,7 @@ drawer, edit form, timeline of a deal, every change). Person names on deals alwa
 | Change | Who | Effect (one transaction) |
 |---|---|---|
 | add deal | any user | insert deal (owner default = actor, `created_by` = actor); open period; event `added` |
-| edit deal | any user who sees it | `version` check; update; `version + 1`; event `edited` (fields) if anything changed |
+| edit deal | any user who sees it | `version` check; update; `version + 1`; event `edited` (fields) if anything changed; if the deal is private and the actor is now neither creator nor owner → result `no_longer_visible` (redirect to the board with `deal_no_longer_visible`) |
 | move deal (drag or "Move to") | any user who sees it, not archived | `version` + `stage_id` check; close open period (`left_at = now()`), open new period, `stage_id`, `stage_entered_at = now()`, `version + 1`; event `moved`. Same stage → nothing |
 | archive deal | any user who sees it | `archived_at = now()`, `version + 1`; event `archived` (stage kept) |
 | delete deal | active admin who sees it | delete row (periods and events cascade); flash "<title> was deleted." |

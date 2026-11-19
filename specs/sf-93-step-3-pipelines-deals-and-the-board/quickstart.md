@@ -6,7 +6,7 @@ Local Postgres and the setup in `README.md`. Then:
 
 ```bash
 export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test
-npm run db:migrate          # applies 0003_pipelines_deals.sql
+npm run db:migrate          # applies 0004_pipelines_deals.sql
 npm run db:seed             # users, people, then pipelines and deals
 npm run db:seed             # again: prints "already there" lines, adds nothing (FR-021)
 ```
