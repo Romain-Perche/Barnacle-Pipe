@@ -13,6 +13,12 @@
 ### Session 2026-11-19
 
 - Q: Which design do you want for the Users page? → A: Design: A, a table with the actions on each row ([ MAKE ADMIN ] / [ REMOVE ADMIN ], [ DEACTIVATE ] / [ REACTIVATE ]) and an add field with [ ADD USER ] above it (see `design-options.html`).
+- Q: Which time zone and format does the Users page use for last sign-in? → A: UK time (Europe/London), written like "19 Nov 2026, 09:12", or "Never" (decided by the factory, to confirm)
+- Q: Are the user change records (who added, promoted, demoted, deactivated or reactivated whom) shown anywhere? → A: No: they are kept in the database only, never deleted, and no page shows them in this feature (decided by the factory, to confirm)
+- Q: Should a barnacle.ai Google account whose email address Google has not verified be allowed to sign in? → A: No: it is refused with "Only barnacle.ai Google accounts can sign in." (decided by the factory, to confirm)
+- Q: Does `[ Sign out ]` end the session on every browser or only the current one? → A: Only the current browser; deactivation ends all of the user's sessions (decided by the factory, to confirm)
+- Q: In development and test, what does the sign-in page offer? → A: The normal "Sign in with Google" button plus a `[ FAKE GOOGLE LOGIN ]` link; the link never appears in any other environment (decided by the factory, to confirm)
+- Q: Which fake users does the fake data command create? → A: Clearly fake names, not the real team: Ada Fake and Grace Fake (admins), Linus Fake and Margaret Fake (users), Alan Fake (deactivated), all @barnacle.ai (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 

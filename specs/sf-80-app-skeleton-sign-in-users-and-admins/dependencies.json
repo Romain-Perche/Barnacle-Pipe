@@ -1,0 +1,14 @@
+[
+  {"name": "next", "version": "16.4.6", "manager": "npm", "why": "The web framework the team chose (Next.js App Router): pages, server actions, routing and the Vercel build."},
+  {"name": "react", "version": "19.3.1", "manager": "npm", "why": "Required by Next.js to render the pages."},
+  {"name": "react-dom", "version": "19.3.1", "manager": "npm", "why": "Required by Next.js to render the pages in the browser."},
+  {"name": "postgres", "version": "4.1.1", "manager": "npm", "why": "Talks to the Postgres database (local and Supabase's pooler) with plain SQL; a database driver cannot reasonably be hand-written."},
+  {"name": "geist", "version": "1.9.2", "manager": "npm", "why": "The Geist and Geist Mono fonts that docs/DESIGN.md requires, including the rounded-dot style that Google Fonts strips."},
+  {"name": "typescript", "version": "6.0.3", "manager": "npm", "why": "The team writes the app in TypeScript; Next.js uses it to type-check the build (6.0 rather than the brand-new 7.0 for tooling compatibility)."},
+  {"name": "@types/node", "version": "26.6.6", "manager": "npm", "why": "Type definitions for Node.js APIs used by the server code and scripts (crypto, process)."},
+  {"name": "@types/react", "version": "19.3.0", "manager": "npm", "why": "Type definitions for React, needed by TypeScript."},
+  {"name": "@types/react-dom", "version": "19.3.0", "manager": "npm", "why": "Type definitions for React DOM, needed by TypeScript."},
+  {"name": "tsx", "version": "4.23.15", "manager": "npm", "why": "Runs the TypeScript migration and fake-data commands directly, sharing the app's code and its import paths, without a separate build step."},
+  {"name": "vitest", "version": "5.1.1", "manager": "npm", "why": "Runs the automated tests of the sign-in rules and user management (FR-030)."},
+  {"name": "@playwright/test", "version": "1.65.1", "manager": "npm", "why": "Runs the browser tests of sign-in, sign-out and the Users page; Playwright is the browser test tool the team chose."}
+]
