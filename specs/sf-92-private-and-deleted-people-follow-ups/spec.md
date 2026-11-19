@@ -15,6 +15,10 @@
 - Q: Which design for handing over a deactivated user's private people on the Users page? → A: Design: B, `[ HAND OVER ]` opens a panel above the Users table with the user choice and the question "Hand Alan Fake's 2 private people to Margaret Fake?" (see `design-options.html`).
 - Q: Who can turn "Private" on or off for a person? → A: The creator and the current owner.
 - Q: What does "frees the email addresses" mean after a hand-over? → A: The new owner sees the people and their addresses and can remove an address or make the person shared; nothing is removed automatically.
+- Q: Are a deactivated user's archived private people counted and handed over too? → A: Yes: every private person they own, archived or not, is counted on the Users page and handed over; archived ones stay archived (otherwise their email addresses would stay blocked with nobody able to act on them) (decided by the factory, to confirm)
+- Q: What does the hand-over panel show before a user is chosen? → A: The user choice starts on "Choose a user", the question line is empty and the explanation reads "They stay private. The user you choose becomes their owner and can see them. You will not see who they are."; once a user is chosen it shows "Hand Alan Fake's 2 private people to Margaret Fake?" and names them in the explanation (decided by the factory, to confirm)
+- Q: What does the "Private" tick box on the person form say now that the owner also sees the person? → A: "Private (only the creator and the owner can see this person)" instead of "Private (only you can see this person)" (decided by the factory, to confirm)
+- Q: Does the Users page show how many private people an active user owns? → A: No: the count is shown only on deactivated users' rows, so admins learn nothing about active users' private contacts (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
