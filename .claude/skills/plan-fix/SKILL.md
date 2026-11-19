@@ -29,6 +29,10 @@ No argument is needed: the inputs come from the run's `feedback` and `history`.
 3. **Inputs:** `feedback` is the failure: the review's notes, or Build's explanation. `base` is the branch the
    pull request goes to. `history` holds the
    earlier comments of this task and the replies to them, each with author and date, oldest first.
+   When `feedback` says a blueprint changed after the plan, nothing failed: the plan must follow the new
+   version. Read it in `$WS/blueprints/`, set its version in `<feature>/blueprints.json` to the index's (or
+   remove the entry when the blueprint is gone), plan the changes its new rules need (or an exception, with its
+   line in `docs/DECISIONS.md`), and ask the person as usual.
 4. **Phase:** **Reply** when the latest `plan-fix` comment in the history has a reply after it, else
    **Plan**.
 5. **Running other skills:** they have `disable-model-invocation: true`. To run `/speckit-X` with argument

@@ -55,7 +55,10 @@ question in the latest comment by meaning; a number helps but is optional. For e
    answers as their argument (once each, all answers together, rule 5).
 3. If the answer adds, removes or changes a dependency, update `<feature>/dependencies.json` (a JSON list of
    `{"name", "version", "manager", "why"}`, every direct dependency the whole change adds or upgrades).
-4. If the answer adds or changes an outside service, update `## Outside services` in `plan.md` as
+4. If the answer settles a blueprint choice, update its entry in `<feature>/blueprints.json`: the exception
+   with `"decided_by": "person"`, or `null` when the person keeps the blueprint. Change the plan step and
+   its `docs/DECISIONS.md` line to match.
+5. If the answer adds or changes an outside service, update `## Outside services` in `plan.md` as
    `prompts/plan.md` says (its schema on GitHub, or `no public schema found on GitHub`). Never ask a
    question about how to test: Build and the AI review decide it (`.claude/skills/test-recipe/SKILL.md`).
 
@@ -96,10 +99,15 @@ Sections, in this order:
 7. **Dependencies.** Exactly the rows of `<feature>/dependencies.json` (the list the factory checks the
    pull request against): one table row per item, name, version, what it is for in plain words. `[]`:
    "No new dependency." The Linear comment never lists them.
-8. **Risks and unknowns.** Lines labelled **Risk** or **Unknown**, as the skill says. First, one
+8. **Blueprints.** Exactly the rows of `<feature>/blueprints.json`, the factory's standard ways this change
+   follows: one table row per item, the blueprint and its version (`data/database@1`), what it is (its
+   `description` in `$WS/blueprints/INDEX.md`), and the exception in plain words with who decided it ("the
+   issue", "the repo already does it", "you", "the factory, to confirm"), else "Followed". Exceptions first.
+   No file or `[]`: "No blueprint applies." A choice to confirm is also in **Decide**.
+9. **Risks and unknowns.** Lines labelled **Risk** or **Unknown**, as the skill says. First, one
    **Warning** line per outside service that `plan.md` marks `no public schema found on GitHub`: its fake
    follows the service's docs only, so the tests cannot catch a wrong field name.
-9. **The plan in detail.** In `<details>`, closed: `plan.md` only (not the task list), rendered from
+10. **The plan in detail.** In `<details>`, closed: `plan.md` only (not the task list), rendered from
    Markdown to HTML as a Markdown viewer shows it (headings, lists, tables, bold, links, code blocks in
    `<pre>`, task checkboxes as ☐ / ☑), never as raw Markdown text. Escape the text. The one place for
    code names and file paths.
