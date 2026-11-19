@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:431c6d063cc3c3c6994683d583df40ad8c2ab99d65fac3a1c745bd30709f9396",
+  "claims": [
+    {
+      "id": "claim_2809e98e51594f1383b9be3c86ee7680",
+      "statement": "New sidebar links are added to mainNav for everyone or adminNav for the admin-only group.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/(app)/nav.ts#L1-L7",
+          "version": "repo-lines-v1:sha256:af3998fa7d3390202a9a890766139ee76b820b796a3a805a607f9e8e99ff5576:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTdjYzU2ODI0OGFmYTMxNTQzMTA1NmUyNmNkN2RiMWUwYmQ3NGVlNDg3MTAzNzk0YTkxNjI0ZTUyZjcxZTYzYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGEzZmFiMmVlMjA3ODNiNmM5ODlhMzU5NDU5ZThhY2NmZGM1ODk1NTQ4NGU5ODY0YWQ1NzAzOTZkYmMzMjA3YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_629817481b8d418eba68acc158ef07d9",
+      "statement": "New fake data is added as an entry in the ordered seeders registry, and each seeder must be re-runnable.",
+      "evidence": [
+        {
+          "resource": "repo://src/seed/index.ts#L1-L8",
+          "version": "repo-lines-v1:sha256:2cc57cbd35de5b11b58287d4f35cd13ef95b187d34511c93473116c7b1512839:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjQwY2EzMDA1NzI4MTkzNmIxNDk2YmQ2OWIxMzgzMDBhZGUwMzkzZmRlYjFjNzA5NzAwZTU2MzcxMmI5MjJkOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjAyZDJjMGQ2ZGM1ZTc0ZDkyZmExNGI5MWRiZWEyNjQwOTBiZWIzNWZkYjkxODhkOWIzNDExODFkY2U5ZjRjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2MyZDJlMTY1MjlmM2FiYjM5NDZkOThmMzVkYWFkNjRlMDZmYzU3OGE3NWMzMDU0NWVmYTc0NDU2Mzc1MzViYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_800fc2f602d941028ce0ab30e4c9051e",
+      "statement": "Every migration may contain only statements allowed in a transaction and must enable row level security after every create table.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0001_users_sessions.sql#L1-L3",
+          "version": "repo-lines-v1:sha256:87d7e79ffe204ab5b86ec0b22c2722ccee44d759fdd27deaa713ec5f35641630:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDRmZTJiMjc2ZDU4OTJkNGYyM2U4NWEzNjgzZjVhMjNhNzVmNWY2NDhlOGQzYTkzYmUzZmMxNmM0NTUwMTI5OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjRhZWU3ZWFkZDEwYmU2MzNhMGMyNGYyMWY0ZTA4ODAzMTYyM2NhZjM3NDY3OTRlZmVlMmM1MjUwYTg0NjNkZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWI1YmZmZmIzY2IyZWU0ODVkNDBiYjc5OTY5ZDIzNGI3NDJlZTQzNGNkZGI2YjNhOTQ3NGRlNzc1MjYzZDlmNiJ9"
+        },
+        {
+          "resource": "repo://tests/integration/rls.test.ts#L14-L19",
+          "version": "repo-lines-v1:sha256:c1da3a160101273628de672e4f353404d0d7e16d9e6a4ebaf77592d0822372c5:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGVkMmUzMzJiYTYzNWJlNjg3Nzk3NDIzZGJkZDllMDZiYmNjOTJmYmM1NzRiZjdiZTQ5MDBiZjMyY2IwZGIxOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDE4NGIzZWE2OWYzODgxZGU2OGJlNjQ0NDBjZGE4MDhkOTZhMzNkZDAwYzJmYzBhMGUyMmY2OTM0MDI5OTdiYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTYzNzAxNzI4YjQ3MmM4N2YxNThkMzc1YzYwNmM3MWU1OTkwODQyYmQ0Y2Y3MzBjMWNlMmFkMDk0MjhiMDU3YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjIzNWVkN2M1YWEwZmMyYzE0NThlN2UyYzhjZGE4YTUyY2NhZDA4NGJiMDJjZGM2OTAxMzQ1ZTgwNmRmNjZlNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ae1e9fbaebeb4d6c83c343f9baf7b9ad",
+      "statement": "Project rules require every signed-in page to call requireUser()/requireAdmin() and every server action to call requireUser() or assertAdminForAction() first.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md",
+          "version": "repo-file-v1:sha256:7d00a47c7ff93fb56e9a2ab5fbe99fb4f7cdd2ede3dd65d200e563d917cc632b"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

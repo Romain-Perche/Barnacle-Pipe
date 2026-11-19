@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:439d38cfc411f91411be232ef56cfdc3fc9ba0d1cf7e8b8a05d0cfafb6bb9773",
+  "claims": [
+    {
+      "id": "claim_a6e28665edd74e5a8d730754a3b01eab",
+      "statement": "db:migrate applies migration files in name order, each in its own transaction under pg_advisory_xact_lock, skipping files already recorded in schema_migrations.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/migrate.ts#L9-L35",
+          "version": "repo-lines-v1:sha256:03b1fd582c992bb850bc4c795c6dfb36da12f27126b4a1848c86bf13dea943e5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkOGE2N2FmNzUzN2Y5NWM1Y2Q1ZmRmZTQyYTU0OWY3NzAzZDM0YWY4ZDBkMGM3NDFkOTdlNGFhYWNmZDU5ZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYzZTg1NWI3YTEwNjA5OTA3MjgyMDg4MzVmN2VmODdjYzhjZDliMDVjYmY2NDA4NThhNjVmNjQyNDlmMTdiZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhNzAyZGY5MzU3MDhhNjZhMjg2MTg1ZDI5YzRkM2U0MzFlMTE0NDA5ZmJjYTE3YzUxODE1MDMwMzcyYTc4ZWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ffc4ddb6186b4807abbf3e26f299970f",
+      "statement": "db:seed refuses before any database connection unless isFakeAllowed() is true.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/seed.ts#L1-L18",
+          "version": "repo-lines-v1:sha256:bbdacae192ba328dfcc0726c1726f0625f64d64a05fceaa9d10db28f4cfd7b11:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3YTdjYzg1ZGExY2IyNzk3MjFmMjYwMzM2MTg1ODIyNDlhMGQwNmEyZjg5MDhkNjgxYjNlZjZkMTRhMGZjNDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0MGVhN2ZmNWZhNGY5MzI1NmNlZGNmY2VjZjkyNjNlNDY4YjY4ZWMzZGI1YmRlZmM2ZjZhMjVjNmMwODM0NmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4aa7f1361e494fc5b9b8f73bb0b72733",
+      "statement": "Seeders are registered in an ordered list in src/seed/index.ts and run in order by runSeeders.",
+      "evidence": [
+        {
+          "resource": "repo://src/seed/index.ts#L1-L14",
+          "version": "repo-lines-v1:sha256:27a1ad0ae3c73c83c990bc4c081baf96336d30854017fc2e2d7a99cad0a9032e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MGNhMzAwNTcyODE5MzZiMTQ5NmJkNjliMTM4MzAwYWRlMDM5M2ZkZWIxYzcwOTcwMGU1NjM3MTJiOTIyZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c7b6e4f4b3e34aaebbb0297b3304f4f0",
+      "statement": "The users seeder idempotently inserts five fake barnacle.ai users (two admins, two users, one deactivated) and logs an added change for each new one.",
+      "evidence": [
+        {
+          "resource": "repo://src/seed/users.ts#L1-L25",
+          "version": "repo-lines-v1:sha256:c0d11d25ab08aebf58b90b9da1235bfe3effac139447f4016a7d1b8389322775:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNzA2ODYwZjBjYjg2YmU0YTFmNmFhMDdkOTNiZDY1NzY4YWU4MWVkMjgyODI0MzNmZTJiYTU3ZTE4MGM5Y2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9434b5a677954f78a8af87dd9585b539",
+      "statement": "vercel-build runs db:migrate before next build only when VERCEL_ENV is production.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L12-L12",
+          "version": "repo-lines-v1:sha256:88fad480884899829f42571a6901b04f8086927752df544be3f941a7bbbaf900:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODhmYWQ0ODA4ODQ4OTk4MjlmNDI1NzFhNjkwMWIwNGY4MDg2OTI3NzUyZGY1NDRiZTNmOTQxYTdiYmJhZjkwMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODhmYWQ0ODA4ODQ4OTk4MjlmNDI1NzFhNjkwMWIwNGY4MDg2OTI3NzUyZGY1NDRiZTNmOTQxYTdiYmJhZjkwMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhmNDM3OGQ4NWNjZjdkNjk4YmFmNTcxNmFkMWU5M2ZmYWU2OTQyYmE1ZmIzY2I4ZDhlOGE2YjRiN2FjYTkyMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjcyNDkwMzVhYTdkZTMzY2U5ZjFmZDA0OTRhZjJhN2RiOTJjOWVlMDM2ZDBmZGIzM2YyN2RmZDhiYzc0MzkzNiJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

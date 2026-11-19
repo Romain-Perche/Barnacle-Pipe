@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:7601e404c40e6366174279aac419fd6de4ce33b29caa177f9d21f86f3faf8a25",
+  "claims": [
+    {
+      "id": "claim_13428ba51be747709f2744c129d2c44d",
+      "statement": "isPreview() is true exactly when VERCEL_ENV is preview.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/env.ts#L16-L19",
+          "version": "repo-lines-v1:sha256:710f685bf2917f604854330eb2d38425afaf98f4153cb0dc9799106d5182bb4a:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDhlNzhlYzBhMDlmMGM1NmRjYWJlN2RiYjk1OTM5NzlhZDlmZDIzYjk4OTBjNjlhYjRiMTYxOTJkM2JhZjFhOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDlhMDBmM2FiMDlkYzZlOWM2NGY2MjAyMzdlOTZkMTIwOTljNWYwOWE3NjZiNGU3Mzc3NGE1YjBlYzgwOTdiMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODdlYWUyZWQ0NWQ0YmZjYTkyMWY5ZjVkNjE2MmI2MzUxYjZkMjFlZDE0ZDg5OWQzMmRlNDU5NjAwZjJkMGM3ZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1610cd04943546dd86b59ac7843469a4",
+      "statement": "firstAdminEmail() normalises FIRST_ADMIN_EMAIL and returns null when it is empty.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/env.ts#L21-L24",
+          "version": "repo-lines-v1:sha256:b1bde002786eefa4334465e687b923d763e612042a80c70bd3f978849bb17607:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2NlODM2OTU1MTQzYzk5MDAyYjg1MWIzZjI2NzQ4ZGFiNzYzYTA5NmU1ODVhYjA5ZDQwNTdiZDhiMzYzMzhjMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzEzMjk3NjVlMjM5ZGM4YWNkMzAzZGEzNmVjNDcwNTI4Nzc3ZTg3MTY1MzdjODJlYzVlMmFiYTE5ZDNmYjE1OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTY0ZjUzNjEzM2RhOWUwZDQ3NmE2NmQxMDQ5OWFmMjBlNTMxM2U5ODUzYzMyZWMxNWFhNmE3MTM0NzZkOTIyYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1336a2bf69804bdab565d244c9f4c13c",
+      "statement": "appBaseUrl() is APP_URL without trailing slashes, or http://localhost:3000 when unset.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/env.ts#L26-L30",
+          "version": "repo-lines-v1:sha256:2191fb9b7fb793e053b02ff63f38d1bbce456c8b349c479d355cd80d6799a497:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTU1OTE2ZjRiNGZmYTJkZWJjYjM4MTBjOWYxMzQ5N2ZjYTlkN2M0YmJjM2E3NmUwMDdkZmU1MDA3YTRlZmU3YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2E1NzA4NmVmNGJhOWMwMzE1NWY1YjQ3NDFlMmMzZGQwNjM3ODM1N2UwOWYxYTA5ZWI5NDU3NzEzZWIyMzBiZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWE4ODQ0MjJmZDYyOTZlZGFkMzMxMzZmY2FhZGMwMGE2OGE4NTU3ODcxMmFmMDBmMWVkYzYxZDlhMzM2MjRhYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_6455dfdd3ee6432da6c9e79722807f63",
+      "statement": "googleConfig() requires GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and APP_URL and throws an error naming the missing ones.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/env.ts#L34-L47",
+          "version": "repo-lines-v1:sha256:0002a80ac3251427e8e276fcb3c2e62b32d343d3f2b3e680ed789f06aa5a52a4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiZDI2MzFmODI0YjY4MDc1MmU2Y2YzZDNhY2I1OTNiYjlmZDQ5NjgxMTU4ZTZjNzFiZjhiNGRjZGRhYTRkYzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhODg0NDIyZmQ2Mjk2ZWRhZDMzMTM2ZmNhYWRjMDBhNjhhODU1Nzg3MTJhZjAwZjFlZGM2MWQ5YTMzNjI0YWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_774570b347784264ba15d181f129dc17",
+      "statement": ".env.example lists APP_ENV, DATABASE_URL, FIRST_ADMIN_EMAIL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and APP_URL without real secrets.",
+      "evidence": [
+        {
+          "resource": "repo://.env.example",
+          "version": "repo-file-v1:sha256:afe2a4c879ee99f21fb66bbb24401a3e5911660666ef0557ba715642d2e9147d"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

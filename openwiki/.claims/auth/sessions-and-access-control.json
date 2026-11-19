@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3a6e909128c71a79a168f17993e7c04e38d857906744555fe56df33262f06ca4",
+  "claims": [
+    {
+      "id": "claim_617b85a351774e81afbaac9c92700135",
+      "statement": "Sessions store only the SHA-256 of a random token, and a new session expires 30 days after creation.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/cookie.ts#L1-L9",
+          "version": "repo-lines-v1:sha256:5e957aa6211af45281d2cce0bf9935c7705f8750fa7e5dc400811c610436d765:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzMxYzlhZTk2NGY0ODBmNzNhYjU2MTY4YTYxZTE5OTI2NTkzZTRjZDJmNTQ5M2Y4Yjc4MjRhNjRiOTc5ODMyYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://src/server/auth/session.ts#L20-L30",
+          "version": "repo-lines-v1:sha256:b9acd57d3a1271dbbc5486f0aecf2fed6a8e4d6d6c0dccf56e6c09cb8ee23da5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwZTEzNzU0MmFiM2Y1NTA1MmQzODdlZDc4YzM4MGQ1YjNiZWU1M2JjNDZlMGVlYjBmMDliMDgwYTFiY2M4YmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0MTNlNTkzMWZlMTJiMjAzMjJhY2MwZjYxYjJhZWI5NGRkZDk2MDQyMWIxNzZmZTVkZTZhMGQ1YmZlNDQ0NDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzMmE2ZjBkYmJhNWQyNjMxMzQxZmMyNTk4YTdlOTcwM2ZhZTZhOWU2NjY5ZDNkYTJkNzNiZDViZGJkYWQ1MzAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0ae6b3d950794820a1a6c353bb64cf85",
+      "statement": "lookupSession reports expired for a missing or expired session, removed for a revoked session or inactive user, and slides the expiry to 30 days when last_seen_at is more than an hour old.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/session.ts#L32-L48",
+          "version": "repo-lines-v1:sha256:8625ba207e2d242d927ff1f876aef07c90e335f4c56a6339c5ed5eaee7a53e09:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmZDI4MWJlNWJmY2JjMzkyODM3ZTA3OTQ5YTg1MzRlNmYzNmNhOGQyZDZiOWEzZTNlMDk0Y2M0NWIyY2Y3M2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5YjJiNjdjNzBiYjQ4NjI5ZGI0NTEyYmJjMDU4MDQxMDQyMGEzZmNmZDM3ZmRjMWFlZTk0MWU4YTg3ZmYzNjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIwNDM5N2Q2N2E4MzhjNzk2YzkxYTRiOWIzZjA3OTI4ODcxZjRmYmEyMmM4ODdmMjRkODNmNTMyYWZlMDFiYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4NGYxYWEwYmNmMmJjZGI5ZTIyYWI0NmRkYzIwNDczZDI2YzhhZDM1ZDY2MTI4MDUzYjRmMzZiOWYzNWRjZTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d6661334a16740ccb389a7b5892b55d1",
+      "statement": "The session cookie is httpOnly, SameSite=Lax, path /, secure on HTTPS, with a 30-day max-age, and the proxy re-sets it on GET requests to protected pages.",
+      "evidence": [
+        {
+          "resource": "repo://src/proxy.ts#L20-L28",
+          "version": "repo-lines-v1:sha256:687c03320b20071daf0c4c8610f10838bf8cd856a20fdaaf065c350e85bae9dd:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZiOTdkOGVlNjk2M2NjMzRlNGQxYjRkYWM5YTA3NTY0YWRmZTVhMzNlNmJmYzFiOTBjMTNmZjhmMjFkY2ZmOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTNiN2Q0OTUxZDBjM2NlOTI4YjAzZWM3NjRlYmIzMzBhNjE3ZjA2YjQ2YmZlMjc1NDg0Njk5Y2VlZTQxZDg3MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2Y3ZDRiZjdiZTIzMTNhNjU3ZjRjZGZhOTc5NzQ4ZTQwOTg1ZmVmNWFiNWI3ZTViY2I3YWFkMzFjNWQ1NTlhNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGM3OWIwODU3ZDNiMTJjM2M5MWY4MDVjZTEzZTk3M2Q4YTA5NzQ1YzE3MWFhNjFmNjE5OTExN2E3YjBhMWZkMSJ9"
+        },
+        {
+          "resource": "repo://src/server/auth/cookie.ts#L1-L9",
+          "version": "repo-lines-v1:sha256:5e957aa6211af45281d2cce0bf9935c7705f8750fa7e5dc400811c610436d765:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzMxYzlhZTk2NGY0ODBmNzNhYjU2MTY4YTYxZTE5OTI2NTkzZTRjZDJmNTQ5M2Y4Yjc4MjRhNjRiOTc5ODMyYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8cebecd332b84e9db556c8e33bc088bf",
+      "statement": "requireUser redirects to /auth/end with the current path when the session is missing or expired, and to /auth/end?reason=removed when it was revoked or the user is deactivated.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/session.ts#L78-L87",
+          "version": "repo-lines-v1:sha256:3c78e5fb289be8d4c972cea271d8016064b3cf4a199550f1e24709d43bdb95f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3MTQ5YjgwZDgwNDAyOWU4MWZiZDM0YTY2M2M2MTU2MDMxYTY4YzA1OWQxZTlmZjE3ZmQyYjNhZTMzYTg4YTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMxZGIyZjZjZGJjYjcxYThiZTU5OGNjMTg2YjMwYTZlNDE2ZjM3NzFiYjEwMWUxZmU2Njk5YjA0MDA5NGZlOGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlM2QxMzFiMTdlYTdkZWNmY2Q1OWFiZGE3NzNmZjJjNTc2ZTEwYjI0MGM0ZDgzMzM0NDhlZGJmZjE1MDMwODcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_be7bd27524ca48d7bda6b377df72d227",
+      "statement": "assertAdminForAction redirects non-admins to /admin/users, which shows the forbidden message.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/session.ts#L95-L100",
+          "version": "repo-lines-v1:sha256:21bb6da26bd86e495ea3a356bba8df9669b075f2c5fe63e8b3ffdfdadca4dfab:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzQ2N2E3ZGM4OTAyNmI1ODFjNzBjODMzZGNmMjU3NmY4MGE5NTAzYjcyOGU0MTNlNTAzMTNhNjM2ZGFmZGQ5MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODBjNzA0ODE0OWE3YWJiNmU5MjE4OGM2Mzg4YWVjYWUzYTU3YzdjYTU3ZjRhMDg0MTBhMmExZjNkZmM1MDY0MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2f1aad5058804e67af39ee39ee38c5f9",
+      "statement": "/auth/end leaves a still-valid session alone and otherwise deletes the session row and cookie before redirecting to /sign-in.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/auth/end/route.ts#L9-L26",
+          "version": "repo-lines-v1:sha256:56d7d5cf98578690d069d8e9183b12009dedd00bcab72f6824ec842aacea5ea4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE1ZTA5Njg0ZTFiNGE0MmU0ODQ2MmFmNjU2MGJlMzY3YTc2ZGRmMmNhNjM1ZGExZDllYmVkY2IxYjhlMDg2OGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0ODU5MGQ5ZGQ5MmQwNTY3NmRjN2FjNzdhNGIzZWI0YmE3NzJjMmMzZDZlOTMxODJiNDQ5YjQ3N2U2ZWMwNWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b287894c7d524f62984c683c10465251",
+      "statement": "isSafeNext returns / for anything other than a same-origin in-app path, refusing control characters, backslashes, protocol-relative paths and /auth paths, and returns the parsed path.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/rules.ts#L31-L51",
+          "version": "repo-lines-v1:sha256:9388dc7475bb65083b7f6467c04698628dcf8dd373f63aaed75a8a938ab4e9b3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyMjlkZTU5NGJiZDlkNjY4MzM5MzZlMDA4ODMxZTkyNmZkYjQ2MjYzMWU2MGFjYTU3Nzg4MmNlNWNiNWNlZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjliODdkMWJkY2E1NTQ1NDUwNTZiMjNhZGIyZWY0MDQ4MjhhZmMzOGYzNjQ0NzkxNGJhNWU1M2QzZGZkODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE5NWEyYmQyNWVmMDIxOWFlNmQyNDM0MjlhY2UxNWQ4M2FlOGM0NjQyNTBmMzE4OGZlNDg5MGIwM2E4OWZkYjgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f5c29b2ed1f94d9497cb3d50b4e16787",
+      "statement": "Sign-out deletes only the current browser's session and its cookie.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/(app)/actions.ts#L7-L14",
+          "version": "repo-lines-v1:sha256:410b281c9d6635caf17f443bcf1a64996a7b0d19ebb96eb041f4a432d3bec022:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDAyYWJiMTY4ZDI0ZDA1MzUzNDQxMmFlNDUyNGZjNWFiNzViOWY5OTAwNGM2ZWUyNTFkOTk1N2QzZjU1NmI0OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzkzNzQ0MDI5OGRkOTZmNzZiMDAzZjMxNDQ2MjRkZTJmYzA2ZTQzYTc0NmY1NTUzMmU2ZDNlZDMzNTZlZjIxMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

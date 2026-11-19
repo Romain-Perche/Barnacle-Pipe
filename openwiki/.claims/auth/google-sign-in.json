@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:aae2eb90bfb48708ea86354dd7f53d7a9291872ce7aa08670b4f9e84aa0a4dcf",
+  "claims": [
+    {
+      "id": "claim_d078479926074c23982be0554c789f69",
+      "statement": "The start route stores state, PKCE verifier and the safe next path as JSON in the httpOnly crm_oauth cookie scoped to /auth/google for 600 seconds and redirects to Google's authorization URL.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/auth/google/start/route.ts#L8-L29",
+          "version": "repo-lines-v1:sha256:cda00c20add49653758cbd6dae076878a3d87c80400f11afec88a65cee11ca64:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE1ZTA5Njg0ZTFiNGE0MmU0ODQ2MmFmNjU2MGJlMzY3YTc2ZGRmMmNhNjM1ZGExZDllYmVkY2IxYjhlMDg2OGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA1YWRiZTg2YzA0ZDdlYzI5OGUwNmQ5OWVmYWViM2Y4MDdlMTQwZmQzMDUxMGUyMjIxNDgyMDliOTcwNTY3Y2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a10df227b727482596e714d9c747f6d9",
+      "statement": "The authorization request asks for openid email profile with S256 PKCE, hd=barnacle.ai and prompt=select_account.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/google.ts#L29-L44",
+          "version": "repo-lines-v1:sha256:9dbc852439a53b14e3345cf4530ce7463b83e7f84346883cea7fb77ebb8a0131:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkOGExYjJlYzUzNzg3Y2NhNzZhNDQ2NWFkYzIwYjY5OWFmZjY0YTdlZjE2OTMxZTk5Nzk2MGMyOGY3YWVmODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlhOTQwYjAzZjcxNGM0YzhlMDVlNWFmYWU1ZDA4ZGQ1ZGIzMmNkMTc5OWQ1ZTgzYWQ3N2UyMTdjYjA3MzI2MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmOTU3MGRkZmFkYWU5ZGRmNTcwNTIyOTAwOGEzYjA2ZGRhNDk4N2YwYmY5ODc0MjEyNDNkNzcwYjMxNzBmYmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_85c72522f9ad474bada346dd6d315d7c",
+      "statement": "The callback refuses with error=cancelled when the OAuth cookie is missing, Google returned an error, the code is missing or the state does not match, and clears the OAuth cookie on every exit.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/auth/google/callback/route.ts#L21-L31",
+          "version": "repo-lines-v1:sha256:070bcf06dd02ae9a3403dbbdacafabda5bc1bfd2f843b074c5579880db8241e6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkZDBkNDg4MGYwYzgyMGY3ODY0ZDRiNWIwNjkyODBiYTM2OTU5ZWRmMGYzODkwNjVmYjI0M2VjMjI1MTE1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzNTA1Y2U2YWU2NTA0ZTBkODJhMGE1NzczZDcyYThlMGNhMGIxNGI1Y2I4MTIyYmU2MmNhZDJjODkwYjE2Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkwYzJkYjY3MzY3YmI5ZGYyODc0YzI3MmM2MjhlYzhhYjRmMTQ0M2I1MWY3MTUzYzUzYWJiMzJkOGVjYzM4ZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZmY2E4Y2YzM2NkNDMyNjg1MTE0YjVhOTJmYzRkMjUxZjI0MDNkODE3MGZkZTZkMmI4YzUwOTNhNTYxZTEzYzgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9f72a12b39e846f5bd8444a83324407d",
+      "statement": "Any failure of the token exchange or userinfo call is reported as cancelled.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/google.ts#L79-L91",
+          "version": "repo-lines-v1:sha256:fa2e4623b45dad43db45decc83f37800f20db808decadceaf9a57c0f7896db17:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYjhhNWY1OWYxNTA0MDg3NGUyMWNiOGY2NWRmMGE4NTZlYjk3NjljNDNiZTJmNzZlYzRkZGQ2NDg4YzQzYjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyMDQwZTA5NWE5NGUyYWRhNzRlNDIxZjM3MTg3NTFhOTFhODEwYmZkNjZmNDhmNGU5MzljN2I3NDgwZWI2NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8b4301dce3ed4fc7b7e0bb158f750352",
+      "statement": "decideSignIn refuses unverified or non-barnacle.ai emails and foreign hd as domain, admits active users, reports deactivated users as removed, creates the first admin only for FIRST_ADMIN_EMAIL, and refuses everyone else as not_allowed.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/rules.ts#L18-L29",
+          "version": "repo-lines-v1:sha256:683983431b0d9a8eb3902f9391bbbc35dc41cd3e004a36c13b1dbec2e080ffea:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1Njc4ZGU3NjcwYWRkNTRiOTRmNzQwNmVkMTgxYjJkNWI0Y2Q2NTVmOTg0ODFjMDMxOTc3ODVjZjM1ZDRlYWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM0MzU2YjhlNTM3YWEyZTNmNjkyNThlNTY4N2U0N2M2ZTdiNjFhZDhhNTk2NDg2ODg1ZTYyNTdkYzEwZDg3YjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzOTJhMzJmMjJmNDFlNWUzZGU4NjhmYjBhMDliODMzMTczNGVlMTg0ZjgzNGE2NGE1NTMzOGM2YmYxYTM2YzUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d09c670f63cc4af0bc275e6bb7ad9f52",
+      "statement": "completeSignIn runs in one transaction: it may insert the first admin with a user_changes 'added' row, updates name and last_sign_in_at, deletes expired or revoked sessions of the user and creates a new session.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/sign-in.ts#L13-L45",
+          "version": "repo-lines-v1:sha256:200ecc338e2280a48ca3c66c6388a91dc63c7abde293af261a51aeb3e3621048:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyNmUyNDU1MDc0MGE3MDQ1NjM3NTUwM2ViYWUwZWI3N2FkN2JmNTllMDFhMWIxMDI4NWI2NjU2ZjdmNGE4ZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0ZTE5MGM5Y2NlZTY5Njc0YWJmMjc5YzczYjBjYjZiYjNkNWZiY2M3NTgwNDFlYWRiOWJmNmVmNmUzODNmMTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

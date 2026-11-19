@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:efa6b4b94be21e42c6dc0376fe96c2b23d24f2ea38c1297b08c400548619a058",
+  "claims": [
+    {
+      "id": "claim_f047682e05e0412fbcd22ba4014e2ad3",
+      "statement": "The proxy only checks that the crm_session cookie is present on non-public paths and redirects cookie-less requests to /sign-in with a next parameter; the session itself is validated later by requireUser().",
+      "evidence": [
+        {
+          "resource": "repo://src/proxy.ts#L1-L19",
+          "version": "repo-lines-v1:sha256:9a003d87caebea3bbe774378aa8bb034e0c0ed51be84e5692c9e8d2c5f087454:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYTZhZTdmNWU3NGNjYTk0NmQyMDYxNmZmMTU2YjJhYmViNzMyYWMyYmFjN2M4ZDkxZWU1ZWQxNWJjYWU1YzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiZDY4NDFjY2E3ZGFkZDQzOTk2YTU1YjJmYjZkZDJmN2Y0ZTZlMjRkNzEwMjgzZTY3YThjNDdjZTdmNTA0YzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEyOTI4MzI1NDJmYmNmNmNmNjcwMjYzNzU2ZTJkY2E1ZTI4Yjg1ZTI5MTNkZmUyZGFhYTE4M2UyY2YzNGU0MzAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a7440f88a8f74ef59232b922f68527be",
+      "statement": "The postgres.js client is created lazily on first use with prepare:false and max 5 connections, so builds and previews never connect.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/db.ts#L1-L15",
+          "version": "repo-lines-v1:sha256:dc96e9201b272a014090a19a74b64ca6c6447f75f0fff18ab6e797e1d042323a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYzA0MzEzNTZmNDU1YTE4ZDVkZjkwYjI2YTg5ZjlhM2JhNTdjMWQzZGJiMTMzZDBiNTRiNGM1ODVlMTA4MTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjExZmQ0YjQ2MmE5NTBlNGJlZmI3ZjRiOWQzZGNiZjIyMzAzYmIxNGFhZjBmNWViNzYzZmM4ZTRhODY0NDg5NzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4ad1ce2748e94c2981619248c048c64e",
+      "statement": "Production Vercel builds run db:migrate before next build only when VERCEL_ENV is production.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L12-L12",
+          "version": "repo-lines-v1:sha256:88fad480884899829f42571a6901b04f8086927752df544be3f941a7bbbaf900:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODhmYWQ0ODA4ODQ4OTk4MjlmNDI1NzFhNjkwMWIwNGY4MDg2OTI3NzUyZGY1NDRiZTNmOTQxYTdiYmJhZjkwMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODhmYWQ0ODA4ODQ4OTk4MjlmNDI1NzFhNjkwMWIwNGY4MDg2OTI3NzUyZGY1NDRiZTNmOTQxYTdiYmJhZjkwMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhmNDM3OGQ4NWNjZjdkNjk4YmFmNTcxNmFkMWU5M2ZmYWU2OTQyYmE1ZmIzY2I4ZDhlOGE2YjRiN2FjYTkyMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjcyNDkwMzVhYTdkZTMzY2U5ZjFmZDA0OTRhZjJhN2RiOTJjOWVlMDM2ZDBmZGIzM2YyN2RmZDhiYzc0MzkzNiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_b08d6a1114f346759633574ea6ee8c5d",
+      "statement": "requireUser() memoises the session lookup per request with React cache and redirects to /sign-in on preview deployments.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/auth/session.ts#L71-L87",
+          "version": "repo-lines-v1:sha256:27bed7fe72c07a6ec93eb47cd89da6aec506234e88d4ec2c485707f28f7b02f8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MWQzYmMxYzU5Y2JkZTRlMGE1ZjNiMjMyZWM0YTdhYzZiNDBjZmNmMTE4NWM2YzA4MTE4YzBiN2Y5OTYzMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEwNTUyYmUwNGZiNTE5YThkYjMxNDM2OGE4YmY4MTU1OWNlYTI2YjM0MWQyZjk4MTMzYjc1OTFmMjU3YzhlZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlM2QxMzFiMTdlYTdkZWNmY2Q1OWFiZGE3NzNmZjJjNTc2ZTEwYjI0MGM0ZDgzMzM0NDhlZGJmZjE1MDMwODcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_60709f012c354686b5c7f91f37b7c1d8",
+      "statement": "Every table created in the first migration has row level security enabled with no policies.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0001_users_sessions.sql#L33-L37",
+          "version": "repo-lines-v1:sha256:9b415c9669557b5db2c276fca68698927a252168a952c090a4794356b32352ce:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDk5NjdlYzFlZDM4MzZmOGViMTdhZmYxNzJiNWJmZWY3ZGU2MDQ4NWE0MzljNmNhMTFjNTkxZTE3NTU3MzlhZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWU2ZDZiOTkwOWY2M2M0YjgzZTc1ODllMzcwMTNiODU2MGY4ZmVhNzBhNjhiZDYwZWJmM2JhMWIyMDdmOTllYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGU0ZjE4NDQ3ZWU1NGZmNmIzNGRhZGYxOGNiMzI5NjczODllNDlkYmIwYjc5YzczZWU3N2IwMzA1N2EwMjg3NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

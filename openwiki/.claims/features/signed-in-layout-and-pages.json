@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:66a85736bd8cbcf299dfe592209acbc2626137722e192b30731a02c06a366d05",
+  "claims": [
+    {
+      "id": "claim_42864019d2874e63b5942a7c8bb9312f",
+      "statement": "The (app) layout calls requireUser(), is force-dynamic, and shows the admin nav group only to users with the admin role.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/(app)/layout.tsx#L8-L44",
+          "version": "repo-lines-v1:sha256:7e01d366d561449fff0edafc714c7e03c2fbbf6aed7320ba18772cf7ed68192b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlZWIzMjNhNTFhY2U3MmUxZTgyOWZkNTE1MzE3NGFmOTU0YzM1MDNkYjU1NGUxMWNmNTdjMGRiNmE4NzI4NGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3NzU4NGRiZTdkYTM5NTAwMzcwOGZkZGVmOWRiOTc3OGI0MmMzOTQ1ZWE1YjhjZWYzM2U2NTgyMjNlODkwYTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2998ef322544416ea73869c298c879cb",
+      "statement": "Sidebar links come from the mainNav and adminNav registries in nav.ts.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/(app)/nav.ts#L1-L7",
+          "version": "repo-lines-v1:sha256:af3998fa7d3390202a9a890766139ee76b820b796a3a805a607f9e8e99ff5576:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTdjYzU2ODI0OGFmYTMxNTQzMTA1NmUyNmNkN2RiMWUwYmQ3NGVlNDg3MTAzNzk0YTkxNjI0ZTUyZjcxZTYzYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGEzZmFiMmVlMjA3ODNiNmM5ODlhMzU5NDU5ZThhY2NmZGM1ODk1NTQ4NGU5ODY0YWQ1NzAzOTZkYmMzMjA3YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_417461d3bcbe4e2ebb482584c80e8de4",
+      "statement": "Unknown signed-in addresses call requireUser() then notFound(), rendering 'Page not found.' inside the shell.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/(app)/%5B...missing%5D/page.tsx#L1-L8",
+          "version": "repo-lines-v1:sha256:da321c385f4a1270dd9074b8f43f519ab30866577b9fa368d0b35704d4b6542f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ZhZjVmNjEyODFjN2Y3MmExZWZjZmM3NDJhODE3YzIzMGY1NTA2YjMxYmUxNGM2ZmJlNjBjNmRmNjE4MmY0YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://src/app/(app)/not-found.tsx#L1-L21",
+          "version": "repo-lines-v1:sha256:81ba0cd5158c9411a19f0e135ef0e2836daea9c0c8c1764a278f53f31011ff47:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmMGU3NTFkMGI1MThiN2I2ZDk3OWEzYjllNWY3YTE2ZjJhOThiMGU5MWIzZTA0MmQ2NzkwOWQzMjNmZjNiNWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_eed11aaf86b5486bb0611af79380c33c",
+      "statement": "The sign-in page shows a preview notice on previews, a setup notice when no first admin is named and there are no users, and otherwise the form with allow-listed error messages and the fake login link when allowed.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/sign-in-page.ts#L10-L26",
+          "version": "repo-lines-v1:sha256:4f417d1675d4c79eb54dfcc58c5c258814f543ee4cd2a71fd551e10fd2b46978:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1YjEyYTVhNDcyNzkyNjY3NDk0OTYyNDFkNDczYWZhMGMzMzY2YmExZTkwNWQxMjYxMzEzZjI0YjQxNmQ3NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a27011442e964a6b86d5ce6ed6a4b2d9",
+      "statement": "All user-facing messages come from one code-to-text map, and messageFor() returns nothing for unknown codes.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/messages.ts#L1-L24",
+          "version": "repo-lines-v1:sha256:9d32167ac4f20c970e44a3b2b8bf4eedb5e7a000e5635724ccb7d62b17db256d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMmY3MjE3YzBhNWFlMjk2NjM5ZmRhZThjODYwMTM5M2Y5MjM1OGE5YTE2OGE3YzY3YmU3ZDRiZWE3MmNlNzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c4be81c51a0a486e8ae370110550e4bc",
+      "statement": "Last sign-in times are shown in Europe/London time or as Never.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/format.ts#L1-L17",
+          "version": "repo-lines-v1:sha256:6f405e3746623fc1d7c6470a6d8def2927e348ce956bdbc2b36e7b84a4d2da33:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkODUyMTY2ZTIxYmIyNzk4MmM5YWM3NDFmMGYzYjE4ZDM1OTFkOTc3ZWYzM2JmNWY1ZWI1Nzc1N2E3ODZhZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIzNzBjMThlOTY4YTQ2MjhjYTc4MDU3OGQ2YmYwMjdkZmYwZjMyMjgyNTVlMmM1YzRjMWU0NGEzNTFkM2QyMGQifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

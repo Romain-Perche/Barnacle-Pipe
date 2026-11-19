@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:10e8ee3aa518604ebef66055e0a5c4592635a46e41419abedf09176b14326dd7",
+  "claims": [
+    {
+      "id": "claim_4c6184e8d1a9463582ee6ae676ae31d3",
+      "statement": "npm test refuses to run unless APP_ENV is test and DATABASE_URL is set, then migrates the test database before the tests.",
+      "evidence": [
+        {
+          "resource": "repo://tests/integration/global-setup.ts",
+          "version": "repo-file-v1:sha256:98c8a7a2b784f9f5508ed98c58a1878fc14b404df9b99d0f8f3746867d066d4b"
+        }
+      ]
+    },
+    {
+      "id": "claim_21184beedc464031b9e2fd46b0d80ea9",
+      "statement": "Vitest runs unit and integration tests with file parallelism off because integration tests share one database.",
+      "evidence": [
+        {
+          "resource": "repo://vitest.config.ts#L8-L16",
+          "version": "repo-lines-v1:sha256:ed7e3d7a7c57d19882017561a78cc60feb6abdbb4153b96cf592cda9f50254de:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTkzNmRmN2E1YTNhYWYxODBjZmZkMWQ2NWM2NDZlZjZhZWEzNTJjYzI3Nzc0Njg2MTk5Y2Q4ZmIzZTg5OWM3YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGQ1Y2QyZmI0ZjNkZjg4NDUxNTI1NWIzOTUyM2YyZjhiNTQ3MmJlZWE5ZjU2NmZmY2EyMDRkYjgwMjU2MTA0MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjdjNWM4MDMzYTY2NmM5MTFhYzQ3YWQ3MjYzN2I4YzQ5NzkzNjdiNDZkZTM5YmIzOTE2NzZkMGRjNTI4NzMyMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjZmNWI0MGIxNTg0NTdkMTc4NjRmMjE3OTA3ODZkZDVhMmVjZGI2NGI2NmE2NTFmNzg4ZDRlMjVjZDMzMDNkMiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_f63b7cc20e54458aaf3f2171aadd30a9",
+      "statement": "Playwright builds the app and starts it through start-isolated.mjs with APP_ENV=test, FIRST_ADMIN_EMAIL=boss@barnacle.ai and an empty VERCEL_ENV, using one worker.",
+      "evidence": [
+        {
+          "resource": "repo://playwright.config.ts#L5-L35",
+          "version": "repo-lines-v1:sha256:eb68dde3ef3b6c08e0c66d9693e70d179bc516c4c5cfc688d5e165740ecf7b85:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2OWFkMWQ4NWU4OGNjMDBiNGQ5MWQzOWU1MzlhNWI2Mjk5MzQ2ZGIzYjllY2JhNmQ4NGNhNjQwNzRlODkyNzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljMmIzZWQ4ZDFkZDZlZjNkN2Y3ZDNiMDcxOTVjNDQxZGE5YzQ4NjkwOTAyMzNhNDljOTI3MzFkZjNjMDQ2OWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9f059b31f525490b91248f7c8ec92990",
+      "statement": "start-isolated.mjs runs next start from a temporary folder that links the build and config but contains no .env files.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/start-isolated.mjs#L1-L27",
+          "version": "repo-lines-v1:sha256:fd6bd78c1d9518b6f24e3f5cec55f92d8a24475d490abed2753017b709e86626:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxNzFmZjQ2ZWVmNzExNGQyZjAzZmFkYzE1YTJlNjdhODQxZjMwMDJjNWRmMjFkZTMwNDAyNGUwYTZhNzA3ZjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_df0ccf348f52436ebc26a973edc16b30",
+      "statement": "The Google fake checks userinfo requests and responses against the downloaded discovery schema and throws when the schema file is missing.",
+      "evidence": [
+        {
+          "resource": "repo://tests/fakes/google.ts#L1-L30",
+          "version": "repo-lines-v1:sha256:4888cbaa174494be23b2494b3f06f87e8799f7ed080ed72bf9ad6f39da035297:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxNmQ5MThiZjg1OGE4YmRiOTZjY2JmNWIzNmE3MTUzMGY0NmE4OGE3NTAwNWRmMTkyNzA3NjBhMzBlZDA5OGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0YjYyZWFiNGZhYmVhNGU2ZjMwYjhmMjBmMzhmOWJkNWUxN2EyYzQ5NGVlZjg2YzA0OWM5ZjBkODQ2MzVmMGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNTViNDM0MWJkYWY4MzUyOTJkZmQ3ZmY2YzVkMzAzZjdhMzE4MWU1ZTMwMWJlZDczYzFkYWVmM2RkMzAxYzUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9f99289eb4c0411aaebb662dc10ed96c",
+      "statement": "fetch-schemas downloads the pinned Google oauth2 schema from GitHub only when missing and verifies its SHA-256.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/fetch-schemas.mjs#L1-L29",
+          "version": "repo-lines-v1:sha256:678139512f8488db53e6d327b28445143684ae80ee0d4d8f25a1be9a4f72e5bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3NGEzOWVlNjMyNWQ5Njg3ZDAxOTExNmNlMDAwNzMyNTc5OTkzYWNlMzk2NTdkNzU5MmYyMmZkODE0OWM4ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

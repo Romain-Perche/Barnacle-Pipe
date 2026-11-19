@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:e0b4b6b5c0bf4175d1b15daff563a23634576090263a55cf453e7113fe3d7917",
+  "claims": [
+    {
+      "id": "claim_95332127627349cfbb634a3b42b006e2",
+      "statement": "isFakeAllowed() is true only when APP_ENV is exactly development or test and VERCEL_ENV is neither production nor preview.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/env.ts#L8-L14",
+          "version": "repo-lines-v1:sha256:a6413140b4af294ff5019eb4800ad4c164c62bfbc5fb0c60d37ac7b88a59c422:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2UxZjA2Nzc4MTEyYTllYzA1MjgyZWIyYjcxZjZlNmMzMDE2YjAzNmY2M2IwMjU2OTg1MmM5MjFmMGI1MDk4ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmQxYTc0M2ViYzhlODMxZGZhNzM3N2JkYTI0NzRjMDhmMzg4ZmQ2ZTM1N2E5NDlkOWE2ZWM2ZTZlYzdjMzI0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJmMmYyNWEyMDlhZjA1ODQyYjQ1MjEyNDNlYzk0NmU2Zjg0ZDExMjQ3ODUwYThjMDQzOWU5NmM4YWU3ODljNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_725f261186c54f1db3fa58d00575bc73",
+      "statement": "The fake login page and its actions return not found when isFakeAllowed() is false.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/dev/fake-google/actions.ts#L9-L23",
+          "version": "repo-lines-v1:sha256:2e968ec6172b91de075d6906836316acec0830426d1db40c4ec068ae07a3d4a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5NDBlYWU5NDM2YmM2NjNiYjFlZjllMmQ0ZDVmNDdjNTBiMWYwMjIzNTlhYmNiOWY4MDExNTBkN2ZhZWY0MmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBkYWY3YThjNTlmOGU5M2M1NTljMWU1NTI2NjEyMjJkZTU3Y2Q3MmZiOTQ2NDU1MmI4NGQ1ODIyMjE5OWY5ZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/app/dev/fake-google/page.tsx#L11-L15",
+          "version": "repo-lines-v1:sha256:a2cde6bc02dde14178058833696aafe8731050e38d29d671fb63e2156145a702:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmFkY2E4ODY0OTUwZmM0NGYwM2IxMmE5OTY1MDcxZjMxOTAxMTBmMWM5ZDA1NWJmNzU2NGNmZGI0YmI2ZDA5YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGFmOTdjMDFmNjFlYzZkMjAyYjZkNDA0MzMzMDkxOWFhNzI0Yzc5ZDQ1ZWQ2MmY1NGE4MjUxNTllYTM0ZTJkYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTE0MzljOWU1MTFkZjdkYTJkMDNiMTE5YjhjNzZiMTM0M2E3ZDA5NGUxNGU1NzQxOTA2Yzc4MjFlNTU2OWQ2NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2ZkZTQ1MTVmOGZmMjE5YmFlOTY0ZGFjYmFhMzc1OTQ4ODk5MGE5YzJjMTEyNmMzMzFlMDFjMDk3ZTk0ZWQwZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3d19429e250c4598866ec6703410e9a4",
+      "statement": "fakeSignIn calls the same completeSignIn() as the real Google callback with emailVerified true and hd null, then sets the session cookie and redirects to a safe next path.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/dev/fake-google/actions.ts#L9-L19",
+          "version": "repo-lines-v1:sha256:58a4d4457994fd6f22d81116eacb445f8928988ad378ae2b6f786a44263c9dcf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5NDBlYWU5NDM2YmM2NjNiYjFlZjllMmQ0ZDVmNDdjNTBiMWYwMjIzNTlhYmNiOWY4MDExNTBkN2ZhZWY0MmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBkYWY3YThjNTlmOGU5M2M1NTljMWU1NTI2NjEyMjJkZTU3Y2Q3MmZiOTQ2NDU1MmI4NGQ1ODIyMjE5OWY5ZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMzODg4MzAwOTljNjIwZmVhZWM3NmQ1ZmIwNDExZTRlOTVhMTU2ZmFkYWQxOTExNTBlNjMzOGQ0ZmNkYzU1Y2YifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1ab4a18ca3b1428698a069d6ff474e89",
+      "statement": "The fake chooser lists every user from the users table, active users first, ordered by name.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/dev/fake-google/page.tsx#L14-L15",
+          "version": "repo-lines-v1:sha256:e90b2e5e5d8544a63ceae1c9f977ffa253bbf2741dfda7824354f3f047d3410e:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGI3NWExMjM1MjEwMDUyNTFhODBiZDdlZDVlMjkzOWQyN2ZmMjIyYjQ4ZjgyMGU0ZjFhODNmZGUxZmZhYTE3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGFmOTdjMDFmNjFlYzZkMjAyYjZkNDA0MzMzMDkxOWFhNzI0Yzc5ZDQ1ZWQ2MmY1NGE4MjUxNTllYTM0ZTJkYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2ZmYWZjNmVkNzFkYzhhM2ZhMWIxNzM0MmM5MTc1Y2NjMTExNjBlODA0MjYzYTEyZjEzMDk0MmY4ZDU1YTRhNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2ZkZTQ1MTVmOGZmMjE5YmFlOTY0ZGFjYmFhMzc1OTQ4ODk5MGE5YzJjMTEyNmMzMzFlMDFjMDk3ZTk0ZWQwZCJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}

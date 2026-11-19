@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:7a5aa40f0d95544c21cd7ef5f4e82886b3a263d3b33d962b738d0f6c039c66dd",
+  "claims": [
+    {
+      "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
+      "statement": "users.email is unique, lower-case and must end in @barnacle.ai; role is admin or user and status is active or deactivated.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0001_users_sessions.sql#L5-L14",
+          "version": "repo-lines-v1:sha256:1cc94341ab6af817a3660c3989621b1795d6942063507134940c2ba3c6b70a86:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlM2I2MGU1YzVkNzY0NDA3ZGQzOWU2YTAzYjZkMjRiNjZkODNiNWMzZTY5YTVjNTYzMTM2ZGU3ZmNlMzQyNGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2OTNhMGVjOWZlMWYyZDdhNmU3YjU4YmE3MzRjYzc3MDVkY2M0NzA4YWMxODI4YWRjMGM1MDZkYzdiMmMwOTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcxZDZjZmEyMDlkYTQ2ODZmNGEzODU3ZGUxMGRmODI2YjYwZTFmMWI0YTJhZTJlZTQ4MGU2ZjgwNzI4OGE0NGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_08eeb8800ecc4d01be98ef65c1b2e157",
+      "statement": "sessions stores a unique token_hash with expiry, last-seen and revocation timestamps, indexed by user_id.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0001_users_sessions.sql#L16-L25",
+          "version": "repo-lines-v1:sha256:9477aa70f68f273a710c41cd447256d1274fc253ad23aa21ac6489d8655aa85b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5Nzc4ODE4NjE1ZTliYTNiZDQ1ZDY1ZTZmMjhkMWU1NWY5MTI0MTIyMThlZjlhYWFjMWViZDZiZDEyZmY0M2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5ODIzMDYxYzI3M2NmODNjYWM0NTg5NTNjODgzYjFmZGVlYjU2NTU5MzQyZWJmM2FmMjMzYmIwMDQ5ZDRmMmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiNzA0YzgzNzViMDI0NjRjNWJkNzA2NTFmZTQ4YzU5MTc4NThmM2E4YTkxMjY4Y2M0ZGVmYzA3MGRkNGU5ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFmOTliMWY2YTk2MTVjZTY2YjUyZWU1MTBkYTg3ZTEzZjhmM2RmNWU5MTNkNWZlODNkNjQ4ZGYxYmVlN2U4ZDcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_69f86ed7116d4da59001cb6b265c9ef6",
+      "statement": "user_changes logs added, made_admin, admin_removed, deactivated and reactivated actions with a nullable actor.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0001_users_sessions.sql#L27-L33",
+          "version": "repo-lines-v1:sha256:dcbf80eebef6c34ac24579816f3ca0ff4e01455ebf68b967ee6e45fd0ef055b5:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTY5MTRkYjkxMGQ3YmEyZWMxYWZkNzRlMjA1ODljMWQ3NjQ5OWQzNTk4MmYwZGU2OTNlOTgzMTg4YWRjY2ZjOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDk5NjdlYzFlZDM4MzZmOGViMTdhZmYxNzJiNWJmZWY3ZGU2MDQ4NWE0MzljNmNhMTFjNTkxZTE3NTU3MzlhZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmY4MDU2ZDQyZGUyMGFiMjRkYzM2Nzc5YzQxOTg1MTU2MDdlNGFmYzFiYzBjYjc1NGU0N2I4MGJiYzI2N2RjNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjkxNDE1OTc0MDhlY2ViNDNhOTMyZDdhNWNkNzBhNDE5NjQ4YmYyODQ1MjliYmZlNDgxMmFmNGJjZmEzNDM0ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8585d8d0f6ab465da411fc507c68c198",
+      "statement": "An integration test fails if any table in the public schema lacks row level security.",
+      "evidence": [
+        {
+          "resource": "repo://tests/integration/rls.test.ts#L14-L19",
+          "version": "repo-lines-v1:sha256:c1da3a160101273628de672e4f353404d0d7e16d9e6a4ebaf77592d0822372c5:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGVkMmUzMzJiYTYzNWJlNjg3Nzk3NDIzZGJkZDllMDZiYmNjOTJmYmM1NzRiZjdiZTQ5MDBiZjMyY2IwZGIxOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDE4NGIzZWE2OWYzODgxZGU2OGJlNjQ0NDBjZGE4MDhkOTZhMzNkZDAwYzJmYzBhMGUyMmY2OTM0MDI5OTdiYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTYzNzAxNzI4YjQ3MmM4N2YxNThkMzc1YzYwNmM3MWU1OTkwODQyYmQ0Y2Y3MzBjMWNlMmFkMDk0MjhiMDU3YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjIzNWVkN2M1YWEwZmMyYzE0NThlN2UyYzhjZGE4YTUyY2NhZDA4NGJiMDJjZGM2OTAxMzQ1ZTgwNmRmNjZlNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_9743436aefba4b2b845cccb743c438b6",
+      "statement": "The migrate command creates schema_migrations with row level security and records each applied file name there.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/migrate.ts#L18-L28",
+          "version": "repo-lines-v1:sha256:417ac79c766bb4a335c73afe2e3166d80b0ad0aa257ffddefc72ce5ddc530201:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4OWQ5ZmM3YjM4ODhkMjQ4OTJkOGIxYjBkNmRkMGRmMWJmM2I1ZmUyMzY5YzJlYzYxYmNhZmJjOWU2YzRhMWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0MmFkZmJmNGFiOTE2ZTAxYjVlM2EyYTk2Mjg5MWMxZDdjZDZlOTg4YzZkY2QwZTBiNDY2ZTg3MTNjM2Y0Y2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1YTU1NzgzMjdjZjVkMzQxZjQ3MTBkZmQ5ZDY5NGU0NDM0MTY3YmFhOTg2NzcyOGVmOTczYTFiNDRkYjM4MTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiMGIxZmEzNmU1YzQyMTdjYmUwMjJjNzkwMjdkM2Q4YTE1ZGQzYzYwZTQ5YTU0ZTRiODAxNDk1NWFjYTAyYjAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3914607b1dfb4ec0b5da9f018f1ac347",
+      "statement": "sql is a proxy over a postgres.js client created on first use from DATABASE_URL, throwing when it is unset.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/db.ts#L5-L25",
+          "version": "repo-lines-v1:sha256:169eb53545ec7eb07487a1eea9f72a70fb7d63de35bb2f383c4dd286a51c0875:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMzVjYzA2ODQwNWY4MGQwMjNlZGYyMWJkNTBjYzkyMTg5MWE5YTNkMGVhM2VlZmZiMmEzMjI5YmQxODBlOWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQxYzUwYjI2MDg4MDFkZGVhYTcxMTMwM2IxYThlOWNhMzM3OWE5Y2JmNjc5YzZmNjk3YTFkOWFhYjEwNGJkNzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4NmQ1MWJhNmY0NjcxZTM2ZjM0MDE0MmEyNzliNDYyN2IyZDRkMzY0ZmNiY2M4ZTIxOGIxMjljMmYyYzU1N2YifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-19T12:52:49.147Z"
+  }
+}
