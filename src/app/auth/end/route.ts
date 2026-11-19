@@ -4,10 +4,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/server/auth/cookie";
 import { isSafeNext } from "@/server/auth/rules";
 import { endSession, lookupSession } from "@/server/auth/session";
-import { isPreview } from "@/server/env";
+import { appBaseUrl, isPreview } from "@/server/env";
 
 export async function GET(req: NextRequest) {
-  const next = isSafeNext(req.nextUrl.searchParams.get("next"));
+  const next = isSafeNext(req.nextUrl.searchParams.get("next"), appBaseUrl());
   const removed = req.nextUrl.searchParams.get("reason") === "removed";
   const token = req.cookies.get(SESSION_COOKIE)?.value;
 

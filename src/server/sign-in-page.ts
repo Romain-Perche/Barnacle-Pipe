@@ -1,7 +1,7 @@
 // What the sign-in page shows (contracts/routes.md). Preview is decided before any database access.
 import { isSafeNext } from "@/server/auth/rules";
 import { sql } from "@/server/db";
-import { firstAdminEmail, isFakeAllowed, isPreview } from "@/server/env";
+import { appBaseUrl, firstAdminEmail, isFakeAllowed, isPreview } from "@/server/env";
 import { messageFor } from "@/server/messages";
 
 export type SignInState =
@@ -22,5 +22,5 @@ export async function signInPageState(
   if (isPreview()) return { kind: "notice", code: "preview" };
   if (firstAdminEmail() === null && (await userCount()) === 0) return { kind: "notice", code: "setup" };
   const error = params.error && SIGN_IN_ERRORS.has(params.error) ? messageFor(params.error) : undefined;
-  return { kind: "form", error, fake: isFakeAllowed(), next: isSafeNext(params.next) };
+  return { kind: "form", error, fake: isFakeAllowed(), next: isSafeNext(params.next, appBaseUrl()) };
 }

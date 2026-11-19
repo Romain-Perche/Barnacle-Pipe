@@ -3,13 +3,13 @@ import { notFound } from "next/navigation";
 import { Wordmark } from "@/app/Wordmark";
 import { isSafeNext } from "@/server/auth/rules";
 import { sql } from "@/server/db";
-import { isFakeAllowed } from "@/server/env";
+import { appBaseUrl, isFakeAllowed } from "@/server/env";
 import { fakeCancel, fakeSignIn } from "./actions";
 
 type Props = { searchParams: Promise<{ next?: string }> };
 
 export default async function FakeGooglePage({ searchParams }: Props) {
-  const next = isSafeNext((await searchParams).next);
+  const next = isSafeNext((await searchParams).next, appBaseUrl());
   if (!isFakeAllowed()) notFound();
   const users = await sql<{ email: string; name: string }[]>`
     select email, name from users order by status = 'active' desc, lower(name)`;

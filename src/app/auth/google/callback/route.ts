@@ -4,14 +4,14 @@ import { OAUTH_COOKIE, SESSION_COOKIE, sessionCookieOptions } from "@/server/aut
 import { signInWithGoogleCode } from "@/server/auth/google";
 import { isSafeNext } from "@/server/auth/rules";
 import { completeSignIn } from "@/server/auth/sign-in";
-import { isPreview } from "@/server/env";
+import { appBaseUrl, isPreview } from "@/server/env";
 
 type OAuthState = { state: string; verifier: string; next: string };
 
 function readOAuth(raw: string | undefined): OAuthState | null {
   try {
     const v = JSON.parse(raw ?? "") as Partial<OAuthState>;
-    return typeof v.state === "string" && typeof v.verifier === "string" ? { state: v.state, verifier: v.verifier, next: isSafeNext(v.next) } : null;
+    return typeof v.state === "string" && typeof v.verifier === "string" ? { state: v.state, verifier: v.verifier, next: isSafeNext(v.next, appBaseUrl()) } : null;
   } catch {
     return null;
   }

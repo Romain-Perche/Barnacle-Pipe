@@ -71,14 +71,35 @@ describe("decideSignIn", () => {
 });
 
 describe("isSafeNext", () => {
+  const base = "https://crm.example";
   // covers FR-009 (no open redirect)
   it("keeps in-app paths", () => {
-    expect(isSafeNext("/admin/users")).toBe("/admin/users");
-    expect(isSafeNext("/admin/users?error=duplicate")).toBe("/admin/users?error=duplicate");
+    expect(isSafeNext("/admin/users", base)).toBe("/admin/users");
+    expect(isSafeNext("/admin/users?error=duplicate", base)).toBe("/admin/users?error=duplicate");
+    expect(isSafeNext("/admin/users?error=duplicate#top", base)).toBe("/admin/users?error=duplicate#top");
   });
   it("replaces anything else with /", () => {
-    for (const bad of ["//evil.com", "/\\evil.com", "https://x", "/auth/end", "/auth/google/start", "", null, undefined, "admin"]) {
-      expect(isSafeNext(bad)).toBe("/");
+    for (const bad of ["//evil.com", "/\\evil.com", "https://x", "/auth/end", "/auth/google/start", "/auth", "/auth?x=1", "", null, undefined, "admin"]) {
+      expect(isSafeNext(bad, base)).toBe("/");
+    }
+  });
+  // covers FR-009, edge case "next with a tab or newline"
+  const hostile = [
+    "/\t/evil.com", "/\n/evil.com", "/\r/evil.com", "/\t\\evil.com", "/\x00/evil.com", "/\x7f", "/admin\\users",
+    "//evil.com", "https://evil.com/", "http://crm.example.evil.com/", "/x/../auth/end", "/%2e%2e/auth/end",
+  ];
+  it("refuses control characters, backslashes, other sites and dot-segments into /auth", () => {
+    for (const bad of hostile) expect(isSafeNext(bad, base), JSON.stringify(bad)).toBe("/");
+  });
+  // covers FR-009, edge case "next with a tab or newline"
+  it("returns the parsed form, not the original text", () => {
+    expect(isSafeNext("/a b", base)).toBe("/a%20b");
+  });
+  // covers FR-009, edge case "next with a tab or newline"
+  it("always resolves on the app's own origin", () => {
+    const inputs = [...hostile, "/admin/users?error=duplicate#top", "/a b", "/", "/%09/evil.com", "/\u2028/evil.com", "/\u00a0/evil.com", "/.//evil.com", "/%2F%2Fevil.com"];
+    for (const v of inputs) {
+      expect(new URL(isSafeNext(v, base), "https://crm.example/x").origin, JSON.stringify(v)).toBe("https://crm.example");
     }
   });
 });

@@ -5,7 +5,7 @@ import { Wordmark } from "@/app/Wordmark";
 import { SESSION_COOKIE } from "@/server/auth/cookie";
 import { isSafeNext } from "@/server/auth/rules";
 import { lookupSession } from "@/server/auth/session";
-import { isPreview } from "@/server/env";
+import { appBaseUrl, isPreview } from "@/server/env";
 import { messages } from "@/server/messages";
 import { signInPageState } from "@/server/sign-in-page";
 
@@ -14,7 +14,7 @@ type Props = { searchParams: Promise<{ error?: string; next?: string }> };
 export default async function SignInPage({ searchParams }: Props) {
   const params = await searchParams;
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  if (token && !isPreview() && (await lookupSession(token)).ok) redirect(isSafeNext(params.next));
+  if (token && !isPreview() && (await lookupSession(token)).ok) redirect(isSafeNext(params.next, appBaseUrl()));
 
   const state = await signInPageState(params);
   const nextQuery = state.kind === "form" && state.next !== "/" ? `?next=${encodeURIComponent(state.next)}` : "";

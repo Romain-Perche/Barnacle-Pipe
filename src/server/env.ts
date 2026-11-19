@@ -23,6 +23,12 @@ export function firstAdminEmail(): string | null {
   return value === "" ? null : value;
 }
 
+// The app's base URL, only to anchor the parse of a return path (isSafeNext): APP_URL without a trailing
+// slash, or http://localhost:3000 when unset (a fake-login-only copy may not set APP_URL).
+export function appBaseUrl(): string {
+  return (process.env.APP_URL ?? "").replace(/\/+$/, "") || "http://localhost:3000";
+}
+
 export type GoogleConfig = { clientId: string; clientSecret: string; appUrl: string };
 
 export function googleConfig(): GoogleConfig {

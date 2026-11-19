@@ -110,3 +110,16 @@ test("a signed-in user opening /sign-in goes to the app", async ({ page }) => {
   await page.goto("/sign-in?next=%2Fadmin%2Fusers");
   await expect(page).toHaveURL(/\/admin\/users$/);
 });
+
+// covers FR-009, edge case "next with a tab or newline" (open redirect through /auth/end)
+test("/auth/end never redirects a signed-in user to another site", async ({ page }) => {
+  await signInAs(page, "Linus Fake");
+  for (const next of ["%2F%09%2Fevil.com", "https%3A%2F%2Fevil.com%2F", "%2F%0A%2Fevil.com", "%2F%09%5Cevil.com"]) {
+    const res = await page.request.get(`/auth/end?next=${next}`, { maxRedirects: 0 });
+    expect(res.status(), next).toBeGreaterThanOrEqual(300);
+    expect(res.status(), next).toBeLessThan(400);
+    const location = new URL(res.headers()["location"], page.url());
+    expect(location.origin, next).toBe(new URL(page.url()).origin);
+    expect(location.pathname, next).toBe("/");
+  }
+});

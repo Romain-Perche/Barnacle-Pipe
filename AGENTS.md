@@ -28,7 +28,7 @@ OAuth code flow and database sessions.
 - Every signed-in page calls `requireUser()`/`requireAdmin()`; every server action calls `requireUser()` or
   `assertAdminForAction()` first. Never rely on hidden links alone.
 - User-facing text comes from `src/server/messages.ts`; never show text taken from a URL. Redirect
-  targets go through `isSafeNext()`.
+  targets go through `isSafeNext(next, appBaseUrl())`.
 - Migrations: only statements allowed in a transaction; `alter table … enable row level security` after
   every `create table` (no policies). Never run migrations at app start.
 - The fake Google login and fake data only work when `isFakeAllowed()` is true. Fake data uses

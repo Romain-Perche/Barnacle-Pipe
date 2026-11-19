@@ -29,11 +29,24 @@ export function decideSignIn(
 }
 
 // Where to go after sign-in: an in-app path only, else "/" (FR-009, no open redirect).
-export function isSafeNext(next: string | null | undefined): string {
+// The URL parser drops tab/CR/LF and reads "\\" as "/", so such values are refused outright; the rest is
+// parsed against the app's base URL and the *parsed* path is returned, so the target is exactly what was checked.
+export function isSafeNext(next: string | null | undefined, appUrl: string): string {
   if (typeof next !== "string" || !next.startsWith("/")) return "/";
-  if (next.startsWith("//") || next.startsWith("/\\")) return "/";
-  if (next === "/auth" || next.startsWith("/auth/") || next.startsWith("/auth?")) return "/";
-  return next;
+  if (/[\x00-\x1f\x7f\\]/.test(next) || next.startsWith("//")) return "/";
+  let url: URL;
+  let origin: string;
+  try {
+    url = new URL(next, appUrl);
+    origin = new URL(appUrl).origin;
+  } catch {
+    return "/";
+  }
+  if (url.origin !== origin) return "/";
+  const path = url.pathname;
+  // "/.//evil.com" parses to the path "//evil.com", which a browser would read as another site.
+  if (path.startsWith("//") || path === "/auth" || path.startsWith("/auth/")) return "/";
+  return path + url.search + url.hash;
 }
 
 export function firstName(name: string): string {

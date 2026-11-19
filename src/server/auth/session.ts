@@ -6,7 +6,7 @@ import { cache } from "react";
 import { randomToken } from "@/server/auth/google";
 import { isSafeNext } from "@/server/auth/rules";
 import { sql } from "@/server/db";
-import { isPreview } from "@/server/env";
+import { appBaseUrl, isPreview } from "@/server/env";
 
 import { SESSION_COOKIE, SESSION_DAYS, sessionCookieOptions } from "@/server/auth/cookie";
 
@@ -72,7 +72,7 @@ export async function clearSessionCookie(): Promise<void> {
 const lookupOnce = cache((token: string) => lookupSession(token));
 
 export async function currentPath(): Promise<string> {
-  return isSafeNext((await headers()).get("x-pathname"));
+  return isSafeNext((await headers()).get("x-pathname"), appBaseUrl());
 }
 
 // Every signed-in page and server action calls this first. Role and status are read fresh (FR-017).

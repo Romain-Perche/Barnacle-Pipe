@@ -3,11 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { OAUTH_COOKIE } from "@/server/auth/cookie";
 import { authorizationUrl, newPkce, randomToken } from "@/server/auth/google";
 import { isSafeNext } from "@/server/auth/rules";
-import { isPreview } from "@/server/env";
+import { appBaseUrl, isPreview } from "@/server/env";
 
 export async function GET(req: NextRequest) {
   if (isPreview()) return NextResponse.redirect(new URL("/sign-in", req.url));
-  const next = isSafeNext(req.nextUrl.searchParams.get("next"));
+  const next = isSafeNext(req.nextUrl.searchParams.get("next"), appBaseUrl());
   const state = randomToken();
   const { verifier, challenge } = newPkce();
   let url: string;
