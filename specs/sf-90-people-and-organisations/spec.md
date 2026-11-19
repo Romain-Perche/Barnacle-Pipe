@@ -15,6 +15,13 @@
 - Q: Which design do you want for the People list and the person page? → A: Design: C, a filter row above the table, a preview drawer when a row is selected, and a one-column record page (details, then timeline) (see `design-options.html`).
 - Q: What email consent does a new person get when someone adds them by hand? → A: Subscribed: campaigns can reach them until they unsubscribe.
 - Q: Who can add, rename and remove lead sources and labels? → A: Admins only, on an admin page; everyone picks from the lists.
+- Q: When an admin deletes a person, is anything about them kept (their timeline, an organisation's "linked/unlinked" events naming them)? → A: No: the person, their email addresses, phone numbers, labels, timeline and every organisation event about them are removed for good. (decided by the factory, to confirm)
+- Q: Can other users see an organisation's timeline events about a private person ("Ada Example linked by …")? → A: No: those events are shown only to the private person's creator, like the person. (decided by the factory, to confirm)
+- Q: Does being chosen as owner of a private person let that user see them? → A: No: only the creator sees a private person, whoever the owner is. (decided by the factory, to confirm)
+- Q: Do an organisation's people list and its "number of people" include archived people? → A: No: only people who are not archived and that the viewer can see. (decided by the factory, to confirm)
+- Q: When adding a person, are archived organisations offered in the organisation picker? → A: No; typing the exact name of an archived organisation and choosing to add it shows "<name> already exists." with a link to it, and nothing is saved. (decided by the factory, to confirm)
+- Q: An admin adds a lead source or label with the name of one they removed earlier: new entry or the old one back? → A: The removed entry comes back (same entry, so people who kept it count as having it). (decided by the factory, to confirm)
+- Q: Do website and LinkedIn links open in a new tab? → A: Yes, in a new tab, without passing the CRM's address to the other site. (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
