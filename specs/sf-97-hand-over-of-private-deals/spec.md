@@ -8,6 +8,14 @@
 
 **Input**: User description: "Hand-over of private deals. When an admin hands over a deactivated user's private people on the Users page, their private deals are handed over too, so a private deal never ends up visible to nobody."
 
+## Clarifications
+
+### Session 2026-11-20 (plan)
+
+- Q: When the deactivated user owns only private people, which explanation does the hand-over panel show: SF-92's "You will not see who they are." or the new "You will not see what they are."? → A: SF-92's wording stays for people only; "You will not see what they are." whenever private deals are included (decided by the factory, to confirm)
+- Q: The "nothing to hand over" notice: keep SF-92's "<user> has no private people to hand over." when the user never had deals, or always say "<user> has no private people or deals to hand over."? → A: Always the new wording, since both kinds are now checked (decided by the factory, to confirm)
+- Q: Which fake deals does the fake data add for the deactivated user? → A: Two private deals created and owned by Alan Fake, "Fake leaver deal" (open) and "Fake leaver old deal" (archived), so Alan's row shows "2 private people · 2 private deals" (decided by the factory, to confirm)
+
 ## User Scenarios & Testing *(mandatory)*
 
 Builds on SF-92 (an admin hands a deactivated user's private people to an active user from the Users page, design B panel) and SF-93 (a private deal is visible only to its creator and its current owner, admins included). Today, when both the creator and the owner of a private deal are deactivated, nobody sees the deal, and the existing hand-over leaves it behind.
