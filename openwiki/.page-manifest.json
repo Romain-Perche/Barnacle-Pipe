@@ -30,32 +30,32 @@
       "completedRunId": "a8c4062f-b1c1-42b9-95be-3db046a6ad9b"
     },
     "/openwiki/data/database-schema.md": {
-      "pageVersion": "sha256:8ca38848f37780f0b9ad9df5522c4916bbba36355c835df4a22dc2e544f6e9d0",
+      "pageVersion": "sha256:24047b4b805394227723d0e268dca810dec1c444044b6df9850bb95a0a464e2a",
       "completedBy": "claude-code",
-      "completedRunId": "0f73d786-d1d0-4a5c-9a94-dcda279621e9",
-      "gitHead": "bf3e8e2d6638375c07e2801aa57990d14c4b494c",
-      "sourceFingerprint": "sha256:ed71c9cfca2736f59ba0a317f6750c26e5d4b82b46dfb5a134371697e7cab364"
+      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
+      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
+      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
     },
     "/openwiki/features/people-and-organisations.md": {
-      "gitHead": "218712cc5db05f748a669479763da433faf3939e",
-      "sourceFingerprint": "sha256:4f7063edce17c503dd11fa2c7e8e555482d541143cff687bd7f212d5ee344162",
-      "pageVersion": "sha256:46fd7d7a671a240aec2b7e6ed1883dfd40698dbb442abc8800b9febde4de7882",
+      "pageVersion": "sha256:31417fbe1729df23707a72ac02687a2bf4a4f172bd8073b8e5df7430e232fbb1",
       "completedBy": "claude-code",
-      "completedRunId": "afd66979-454b-44c3-a482-e0a85169bd35"
+      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
+      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
+      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
     },
     "/openwiki/features/pipelines-and-deals.md": {
-      "pageVersion": "sha256:76d3d0addf07d82da0ccd70da529709a52e82fa0ade7ecb34db1b8e0f615f108",
+      "pageVersion": "sha256:cc37d92d92a1d7471faa23230e3adfdcee07990706ce464f786a6713039fa959",
       "completedBy": "claude-code",
-      "completedRunId": "0f73d786-d1d0-4a5c-9a94-dcda279621e9",
-      "gitHead": "bf3e8e2d6638375c07e2801aa57990d14c4b494c",
-      "sourceFingerprint": "sha256:ed71c9cfca2736f59ba0a317f6750c26e5d4b82b46dfb5a134371697e7cab364"
+      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
+      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
+      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
     },
     "/openwiki/features/signed-in-layout-and-pages.md": {
-      "gitHead": "7a6c36f33bb37d284684d6e0dba3a8c22f806b7f",
-      "sourceFingerprint": "sha256:64f8669609ac31a7f73b53258604484ef2ebe8fb8fbd66badedd8b3e64ba59e5",
-      "pageVersion": "sha256:b9aae8f37c5ecb138da3ed79760f355dbac72411824aae49a7465c16d5bb513a",
+      "pageVersion": "sha256:1764bfb9fe230c4b56aee729c23d9a8ce1bcd56466b4fbe6b1ffcbbfdadfe4d9",
       "completedBy": "claude-code",
-      "completedRunId": "7e3eb1f9-4b2c-4c4b-bc17-52ae2b001aea"
+      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
+      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
+      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
     },
     "/openwiki/features/user-management.md": {
       "gitHead": "218712cc5db05f748a669479763da433faf3939e",
@@ -72,11 +72,11 @@
       "completedRunId": "a8c4062f-b1c1-42b9-95be-3db046a6ad9b"
     },
     "/openwiki/operations/migrations-and-seeding.md": {
-      "gitHead": "7a6c36f33bb37d284684d6e0dba3a8c22f806b7f",
-      "sourceFingerprint": "sha256:64f8669609ac31a7f73b53258604484ef2ebe8fb8fbd66badedd8b3e64ba59e5",
-      "pageVersion": "sha256:ceca561f602dc940eafeca85ce7b85dc7f89a79bd871f190ba37ebcb19ecf9d9",
+      "pageVersion": "sha256:42a33e0347c58390c02aaec24fe6f2085e70c0faa2d87388f4a436ffb69ccac1",
       "completedBy": "claude-code",
-      "completedRunId": "7e3eb1f9-4b2c-4c4b-bc17-52ae2b001aea"
+      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
+      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
+      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
     },
     "/openwiki/quickstart.md": {
       "gitHead": "e9e8ca8f5a4ce5db041edc1299c87c1a5f2eac56",

@@ -311,4 +311,32 @@ describe("fake private deals of Alan Fake (SF-97)", () => {
     await runSeeders(sql);
     expect(await leaver()).toEqual(rows);
   });
+
+  // covers SF-102 FR-018, T041: notes on each record kind, mentions (read and unread), an edited note, notes on
+  // private records; a second run adds nothing
+  it("adds fake notes with mentions, an edited note and notes on private records, once", async () => {
+    await runSeeders(sql);
+    const notes = () => sql<{ id: number; on: string; private: boolean; version: number; edited: boolean; author: string }[]>`
+      select e.id::int as id,
+             case when e.deal_id is not null then 'deal' when e.person_id is not null then 'person' else 'organisation' end as on,
+             coalesce(d.private, p.private, false) as private, e.version, e.edited_by is not null as edited, u.name as author
+      from timeline_events e join users u on u.id = e.actor_id
+      left join deals d on d.id = e.deal_id left join persons p on p.id = e.person_id
+      where e.kind = 'note' order by e.id`;
+    const first = await notes();
+    expect(first.filter((n) => n.on === "deal").length).toBeGreaterThanOrEqual(2);
+    expect(first.filter((n) => n.on === "person").length).toBeGreaterThanOrEqual(2);
+    expect(first.filter((n) => n.on === "organisation").length).toBeGreaterThanOrEqual(1);
+    expect(first.filter((n) => n.private).map((n) => n.on).sort()).toEqual(["deal", "person"]);
+    expect(first.some((n) => n.edited && n.version === 2)).toBe(true);
+    const mentions = await sql<{ read: boolean; self: boolean }[]>`
+      select read_at is not null as read, user_id = mentioned_by as self from note_mentions`;
+    expect(mentions.filter((m) => !m.self).map((m) => m.read).sort()).toEqual([false, true]);
+    const [{ bad }] = await sql<{ bad: number }[]>`
+      select count(*)::int as bad from timeline_events where kind = 'note' and body !~* 'fake'`;
+    expect(bad).toBe(0);
+    await runSeeders(sql);
+    expect(await notes()).toEqual(first);
+    expect(await sql`select 1 from note_mentions`).toHaveLength(mentions.length);
+  });
 });

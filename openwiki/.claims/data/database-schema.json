@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8ca38848f37780f0b9ad9df5522c4916bbba36355c835df4a22dc2e544f6e9d0",
+  "pageVersion": "sha256:24047b4b805394227723d0e268dca810dec1c444044b6df9850bb95a0a464e2a",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L26",
-          "version": "repo-lines-v1:sha256:c5008eb9d4d0bc89e753a8c6d0bc55a151c860ce47a44996825e0919ff8a49fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L27",
+          "version": "repo-lines-v1:sha256:68531f0bd56f5b3a35f20e23011e82124bdd9aa8c91f7145653eb5d3bf484231:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -57,8 +57,8 @@
       "statement": "sql is a proxy over a postgres.js client created on first use from DATABASE_URL, throwing when it is unset.",
       "evidence": [
         {
-          "resource": "repo://src/server/db.ts#L5-L25",
-          "version": "repo-lines-v1:sha256:169eb53545ec7eb07487a1eea9f72a70fb7d63de35bb2f383c4dd286a51c0875:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMzVjYzA2ODQwNWY4MGQwMjNlZGYyMWJkNTBjYzkyMTg5MWE5YTNkMGVhM2VlZmZiMmEzMjI5YmQxODBlOWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQxYzUwYjI2MDg4MDFkZGVhYTcxMTMwM2IxYThlOWNhMzM3OWE5Y2JmNjc5YzZmNjk3YTFkOWFhYjEwNGJkNzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4NmQ1MWJhNmY0NjcxZTM2ZjM0MDE0MmEyNzliNDYyN2IyZDRkMzY0ZmNiY2M4ZTIxOGIxMjljMmYyYzU1N2YifQ"
+          "resource": "repo://src/server/db.ts#L5-L26",
+          "version": "repo-lines-v1:sha256:34b477c52cef6a4d608ac7e4f386e58be14ac717c371380897901c7ff6def3ac:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMzVjYzA2ODQwNWY4MGQwMjNlZGYyMWJkNTBjYzkyMTg5MWE5YTNkMGVhM2VlZmZiMmEzMjI5YmQxODBlOWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQxYzUwYjI2MDg4MDFkZGVhYTcxMTMwM2IxYThlOWNhMzM3OWE5Y2JmNjc5YzZmNjk3YTFkOWFhYjEwNGJkNzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4NmQ1MWJhNmY0NjcxZTM2ZjM0MDE0MmEyNzliNDYyN2IyZDRkMzY0ZmNiY2M4ZTIxOGIxMjljMmYyYzU1N2YifQ"
         }
       ]
     },
@@ -101,10 +101,20 @@
           "version": "repo-lines-v1:sha256:d31f97effc9679b9b432bb1700567d2c9ecfadc29cb5c4702e84f6b5f09b2bee:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5Y2Q2ZDUyMTgyMWI4MTNjMTQ2ZGQwNTMxZDdiMzNjMjYwMTEzNjJlN2I0MWY3OTY4ZGQ1ZDYwZTE0ZmFkNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0Zjg5ZmMwM2I3OGQ0MDgwNjAwNzlmNWU5YjIzNTRlZThjNDdlOTQwNDIyYTQ5ZTU3MjFhYzM5N2IyMTc0NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkNTgyMGUxNWU5NzRlMGMyZGM5YTEyOTgxNTM1MzU4MGQ2Y2MxNDRhYTIyOTczMmRjMzkzMjZkOTVjYzE3OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg2ODdlM2NiY2Y5NzcyY2M0ZTYxNTBiY2ZiMDQwMjhiOGZiMjlhOGU4ZjM0ZmVlMjEyYjFhMmJhM2Q0M2ZiOWMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_46c6912a6df0426a9cb0011a6055086d",
+      "statement": "Migration 0007 adds note_mentions (event_id, user_id primary key) and note columns on timeline_events, with the new kind note.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0007_notes_mentions.sql",
+          "version": "repo-file-v1:sha256:3f18275d948316a6e3c215fe9b09fef85bc36d6980217e6615dae51bc4c9c2a7"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T12:30:18.141Z"
+    "at": "2026-11-20T16:18:56.075Z"
   }
 }

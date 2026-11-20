@@ -89,10 +89,10 @@ async function seesNothing(viewerId: number) {
   expect((await getOrganisation(viewerId, org))!.peopleCount).toBe(0);
   const orgs = await listOrganisations(viewerId, parseOrganisationsQuery({}));
   expect(orgs.rows.find((o) => o.id === org)!.people).toBe(0);
-  const events = await readTimeline(viewerId, { organisationId: org });
+  const events = (await readTimeline(viewerId, { organisationId: org })).entries;
   expect(events.filter((e) => e.kind === "person_linked" || e.kind === "person_unlinked")).toEqual([]);
   expect(JSON.stringify(events)).not.toContain("Secret");
-  expect(await readTimeline(viewerId, { personId: secret })).toEqual([]);
+  expect((await readTimeline(viewerId, { personId: secret })).entries).toEqual([]);
 }
 
 async function seesEverything(viewerId: number) {
@@ -121,8 +121,8 @@ async function seesEverything(viewerId: number) {
   expect((await getOrganisation(viewerId, org))!.peopleCount).toBe(1);
   const orgs = await listOrganisations(viewerId, parseOrganisationsQuery({}));
   expect(orgs.rows.find((o) => o.id === org)!.people).toBe(1);
-  expect((await readTimeline(viewerId, { organisationId: org }))[0]).toMatchObject({ kind: "person_linked", relatedPerson: { id: secret } });
-  expect((await readTimeline(viewerId, { personId: secret })).map((e) => e.kind)).toEqual(["added"]);
+  expect(((await readTimeline(viewerId, { organisationId: org })).entries)[0]).toMatchObject({ kind: "person_linked", relatedPerson: { id: secret } });
+  expect(((await readTimeline(viewerId, { personId: secret })).entries).map((e) => e.kind)).toEqual(["added"]);
 }
 
 describe("a private person", () => {
@@ -156,10 +156,10 @@ describe("a private person", () => {
     const shared = saved(await createPerson(linus.id, personForm({ firstName: "Shared", emails: emails("shared@example.com") })));
     await updatePerson(ada.id, shared, 1, personForm({ firstName: "Shared", private: true, emails: emails("shared@example.com"), ownerId: String(linus.id) }));
     expect((await getPerson(ada.id, shared))!.private).toBe(false);
-    expect((await readTimeline(ada.id, { personId: shared })).map((e) => e.kind)).toEqual(["added"]);
+    expect(((await readTimeline(ada.id, { personId: shared })).entries).map((e) => e.kind)).toEqual(["added"]);
     await updatePerson(linus.id, secret, 1, personForm({ firstName: "Secret", lastName: "Person", private: false, organisationId: String(org), ownerId: String(margaret.id), emails: emails("secret@example.com"), consent: "unsubscribed", leadSourceId: String(removedSource), labelIds: [String(secretLabel)] }));
     expect(await getPerson(ada.id, secret)).not.toBeNull();
-    expect((await readTimeline(linus.id, { personId: secret }))[0]).toMatchObject({ kind: "edited", fields: ["Private"] });
+    expect(((await readTimeline(linus.id, { personId: secret })).entries)[0]).toMatchObject({ kind: "edited", fields: ["Private"] });
   });
 });
 
@@ -182,13 +182,13 @@ describe("the owner of a private person", () => {
   it("edits the person; the timeline names the owner and the field (US1 scenario 3)", async () => {
     expect(await updatePerson(margaret.id, secret, 1, form({ role: "COO" }))).toEqual({ status: "saved", id: secret });
     expect((await getPerson(margaret.id, secret))!.role).toBe("COO");
-    expect((await readTimeline(margaret.id, { personId: secret }))[0]).toMatchObject({ kind: "edited", actorName: "Margaret Fake", fields: ["Role"] });
+    expect(((await readTimeline(margaret.id, { personId: secret })).entries)[0]).toMatchObject({ kind: "edited", actorName: "Margaret Fake", fields: ["Role"] });
   });
 
   it("makes the person shared: the whole team sees them (US1 scenario 4)", async () => {
     expect(await updatePerson(margaret.id, secret, 1, form({ private: false }))).toEqual({ status: "saved", id: secret });
     expect((await getPerson(grace.id, secret))!.private).toBe(false);
-    expect((await readTimeline(grace.id, { personId: secret }))[0]).toMatchObject({ kind: "edited", fields: ["Private"] });
+    expect(((await readTimeline(grace.id, { personId: secret })).entries)[0]).toMatchObject({ kind: "edited", fields: ["Private"] });
   });
 
   it("makes a shared person they own private (FR-002)", async () => {

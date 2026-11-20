@@ -30,6 +30,14 @@
   deal_label_links, deal_people, deal_followers, timeline_events.reason and the won/lost/reopened kinds), applied on a
   fresh database by the same test, which also checks Postgres's own 23514 refusals (won without a date, lost without a
   reason, a 501-character reason, a lost event without a reason).
+  The timeline and notes code (SF-102: `src/server/records/notes.ts`, `src/server/records/timeline.ts`,
+  `src/server/notifications.ts`) keeps to the same pooler limits (no `set`/`listen`/session advisory lock, scanned by
+  `tests/integration/migrate.test.ts`; every note change one `sql.begin()` locking the record row `for update`); its
+  table and columns come from `migrations/0007_notes_mentions.sql` (timeline_events body/edited_by/edited_at/version and
+  kind `note`, with `imported` kept for SF-103's 0006; note_mentions), applied on a fresh database by the same test,
+  which also checks Postgres's own 23514/23505 refusals (a note without body or author, a body or editor on another
+  kind, a second mention of the same user) and the cascade of mentions with their note. Notifications are in-app only:
+  no email service, so no new fake.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -76,7 +84,11 @@
     Health kiosk (lost)" ("No fake decision maker") and the archived "Old fake tender (lost)" ("Fake tender cancelled"), all
     in Sales with periods of 1–11 days through its stages; other linked people on 6 deals (never the main person, never a
     private person) and followers on 6 ("Mock Labs audit" is followed by deactivated Alan Fake). `reset-db.sh` also
-    empties deal_followers, deal_people, deal_label_links and deal_labels. The seed already has a "Fakeco website" deal: scenario
+    empties deal_followers, deal_people, deal_label_links and deal_labels (SF-102: and note_mentions).
+    SF-102 adds 7 fake notes (newest 3 hours old): Ada Fake on "Fakeco website" mentioning Linus Fake (Linus has
+    1 unread notification), Linus Fake on "Fakeco AI pilot" edited by Grace Fake (version 2), Grace Fake on the first
+    shared person mentioning Ada Fake (read), Margaret Fake on the second shared person, Ada Fake on Fakeco Ltd, on the
+    private deal "Fake secret project" and on the private person Pat Privatefake. The seed already has a "Fakeco website" deal: scenario
     scripts that add their own should delete it first (the browser tests do).
   - Deal list and deal page scenarios (SF-95) are covered by `tests/e2e/{deal-page,deal-won-lost,deal-list,deal-restore,deal-labels}.spec.ts`.
     Selectors: the deal page's stage bar is the `list` named "Stages" (current stage `aria-current="step"`, other stages of
@@ -95,10 +107,30 @@
     Archived-deal expectations (US4-1, Edge 13) are filtered by `visibleWhere` for Ada: since the SF-97 merge the seed has
     Alan's private archived "Fake leaver old deal", which Ada must not see. Edge 13 adds its own archived lost deal ("SF95
     Archived lost") because US4-4 restores the seeded one.
+  - Timeline and notes scenarios (SF-102) are covered by `tests/e2e/{notes,timeline,mentions,notes-private}.spec.ts`.
+    Selectors: the timeline is the `region` "Timeline" (entries are its `listitem`s, `.kd` the tag, `.notebody` the
+    note text, `.on-deal` the deal title of a DEAL entry, `.day` the day headings); the note box is the `form` "Add a
+    note" (textbox "Note", buttons "[ ADD NOTE ]" / "[ CANCEL ]"), the edit box the `form` "Edit note" ("[ SAVE ]", link
+    "[ CANCEL ]"); a note's links are named "Edit note" / "Delete note" (they read `[ EDIT ]` / `[ DELETE ]`), the delete
+    confirmation is the `alertdialog` "Confirm note delete"; the @ picker is a `listbox` "Teammates" with `option`s
+    (type with `pressSequentially`, it follows the caret); mentions are `mark.mention`. The sidebar link's accessible
+    name is "Notifications (n)" from 1, else "Notifications"; the Notifications page is the `list` "Notifications", each
+    row a button. Delete `note_mentions` first when a scenario needs a user at zero notifications (the seed gives Linus 1).
+  - SF-102 AI-review scenario script `scenarios-sf102.js` (all 45 US1–US4 scenarios and edge cases 1–18, ~4 min, against
+    :3000/crm_dev on fresh fake data; makes its own "SF102 …" records by SQL, so reset before every run — names are unique):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf102.js`
+    (`ONLY="US1 scenario 6,Edge case 4"` runs a subset; US2-2/3/4 and Edge 13 share one setup, Edge 12 reads US2-5's result).
+    Notes: the seed's users are Ada/Grace (admins), Linus/Margaret, deactivated Alan — the spec's "Bob"/"Cy" map to
+    Linus/Margaret. The @ picker needs a space before "@" (`(?:^|\s)@`). The browser posts line breaks as CRLF; since fix round 1 they are stored as LF (older rows may still hold CRLF:
+    compare `textContent` with `\r\n`→`\n`). US1-6's direct delete on a hidden/deleted record lands on the kind's list
+    (`/deals`…) with the one-shot notice; on a visible record, its page with `?error=note_not_found`. Edge 17 types
+    exactly 10,000 characters with 99 line breaks; Edge 18 picks "@Linus Fake" then types "@Linus Fakeson". Direct requests are made by rewriting the edit/delete
+    forms' hidden `noteId`/`target`/`targetId` (or adding a hidden `mention` input) in the page before submitting.
+    Archive/restore, making a deal private/shared, changing a deal's organisation and deactivation are done by SQL.
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
     (real drag with `locator.dragTo`; a failed drag by aborting the server action POST with `page.route`). Board
     selectors: each column is a `region` named after its stage (`h2` name, `.tot` "<n> deals · £total"), cards are
-    `a.card`, the drawer is the `complementary` named "Deal" with a "History" region; the admin pages' rows are
+    `a.card`, the drawer is the `complementary` named "Deal" with a "Timeline" region (SF-102; "History" before); the admin pages' rows are
     `table.order` with buttons named "Rename <name>", "Move <name> up/down" and links "Delete <name>". Non-admin
     pages answer "You don't have access to this page." with HTTP 200 (as the other admin pages).
   - SF-93 AI-review scenario script `scenarios-sf93.js` (all 33 US1–US6 scenarios and edge cases 1–16, 49 checks,

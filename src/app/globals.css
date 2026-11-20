@@ -12,6 +12,9 @@
   --line-soft: rgba(0, 0, 0, 0.1);
   --line-list: rgba(0, 0, 0, 0.08);
   --line-on-blue: rgba(255, 255, 255, 0.4);
+  /* SF-102: mention highlight and note background (design B) */
+  --wash: rgba(43, 0, 255, 0.05);
+  --note: rgba(255, 66, 0, 0.06);
   --sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -297,3 +300,46 @@ table.deals-list td .nm { overflow-wrap: anywhere; }
   .stagebar li, .stagebar li:first-child { clip-path: none; }
   .strip > div { border-right: 0; border-bottom: 0.5px solid var(--line-soft); }
 }
+
+/* SF-102 timeline, design B: day headings, NOTE / DEAL / CHANGE tags, notes with an orange left edge. */
+.timeline { max-width: 900px; }
+.timeline .day { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); margin: 18px 0 4px; }
+.timeline .day .c { color: var(--orange); }
+.tl.ents li.ent { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+.kd { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 0.5px solid var(--line); padding: 2px 4px; text-align: center; color: var(--muted); }
+.kd.note { background: var(--orange); color: #fff; border-color: var(--orange); }
+.kd.deal { color: var(--blue); border-color: var(--blue); }
+.ent-body { min-width: 0; }
+.ent-body .author { font-weight: 600; }
+.notebody { border-left: 3px solid var(--orange); background: var(--note); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; }
+mark.mention { color: var(--blue); background: var(--wash); font-weight: 600; padding: 0 2px; text-decoration: none; }
+.edited { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.note-acts { display: flex; gap: 12px; }
+.on-deal { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); overflow-wrap: anywhere; }
+.on-deal a { color: var(--blue); text-decoration: none; }
+.on-deal a:hover { text-decoration: underline; }
+.timeline .more, .more { text-align: center; margin: 16px 0; }
+.timeline .confirm { margin: 8px 0; }
+/* The note box above the timeline, and in place when editing. */
+.notebox { margin: 0 0 8px; }
+.note-input { position: relative; }
+.notebox textarea.input { font-family: var(--sans); font-size: 14px; resize: vertical; min-height: 72px; display: block; }
+.note-bar { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.mention-list { position: absolute; left: 12px; top: 100%; z-index: 5; list-style: none; margin: 2px 0 0; padding: 4px 0; min-width: 200px; background: var(--panel); border: 0.5px solid var(--line); border-radius: 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18); font-size: 14px; }
+.mention-list li { padding: 6px 12px; cursor: pointer; }
+.mention-list li.on, .mention-list li:hover { background: var(--wash); }
+.deal-drawer .tl.ents li.ent { grid-template-columns: 64px minmax(0, 1fr) auto; font-size: 13px; }
+/* Sidebar unread count and the Notifications page. */
+.side nav a .cnt { background: var(--orange); color: #fff; padding: 0 5px; margin-left: 6px; }
+.notifs { list-style: none; margin: 16px 0 0; padding: 0; max-width: 900px; }
+.notif { border-bottom: 0.5px solid var(--line-list); }
+.notif form { margin: 0; }
+.notif-open { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 12px 0; cursor: pointer; }
+.notif-open:hover .notif-title, .notif-open:focus-visible .notif-title { color: var(--blue); }
+.notif-open:focus-visible { outline: 2px solid var(--blue); }
+.notif-top { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.notif-title { flex: 1 1 auto; }
+.notif.unread .notif-title { font-weight: 700; }
+.notif .when { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.notif-preview { display: block; color: var(--muted); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }
+.badge.new { color: var(--orange); border-color: var(--orange); }

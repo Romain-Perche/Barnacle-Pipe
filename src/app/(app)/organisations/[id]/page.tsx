@@ -4,15 +4,20 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
 import { formatDate } from "@/server/format";
 import { messages } from "@/server/messages";
-import { parseId } from "@/server/records/list-query";
+import { parseId, type Params } from "@/server/records/list-query";
 import { getOrganisation, peopleOf } from "@/server/records/organisations";
-import { readTimeline } from "@/server/records/timeline";
 import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { RecordHeader } from "../../records/RecordHeader";
-import { Timeline } from "../../records/Timeline";
+import { NoteNotices } from "../../records/NoteNotices";
+import { RecordTimeline } from "../../records/RecordTimeline";
 import { archiveOrganisation, deleteOrganisation, restoreOrganisation } from "../actions";
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ confirm?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<Params> };
+
+function first(params: Params, key: string): string | undefined {
+  const v = params[key];
+  return Array.isArray(v) ? v[0] : v;
+}
 
 export default async function OrganisationPage({ params, searchParams }: Props) {
   const user = await requireUser();
@@ -20,9 +25,10 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
   if (id === null) notFound();
   const org = await getOrganisation(user.id, id);
   if (!org) notFound();
-  const [people, events] = await Promise.all([peopleOf(user.id, id), readTimeline(user.id, { organisationId: id })]);
+  const people = await peopleOf(user.id, id);
+  const query = await searchParams;
   const isAdmin = user.role === "admin";
-  const confirming = isAdmin && (await searchParams).confirm === "delete";
+  const confirming = isAdmin && first(query, "confirm") === "delete";
   const href = `/organisations/${id}`;
   const rows: [string, React.ReactNode][] = [
     [
@@ -55,6 +61,7 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
         restore={restoreOrganisation}
       />
       {confirming && <DeleteConfirm name={org.name} id={id} action={deleteOrganisation} cancelHref={href} />}
+      <NoteNotices error={first(query, "error")} />
 
       <section aria-label="Details">
         <div className="label sect">
@@ -100,7 +107,12 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
         )}
       </section>
 
-      <Timeline events={events} />
+      <RecordTimeline
+        viewerId={user.id}
+        target={{ organisationId: id }}
+        archived={org.archived}
+        query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+      />
     </>
   );
 }

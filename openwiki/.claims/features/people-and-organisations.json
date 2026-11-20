@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:46fd7d7a671a240aec2b7e6ed1883dfd40698dbb442abc8800b9febde4de7882",
+  "pageVersion": "sha256:31417fbe1729df23707a72ac02687a2bf4a4f172bd8073b8e5df7430e232fbb1",
   "claims": [
     {
       "id": "claim_073174519ebe44d7a116c47962b22649",
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/records/visibility.ts",
-          "version": "repo-file-v1:sha256:dcf127f4d0bb509523aa9ae6ad4cd032cbc8e275172423d81364a7b63b2a0c18"
+          "version": "repo-file-v1:sha256:2ddab4608fcda895f2109843beef6eca8516f1ed8bd15e198b3abba12fa96c74"
         }
       ]
     },
@@ -32,7 +32,7 @@
         },
         {
           "resource": "repo://src/server/records/flash.ts",
-          "version": "repo-file-v1:sha256:1ca1d33ceb2c0d1d9da118741d0af9150f554d0e2102d8564a596ce7b0984c26"
+          "version": "repo-file-v1:sha256:df269bf707e172c9de1713c440b0b2d1cefd792040959baadd0584667c97dffc"
         }
       ]
     },
@@ -45,10 +45,24 @@
           "version": "repo-file-v1:sha256:23b56dfc7926acf923fa61cf815a2759cef0f0add443d3c557b4c5688092865b"
         }
       ]
+    },
+    {
+      "id": "claim_567ec8d7b7d647608672584b911fa046",
+      "statement": "Notes are timeline_events rows of kind note, managed by notes.ts; mentions are note_mentions rows shown as notifications.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/notifications.ts",
+          "version": "repo-file-v1:sha256:12adea890a53a27369dea96b10a48197f809345651c97fcd5319e520c5f98aca"
+        },
+        {
+          "resource": "repo://src/server/records/notes.ts",
+          "version": "repo-file-v1:sha256:273d1fb7d35f5c991de8aa9ca55fc2fb59ab36bcd3b7ec4bdae391870940d94f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T11:20:44.617Z"
+    "at": "2026-11-20T16:18:56.075Z"
   }
 }

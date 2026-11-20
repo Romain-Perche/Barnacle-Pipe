@@ -1,6 +1,6 @@
-// // TIMELINE (// HISTORY on deals): newest first, who and when (UK time). Later features add their own event kinds here.
+// The line of a change on a timeline (SF-102: RecordTimeline.tsx shows the entries). Later features add their own
+// event kinds here.
 import Link from "next/link";
-import { formatDateTime } from "@/server/format";
 import { messages, templates } from "@/server/messages";
 import type { TimelineEvent } from "@/server/records/timeline";
 
@@ -8,7 +8,7 @@ function by(actor: string | null) {
   return actor ? ` by ${actor}` : "";
 }
 
-function Line({ e, onDeal }: { e: TimelineEvent; onDeal: boolean }) {
+export function Line({ e, onDeal }: { e: TimelineEvent; onDeal: boolean }) {
   switch (e.kind) {
     case "added":
       return <>Added{by(e.actorName)}</>;
@@ -71,6 +71,8 @@ function Line({ e, onDeal }: { e: TimelineEvent; onDeal: boolean }) {
           {by(e.actorName)}
         </>
       );
+    case "note":
+      return null;
     case "handed_over":
       return (
         <>
@@ -79,26 +81,4 @@ function Line({ e, onDeal }: { e: TimelineEvent; onDeal: boolean }) {
         </>
       );
   }
-}
-
-// `heading` is "TIMELINE" on people and organisations, "HISTORY" on deals (design A).
-export function Timeline({ events, heading = "TIMELINE" }: { events: TimelineEvent[]; heading?: "TIMELINE" | "HISTORY" }) {
-  const name = heading === "HISTORY" ? "History" : "Timeline";
-  return (
-    <section aria-label={name}>
-      <div className="label sect">
-        <span className="c">//</span> {heading}
-      </div>
-      <ul className="tl">
-        {events.map((e) => (
-          <li key={e.id}>
-            <span>
-              <Line e={e} onDeal={heading === "HISTORY"} />
-            </span>
-            <span className="when">{formatDateTime(e.createdAt)}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
 }

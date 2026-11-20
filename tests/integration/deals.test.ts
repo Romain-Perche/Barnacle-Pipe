@@ -250,7 +250,7 @@ describe("links to people and organisations", () => {
     const r = await deals.createDeal(ada.id, dealForm({ stageId: String(sales.stages[0]) }));
     const id = saved(r);
     await deals.archiveDeal(linus.id, id);
-    const events = await readTimeline(linus.id, { dealId: id });
+    const events = (await readTimeline(linus.id, { dealId: id })).entries;
     expect(events.map((e) => [e.kind, e.actorName])).toEqual([
       ["archived", "Linus Fake"],
       ["added", "Ada Fake"],

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626;
+    --wash: rgba(43,0,255,.05); --panel: #FFFFFF; --page: #EDE7DF; --note: rgba(255,66,0,.06);
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --panel: #232323; --page: #0E0E0E; --note: rgba(255,66,0,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(620px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+
+  .app { display: grid; grid-template-columns: 140px 1fr; height: 640px; border: .5px solid var(--line); overflow: hidden; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 9px; margin-bottom: 22px; }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .nav .cnt { background: var(--orange); color: #fff; padding: 0 4px; margin-left: 4px; }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 16px; overflow: hidden; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 10px; margin-bottom: 8px; gap: 8px; }
+  .ph h2 { margin: 3px 0 0; font-size: 20px; font-weight: 700; }
+  .ph .sub { font-size: 11px; color: var(--muted); }
+  .kind { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 5px 8px; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.link { border: 0; padding: 2px 0; color: var(--muted); }
+  .btn.red { color: var(--danger); }
+  .acts { display: flex; gap: 4px; }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 10px 0 6px; border-top: .5px solid var(--line); padding-top: 8px; }
+  .dl { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+  .k { font-family: var(--mono); font-size: 8px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .v { font-size: 11px; margin-bottom: 6px; border-bottom: .5px solid var(--line-list); padding-bottom: 4px; }
+  .lk { color: var(--blue); }
+  .mention { color: var(--blue); background: var(--wash); font-weight: 600; padding: 0 2px; }
+  .when { font-family: var(--mono); font-size: 8px; color: var(--muted); white-space: nowrap; }
+  .ta { border: .5px solid var(--line); background: var(--panel); padding: 7px 8px; font-size: 11px; min-height: 46px; position: relative; }
+  .ta .caret { border-left: 1px solid var(--ink); margin-left: 1px; }
+  .pick { position: absolute; left: 120px; top: 30px; width: 150px; background: var(--panel); border: .5px solid var(--line); border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,.18); padding: 3px 0; font-size: 10px; z-index: 2; }
+  .pick div { padding: 4px 8px; }
+  .pick .on { background: var(--wash); }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; }
+  .on-deal { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .on-deal a, .on-deal span.d { color: var(--blue); }
+  .ntext { font-size: 11px; line-height: 1.45; margin: 3px 0; white-space: pre-wrap; }
+  .edited { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+
+  /* A: cards */
+  .A .card { background: var(--panel); border: .5px solid var(--line-soft); border-radius: 8px; padding: 7px 9px; margin: 6px 0; }
+  .A .card .hd { display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; }
+  .A .composer { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; margin-bottom: 4px; }
+  .A .composer .ta { width: 100%; }
+
+  /* B: day groups with a rail */
+  .B .day { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 8px 0 2px; }
+  .B .ent { display: grid; grid-template-columns: 52px 1fr auto; gap: 8px; padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; align-items: start; }
+  .B .kd { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; border: .5px solid var(--line); padding: 1px 3px; text-align: center; }
+  .B .kd.note { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .B .kd.deal { color: var(--blue); border-color: var(--blue); }
+  .B .notebody { border-left: 3px solid var(--orange); background: var(--note); padding: 4px 7px; border-radius: 0 6px 6px 0; }
+  .B .addbar { display: flex; justify-content: space-between; align-items: center; }
+
+  /* C: two columns */
+  .C .cols { display: grid; grid-template-columns: 190px 1fr; gap: 14px; }
+  .C .cols .v { font-size: 10px; }
+  .C .tlcol .composer { border: .5px solid var(--line); background: var(--panel); padding: 6px; margin-bottom: 6px; }
+  .C .tlcol .composer .ta { border: 0; padding: 2px; min-height: 36px; }
+  .C .tlcol .composer .bar { display: flex; justify-content: space-between; align-items: center; border-top: .5px solid var(--line-list); padding-top: 5px; }
+  .C .item { padding: 6px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; }
+  .C .item .top { display: flex; justify-content: space-between; gap: 8px; }
+  .C .item.note .top b { font-weight: 600; }
+  .C .item.note { padding-left: 8px; border-left: 2px solid var(--blue); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-102 · TIMELINE AND NOTES · DESIGN OPTIONS</div>
+  <h1>A person's page with notes, a mention and their deal's entries</h1>
+  <p>All three show "Ada Example" (linked to the deal "Example Ltd Fake · website"), the note box with the @mention list open, and "Notifications" in the sidebar.</p>
+</header>
+
+<div class="grid">
+
+<!-- ===================== A ===================== -->
+<figure>
+  <div class="tag"><b>A</b>Note box on top, notes as cards</div>
+  <div class="app A">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="kind">PERSON</div>
+      <div class="ph"><div><h2>Ada Example</h2><div class="sub">Head of Ops at <span class="lk">Example Ltd Fake</span></div></div>
+        <div class="acts"><span class="btn">[ EDIT ]</span><span class="btn">[ ARCHIVE ]</span><span class="btn red">[ DELETE ]</span></div></div>
+      <div class="sect"><span class="c">//</span> DETAILS</div>
+      <div class="dl">
+        <div><div class="k">Email addresses</div><div class="v">ada@example.fake</div></div>
+        <div><div class="k">Owner</div><div class="v">Ada Fake</div></div>
+      </div>
+      <div class="sect"><span class="c">//</span> TIMELINE</div>
+      <div class="composer">
+        <div class="ta">Called Ada, wants a proposal by Friday. @Bo<span class="caret"></span>
+          <div class="pick"><div class="on">Bob Fake</div><div>Bonnie Fake</div></div>
+        </div>
+        <span class="btn solid">[ ADD NOTE ]</span>
+      </div>
+      <div class="card">
+        <div class="hd"><span>Note by Ada Fake</span><span class="when">20 Nov 2026, 10:14</span></div>
+        <div class="ntext">Spoke to Ada about the renewal. <span class="mention">@Bob Fake</span> can you send the pricing sheet?</div>
+        <div class="acts"><span class="btn link">[ EDIT ]</span><span class="btn link">[ DELETE ]</span></div>
+      </div>
+      <div class="row"><span><span class="on-deal">On <span class="d">Example Ltd Fake · website</span> · </span>Moved from Qualified to Proposal by Bob Fake</span><span class="when">19 Nov 2026, 16:02</span></div>
+      <div class="card">
+        <div class="hd"><span><span class="on-deal">On <span class="d">Example Ltd Fake · website</span> · </span>Note by Bob Fake</span><span class="when">18 Nov 2026, 09:30</span></div>
+        <div class="ntext">Budget confirmed at £4,000. <span class="edited">edited</span></div>
+      </div>
+      <div class="row"><span>Edited by Ada Fake: Role</span><span class="when">17 Nov 2026, 11:45</span></div>
+      <div class="row"><span>Added by Ada Fake</span><span class="when">12 Nov 2026, 08:20</span></div>
+    </div>
+  </div>
+  <figcaption>Good for: the note box is always open and notes stand out from changes as white cards, like the deal board cards.</figcaption>
+</figure>
+
+<!-- ===================== B ===================== -->
+<figure>
+  <div class="tag"><b>B</b>Grouped by day, with a kind tag</div>
+  <div class="app B">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="kind">PERSON</div>
+      <div class="ph"><div><h2>Ada Example</h2><div class="sub">Head of Ops at <span class="lk">Example Ltd Fake</span></div></div>
+        <div class="acts"><span class="btn">[ EDIT ]</span><span class="btn">[ ARCHIVE ]</span><span class="btn red">[ DELETE ]</span></div></div>
+      <div class="sect"><span class="c">//</span> DETAILS</div>
+      <div class="dl">
+        <div><div class="k">Email addresses</div><div class="v">ada@example.fake</div></div>
+        <div><div class="k">Owner</div><div class="v">Ada Fake</div></div>
+      </div>
+      <div class="sect addbar"><span><span class="c">//</span> TIMELINE</span></div>
+      <div class="ta" style="margin-bottom:4px">Called Ada, wants a proposal by Friday. @Bo<span class="caret"></span>
+        <div class="pick"><div class="on">Bob Fake</div><div>Bonnie Fake</div></div>
+      </div>
+      <div style="text-align:right"><span class="btn">[ CANCEL ]</span> <span class="btn solid">[ ADD NOTE ]</span></div>
+      <div class="day">// TODAY · 20 NOV 2026</div>
+      <div class="ent"><span class="kd note">Note</span>
+        <div><b>Ada Fake</b><div class="notebody ntext">Spoke to Ada about the renewal. <span class="mention">@Bob Fake</span> can you send the pricing sheet?</div><span class="btn link">[ EDIT ]</span> <span class="btn link">[ DELETE ]</span></div>
+        <span class="when">10:14</span></div>
+      <div class="day">// 19 NOV 2026</div>
+      <div class="ent"><span class="kd deal">Deal</span>
+        <div><span class="on-deal"><span class="d">Example Ltd Fake · website</span></span><br>Moved from Qualified to Proposal by Bob Fake</div>
+        <span class="when">16:02</span></div>
+      <div class="day">// 18 NOV 2026</div>
+      <div class="ent"><span class="kd deal">Deal</span>
+        <div><span class="on-deal"><span class="d">Example Ltd Fake · website</span></span><br><b>Bob Fake</b><div class="notebody ntext">Budget confirmed at £4,000. <span class="edited">edited</span></div></div>
+        <span class="when">09:30</span></div>
+      <div class="day">// 17 NOV 2026</div>
+      <div class="ent"><span class="kd">Change</span><div>Edited by Ada Fake: Role</div><span class="when">11:45</span></div>
+    </div>
+  </div>
+  <figcaption>Good for: scanning a long timeline by date; the tag on each line says at once if it is a note, a change or from a deal.</figcaption>
+</figure>
+
+<!-- ===================== C ===================== -->
+<figure>
+  <div class="tag"><b>C</b>Details left, timeline right</div>
+  <div class="app C">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="kind">PERSON</div>
+      <div class="ph"><div><h2>Ada Example</h2><div class="sub">Head of Ops at <span class="lk">Example Ltd Fake</span></div></div>
+        <div class="acts"><span class="btn">[ EDIT ]</span><span class="btn">[ ARCHIVE ]</span><span class="btn red">[ DELETE ]</span></div></div>
+      <div class="cols">
+        <div>
+          <div class="sect"><span class="c">//</span> DETAILS</div>
+          <div class="k">Email addresses</div><div class="v">ada@example.fake</div>
+          <div class="k">Phone numbers</div><div class="v">—</div>
+          <div class="k">Organisation</div><div class="v"><span class="lk">Example Ltd Fake</span></div>
+          <div class="k">Owner</div><div class="v">Ada Fake</div>
+          <div class="k">Lead source</div><div class="v">Referral</div>
+          <div class="k">Consent</div><div class="v">Subscribed</div>
+          <div class="k">Date added</div><div class="v">12 Nov 2026</div>
+        </div>
+        <div class="tlcol">
+          <div class="sect"><span class="c">//</span> TIMELINE</div>
+          <div class="composer">
+            <div class="ta">Called Ada, wants a proposal by Friday. @Bo<span class="caret"></span>
+              <div class="pick" style="left:110px"><div class="on">Bob Fake</div><div>Bonnie Fake</div></div>
+            </div>
+            <div class="bar"><span class="when">Type @ to mention a teammate</span><span class="btn solid">[ ADD NOTE ]</span></div>
+          </div>
+          <div class="item note"><div class="top"><b>Note by Ada Fake</b><span class="when">20 Nov 2026, 10:14</span></div>
+            <div class="ntext">Spoke to Ada about the renewal. <span class="mention">@Bob Fake</span> can you send the pricing sheet?</div>
+            <span class="btn link">[ EDIT ]</span> <span class="btn link">[ DELETE ]</span></div>
+          <div class="item"><div class="on-deal">On <span class="d">Example Ltd Fake · website</span></div><div class="top"><span>Moved from Qualified to Proposal by Bob Fake</span><span class="when">19 Nov 2026, 16:02</span></div></div>
+          <div class="item note"><div class="on-deal">On <span class="d">Example Ltd Fake · website</span></div><div class="top"><b>Note by Bob Fake</b><span class="when">18 Nov 2026, 09:30</span></div>
+            <div class="ntext">Budget confirmed at £4,000. <span class="edited">edited</span></div></div>
+          <div class="item"><div class="top"><span>Edited by Ada Fake: Role</span><span class="when">17 Nov 2026, 11:45</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Good for: the timeline and the note box are visible at once without scrolling past the details; like Pipedrive's record page.</figcaption>
+</figure>
+
+</div>
+</body>
+</html>

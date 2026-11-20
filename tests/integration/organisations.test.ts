@@ -40,7 +40,7 @@ describe("organisations", () => {
       version: 1,
     });
     expect(await peopleOf(linus.id, id)).toEqual([]);
-    expect(await readTimeline(linus.id, { organisationId: id })).toMatchObject([{ kind: "added", actorName: "Linus Fake" }]);
+    expect((await readTimeline(linus.id, { organisationId: id })).entries).toMatchObject([{ kind: "added", actorName: "Linus Fake" }]);
   });
 
   it("refuses a name that exists, ignoring case and spaces, archived ones included (US2 scenario 4)", async () => {
@@ -68,7 +68,7 @@ describe("organisations", () => {
   it("records edits and refuses a save from an old version", async () => {
     const id = saved(await createOrganisation(ada.id, orgForm()));
     expect(await updateOrganisation(linus.id, id, 1, orgForm({ sector: "Gyms", ownerId: String(ada.id) }))).toEqual({ status: "saved", id });
-    expect((await readTimeline(ada.id, { organisationId: id }))[0]).toMatchObject({ kind: "edited", actorName: "Linus Fake", fields: ["Sector"] });
+    expect(((await readTimeline(ada.id, { organisationId: id })).entries)[0]).toMatchObject({ kind: "edited", actorName: "Linus Fake", fields: ["Sector"] });
     expect(await updateOrganisation(ada.id, id, 1, orgForm({ sector: "Other" }))).toEqual({
       status: "invalid",
       errors: { form: { code: "edit_conflict_organisation" } },
@@ -92,7 +92,7 @@ describe("people and their organisation", () => {
     expect((await getPerson(ada.id, p))!.organisation).toEqual({ id: org, name: "Fakeco Ltd", archived: false });
     expect(await peopleOf(ada.id, org)).toEqual([{ id: p, name: "Ada Example", role: "COO", email: "ada@example.com" }]);
     expect((await getOrganisation(ada.id, org))!.peopleCount).toBe(1);
-    expect((await readTimeline(ada.id, { organisationId: org }))[0]).toMatchObject({
+    expect(((await readTimeline(ada.id, { organisationId: org })).entries)[0]).toMatchObject({
       kind: "person_linked",
       actorName: "Linus Fake",
       relatedPerson: { id: p, name: "Ada Example" },
@@ -101,8 +101,8 @@ describe("people and their organisation", () => {
     await updatePerson(ada.id, p, 1, personForm({ organisationId: "", role: "COO", emails: emails("ada@example.com"), ownerId: String(linus.id) }));
     expect((await getPerson(ada.id, p))!.organisation).toBeNull();
     expect(await peopleOf(ada.id, org)).toEqual([]);
-    expect((await readTimeline(ada.id, { organisationId: org }))[0]).toMatchObject({ kind: "person_unlinked", actorName: "Ada Fake" });
-    expect((await readTimeline(ada.id, { personId: p }))[0]).toMatchObject({ kind: "edited", fields: ["Organisation"] });
+    expect(((await readTimeline(ada.id, { organisationId: org })).entries)[0]).toMatchObject({ kind: "person_unlinked", actorName: "Ada Fake" });
+    expect(((await readTimeline(ada.id, { personId: p })).entries)[0]).toMatchObject({ kind: "edited", fields: ["Organisation"] });
   });
 
   it("creates a new organisation by name with the person, owned by the user (US2 scenario 3)", async () => {
@@ -111,7 +111,7 @@ describe("people and their organisation", () => {
     expect(person!.organisation).toMatchObject({ name: "New Org", archived: false });
     const org = await getOrganisation(linus.id, person!.organisation!.id);
     expect(org!.owner.id).toBe(linus.id);
-    expect((await readTimeline(linus.id, { organisationId: org!.id })).map((e) => e.kind)).toEqual(["person_linked", "added"]);
+    expect(((await readTimeline(linus.id, { organisationId: org!.id })).entries).map((e) => e.kind)).toEqual(["person_linked", "added"]);
   });
 
   it("links an existing organisation typed as a new name, ignoring case and outer spaces; adds nothing (FR-008, Fix round 1)", async () => {

@@ -1,6 +1,7 @@
 // Design B: the shared layout of every signed-in page.
 import { Wordmark } from "@/app/Wordmark";
 import { requireUser } from "@/server/auth/session";
+import { unreadCount } from "@/server/notifications";
 import { signOut } from "./actions";
 import { adminNav, mainNav } from "./nav";
 import { SidebarLink } from "./SidebarLink";
@@ -10,13 +11,14 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const unread = await unreadCount(user.id);
   return (
     <div className="shell">
       <aside className="side" aria-label="Sidebar">
         <Wordmark />
         <nav aria-label="Main">
           {mainNav.map((item) => (
-            <SidebarLink key={item.href} {...item} />
+            <SidebarLink key={item.href} {...item} count={item.href === "/notifications" ? unread : 0} />
           ))}
         </nav>
         {user.role === "admin" && (

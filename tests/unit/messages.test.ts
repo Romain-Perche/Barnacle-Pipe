@@ -1,6 +1,6 @@
 // covers FR-025 (messages only from messages.ts; templates never reachable from a URL code), contracts/routes.md § Messages
 import { describe, expect, it } from "vitest";
-import { messageFor, templates } from "@/server/messages";
+import { fieldMessage, messageFor, templates } from "@/server/messages";
 
 describe("record messages", () => {
   it("has the fixed texts of contracts/routes.md", () => {
@@ -160,5 +160,32 @@ describe("deal page and list messages (SF-95)", () => {
     expect(templates.deal_list_count(12, 1234550)).toBe("12 deals · £12,345.50");
     expect(templates.deal_list_count(0, 0)).toBe("0 deals · £0");
     expect(messageFor("deal_list_count")).toBeUndefined();
+  });
+});
+
+// covers SF-102 FR-016, contracts/routes.md § Messages (T006)
+describe("timeline and notes messages", () => {
+  it("has the fixed texts", () => {
+    expect(messageFor("note_required")).toBe("Write something before adding the note.");
+    expect(messageFor("note_too_long")).toBe("Keep the note under 10,000 characters.");
+    expect(messageFor("note_not_found")).toBe("This note doesn't exist or you can't see it.");
+    expect(messageFor("note_gone")).toBe("This note doesn't exist any more.");
+    expect(messageFor("note_edit_conflict")).toBe("Someone else changed this note while you were editing. Reload to see their changes.");
+    expect(messageFor("note_record_archived")).toBe("Restore this record before changing its notes.");
+    expect(messageFor("note_delete_confirm")).toBe("Delete this note? This can't be undone.");
+    expect(messageFor("no_notifications")).toBe("No notifications yet.");
+  });
+  it("has the templates, never reachable from a URL code", () => {
+    expect(templates.mention_cannot_see("Bob Fake")).toBe("Bob Fake can't see this record, so they can't be mentioned.");
+    expect(templates.mentioned_you("Ada Fake", "Fakeco website")).toBe("Ada Fake mentioned you in a note on Fakeco website");
+    expect(templates.edited_by("Bob Fake")).toBe("edited by Bob Fake");
+    expect(templates.notifications_label(3)).toBe("Notifications (3)");
+    expect(templates.note_deleted("")).toBe("Note deleted.");
+    expect(messageFor("mention_cannot_see")).toBeUndefined();
+    expect(messageFor("mentioned_you")).toBeUndefined();
+  });
+  it("fieldMessage renders the mention refusal with the server's name", () => {
+    expect(fieldMessage({ code: "mention_cannot_see", name: "Bob Fake" })).toBe("Bob Fake can't see this record, so they can't be mentioned.");
+    expect(fieldMessage({ code: "mention_cannot_see" })).toBeUndefined();
   });
 });

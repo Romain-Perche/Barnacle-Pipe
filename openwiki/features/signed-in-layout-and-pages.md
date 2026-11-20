@@ -5,7 +5,7 @@ description: The sidebar shell shared by every signed-in page, the nav registry,
 tags: [ui, layout, navigation, messages, sign-in-page]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T10:02:45.004Z
+    at: 2026-11-20T16:18:56.075Z
 sources:
   - id: openwiki-source-9c37e70856dfc7e98b60d790
     resource: repo://src/app/(app)/%5B...missing%5D/page.tsx
@@ -21,7 +21,7 @@ sources:
     resource: repo://src/server/messages.ts
   - id: openwiki-source-8bf427df8e393c62d99adf6b
     resource: repo://src/server/sign-in-page.ts
-generated: { by: "claude-code", at: "2026-11-20T10:02:45.004Z" }
+generated: { by: "claude-code", at: "2026-11-20T16:18:56.075Z" }
 ---
 
 # Signed-in layout, pages and messages
@@ -31,7 +31,7 @@ generated: { by: "claude-code", at: "2026-11-20T10:02:45.004Z" }
 Every signed-in page lives under `src/app/(app)/` and gets `layout.tsx`:
 
 - a blue left sidebar with the Barnacle wordmark (`src/app/Wordmark.tsx`);
-- the **Main** nav from `mainNav` in `nav.ts` (today `Home`, `Deals`, `People` and `Organisations`);
+- the **Main** nav from `mainNav` in `nav.ts` (today `Home`, `Deals`, `People`, `Organisations` and `Notifications`, which shows the user's unread mention count from `layout.tsx`);
 - an `// ADMIN` group with `adminNav` (today `Users`, `Lead sources and labels` and `Pipelines`), rendered only when the user's role is `admin`;
 - the user's name and a `[ Sign out ]` button (the `signOut` server action, see
   [Sessions and access control](../auth/sessions-and-access-control.md)).
@@ -53,6 +53,10 @@ styles are in `src/app/globals.css` and fonts are Geist (`src/app/layout.tsx`).
 | — | `(app)/Forbidden.tsx` | "You don't have access to this page." shown inside the shell when `requireAdmin()` says the user is not an admin. |
 | `/sign-in` | `src/app/sign-in/page.tsx` | Outside the shell. |
 | — | `src/app/not-found.tsx` | Not-found outside the shell (e.g. the fake login when disabled). |
+
+The Notifications page (`src/app/(app)/notifications/`) lists the user's @mentions from `src/server/notifications.ts`;
+opening one marks it read and goes to the record, and a button marks all read. Both actions call `requireUser()`.
+Data movement is in [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Sign-in page states
 

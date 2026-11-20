@@ -24,8 +24,8 @@ sources:
     resource: repo://migrations/0005_deal_page.sql
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T12:30:18.141Z
-generated: { by: "claude-code", at: "2026-11-20T12:30:18.141Z" }
+    at: 2026-11-20T16:18:56.075Z
+generated: { by: "claude-code", at: "2026-11-20T16:18:56.075Z" }
 ---
 
 # Pipelines, deals and the board
@@ -69,6 +69,9 @@ changes to pipelines and stages.
   version or no longer in the stage the drag started from; `same` when the stage does not change. A real move goes
   through `transferDeal`, which closes the open `deal_stage_periods` row, opens a new one and records a `moved`
   timeline event with stage names ("Sales · Qualified" when the pipeline changes).
+- **Notes**: the deal page and the deal drawer show the deal's timeline with notes and @mentions
+  (`RecordTimeline.tsx`), added through the shared note actions; a note on a deal that is hidden from the user
+  answers on the deal list. See [People and organisations](people-and-organisations.md).
 - **Admin changes**: pipelines and stages can be added, renamed, reordered and deleted. Deleting a stage or a
   pipeline that holds deals needs a target stage elsewhere; `moveAllDeals` moves them with the cause
   `stage_deleted` or `pipeline_deleted`. The database refuses to delete a stage that still holds a deal.

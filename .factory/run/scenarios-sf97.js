@@ -21,7 +21,7 @@ const titles = async (p, stage) => col(p, stage).locator("a.card .t").evaluateAl
 const card = (p, t) => p.locator("a.card").filter({ has: p.locator(".t", { hasText: t }) });
 const drawer = (p) => p.getByRole("complementary", { name: "Deal" });
 const field = async (p, k) => norm(await drawer(p).locator("dt", { hasText: k }).locator("xpath=following-sibling::dd[1]").textContent());
-const hist = async (p) => (await drawer(p).getByRole("region", { name: "History" }).getByRole("listitem").allTextContents()).map(norm);
+const hist = async (p) => (await drawer(p).getByRole("region", { name: "Timeline" }).getByRole("listitem").allTextContents()).map(norm);
 const row = async (p) => norm(await p.locator("tr", { hasText: "alan@barnacle.ai" }).first().textContent());
 const hasBtn = async (p) => (await p.locator("tr", { hasText: "alan@barnacle.ai" }).getByRole("link", { name: "[ HAND OVER ]" }).count()) > 0;
 const status = async (p) => norm(await p.getByRole("main").getByRole("status").first().textContent().catch(() => ""));
