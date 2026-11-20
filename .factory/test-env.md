@@ -99,6 +99,12 @@
     address to `secret@example.com` and gives Alan two extra private people by SQL (the owner select only offers
     active users), deactivates Grace by SQL for edge 6, and replays the hand-over action as a direct post (edge 7, US3-7).
     Person pages: `[ DELETE ]` is a link that opens the confirm, then `[ DELETE FOR GOOD ]`; phones column is `phone`.
+  - SF-97 scenario script `scenarios-sf97.js` (US1 1–6, US2 1–3, edge cases 1–13, 27 checks, ~2 min, :3000/crm_dev): it
+    resets the data itself (five phases, `reset-db.sh` between them), so just run
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf97.js`. Notes: the `deals` column is
+    `expected_close_on`; the deal drawer has no creator field (creator shows as "Added by <name>" in // HISTORY, without
+    "(deactivated)"; the seeded deals' `added` event has no actor); an empty drawer field shows "—"; reload the panel page
+    before reading its `$ACTION_ID_` input for a direct post.
   - Playwright scenario scripts (`NODE_PATH=/opt/playwright/node_modules node <script>`): `scenarios-main.js`
     (:3000, crm_dev freshly reset), `scenarios-env.js` (:3101 empty DB + FIRST_ADMIN boss@, :3102 empty DB no
     FIRST_ADMIN, :3103 VERCEL_ENV=preview, :3104 APP_ENV empty, :3105 production, :3106 development+VERCEL_ENV
