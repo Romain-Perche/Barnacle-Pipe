@@ -57,6 +57,11 @@
       "id": "deals",
       "label": "Deals",
       "description": "Pipelines, stages and the deal board, with deals kept private by their person."
+    },
+    {
+      "id": "deals-database",
+      "label": "Deals database",
+      "description": "The Postgres tables for pipelines, stages, deals, their stage time, labels, linked people and followers."
     }
   ],
   "actors": [
@@ -342,7 +347,7 @@
     {
       "id": "pipelines-table",
       "label": "Postgres pipelines",
-      "group": "database",
+      "group": "deals-database",
       "sources": [
         "migrations/0004_pipelines_deals.sql"
       ],
@@ -351,7 +356,7 @@
     {
       "id": "stages-table",
       "label": "Postgres stages",
-      "group": "database",
+      "group": "deals-database",
       "sources": [
         "migrations/0004_pipelines_deals.sql"
       ],
@@ -360,7 +365,7 @@
     {
       "id": "deals-table",
       "label": "Postgres deals",
-      "group": "database",
+      "group": "deals-database",
       "sources": [
         "migrations/0004_pipelines_deals.sql"
       ],
@@ -369,11 +374,38 @@
     {
       "id": "deal-stage-periods-table",
       "label": "Postgres deal stage periods",
-      "group": "database",
+      "group": "deals-database",
       "sources": [
         "migrations/0004_pipelines_deals.sql"
       ],
       "zone": "postgres"
+    },
+    {
+      "id": "deal-labels-table",
+      "label": "Postgres deal labels and label links",
+      "group": "deals-database",
+      "zone": "postgres",
+      "sources": [
+        "migrations/0005_deal_page.sql"
+      ]
+    },
+    {
+      "id": "deal-people-table",
+      "label": "Postgres deal people",
+      "group": "deals-database",
+      "zone": "postgres",
+      "sources": [
+        "migrations/0005_deal_page.sql"
+      ]
+    },
+    {
+      "id": "deal-followers-table",
+      "label": "Postgres deal followers",
+      "group": "deals-database",
+      "zone": "postgres",
+      "sources": [
+        "migrations/0005_deal_page.sql"
+      ]
     }
   ],
   "flows": [
@@ -1186,6 +1218,104 @@
       "data": "hand-over events on each deal",
       "sources": [
         "src/server/records/handover.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deals-table",
+      "data": "deal status, won/lost reason, close time",
+      "sources": [
+        "src/server/deals/deals.ts",
+        "migrations/0005_deal_page.sql"
+      ]
+    },
+    {
+      "from": "deals-table",
+      "to": "deals-board",
+      "data": "deal list rows, count and total",
+      "sources": [
+        "src/server/deals/list.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deal-labels-table",
+      "data": "deal labels",
+      "sources": [
+        "src/server/deals/links.ts"
+      ]
+    },
+    {
+      "from": "deal-labels-table",
+      "to": "deals-board",
+      "data": "deal labels for the list and page",
+      "sources": [
+        "src/server/deals/list.ts",
+        "src/server/deals/links.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deal-people-table",
+      "data": "other linked people",
+      "sources": [
+        "src/server/deals/links.ts"
+      ]
+    },
+    {
+      "from": "deal-people-table",
+      "to": "deals-board",
+      "data": "other linked people",
+      "sources": [
+        "src/server/deals/links.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deal-followers-table",
+      "data": "followers",
+      "sources": [
+        "src/server/deals/links.ts"
+      ]
+    },
+    {
+      "from": "deal-followers-table",
+      "to": "deals-board",
+      "data": "followers",
+      "sources": [
+        "src/server/deals/links.ts"
+      ]
+    },
+    {
+      "from": "choices-admin",
+      "to": "deal-labels-table",
+      "data": "label changes seen on deals",
+      "sources": [
+        "src/server/records/choices.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "deal-labels-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0005_deal_page.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "deal-people-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0005_deal_page.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "deal-followers-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0005_deal_page.sql"
       ]
     }
   ]

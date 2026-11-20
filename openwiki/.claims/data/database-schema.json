@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b9a4eef928994a4733b7e6edcca45b9033fe013c34ae546c7b524a3ccce761bf",
+  "pageVersion": "sha256:8ca38848f37780f0b9ad9df5522c4916bbba36355c835df4a22dc2e544f6e9d0",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L25",
-          "version": "repo-lines-v1:sha256:3823472814b415d000c4f3164496ae6bc1616b4dc61eb293ee50d16c5b75e2c4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L26",
+          "version": "repo-lines-v1:sha256:c5008eb9d4d0bc89e753a8c6d0bc55a151c860ce47a44996825e0919ff8a49fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -91,10 +91,20 @@
           "version": "repo-file-v1:sha256:d3153f25c8a510a86857380f4e45af530d490bb2c0653ed2f7dd993a1ef8f7bb"
         }
       ]
+    },
+    {
+      "id": "claim_01d298040e9f4916b8d4f119b2a8d628",
+      "statement": "Migration 0005 adds status, closed_at and lost_reason to deals, and the tables deal_labels, deal_label_links, deal_people and deal_followers.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0005_deal_page.sql#L4-L53",
+          "version": "repo-lines-v1:sha256:d31f97effc9679b9b432bb1700567d2c9ecfadc29cb5c4702e84f6b5f09b2bee:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5Y2Q2ZDUyMTgyMWI4MTNjMTQ2ZGQwNTMxZDdiMzNjMjYwMTEzNjJlN2I0MWY3OTY4ZGQ1ZDYwZTE0ZmFkNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0Zjg5ZmMwM2I3OGQ0MDgwNjAwNzlmNWU5YjIzNTRlZThjNDdlOTQwNDIyYTQ5ZTU3MjFhYzM5N2IyMTc0NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkNTgyMGUxNWU5NzRlMGMyZGM5YTEyOTgxNTM1MzU4MGQ2Y2MxNDRhYTIyOTczMmRjMzkzMjZkOTVjYzE3OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg2ODdlM2NiY2Y5NzcyY2M0ZTYxNTBiY2ZiMDQwMjhiOGZiMjlhOGU4ZjM0ZmVlMjEyYjFhMmJhM2Q0M2ZiOWMifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T10:02:45.004Z"
+    "at": "2026-11-20T12:30:18.141Z"
   }
 }
