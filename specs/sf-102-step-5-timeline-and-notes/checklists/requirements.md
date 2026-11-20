@@ -31,5 +31,5 @@
 
 ## Notes
 
-- Passed on the first validation pass. Choices made by default (worth confirming in `/speckit-clarify`): mentions notify in-app only (no email yet); only the author edits a note, the author or an admin deletes it; no notes added on archived records; an organisation's timeline shows its own deals only (not its people's deals); timelines page 50 entries at a time.
+- Passed on the first validation pass. Clarified on 2026-11-20: design B (timeline grouped by day with NOTE/DEAL/CHANGE tags), mentions notify in-app only, anyone who can see a note can edit or delete it. Re-validated after clarify: 16/16 items still pass.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
