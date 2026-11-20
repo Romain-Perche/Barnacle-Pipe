@@ -11,7 +11,7 @@ import * as notes from "@/server/records/notes";
 import { parseShown } from "@/server/records/notes-rules";
 import type { FieldError } from "@/server/records/rules";
 import type { FormState } from "./form-state";
-import { noteTarget, targetPath } from "./note-target";
+import { listPath, noteTarget, targetPath } from "./note-target";
 
 export type NoteValues = { body: string; mentions: number[] };
 export type NoteState = FormState<NoteValues>;
@@ -88,13 +88,23 @@ export async function deleteNote(form: FormData): Promise<void> {
   const user = await requireUser();
   const { target } = read(form);
   const noteId = idFrom(form, "noteId");
-  if (!target) redirect("/");
+  // A missing or unknown target, or a record the user cannot see: the kind's list with a one-shot notice that
+  // never names the record.
+  if (!target) {
+    await setFlash({ code: "note_not_found", name: "" });
+    redirect("/deals");
+  }
   const here = targetPath(target);
   if (noteId === null) redirect(`${here}?error=note_not_found`);
   const result = await notes.deleteNote(user.id, target, noteId);
+  if (result.status === "record_not_found") {
+    await setFlash({ code: "note_not_found", name: "" });
+    redirect(listPath(target));
+  }
   if (result.status === "archived") redirect(`${here}?error=note_record_archived`);
   if (result.status === "not_found") redirect(`${here}?error=note_not_found`);
+  const shown = parseShown(String(form.get("timeline") ?? ""));
   await setFlash({ code: "note_deleted", name: "" });
   refresh(here);
-  redirect(here);
+  redirect(`${here}${shown > 50 ? `?timeline=${shown}` : ""}`);
 }

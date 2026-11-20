@@ -24,3 +24,10 @@ export function targetPath(target: NoteTarget): string {
   if ("personId" in target) return `/people/${target.personId}`;
   return `/organisations/${target.organisationId}`;
 }
+
+// The kind's list page, where a delete on a record the user cannot see lands (it never names the record).
+export function listPath(target: NoteTarget): string {
+  if ("dealId" in target) return "/deals";
+  if ("personId" in target) return "/people";
+  return "/organisations";
+}

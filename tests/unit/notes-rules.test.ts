@@ -18,6 +18,14 @@ describe("validateNoteText", () => {
     expect(validateNoteText(` ${"x".repeat(10_000)} `)).toEqual({ ok: true, text: "x".repeat(10_000) });
     expect(validateNoteText("x".repeat(10_001))).toEqual({ ok: false, code: "note_too_long" });
   });
+  // covers FR-005, fix round 1: the browser posts a line break as CRLF; the box's maxlength counts it as 1
+  it("counts a CRLF or lone CR line break as one character and returns the text with LF only", () => {
+    const text = `${"a".repeat(5_000)}\r\n${"a".repeat(4_998)}`;
+    expect(validateNoteText(text)).toEqual({ ok: true, text: `${"a".repeat(5_000)}\n${"a".repeat(4_998)}` });
+    expect(validateNoteText(`${"a".repeat(9_999)}\r\n`)).toEqual({ ok: true, text: "a".repeat(9_999) });
+    expect(validateNoteText(`one\rtwo\r\nthree`)).toEqual({ ok: true, text: "one\ntwo\nthree" });
+    expect(validateNoteText(`${"a".repeat(5_000)}\r\n${"a".repeat(5_000)}`)).toEqual({ ok: false, code: "note_too_long" });
+  });
 });
 
 describe("tokenizeMentions", () => {
@@ -33,6 +41,13 @@ describe("tokenizeMentions", () => {
   });
   it("replaces every occurrence of the same mention and lists the id once", () => {
     expect(tokenizeMentions("@Bob Fake, @Bob Fake", [users[0]])).toEqual({ body: "@[user:2], @[user:2]", ids: [2] });
+  });
+  // covers Edge case 5, fix round 1
+  it("replaces a chosen @name only where the name ends at a word end", () => {
+    expect(tokenizeMentions("@Bob Fake and @Bob Fakeson", [users[0]])).toEqual({ body: "@[user:2] and @Bob Fakeson", ids: [2] });
+    expect(tokenizeMentions("@Bob Fakeson only", [users[0]])).toEqual({ body: "@Bob Fakeson only", ids: [] });
+    expect(tokenizeMentions("ask @Bob Fake", [users[0]])).toEqual({ body: "ask @[user:2]", ids: [2] });
+    expect(tokenizeMentions("@Bob Fake2 or @Bob Fakeé", [users[0]])).toEqual({ body: "@Bob Fake2 or @Bob Fakeé", ids: [] });
   });
 });
 

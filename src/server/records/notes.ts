@@ -16,7 +16,8 @@ export type NoteResult =
   | { status: "not_found" }
   | { status: "gone" }
   | { status: "conflict" };
-export type DeleteNoteResult = { status: "ok" | "archived" | "not_found" };
+// not_found: the record is visible but the note is not on it; record_not_found: the record itself is hidden or deleted.
+export type DeleteNoteResult = { status: "ok" | "archived" | "not_found" | "record_not_found" };
 
 const MAX_MENTIONS = 50;
 
@@ -133,7 +134,7 @@ export async function deleteNote(actorId: number, target: NoteTarget, noteId: nu
   return sql.begin(async (tx): Promise<DeleteNoteResult> => {
     const db = tx as unknown as Sql;
     const record = await lockRecord(db, actorId, target);
-    if (!record) return { status: "not_found" };
+    if (!record) return { status: "record_not_found" };
     if (record.archived) return { status: "archived" };
     const rows = await db`delete from timeline_events e where e.id = ${noteId} and e.kind = 'note' and ${onTarget(db, target)} returning e.id`;
     return { status: rows.length > 0 ? "ok" : "not_found" };

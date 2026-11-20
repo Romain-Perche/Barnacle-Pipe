@@ -17,7 +17,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
   const query = parseBoardQuery(await searchParams);
   const [board, flash] = await Promise.all([
     getBoard(user.id, query.pipeline),
-    readFlash(["deal_deleted", "deal_no_longer_visible"]),
+    readFlash(["deal_deleted", "deal_no_longer_visible", "note_not_found"]),
   ]);
   const isAdmin = user.role === "admin";
 

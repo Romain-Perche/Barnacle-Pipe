@@ -115,13 +115,15 @@ export const templates = {
   handover_none: (name: string) => `${name} has no private people or deals to hand over.`,
   handed_over_event: (name: string) => `Handed to ${name}`,
   person_no_longer_visible: (name: string) => `You can no longer see ${name}: only their creator and owner can.`,
-  // SF-95: "<n> deals · £<total>" above the deal list, for every matching deal.
   // SF-102: notes, mentions and notifications
   mention_cannot_see: (name: string) => `${name} can't see this record, so they can't be mentioned.`,
   mentioned_you: (name: string, record: string) => `${name} mentioned you in a note on ${record}`,
   edited_by: (name: string) => `edited by ${name}`,
   notifications_label: (n: number) => `Notifications (${n})`,
   note_deleted: (_name: string) => "Note deleted.",
+  // A delete on a record the user cannot see, shown on its kind's list (fix round 1).
+  note_not_found: (_name: string) => messages.note_not_found,
+  // SF-95: "<n> deals · £<total>" above the deal list, for every matching deal.
   deal_list_count: (n: number, totalPence: number) => `${n} ${n === 1 ? "deal" : "deals"} · ${formatMoney(totalPence)}`,
 } as const;
 

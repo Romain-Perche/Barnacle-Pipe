@@ -9,22 +9,25 @@ const TOKEN = /@\[user:(\d{1,18})\]/g;
 export type NoteSegment = { text: string } | { mention: string };
 
 export function validateNoteText(raw: string): { ok: true; text: string } | { ok: false; code: "note_required" | "note_too_long" } {
-  const text = raw.trim();
+  // The browser posts a line break as CRLF; the box's maxlength counts it as one character, and so does this.
+  const text = raw.replace(/\r\n?/g, "\n").trim();
   if (text === "") return { ok: false, code: "note_required" };
   if (text.length > NOTE_MAX) return { ok: false, code: "note_too_long" };
   return { ok: true, text };
 }
 
 // Replaces "@<name>" of each chosen user with its token, longest names first ("@Bob Fakeson" before "@Bob Fake").
-// Only the ids actually found in the text are returned.
+// A name counts only where it ends at a word end (end of text, or not a letter or digit): "@Bob Fakeson" is not
+// "@Bob Fake". Only the ids actually found in the text are returned.
 export function tokenizeMentions(text: string, users: { id: number; name: string }[]): { body: string; ids: number[] } {
   const ordered = [...users].filter((u) => u.name !== "").sort((a, b) => b.name.length - a.name.length);
   let body = text;
   const ids: number[] = [];
   for (const u of ordered) {
-    const needle = `@${u.name}`;
-    if (!body.includes(needle)) continue;
-    body = body.split(needle).join(`@[user:${u.id}]`);
+    const needle = new RegExp(`@${u.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}])`, "gu");
+    const next = body.replace(needle, `@[user:${u.id}]`);
+    if (next === body) continue;
+    body = next;
     if (!ids.includes(u.id)) ids.push(u.id);
   }
   return { body, ids: [...ids].sort((a, b) => users.findIndex((u) => u.id === a) - users.findIndex((u) => u.id === b)) };

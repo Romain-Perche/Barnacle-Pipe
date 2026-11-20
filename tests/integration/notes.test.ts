@@ -55,6 +55,16 @@ describe("addNote", () => {
     expect(n).toBe(1);
   });
 
+  // covers FR-005, fix round 1: line breaks posted as CRLF
+  it("stores a CRLF line break as LF on add and edit, and saves 10,000 characters with one line break", async () => {
+    const id = await added(ada.id, { dealId }, "one\r\ntwo");
+    expect((await sql`select body from timeline_events where id = ${id}`)[0].body).toBe("one\ntwo");
+    expect((await editNote(ada.id, { dealId }, id, 1, "three\r\nfour\rfive", [])).status).toBe("ok");
+    expect((await sql`select body from timeline_events where id = ${id}`)[0].body).toBe("three\nfour\nfive");
+    const long = await added(ada.id, { dealId }, `${"a".repeat(5_000)}\r\n${"a".repeat(4_999)}`);
+    expect((await sql`select length(body)::int as n from timeline_events where id = ${long}`)[0].n).toBe(10_000);
+  });
+
   it("keeps two notes added at the same moment", async () => {
     await Promise.all([added(ada.id, { dealId }, "one"), added(bob.id, { dealId }, "two")]);
     const { entries } = await readTimeline(ada.id, { dealId });
@@ -111,7 +121,7 @@ describe("deleteNote", () => {
 });
 
 describe("records the user cannot see (US1-6, SC-006)", () => {
-  it("answers not_found for add, edit and delete on a private deal or person of someone else", async () => {
+  it("answers not_found for add and edit, record_not_found for delete, on a private deal or person of someone else", async () => {
     await sql`update deals set private = true where id = ${dealId}`;
     await sql`update persons set private = true where id = ${personId}`;
     for (const target of [{ dealId }, { personId }] as NoteTarget[]) {
@@ -119,14 +129,14 @@ describe("records the user cannot see (US1-6, SC-006)", () => {
       for (const viewer of [bob.id, boss.id]) {
         expect(await addNote(viewer, target, "x", [])).toEqual({ status: "not_found" });
         expect(await editNote(viewer, target, id, 1, "x", [])).toEqual({ status: "not_found" });
-        expect(await deleteNote(viewer, target, id)).toEqual({ status: "not_found" });
+        expect(await deleteNote(viewer, target, id)).toEqual({ status: "record_not_found" });
         expect(await noteForEdit(viewer, target, id)).toBeNull();
       }
       expect((await noteForEdit(ada.id, target, id))?.text).toBe("secret");
     }
   });
 
-  it("answers not_found on a deleted record and removes its notes with it (FR-008)", async () => {
+  it("answers not_found (record_not_found for delete) on a deleted record and removes its notes with it (FR-008)", async () => {
     const onDeal = await added(ada.id, { dealId }, "d");
     const onPerson = await added(ada.id, { personId }, "p");
     const onOrg = await added(ada.id, { organisationId: orgId }, "o");
@@ -138,7 +148,9 @@ describe("records the user cannot see (US1-6, SC-006)", () => {
     expect(await addNote(ada.id, { dealId }, "x", [])).toEqual({ status: "not_found" });
     expect(await addNote(ada.id, { personId }, "x", [])).toEqual({ status: "not_found" });
     expect(await addNote(ada.id, { organisationId: orgId }, "x", [])).toEqual({ status: "not_found" });
-    expect(await deleteNote(ada.id, { dealId }, onDeal)).toEqual({ status: "not_found" });
+    expect(await deleteNote(ada.id, { dealId }, onDeal)).toEqual({ status: "record_not_found" });
+    expect(await deleteNote(ada.id, { personId }, onPerson)).toEqual({ status: "record_not_found" });
+    expect(await deleteNote(ada.id, { organisationId: orgId }, onOrg)).toEqual({ status: "record_not_found" });
   });
 });
 

@@ -1,9 +1,10 @@
 // covers SF-102 FR-015, US4 scenarios 1–5, SC-005
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
+import { deleteDeal } from "@/server/deals/deals";
 import { listNotifications, openNotification, unreadCount } from "@/server/notifications";
 import { handOverPrivateRecords } from "@/server/records/handover";
-import { addNote, editNote, mentionCandidates } from "@/server/records/notes";
+import { addNote, deleteNote, editNote, mentionCandidates } from "@/server/records/notes";
 import { readTimeline } from "@/server/records/timeline";
 import { makeDeal, makePipeline } from "./deal-helpers";
 import { makeOrganisation, makePerson, makeUser, resetDb, type TestUser } from "./db-helpers";
@@ -122,5 +123,26 @@ describe("hand-over (US4-5)", () => {
     const entries = (await readTimeline(margaret.id, { dealId: deal })).entries;
     expect(entries.some((e) => e.id === r.id && e.authorActive === false)).toBe(true);
     expect((await editNote(margaret.id, { dealId: deal }, r.id, 1, "Margaret's now", [])).status).toBe("ok");
+  });
+});
+
+// covers US1 scenario 6, fix round 1: a delete on a hidden or deleted record never names the record
+describe("deleteNote on a record the user cannot see", () => {
+  it("answers record_not_found for a deal private to someone else and a deleted deal, not_found for an unknown note; deletes nothing", async () => {
+    const hidden = await makeDeal({ title: "Fake private deal", stageId: stage, createdBy: ada.id, private: true });
+    const r = await addNote(ada.id, { dealId: hidden }, "secret", []);
+    if (r.status !== "ok") throw new Error();
+    for (const viewer of [linus.id, grace.id]) {
+      expect(await deleteNote(viewer, { dealId: hidden }, r.id)).toEqual({ status: "record_not_found" });
+    }
+    const shown = await makeDeal({ title: "Fake shared deal", stageId: stage, createdBy: ada.id });
+    expect(await deleteNote(linus.id, { dealId: shown }, r.id)).toEqual({ status: "not_found" });
+    expect(await deleteNote(linus.id, { dealId: shown }, 999_999)).toEqual({ status: "not_found" });
+    const [row] = await sql`select count(*)::int as n from timeline_events where id = ${r.id}`;
+    expect(row.n).toBe(1);
+    const gone = await addNote(ada.id, { dealId: shown }, "on a deal soon deleted", []);
+    if (gone.status !== "ok") throw new Error();
+    expect((await deleteDeal(grace.id, shown)).status).toBe("deleted");
+    expect(await deleteNote(linus.id, { dealId: shown }, gone.id)).toEqual({ status: "record_not_found" });
   });
 });

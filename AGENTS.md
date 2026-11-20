@@ -29,7 +29,7 @@ OAuth code flow and database sessions.
   `links.ts` (other linked people, followers), `pipelines.ts` (admin changes).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
   SF-102: `RecordTimeline.tsx` (the // TIMELINE of every record page and the deal drawer, design B), `NoteBox.tsx`
-  (client: the note box and the @ picker), `NoteDeleteConfirm.tsx`, `note-actions.ts`; `Timeline.tsx` keeps the change
+  (client: the note box and the @ picker), `NoteDeleteConfirm.tsx`, `note-actions.ts`, `note-target.ts` (the record a note form posts to, its page and its kind's list), `NoteNotices.tsx` (the note notices of a record page); `Timeline.tsx` keeps the change
   lines. `src/app/(app)/notifications/` — the Notifications page and its actions (sidebar count in `layout.tsx`).
 - `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms, `list/` (the deal
   list), `[id]/` (the deal page: `StageBar.tsx`, `LostBox.tsx`, `not-found.tsx`), `ViewSwitch.tsx` (Board / List);

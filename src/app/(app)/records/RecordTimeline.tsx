@@ -111,7 +111,7 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
                             </Link>
                           </div>
                         )}
-                        {deleteId === e.id && <NoteDeleteConfirm target={kind} targetId={id} noteId={e.id} cancelHref={back(e.id)} />}
+                        {deleteId === e.id && <NoteDeleteConfirm target={kind} targetId={id} noteId={e.id} cancelHref={back(e.id)} timeline={limit} />}
                       </>
                     ) : (
                       <div>
