@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T18:23:26.676Z
+    at: 2026-11-20T10:02:45.004Z
 sources:
   - id: openwiki-source-b1b8983f5dc78551445443a8
     resource: repo://migrations/0001_users_sessions.sql
@@ -13,19 +13,21 @@ sources:
     resource: repo://migrations/0002_people_organisations.sql
   - id: openwiki-source-dd2f09bbe9c9b040d5d61401
     resource: repo://migrations/0003_private_owner_handover.sql
+  - id: openwiki-source-abc8a772ef516a80f8a1e53a
+    resource: repo://migrations/0004_pipelines_deals.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-19T18:23:26.676Z" }
+generated: { by: "claude-code", at: "2026-11-20T10:02:45.004Z" }
 ---
 
 # Database schema and access
 
 The schema is defined by numbered SQL files in `migrations/` (`0001_users_sessions.sql` and
-`0002_people_organisations.sql`) plus the `schema_migrations` table created by the migrate command. How each
+`0002_people_organisations.sql`, `0003_private_owner_handover.sql`, `0004_pipelines_deals.sql`) plus the `schema_migrations` table created by the migrate command. How each
 part reads and writes these tables is drawn in [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Tables
@@ -79,12 +81,26 @@ Added by `0002_people_organisations.sql`; behaviour is described in
   deleted person stay on other records, without the person), adds `related_user_id` (set exactly when the
   kind is `handed_over`) and adds a partial index `persons_private_owner_idx` on `persons (owner_id)` where private.
 
+### Pipelines and deals tables (migration 0004)
+
+Added by `0004_pipelines_deals.sql`; behaviour is described in [Pipelines, deals and the board](../features/pipelines-and-deals.md).
+
+- `pipelines` (unique case-insensitive name, `position`) and `stages` (belong to a pipeline, unique name per
+  pipeline, `position`; deleting a pipeline cascades only to its stages).
+- `deals`: title, optional `value_pence`, `stage_id` (no cascade: the database refuses to delete a stage that
+  still holds a deal), optional organisation and person (set null on delete), `owner_id`, `created_by`,
+  `private`, optional `expected_close_on`, `archived_at` and an optimistic `version`.
+- `deal_stage_periods`: one row per stay in a stage (stage and pipeline names kept as text, one open row per
+  deal), written when a deal is added or moved.
+- `timeline_events` gains `deal_id`, `from_stage`, `to_stage` and `cause` (`stage_deleted` or
+  `pipeline_deleted`), a new kind `moved`, and now needs exactly one of person, organisation or deal.
+
 ## Row level security
 
 Every `create table` is followed by `alter table … enable row level security`, with no policies. On
 Supabase this means the Data API roles (`anon`, `authenticated`) can neither read nor write app data,
 while the app's own database user, which owns the tables, is not affected. `tests/integration/rls.test.ts`
-fails if any table in the public schema lacks it (it also checks that the eight tables above exist). Migration files may only contain statements allowed inside a transaction.
+fails if any table in the public schema lacks it (it also checks that the app's tables, including the four from migration 0004, exist). Migration files may only contain statements allowed inside a transaction.
 
 ## Connecting
 

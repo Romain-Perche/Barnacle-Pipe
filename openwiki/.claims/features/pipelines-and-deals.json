@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:5b584623980b32371a401f4f1fa1ad9252a2cdd73d5caddf1e35aecd6d35c32f",
+  "claims": [
+    {
+      "id": "claim_cdee755dd04e4193ad40c04d8fc08f84",
+      "statement": "Every deals read uses visibleDeal(), so a private deal is visible only to its creator or owner.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/records/visibility.ts#L12-L14",
+          "version": "repo-lines-v1:sha256:36b370992cef4c8b921ae558671ca7d1bc2ccb8fc485770c2a7e75cfb4d96adb:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMzYjk2OGNhNTc3ZTFiZTEzMGE1OGQyMTc3MWRkMjNmZWE0NDI2ZTdhYmVlMWRlYzEyMjE1NWFkZTFjMDI1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGNkOTM5NzY2OTk5NDFhNDYxYjExZDA2ZmIzNmU3OGJlM2NiODY0ODU5ZDkzMTYzYTY3ZmMyODI4MzQ0YjE5YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1f5c42d993bd4eb19cfe01a52edefb48",
+      "statement": "moveDeal answers stale when the deal is missing, archived or at another version, or not in the expected stage; a real move records a stage period and a moved timeline event via transferDeal.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/deals/deals.ts#L353-L372",
+          "version": "repo-lines-v1:sha256:277710450b2a92499028579fd76c1819756672e14a9339f3b4e0765558be8e13:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNjZlNzkwZTlmN2RhNDM4ZjlmZWQyMTQ3YjBlZjM0ZGMwODdhNjA5M2I5YjBjOWNhNzZmNWVlYTIzZjFmNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiMTlhNDY1YjM3NzgzNjYzYzg3MjJlYjA2OTA1MmY0YjlhNGYzYWZhZmU4ZDE4YmZhODA2OTQ3MWViZjZhZjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlZGJjMmJmYjlmMGFjNmE0MjZkNmIwMTg5ZDk2MDA0MGMyYThkYmI5ZjYwZmM3MTgzMDA1M2EwZjAyN2QyODYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3ZDgwMzMzMjU1M2NjOTNjZGNiMDFmZTNlNDBjOGNlOTIzMzJmMzI1Y2IwNjdlM2Q2NDI2MGZiYWM2OGVlNzgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_61b09d6ec39e43908683b299a363d5d0",
+      "statement": "Deleting a pipeline with deals requires a target stage in another pipeline; the deals are moved with cause pipeline_deleted.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/deals/pipelines.ts#L160-L175",
+          "version": "repo-lines-v1:sha256:fa07ac277d4d87224c29c5dc7a2393eda2ed00244678d23802779bb4ba8821c9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmYzQ0MzY4MDc4MzUwM2VmNTRiMTc0YjY3ZTAzM2U5NTYwMzAzOGViM2M1NmZiZjE5ZWEyZjMzMTJlMzdmMTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMWJjMTQxZWNlOTBiOGNhZDBhZTFiMjE4YzNjYzc0Yjg4MjkzZGQyZGIyMWUwN2NkNzE1YmU1YmI0NTUzZjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0Y2E0Y2UyMTVjNGE3NWE4MDJlMmY0ZTBiYjBjYzkwOWUwNTE4NjU2ODE4ZGVhM2FiMzE3ZGI0MDBiNzk5MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJkMGYyZDNhM2FhZGEyNzU4NjQ1NzhkMGE0MzkxNTYzOGQ1NDNmZWNhMmM5NDg1OGRiOTQxMjExZTg2Y2VmMmIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-20T10:02:45.004Z"
+  }
+}
