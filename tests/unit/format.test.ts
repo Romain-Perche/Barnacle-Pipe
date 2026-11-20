@@ -70,3 +70,22 @@ describe("formatDays", () => {
     expect(formatDays(12)).toBe("12 days");
   });
 });
+
+// covers SF-102 FR-001, FR-017 (UK day headings and times, research.md §8)
+import { formatDayHeading, formatTime, ukDayKey } from "@/server/format";
+describe("timeline days and times", () => {
+  it("formatTime writes UK time, BST in summer", () => {
+    expect(formatTime(new Date("2026-11-20T10:14:00Z"))).toBe("10:14");
+    expect(formatTime(new Date("2026-07-01T08:05:00Z"))).toBe("09:05");
+  });
+  it("ukDayKey uses Europe/London", () => {
+    expect(ukDayKey(new Date("2026-10-31T23:30:00Z"))).toBe("2026-10-31");
+    expect(ukDayKey(new Date("2026-06-30T23:30:00Z"))).toBe("2026-07-01");
+  });
+  it("formatDayHeading marks today", () => {
+    const now = new Date("2026-11-20T23:59:00Z");
+    expect(formatDayHeading(new Date("2026-11-20T00:01:00Z"), now)).toBe("TODAY · 20 NOV 2026");
+    expect(formatDayHeading(new Date("2026-11-19T12:00:00Z"), now)).toBe("19 NOV 2026");
+    expect(formatDayHeading(new Date("2026-09-05T12:00:00Z"), now)).toBe("05 SEP 2026");
+  });
+});

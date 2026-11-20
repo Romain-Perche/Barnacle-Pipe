@@ -90,7 +90,9 @@ test("dragging a card to another column moves it at once and records the move", 
   await card(page, "Fakeco website").click();
   await expect(page).toHaveURL(new RegExp(`open=${await dealId("Fakeco website")}`));
   await expect(history(page).first()).toContainText("Moved from Qualified to Proposal by Ada Fake");
-  await expect(history(page).first()).toContainText(/\d{2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2}/);
+  // SF-102 design B: the date is the day heading above the entry, the entry shows its UK time.
+  await expect(history(page).first()).toContainText(/\d{2}:\d{2}/);
+  await expect(dealDrawer(page).getByText(/TODAY · \d{2} [A-Z]{3} \d{4}/)).toBeVisible();
 });
 
 // covers US3 scenario 3, FR-011 (keyboard users move a deal from the drawer)

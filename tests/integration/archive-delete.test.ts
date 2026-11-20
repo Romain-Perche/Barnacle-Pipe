@@ -37,7 +37,7 @@ describe("archive and restore", () => {
     expect(await restorePerson(linus.id, person)).toBe("ok");
     expect(await restorePerson(linus.id, person)).toBe("ok");
     expect((await getPerson(linus.id, person))!.archived).toBe(false);
-    const kinds = (await readTimeline(linus.id, { personId: person })).map((e) => [e.kind, e.actorName]);
+    const kinds = ((await readTimeline(linus.id, { personId: person })).entries).map((e) => [e.kind, e.actorName]);
     expect(kinds).toEqual([
       ["restored", "Linus Fake"],
       ["archived", "Linus Fake"],
@@ -50,7 +50,7 @@ describe("archive and restore", () => {
     expect((await getOrganisation(linus.id, org))!.archived).toBe(true);
     expect((await getPerson(linus.id, person))!.organisation).toEqual({ id: org, name: "Fakeco Ltd", archived: true });
     expect(await restoreOrganisation(linus.id, org)).toBe("ok");
-    expect((await readTimeline(linus.id, { organisationId: org })).map((e) => e.kind)).toEqual(["restored", "archived", "person_linked"]);
+    expect(((await readTimeline(linus.id, { organisationId: org })).entries).map((e) => e.kind)).toEqual(["restored", "archived", "person_linked"]);
   });
 
   it("answers not_found for a missing record", async () => {
@@ -76,7 +76,7 @@ describe("delete", () => {
     for (const t of ["persons", "person_emails", "person_phones", "person_labels"] as const) expect(await count(t), t).toBe(0);
     const [{ n }] = await sql`select count(*)::int as n from timeline_events where person_id = ${person} or related_person_id = ${person}`;
     expect(n).toBe(0);
-    expect((await readTimeline(ada.id, { organisationId: org })).map((e) => [e.kind, e.relatedPerson])).toEqual([["person_linked", null]]);
+    expect(((await readTimeline(ada.id, { organisationId: org })).entries).map((e) => [e.kind, e.relatedPerson])).toEqual([["person_linked", null]]);
     expect(await deletePerson(ada.id, person)).toEqual({ status: "not_found" });
   });
 
@@ -93,10 +93,10 @@ describe("deleting a person keeps the history on other records", () => {
   it("keeps linked and unlinked events, in order, with actor and time, without the person (US2 scenarios 1–2)", async () => {
     await sql`update timeline_events set created_at = now() - interval '2 days' where organisation_id = ${org}`;
     await updatePerson(linus.id, person, 1, personForm({ emails: emails("ada@example.com"), phones: [{ value: "0123", kind: "work" }] }));
-    const before = await readTimeline(linus.id, { organisationId: org });
+    const before = (await readTimeline(linus.id, { organisationId: org })).entries;
     expect(before.map((e) => e.kind)).toEqual(["person_unlinked", "person_linked"]);
     expect(await deletePerson(ada.id, person)).toEqual({ status: "deleted", name: "Ada Example" });
-    const after = await readTimeline(linus.id, { organisationId: org });
+    const after = (await readTimeline(linus.id, { organisationId: org })).entries;
     expect(after).toEqual(before.map((e) => ({ ...e, relatedPerson: null })));
     expect(after.map((e) => e.actorName)).toEqual(["Linus Fake", "Linus Fake"]);
     const rows = await sql`select related_person_id from timeline_events where organisation_id = ${org}`;
@@ -107,7 +107,7 @@ describe("deleting a person keeps the history on other records", () => {
 
   it("adds no unlinked event when the person is still linked (edge case: still linked)", async () => {
     await deletePerson(ada.id, person);
-    expect((await readTimeline(ada.id, { organisationId: org })).map((e) => e.kind)).toEqual(["person_linked"]);
+    expect(((await readTimeline(ada.id, { organisationId: org })).entries).map((e) => e.kind)).toEqual(["person_linked"]);
   });
 
   it("removes every event about a person who was private when deleted (FR-007, US2 scenario 4)", async () => {
@@ -118,7 +118,7 @@ describe("deleting a person keeps the history on other records", () => {
     const [{ n }] = await sql`select count(*)::int as n from timeline_events where related_person_id is null and kind like 'person_%' and organisation_id = ${other}`;
     expect(n).toBe(0);
     for (const viewer of [linus.id, ada.id]) {
-      const events = [...(await readTimeline(viewer, { organisationId: org })), ...(await readTimeline(viewer, { organisationId: other }))];
+      const events = [...((await readTimeline(viewer, { organisationId: org })).entries), ...((await readTimeline(viewer, { organisationId: other })).entries)];
       expect(events.map((e) => [e.kind, e.relatedPerson?.id ?? null])).toEqual([["person_linked", person]]);
     }
   });

@@ -49,7 +49,7 @@ describe("Won", () => {
     expect(await dealRow(id)).toMatchObject({ stage_id: stage, value_pence: 400000, owner_id: ada.id, version: 2 });
     expect((await periods(id)).map((p) => p.open)).toEqual([false]);
     expect(await onBoard(linus.id, stage)).toEqual({ titles: ["Other deal"], count: 1, totalPence: 100000 });
-    const [line] = await readTimeline(ada.id, { dealId: id });
+    const [line] = (await readTimeline(ada.id, { dealId: id })).entries;
     expect(line).toMatchObject({ kind: "won", actorName: "Linus Fake", reason: null });
     const d = (await deals.getDeal(ada.id, id))!;
     expect(d.status).toBe("won");
@@ -84,7 +84,7 @@ describe("Lost", () => {
     const id = await makeDeal({ title: "Fakeco website", stageId: stage, createdBy: ada.id, valuePence: 400000 });
     expect(await deals.markLost(linus.id, id, 1, "  Went with a competitor  ")).toEqual({ status: "ok" });
     expect(await status(id)).toEqual({ status: "lost", closed: true, lost_reason: "Went with a competitor" });
-    const [line] = await readTimeline(ada.id, { dealId: id });
+    const [line] = (await readTimeline(ada.id, { dealId: id })).entries;
     expect(line).toMatchObject({ kind: "lost", actorName: "Linus Fake", reason: "Went with a competitor" });
     expect((await deals.getDeal(ada.id, id))!.lostReason).toBe("Went with a competitor");
     expect(await onBoard(ada.id, stage)).toEqual({ titles: [], count: 0, totalPence: 0 });
@@ -109,7 +109,7 @@ describe("Reopen", () => {
     expect(await status(id)).toEqual({ status: "open", closed: false, lost_reason: null });
     expect((await periods(id)).map((p) => [p.stage_id, p.open])).toEqual([[stage, false], [stage, true]]);
     expect((await onBoard(ada.id, stage)).titles).toEqual(["Fakeco website"]);
-    const lines = await readTimeline(ada.id, { dealId: id });
+    const lines = (await readTimeline(ada.id, { dealId: id })).entries;
     expect(lines.map((e) => e.kind)).toEqual(["reopened", "lost"]);
     // The history keeps what was said when it was lost.
     expect(lines[1].reason).toBe("Went with a competitor");

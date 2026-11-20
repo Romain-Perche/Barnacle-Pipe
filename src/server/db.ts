@@ -3,6 +3,7 @@
 import postgres from "postgres";
 
 export type Sql = postgres.Sql;
+export type Fragment = postgres.Fragment;
 let client: Sql | null = null;
 
 function getClient(): Sql {

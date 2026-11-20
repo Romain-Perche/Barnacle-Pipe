@@ -1,6 +1,6 @@
 // The deal page, design C (SF-95 contracts/routes.md § Pages): back to the board, title with solid [ WON ] / [ LOST ]
 // (or [ REOPEN ]), the arrow-shaped stage bar with days per stage, a strip (value, owner, expected close, status),
-// the actions, // DETAILS (people, labels, followers) and // HISTORY. ?confirm=lost opens the Lost box over the page;
+// the actions, // DETAILS (people, labels, followers) and // TIMELINE (SF-102: notes, day groups). ?confirm=lost opens the Lost box over the page;
 // ?confirm=delete (admins) the delete confirmation; ?error= only from the allow-list. A deal the user cannot see
 // answers "This deal doesn't exist or you can't see it." (not-found.tsx).
 import Link from "next/link";
@@ -13,16 +13,16 @@ import { formatDate, formatMoney } from "@/server/format";
 import { messages } from "@/server/messages";
 import { ownerName } from "@/server/records/common";
 import { parseId, type Params } from "@/server/records/list-query";
-import { readTimeline } from "@/server/records/timeline";
+import { readFlash } from "@/server/records/flash";
 import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { PersonPicker } from "../../records/PersonPicker";
-import { Timeline } from "../../records/Timeline";
+import { RecordTimeline } from "../../records/RecordTimeline";
 import { archiveDeal, deleteDeal, followDeal, linkPerson, markWon, reopenDeal, restoreDeal, unfollowDeal, unlinkPerson } from "../actions";
 import { day, resultText } from "../DealBits";
 import { LostBox } from "./LostBox";
 import { StageBar } from "./StageBar";
 
-const PAGE_ERRORS = ["deal_edit_conflict", "deal_person_already_linked"] as const;
+const PAGE_ERRORS = ["deal_edit_conflict", "deal_person_already_linked", "note_not_found", "note_record_archived"] as const;
 const BOX_ERRORS = ["lost_reason_required", "lost_reason_too_long"] as const;
 
 function first(params: Params, key: string): string {
@@ -47,10 +47,10 @@ export default async function DealPage({ params, searchParams }: { params: Promi
   if (!deal) notFound();
   const query = await searchParams;
   const isAdmin = user.role === "admin";
-  const [seconds, events, people] = await Promise.all([
+  const [seconds, people, flash] = await Promise.all([
     getStageSeconds(deal.id, deal.pipeline.id),
-    readTimeline(user.id, { dealId: deal.id }),
     deal.archived ? Promise.resolve([]) : linkablePeople(user.id),
+    readFlash(["note_deleted"]),
   ]);
   const open = deal.status === "open" && !deal.archived;
   const closed = deal.status !== "open" && !deal.archived;
@@ -102,6 +102,11 @@ export default async function DealPage({ params, searchParams }: { params: Promi
         </div>
       </div>
 
+      {flash && (
+        <p className="notice" role="status">
+          {flash.text}
+        </p>
+      )}
       {pageError && (
         <p className="err" role="alert">
           {messages[pageError]}
@@ -255,7 +260,12 @@ export default async function DealPage({ params, searchParams }: { params: Promi
         </dl>
       </section>
 
-      <Timeline events={events} heading="HISTORY" />
+      <RecordTimeline
+        viewerId={user.id}
+        target={{ dealId: deal.id }}
+        archived={deal.archived}
+        query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+      />
 
       {confirmLost && <LostBox dealId={deal.id} version={deal.version} error={boxError} />}
     </div>

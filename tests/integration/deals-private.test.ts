@@ -49,11 +49,11 @@ describe("private deals", () => {
     expect(await total(c)).toEqual([1, 100]);
     expect(await total(admin)).toEqual([1, 100]);
     expect((await deals.getBoard(b.id, sales.id))!.columns[0].cards.find((x) => x.id === id)!.private).toBe(true);
-    expect((await readTimeline(a.id, { dealId: id })).length).toBe(0); // made by a direct insert: no event
+    expect(((await readTimeline(a.id, { dealId: id })).entries).length).toBe(0); // made by a direct insert: no event
     await sql`insert into timeline_events (deal_id, kind, actor_id) values (${id}, 'added', ${a.id})`;
-    expect((await readTimeline(b.id, { dealId: id })).length).toBe(1);
-    expect(await readTimeline(c.id, { dealId: id })).toEqual([]);
-    expect(await readTimeline(admin.id, { dealId: id })).toEqual([]);
+    expect(((await readTimeline(b.id, { dealId: id })).entries).length).toBe(1);
+    expect((await readTimeline(c.id, { dealId: id })).entries).toEqual([]);
+    expect((await readTimeline(admin.id, { dealId: id })).entries).toEqual([]);
   });
 
   it("refuse every change from anyone else, admins included, and nothing changes", async () => {

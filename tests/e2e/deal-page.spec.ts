@@ -33,7 +33,7 @@ test("the board drawer opens the deal page, which shows every field and links ba
   await expect(details.getByRole("link", { name: "Abe Example" })).toHaveAttribute("href", /\/people\/\d+$/);
   await expect(details).toContainText("Grace Fake");
   await expect(details).toContainText(formatDate(new Date()));
-  await expect(page.getByText("// HISTORY")).toBeVisible();
+  await expect(page.getByText("// TIMELINE")).toBeVisible();
   await expect(history(page).first()).toContainText("Added by Ada Fake");
   await expect(stageStep(page, "Qualified")).toHaveAttribute("aria-current", "step");
 

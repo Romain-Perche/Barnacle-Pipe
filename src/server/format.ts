@@ -48,3 +48,21 @@ export function formatMoney(pence: number | null): string {
 export function formatDays(n: number): string {
   return `${n} ${n === 1 ? "day" : "days"}`;
 }
+
+// SF-102 (research.md §8): the UK day of a date, "2026-11-20", to group timeline entries.
+export function ukDayKey(date: Date): string {
+  const p = ukParts(date);
+  return `${p.year}-${p.month.padStart(2, "0")}-${p.day}`;
+}
+
+// A timeline day heading (design B): "TODAY · 20 NOV 2026" for today's UK day, else "19 NOV 2026".
+export function formatDayHeading(date: Date, now: Date): string {
+  const day = formatDate(date).toUpperCase();
+  return ukDayKey(date) === ukDayKey(now) ? `TODAY · ${day}` : day;
+}
+
+// A timeline entry's UK time: "10:14".
+export function formatTime(date: Date): string {
+  const p = ukParts(date);
+  return `${p.hour}:${p.minute}`;
+}

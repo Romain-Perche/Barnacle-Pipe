@@ -7,7 +7,6 @@ import { getBoard, getDeal, stageChoices } from "@/server/deals/deals";
 import { boardHref, parseBoardQuery, type BoardParams } from "@/server/deals/rules";
 import { messages } from "@/server/messages";
 import { readFlash } from "@/server/records/flash";
-import { readTimeline } from "@/server/records/timeline";
 import { AutoSubmit } from "../records/AutoSubmit";
 import { Board } from "./Board";
 import { DealDrawer } from "./DealDrawer";
@@ -48,7 +47,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
   const found = query.open ? await getDeal(user.id, query.open) : null;
   // No drawer for a deal that is missing, archived, won or lost, private to someone else or in another pipeline.
   const open = found && !found.archived && found.status === "open" && found.pipeline.id === board.pipeline.id ? found : null;
-  const [events, pipelines] = open ? await Promise.all([readTimeline(user.id, { dealId: open.id }), stageChoices()]) : [[], []];
+  const pipelines = open ? await stageChoices() : [];
 
   return (
     <>
@@ -104,7 +103,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
             <DealDrawer
               deal={open}
               pipelines={pipelines}
-              events={events}
+              viewerId={user.id}
               isAdmin={isAdmin}
               confirmDelete={query.confirmDelete}
               hereHref={boardHref(open.pipeline.id, { open: open.id })}
