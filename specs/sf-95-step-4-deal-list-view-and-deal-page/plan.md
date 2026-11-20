@@ -154,10 +154,11 @@ organisations and deals. Privacy stays in `visibility.ts` (`visibleDeal`, `visib
    `and (e.related_person_id is null or visiblePerson(rp))` (join `persons rp` already there). `Timeline.tsx`: the new
    lines; on `heading="HISTORY"` link lines read "Linked <person> by <name>" / "Unlinked <person> by <name>".
 4. **Deals domain** (`deals.ts`): `getBoard` and `moveDeal` open-only; `transferDeal` inserts a closed period for a
-   closed deal; `getDeal` + status, labels (non-removed), other people (`visiblePerson`), followers; `getStageSeconds`;
-   `markWon`, `markLost`, `reopenDeal`, `restoreDeal` (data-model.md § State changes); `updateDeal` + labels (only
-   non-removed compared and rewritten; requested ids must be non-removed deal labels) and removing the new main person
-   from `deal_people`; `dealFormChoices` + labels.
+   closed deal; `getDeal` + status, labels (all the deal has, removed included), other people (`visiblePerson`), followers; `getStageSeconds`;
+   `markWon`, `markLost`, `reopenDeal`, `restoreDeal` (data-model.md § State changes); `updateDeal` + labels (a requested id
+   is kept when it is a non-removed deal label or already on the deal, as `allowedLabels` for people; links rewritten) and removing the new main person
+   from `deal_people`; `dealFormChoices` + labels (non-removed plus the deal's own, as
+   `personFormChoices`). Removed deal labels behave as removed people labels (spec Clarifications, research.md §6).
 5. **Links** (`links.ts`): link/unlink with the already-linked check and `person_linked`/`person_unlinked` events;
    follow/unfollow (no event).
 6. **Deal labels admin**: `choices.ts` kind `deal_label` (`deal_label_exists` on a duplicate); three actions; the
@@ -174,7 +175,9 @@ organisations and deals. Privacy stays in `visibility.ts` (`visibleDeal`, `visib
 10. **Docs**: `docs/DECISIONS.md` gets one line per spec clarification people made — "The deal page uses design C: solid
     Won and Lost buttons in the header, an arrow-shaped stage bar with days per stage, a summary strip, and the lost
     reason asked in a box over the page; the deal list follows the People list (SF-95)", "A lost reason is typed as free
-    text (SF-95)", "Deal labels are a separate list, managed by admins on the Lead sources and labels page (SF-95)" —
+    text (SF-95)", "Deal labels are a separate list, managed by admins on the Lead sources and labels page (SF-95)", "A removed deal
+    label stays on the deals that have it and in the list's label filter, and is no longer offered on the edit form, as
+    people labels (SF-95)" —
     plus the factory choices in spec.md § Clarifications once the Plan Review confirms them. README: the list, the deal
     page and the new fake data. AGENTS.md § Layout: `deals/list.ts`, `deals/links.ts`, the deal page folder.
 

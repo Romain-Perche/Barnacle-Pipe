@@ -65,7 +65,7 @@ Alternatives considered. The code read for this research: `src/server/deals/deal
   selects only show known options).
 - **Filters as SQL**: `archived=1` → `archived_at is not null` (every status: spec US4 scenario 1 and Edge Cases);
   else `archived_at is null and (closed=1 ? true : status = 'open')`; then `status`, `pipeline`, `stage`, `owner`,
-  `label` (`exists` on `deal_label_links`), `title ilike %q%` (escaped with `escapeLike`). Always
+  `label` (`exists` on `deal_label_links`, removed labels included), `title ilike %q%` (escaped with `escapeLike`). Always
   `visibleDeal()`.
 - **Count and total** (FR-012): one `select count(*), coalesce(sum(value_pence), 0)` with the same `where`
   (all matching deals, not the page). Header "<n> deals · £<total>".
@@ -82,10 +82,16 @@ Alternatives considered. The code read for this research: `src/server/deals/deal
   `deal_label` (same add / rename / remove, same admin re-check). The admin page gets a third `ChoiceList`
   "Deal labels". The duplicate message for deal labels is "This name is already used." (spec US5 scenario 4) —
   a new code `deal_label_exists`; people labels and lead sources keep "This name is already on the list.".
-- **Removed deal labels** (spec Edge Cases): never shown on a deal page, the list or the label filter; the link
-  rows stay, so re-adding the name (which brings the removed entry back, as for people labels) shows them again.
-  On edit, only non-removed labels are compared and rewritten (`delete … where label_id in (non-removed)`), so a
-  removed label never makes a fake "Edited: Labels" line.
+- **Removed deal labels** (spec Clarifications 2026-11-20, alexis@barnacle.ai; Edge Cases; FR-017): exactly as
+  removed people labels in `src/server/records/people.ts` (SF-90). Removing sets `removed_at`; the link rows stay.
+  The deal page and the list row show every label the deal has, removed or not. `dealFilterOptions` offers
+  non-removed deal labels plus removed ones that a deal the viewer can see has (as `peopleFilterOptions`).
+  `dealFormChoices` offers non-removed deal labels plus the ones the deal already has (as `personFormChoices`).
+  On save, a requested id is kept when it is a non-removed deal label or one the deal already has (as
+  `allowedLabels`); all links are then rewritten and compared, so a kept removed label makes no "Edited: Labels"
+  line and an unticked one is gone for good. Re-adding the name brings the removed entry back (SF-90).
+- **Alternatives (removed labels)**: hide removed labels everywhere (the first plan; replaced by the person's
+  answer: it would make one label list behave unlike the other).
 - **Labels on edit**: `DealForm` gets the label checkboxes the person form has; `DEAL_FIELDS` gets
   `["labelIds", "Labels"]` so a change is recorded "Edited by <name>: Labels".
 - **Alternatives**: one `labels` table with a `kind` column (would change SF-90's unique index and every label

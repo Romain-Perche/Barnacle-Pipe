@@ -21,6 +21,7 @@
 - Q: What happens when a deal's main person is changed to someone already listed under "Other people"? → A: They become the main person and leave "Other people" (a person is linked once); the history shows "Edited by <name>: Person" (decided by the factory, to confirm)
 - Q: Does the deal list show labels, which are not one of its columns? → A: Yes, under each deal's title (like the email under a person's name), so the label filter's result is visible (decided by the factory, to confirm)
 - Q: Where is the deal list's address? → A: `/deals/list`, beside the board at `/deals`, with a "Board / List" switch on both (decided by the factory, to confirm)
+- Q: What happens to a deal label an admin removes? → A: It works like a removed people label (SF-90): it stays on the deals that have it and in the list's label filter, and is only no longer offered on the edit form. (alexis@barnacle.ai)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -111,7 +112,7 @@ On the deal page, a team member links more people to the deal besides its main p
 1. **Given** a deal page, **When** the user links a person they can see, **Then** they appear under "Other people" with a link to their page and the history records "Linked <person> by <name>"; `[ UNLINK ]` removes them and records "Unlinked <person> by <name>".
 2. **Given** a person already linked (as main person or other person), **When** the user tries to link them again, **Then** "This person is already linked to this deal." is shown and nothing changes.
 3. **Given** the edit form, **When** the user picks labels from the deal label list and saves, **Then** the deal page and list show them, the list's label filter finds the deal, and the history shows "Edited by <name>: Labels".
-4. **Given** a signed-in admin on the "Lead sources and labels" page, **When** they add a deal label "Hot", rename it to "Very hot" or remove it, **Then** the page lists it under "Deal labels" (apart from the people labels), the deal edit form offers exactly the deal labels, and the person form still offers only the people labels; a deal label name already used by another deal label (ignoring case and surrounding spaces) shows "This name is already used." and nothing is saved; a user who is not an admin gets "You don't have access to this page." and nothing changes.
+4. **Given** a signed-in admin on the "Lead sources and labels" page, **When** they add a deal label "Hot", rename it to "Very hot" or remove it, **Then** the page lists it under "Deal labels" (apart from the people labels), the deal edit form offers exactly the deal labels (not removed ones, except those the deal already has), and the person form still offers only the people labels; a deal label name already used by another deal label (ignoring case and surrounding spaces) shows "This name is already used." and nothing is saved; a user who is not an admin gets "You don't have access to this page." and nothing changes.
 5. **Given** a deal page, **When** the user presses `[ FOLLOW ]`, **Then** they are listed under "Followers" and the button becomes `[ UNFOLLOW ]`; following is not recorded in the history.
 6. **Given** a linked person who is private to someone else, **When** another user views the deal, **Then** that person is never shown or named, and is not counted.
 
@@ -126,7 +127,7 @@ On the deal page, a team member links more people to the deal besides its main p
 - A lost reason is up to 500 characters; spaces around it are removed. The reason is shown as plain text, never as a link or formatting.
 - Marking Won or Lost does not change the deal's value, owner or stage.
 - A deal's other linked person is archived: still shown, marked "Archived"; deleted by an admin: removed from the deal, and the history keeps "A deleted person …" (as SF-92).
-- A label removed by an admin no longer shows on any deal page or in the list's label filter. A follower who is deactivated stays listed as "<name> (deactivated)".
+- An admin removes the deal label "Hot", which deal A has: deal A's page and its list row still show "Hot", and the list's Label filter still offers "Hot" and finds deal A (while a deal the user can see has it). The edit form of a deal without "Hot" does not offer it; the edit form of deal A shows it ticked, and saving keeps it unless the user unticks it. A follower who is deactivated stays listed as "<name> (deactivated)".
 - Private deals: the list, its count and total, the deal page and every action on it follow the SF-93 rule (only the creator and the current owner see a private deal, admins included); a user who loses sight of a deal after saving it is taken to the list or board with "You can no longer see <title>: only its creator and owner can.".
 - A list address with a page number past the last page shows the last page; with a stage that is not in the chosen pipeline, the stage filter is ignored.
 - An empty list shows "No deals match these filters." (with filters) or "No deals yet." (without).
@@ -167,7 +168,7 @@ On the deal page, a team member links more people to the deal besides its main p
 **Linked people, labels, followers**
 
 - **FR-016**: Users MUST be able to link any number of other people they can see to a deal and unlink them, besides its main person; a person is linked at most once; links and unlinks are recorded in the history.
-- **FR-017**: Users MUST be able to give a deal any number of labels from a deal label list, separate from the people label list; label changes are recorded as an edit. Only admins MUST be able to add, rename and remove deal labels, in a "Deal labels" section of the existing "Lead sources and labels" admin page, enforced on every request; names are unique among deal labels, ignoring case and surrounding spaces.
+- **FR-017**: Users MUST be able to give a deal any number of labels from a deal label list, separate from the people label list; label changes are recorded as an edit. Only admins MUST be able to add, rename and remove deal labels, in a "Deal labels" section of the existing "Lead sources and labels" admin page, enforced on every request; names are unique among deal labels, ignoring case and surrounding spaces. A removed deal label MUST stay on the deals that have it (shown on their page and list row, and offered by the list's label filter while a deal the user can see has it) and MUST no longer be offered on the edit form of a deal that does not have it, as for people labels (SF-90).
 - **FR-018**: Any user who can see a deal MUST be able to follow and unfollow it themselves; the page lists its followers. Updates sent to followers come with a later feature.
 
 **Access, privacy, messages, look**

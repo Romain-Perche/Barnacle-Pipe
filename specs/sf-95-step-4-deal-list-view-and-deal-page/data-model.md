@@ -81,11 +81,11 @@ deal_label_links, deal_labels` (no starting deal labels); `tests/integration/rls
 | `status` | `open` (default), `won`, `lost`. Only Won / Lost / Reopen change it. |
 | `closed_at` | set when Won or Lost, cleared on Reopen. Shown as "Won · 19 Nov 2026". |
 | `lost_reason` | required for Lost: trimmed, 1–500 characters; cleared on Reopen. Shown as plain text. |
-| labels | `deal_label_links` → `deal_labels` (only non-removed ones are shown, filtered or compared). |
+| labels | `deal_label_links` → `deal_labels`. Removed labels stay on the deal: shown, filtered, kept on save; only new links need a non-removed label (as SF-90 people labels). |
 | other people | `deal_people`; never the main person too. |
 | followers | `deal_followers`; each user follows only themselves. |
 
-`DealView` (`getDeal`) gains: `status`, `closedAt`, `lostReason`, `labels: Option[]` (non-removed, A–Z),
+`DealView` (`getDeal`) gains: `status`, `closedAt`, `lostReason`, `labels: Option[]` (every label the deal has, removed included, A–Z),
 `otherPeople: { id, name, archived }[]` (visible only, A–Z), `followers: UserRef[]` (A–Z, deactivated marked),
 `followedByViewer: boolean`.
 
@@ -126,6 +126,8 @@ viewer cannot see.
 ### Deal label
 
 Like `labels` (SF-90): admins add (a removed entry with the same name comes back), rename, remove (`removed_at`).
+Removed = no longer offered to deals that do not have it; deals that have it keep and show it, and the list's
+label filter offers it while a deal the viewer can see has it.
 `choices.ts` kind `deal_label` → table `deal_labels`, unique key `deal_labels_name_key`; a duplicate answers
 `deal_label_exists` ("This name is already used.").
 
@@ -139,7 +141,7 @@ Like `labels` (SF-90): admins add (a removed entry with the same name comes back
 | Restore | visible, archived | `archived_at=null`, `version+1` (status, stage unchanged) | `restored` |
 | Move (board, drawer, stage bar) | visible, open, not archived, version matches (SF-93) | as SF-93 | `moved` |
 | `transferDeal` by a stage/pipeline delete | any status | as SF-93; when the deal is not open, the new period is inserted with `left_at = entered_at` | `moved` (cause) |
-| Edit | visible, not archived (any status) | as SF-93 + non-removed labels rewritten; a new main person removed from `deal_people` | `edited` (fields incl. Labels) |
+| Edit | visible, not archived (any status) | as SF-93 + labels rewritten (a requested id is kept when non-removed or already on the deal); a new main person removed from `deal_people` | `edited` (fields incl. Labels) |
 | Link person | visible deal, open or closed, not archived; person visible, not archived, not main, not linked | insert `deal_people` | `person_linked` |
 | Unlink person | visible deal, not archived; person linked and visible | delete row | `person_unlinked` |
 | Follow / Unfollow | visible deal, not archived; actor active | insert `on conflict do nothing` / delete | none |
