@@ -137,6 +137,25 @@ export function hasDealFilters(query: DealsQuery): boolean {
   );
 }
 
+// Only known values are kept, so they are listed, counted and shown back (FR-013): a pipeline that is an option, a
+// stage of that pipeline, an owner and a label that are options, a status when closed or archived deals are shown.
+type Known = { readonly id: number };
+export function knownDealsQuery(
+  query: DealsQuery,
+  options: { pipelines: readonly Known[]; stages: readonly Known[]; owners: readonly Known[]; labels: readonly Known[] },
+): DealsQuery {
+  const known = (id: number | null, list: readonly Known[]) => (id !== null && list.some((o) => o.id === id) ? id : null);
+  const pipeline = known(query.pipeline, options.pipelines);
+  return {
+    ...query,
+    pipeline,
+    stage: pipeline === null ? null : known(query.stage, options.stages),
+    owner: known(query.owner, options.owners),
+    label: known(query.label, options.labels),
+    status: query.closed || query.archived ? query.status : null,
+  };
+}
+
 // The sector filter only keeps a value that is one of the sectors in use (matched ignoring case), so text
 // from the address is never shown back on the page (FR-025); an unknown sector filters nothing.
 export function knownSector(sector: string | null, inUse: readonly string[]): string | null {

@@ -108,3 +108,18 @@ test("invalid address values are ignored and never shown; a page past the last s
   await page.goto("/deals/list");
   await expect(page.getByText("No deals yet.")).toBeVisible();
 });
+
+// covers SF-95 FR-013, US3 scenario 5, Edge Cases (unknown owner or label)
+test("an unknown owner or label in the address is ignored", async ({ page }) => {
+  await signInAs(page, "Linus Fake", "/deals/list");
+  const count = (await page.locator(".head-r .count").textContent()) ?? "";
+  const firstRows = await titleLinks(page).allInnerTexts();
+  for (const [param, label, any] of [["owner", "Owner", "Any owner"], ["label", "Label", "Any label"]]) {
+    await page.goto(`/deals/list?${param}=99999`);
+    await expect(page.locator(".head-r .count")).toHaveText(count);
+    expect(await titleLinks(page).allInnerTexts()).toEqual(firstRows);
+    await expect(page.getByLabel(label).locator("option:checked")).toHaveText(any);
+    await expect(page.getByText("No deals match these filters.")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "[ CLEAR ]", exact: true })).toHaveCount(0);
+  }
+});

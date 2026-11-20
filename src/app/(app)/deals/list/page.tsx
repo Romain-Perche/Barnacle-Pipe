@@ -9,7 +9,7 @@ import { formatDate, formatMoney } from "@/server/format";
 import { messages, templates } from "@/server/messages";
 import { ownerName } from "@/server/records/common";
 import { readFlash } from "@/server/records/flash";
-import { hasDealFilters, parseDealsQuery, withParams, type DealsQuery, type Params } from "@/server/records/list-query";
+import { hasDealFilters, knownDealsQuery, parseDealsQuery, withParams, type DealsQuery, type Params } from "@/server/records/list-query";
 import { readTimeline } from "@/server/records/timeline";
 import { Cell, FilterRow, PreviewLink, Select, SortHeader } from "../../records/ListBits";
 import { Pager } from "../../records/Pager";
@@ -29,15 +29,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
   const params = await searchParams;
   const parsed = parseDealsQuery(params);
   const options = await dealFilterOptions(user.id, parsed.pipeline);
-  // Only known values are kept (and so shown back): a pipeline that exists, a stage of that pipeline, a status when
-  // closed or archived deals are shown.
-  const pipeline = options.pipelines.some((p) => p.id === parsed.pipeline) ? parsed.pipeline : null;
-  const query: DealsQuery = {
-    ...parsed,
-    pipeline,
-    stage: pipeline !== null && options.stages.some((s) => s.id === parsed.stage) ? parsed.stage : null,
-    status: parsed.closed || parsed.archived ? parsed.status : null,
-  };
+  const query = knownDealsQuery(parsed, options);
   const [list, flash, found] = await Promise.all([
     listDeals(user.id, query),
     readFlash(["deal_deleted", "deal_no_longer_visible"]),

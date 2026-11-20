@@ -1,7 +1,7 @@
 // covers FR-012, FR-013, FR-014, contracts/list-query.md (both lists), edge cases "page beyond the last" and
 // "search text is never echoed as a message"
 import { describe, expect, it } from "vitest";
-import { hasDealFilters, knownSector, parseDealsQuery, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
+import { hasDealFilters, knownDealsQuery, knownSector, parseDealsQuery, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
 
 describe("parsePeopleQuery", () => {
   it("has the defaults: sort by name A–Z, page 1, no filter", () => {
@@ -148,5 +148,35 @@ describe("withParams on the deal list", () => {
     expect(withParams("/deals/list", q, { owner: 2 })).toBe("/deals/list?pipeline=1&owner=2");
     expect(withParams("/deals/list", q, { closed: true })).toBe("/deals/list?pipeline=1&closed=1");
     expect(withParams("/deals/list", q, { open: 9 })).toBe("/deals/list?pipeline=1&page=3&open=9");
+  });
+});
+
+// covers SF-95 FR-013, US3 scenario 5, Edge Cases (unknown owner or label)
+describe("knownDealsQuery", () => {
+  const options = {
+    pipelines: [{ id: 1, name: "Sales" }],
+    stages: [{ id: 2, name: "Lead" }],
+    owners: [{ id: 3, name: "Linus Fake" }],
+    labels: [{ id: 4, name: "Hot" }],
+  };
+  it("drops an owner or label that is not an option", () => {
+    const q = knownDealsQuery(parseDealsQuery({ owner: "99999", label: "99999" }), options);
+    expect(q.owner).toBeNull();
+    expect(q.label).toBeNull();
+    expect(hasDealFilters(knownDealsQuery(parseDealsQuery({ owner: "99999" }), options))).toBe(false);
+    expect(hasDealFilters(knownDealsQuery(parseDealsQuery({ label: "99999" }), options))).toBe(false);
+  });
+  it("keeps known values", () => {
+    const q = knownDealsQuery(parseDealsQuery({ pipeline: "1", stage: "2", owner: "3", label: "4", status: "won", closed: "1" }), options);
+    expect(q).toMatchObject({ pipeline: 1, stage: 2, owner: 3, label: 4, status: "won", closed: true });
+  });
+  it("keeps today's pipeline, stage and status rules", () => {
+    expect(knownDealsQuery(parseDealsQuery({ pipeline: "9", stage: "2" }), options)).toMatchObject({ pipeline: null, stage: null });
+    expect(knownDealsQuery(parseDealsQuery({ stage: "2" }), options).stage).toBeNull();
+    expect(knownDealsQuery(parseDealsQuery({ pipeline: "1", stage: "7" }), options)).toMatchObject({ pipeline: 1, stage: null });
+    expect(knownDealsQuery(parseDealsQuery({ status: "won" }), options).status).toBeNull();
+    expect(knownDealsQuery(parseDealsQuery({ status: "lost", archived: "1" }), options).status).toBe("lost");
+    const rest = parseDealsQuery({ q: "fake", sort: "value", dir: "asc", page: "2", open: "8" });
+    expect(knownDealsQuery(rest, options)).toEqual(rest);
   });
 });
