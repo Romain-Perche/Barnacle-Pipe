@@ -16,6 +16,15 @@
 - Q: A CSV row has the email address of a person already in the CRM. What happens? → A: The row is not imported; the existing person stays as it is, and the report lists the row.
 - Q: A person row in the file has no consent value. Which consent does the person get? → A: The user must choose Subscribed or Unsubscribed for these rows before `[ IMPORT ]`; nothing is chosen in advance.
 
+### Plan 2026-11-20
+
+- Q: How long does the CRM keep an uploaded file that was never imported, and the report of a finished import (which holds names and email addresses from the file)? → A: An unfinished upload is deleted as soon as the same user starts another import; the file of a finished import is deleted at the moment of the import; any import (file and report) older than 24 hours is deleted the next time anyone starts an import. Only the user who started an import can open its steps and report. (decided by the factory, to confirm)
+- Q: A consent value in the file is neither a "subscribed" nor an "unsubscribed" word (for example "maybe")? → A: The row is not imported ("Consent not recognised: 'maybe'. Use Subscribed or Unsubscribed."); it is never guessed and never given the consent chosen for empty rows. (decided by the factory, to confirm)
+- Q: A value is longer than the person or organisation form keeps (the forms cut it silently)? → A: The row is not imported, with "Keep the <field> under <n> characters.", so nothing is cut without telling the user. (decided by the factory, to confirm)
+- Q: Which row number does the report show? → A: The row number as in a spreadsheet: the heading row is row 1, the first person is row 2, and empty rows keep their number. (decided by the factory, to confirm)
+- Q: An owner value matches the full name of two active users? → A: Treated as no match: the importing user is the owner and the report lists the value as a warning. (decided by the factory, to confirm)
+- Q: A cell starts with `=`, `+`, `-` or `@` (a spreadsheet formula)? → A: Saved and shown exactly as typed; nothing is changed, because this step exports nothing to spreadsheets. (decided by the factory, to confirm)
+
 ## User Scenarios & Testing *(mandatory)*
 
 Builds on SF-90 (people and organisations, their fields, duplicate detection by email address, unique organisation names, lead source and label lists kept by admins) and SF-92 (private people are visible only to their creator and owner). Custom fields, ambassador tracking and the Pipedrive import do not exist yet and are not part of this step.
