@@ -13,7 +13,7 @@ last editor, version), so the timeline stays one ordered, paged query. @mentions
 text, shown with the user's current name; one new table `note_mentions` holds each mention and doubles as the
 in-app notification (read/unread), shown and counted only while the note's record is visible to the user. A
 "Notifications" sidebar link with an unread count and a `/notifications` page. One migration
-(`0006_notes_mentions.sql`), domain code in `src/server/records/` and `src/server/notifications.ts`, one new client
+(`0007_notes_mentions.sql`), domain code in `src/server/records/` and `src/server/notifications.ts`, one new client
 component (`NoteBox`, the mention picker). No new dependency; the only outside service is the app's own Supabase Postgres, as before.
 
 ## Technical Context
@@ -24,7 +24,7 @@ component (`NoteBox`, the mention picker). No new dependency; the only outside s
 all already in the repo. Nothing added (research.md §1).
 
 **Storage**: PostgreSQL (local for dev/tests, Supabase through its pooler in production). New migration
-`migrations/0006_notes_mentions.sql`: 4 columns and 2 constraints on `timeline_events`, new table `note_mentions`
+`migrations/0007_notes_mentions.sql`: 4 columns and 2 constraints on `timeline_events`, new table `note_mentions`
 (data-model.md).
 
 **Testing**: Vitest (unit: note rules, mention tokens, segments, preview, day grouping, `parseShown`, messages;
@@ -61,7 +61,7 @@ rules are `docs/DECISIONS.md` and `AGENTS.md`; the plan is checked against them:
 | Server components by default, client only where needed | Timeline, day groups, edit/delete confirm, notifications page are server-rendered. One new client component: `NoteBox` (the @ picker needs the browser); `SidebarLink` (already client) gets a `count` prop | ✅ |
 | Every page `requireUser()`; every action `requireUser()` first | Per route in contracts/routes.md; domain functions re-check visibility, archived state and version in the transaction | ✅ |
 | Messages only from `messages.ts`; never text from the URL; redirects via `isSafeNext` or fixed paths | New codes and templates in contracts/routes.md § Messages; `?note=`/`?delete-note=` only select among shown ids; `?timeline=`/`?shown=` parsed to numbers; redirects built from numeric ids | ✅ |
-| Migrations transaction-safe, RLS after every `create table`, never at app start | `0006_notes_mentions.sql`: DDL only, `note_mentions` RLS on, added to `rls.test.ts` | ✅ |
+| Migrations transaction-safe, RLS after every `create table`, never at app start | `0007_notes_mentions.sql`: DDL only, `note_mentions` RLS on, added to `rls.test.ts` | ✅ |
 | Fake data only when `isFakeAllowed()`, clearly fake names | `src/seed/notes.ts` registered in `src/seed/index.ts` (command already gated); fake users and fake text only | ✅ |
 | A private contact or deal hides its notes from everyone but those allowed, admins included (kickoff, SF-92, SF-93) | `visiblePerson` / `visibleDeal` on every timeline, note action, mention candidate and notification query; the helpers accept a user column so the same rule answers "who can see" (research.md §5) | ✅ |
 | Hand-over carries private deals (SF-97) | Notes are events of the deal: they follow the owner change; integration test | ✅ |
@@ -92,7 +92,7 @@ specs/sf-102-step-5-timeline-and-notes/
 
 ```text
 migrations/
-└── 0006_notes_mentions.sql            # data-model.md § Migration
+└── 0007_notes_mentions.sql            # data-model.md § Migration
 
 src/
 ├── app/(app)/
@@ -142,8 +142,10 @@ the user, not a record). Privacy stays in `visibility.ts`.
 
 ## Build steps (in order)
 
-1. **Migration** `migrations/0006_notes_mentions.sql` exactly as data-model.md (confirm the constraint name
-   `timeline_events_kind_check` on a migrated database first). `tests/support/reset.ts` (and
+1. **Migration** `migrations/0007_notes_mentions.sql` exactly as data-model.md (confirm the constraint name
+   `timeline_events_kind_check` on a migrated database first). Number 0007 and `'imported'` kept in the kind list,
+   because SF-103's `0006_csv_imports.sql` also replaces that constraint: the two work in either order (person's
+   answer, plan review 2026-11-20). This issue does not show `'imported'` entries; SF-103 does. `tests/support/reset.ts` (and
    `.factory/run/reset-db.sh` if it lists tables) empties `note_mentions`; `rls.test.ts` + `note_mentions`.
 2. **Pure rules** (`notes-rules.ts`, `timeline-view.ts`, `format.ts`): as data-model.md § Validation and research.md
    §3, §7, §8. Day headings in Europe/London: "TODAY · 20 NOV 2026" when the entry's UK day is today's, else

@@ -6,7 +6,7 @@ Local Postgres and the app as in `README.md`; then:
 
 ```bash
 export APP_ENV=development DATABASE_URL=postgres://postgres@localhost:5432/crm_dev
-npm run db:migrate       # applies migrations/0006_notes_mentions.sql
+npm run db:migrate       # applies migrations/0007_notes_mentions.sql
 npm run db:seed          # fake users, people, deals, now with notes, mentions and notifications
 npm run dev
 ```

@@ -1,8 +1,14 @@
 # Data model: Timeline and notes (SF-102)
 
-## Migration `migrations/0006_notes_mentions.sql`
+## Migration `migrations/0007_notes_mentions.sql`
 
 Only statements allowed in a transaction; RLS on (no policy) after the one `create table`.
+
+Number 0007, not 0006: SF-103 (CSV import) is built at the same time and its `0006_csv_imports.sql` also replaces
+`timeline_events_kind_check`, adding `'imported'`. This migration keeps `'imported'` in the kind list, so the two
+migrations work in either order (decided by alexis@barnacle.ai, plan review 2026-11-20). `scripts/migrate.ts` applies
+every pending file in name order and skips gaps, so 0007 applies alone when 0006 is not merged yet; if 0006 is merged
+later on a database that already has 0007, its kind list must also keep `'note'` (SF-103's side).
 
 ```sql
 -- SF-102: notes on the timeline, @mentions and their notifications (data-model.md).
@@ -15,7 +21,7 @@ alter table timeline_events add column version int not null default 1;
 alter table timeline_events drop constraint timeline_events_kind_check;
 alter table timeline_events add constraint timeline_events_kind_check
   check (kind in ('added', 'edited', 'archived', 'restored', 'person_linked', 'person_unlinked', 'handed_over', 'moved',
-                  'won', 'lost', 'reopened', 'note'));
+                  'won', 'lost', 'reopened', 'note', 'imported'));
 alter table timeline_events add constraint timeline_events_note_check
   check ((kind = 'note') = (body is not null) and (kind = 'note' or (edited_by is null and edited_at is null)));
 alter table timeline_events add constraint timeline_events_note_author_check
@@ -37,7 +43,7 @@ create index note_mentions_unread_idx on note_mentions (user_id) where read_at i
 
 The body's DB limit (100,000) is only a guard: the 10,000-character rule applies to the visible text (with "@names")
 in `rules.ts` before tokens replace names (research.md §3). Build first confirms on a migrated database that
-`timeline_events_kind_check` is the current constraint name (it is since 0005).
+`timeline_events_kind_check` is the current constraint name (it is since 0005; SF-103's 0006 keeps the same name).
 
 `tests/support/reset.ts` (and `.factory/run/reset-db.sh` if it lists tables) empties `note_mentions`;
 `tests/integration/rls.test.ts` gets `note_mentions`.

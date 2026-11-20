@@ -20,6 +20,7 @@
 - Q: When is a notification marked read? → A: Only when the user opens it from the Notifications page or presses `[ MARK ALL AS READ ]`; visiting the record another way leaves it unread (decided by the factory, to confirm)
 - Q: What happens to a mention of a teammate who was deactivated or lost sight of the record, when someone edits the note? → A: The mention is kept as it is and the edit is saved; only new mentions must be active users who can see the record (decided by the factory, to confirm)
 - Q: What does a direct request to add, edit or delete a note on an archived record answer? → A: "Restore this record before changing its notes." and nothing changes (decided by the factory, to confirm)
+- Q: How does this issue's database change fit with SF-103 (CSV import), built at the same time, whose migration `0006_csv_imports.sql` also replaces the list of timeline entry kinds, adding 'imported'? → A: Name this migration `0007_notes_mentions.sql` and keep 'imported' in the kind list, so the two work in either order (alexis@barnacle.ai)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -184,4 +185,5 @@ Notes follow the existing private rules: a note on a private person or private d
 - An organisation's timeline shows its own deals' entries, not those of deals of its people; a person's timeline shows only deals they are linked to.
 - Edits of a note are not kept as a separate history; the note shows its current text and "edited by <name>".
 - Adding a note does not change a person's "last contacted" date (that comes from emails and activities).
+- SF-103 (CSV import) is built at the same time; its timeline entry kind 'imported' is kept in this issue's list of kinds so the two database changes apply in either order. Showing 'imported' entries is SF-103's work.
 - Technical choices already in `docs/DECISIONS.md` and `AGENTS.md` apply and are not repeated here.
