@@ -32,4 +32,4 @@
 ## Notes
 
 - Passed on the first check. References to `docs/DESIGN.md`, SF-92 and SF-93 point to product rules and earlier specs, not to implementation.
-- Choices made by the factory, to confirm in `/speckit-clarify`: free-text lost reason (no admin list); deal labels share the people label list; self-follow only; closed deals keep their stage and are only findable from the list; the progress bar moves open deals; the list and page designs.
+- Clarified 2026-11-20: deal page design C, free-text lost reason, separate admin-managed deal label list. Remaining factory defaults (self-follow only, closed deals only in the list, the stage bar moves open deals) are in the Assumptions.

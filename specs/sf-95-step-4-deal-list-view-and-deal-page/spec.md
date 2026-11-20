@@ -8,6 +8,14 @@
 
 **Input**: User description: "step 4 - Deal list view and deal page. The deal list view and the full deal page, with Won and Lost (`docs/PRODUCT.md` section 1), including restoring an archived deal. Notes and the timeline on people and organisations come in the next issue."
 
+## Clarifications
+
+### Session 2026-11-20
+
+- Q: Which design for the deal page? → A: Design: C, solid green `[ WON ]` and red `[ LOST ]` in the header, an arrow-shaped stage bar with days per stage, a strip with value, owner, expected close date and status, then `[ EDIT ]` `[ ARCHIVE ]` `[ DELETE ]` `[ FOLLOW ]`, // DETAILS and // HISTORY below; `[ LOST ]` opens a box over the page asking "Why was this deal lost?" (see `design-options.html`). The deal list follows the People list (filter row, table, preview drawer).
+- Q: How does a user give the reason when they mark a deal Lost? → A: They type it as free text.
+- Q: Which labels can a deal have? → A: A separate list of deal labels, managed by admins on the existing "Lead sources and labels" admin page.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Open the full deal page (Priority: P1)
@@ -39,7 +47,7 @@ On the deal page, `[ WON ]` closes the deal as won; `[ LOST ]` asks for the reas
 **Acceptance Scenarios**:
 
 1. **Given** an open deal, **When** the user presses `[ WON ]`, **Then** the page shows a "Won" badge with the date, the history records "Marked as won by <name>", and the deal no longer appears or counts on the board.
-2. **Given** an open deal, **When** the user presses `[ LOST ]`, **Then** they are asked for a lost reason; on saving with "Went with a competitor" the page shows a "Lost" badge, the date and the reason, and the history records "Marked as lost by <name>: Went with a competitor".
+2. **Given** an open deal, **When** the user presses `[ LOST ]`, **Then** a box opens over the page asking "Why was this deal lost?" with `[ MARK AS LOST ]` and `[ CANCEL ]`; on saving with "Went with a competitor" the page shows a "Lost" badge, the date and the reason, and the history records "Marked as lost by <name>: Went with a competitor".
 3. **Given** the lost reason is left empty, **When** the user saves, **Then** "Enter why this deal was lost." is shown and the deal stays open.
 4. **Given** a won or lost deal, **When** the user presses `[ REOPEN ]`, **Then** the deal is open again, back on the board in the stage it was in, its won or lost date and reason are cleared, and the history records "Reopened by <name>".
 5. **Given** a won or lost deal, **When** its page is shown, **Then** `[ WON ]` and `[ LOST ]` are replaced by `[ REOPEN ]`, and the progress bar shows the stages but does not move the deal.
@@ -86,7 +94,7 @@ Archived deals can be found from the list ("Show archived deals") and opened. Th
 
 ### User Story 5 - Linked people, labels and followers (Priority: P2)
 
-On the deal page, a team member links more people to the deal besides its main person (and unlinks them), picks labels from the team's label list, and follows or unfollows the deal.
+On the deal page, a team member links more people to the deal besides its main person (and unlinks them), picks labels from the deal label list, and follows or unfollows the deal.
 
 **Why this priority**: These complete the deal record from PRODUCT §1 and the "one main contact plus any number of linked people" decision; the deal is useful without them.
 
@@ -96,9 +104,10 @@ On the deal page, a team member links more people to the deal besides its main p
 
 1. **Given** a deal page, **When** the user links a person they can see, **Then** they appear under "Other people" with a link to their page and the history records "Linked <person> by <name>"; `[ UNLINK ]` removes them and records "Unlinked <person> by <name>".
 2. **Given** a person already linked (as main person or other person), **When** the user tries to link them again, **Then** "This person is already linked to this deal." is shown and nothing changes.
-3. **Given** the edit form, **When** the user picks labels from the admin-managed label list and saves, **Then** the deal page and list show them, the list's label filter finds the deal, and the history shows "Edited by <name>: Labels".
-4. **Given** a deal page, **When** the user presses `[ FOLLOW ]`, **Then** they are listed under "Followers" and the button becomes `[ UNFOLLOW ]`; following is not recorded in the history.
-5. **Given** a linked person who is private to someone else, **When** another user views the deal, **Then** that person is never shown or named, and is not counted.
+3. **Given** the edit form, **When** the user picks labels from the deal label list and saves, **Then** the deal page and list show them, the list's label filter finds the deal, and the history shows "Edited by <name>: Labels".
+4. **Given** a signed-in admin on the "Lead sources and labels" page, **When** they add a deal label "Hot", rename it to "Very hot" or remove it, **Then** the page lists it under "Deal labels" (apart from the people labels), the deal edit form offers exactly the deal labels, and the person form still offers only the people labels; a deal label name already used by another deal label (ignoring case and surrounding spaces) shows "This name is already used." and nothing is saved; a user who is not an admin gets "You don't have access to this page." and nothing changes.
+5. **Given** a deal page, **When** the user presses `[ FOLLOW ]`, **Then** they are listed under "Followers" and the button becomes `[ UNFOLLOW ]`; following is not recorded in the history.
+6. **Given** a linked person who is private to someone else, **When** another user views the deal, **Then** that person is never shown or named, and is not counted.
 
 ---
 
@@ -152,7 +161,7 @@ On the deal page, a team member links more people to the deal besides its main p
 **Linked people, labels, followers**
 
 - **FR-016**: Users MUST be able to link any number of other people they can see to a deal and unlink them, besides its main person; a person is linked at most once; links and unlinks are recorded in the history.
-- **FR-017**: Users MUST be able to give a deal any number of labels from the same admin-managed label list used for people; label changes are recorded as an edit.
+- **FR-017**: Users MUST be able to give a deal any number of labels from a deal label list, separate from the people label list; label changes are recorded as an edit. Only admins MUST be able to add, rename and remove deal labels, in a "Deal labels" section of the existing "Lead sources and labels" admin page, enforced on every request; names are unique among deal labels, ignoring case and surrounding spaces.
 - **FR-018**: Any user who can see a deal MUST be able to follow and unfollow it themselves; the page lists its followers. Updates sent to followers come with a later feature.
 
 **Access, privacy, messages, look**
@@ -160,17 +169,17 @@ On the deal page, a team member links more people to the deal besides its main p
 - **FR-019**: Every list, page and action MUST require a signed-in, active user; delete MUST be admin only, enforced on every request.
 - **FR-020**: The private deal rule (SF-93) and private person rule (SF-92) MUST apply to the list, its counts and totals, the deal page, linked people and every action: no one they hide a deal or person from may see, count or change it.
 - **FR-021**: Every message shown MUST be one of the app's fixed messages; text from the page address MUST never be shown; user-entered text (lost reason) is shown as plain text.
-- **FR-022**: The list and deal page MUST follow `docs/DESIGN.md` and the existing record pages: the list as for people and organisations (filter row, table, preview drawer when a row is selected), the deal page as a record page; money in GBP, dates in UK format.
+- **FR-022**: The list and deal page MUST follow `docs/DESIGN.md` and the existing record pages: the list as for people and organisations (filter row, table, preview drawer when a row is selected), the deal page as design C in `design-options.html` (solid green `[ WON ]` and red `[ LOST ]` in the header, arrow-shaped stage bar with days, a strip with value, owner, expected close date and status, // DETAILS then // HISTORY, the lost reason asked in a box over the page); money in GBP, dates in UK format.
 
 **Fake data**
 
-- **FR-023**: The fake data command MUST add, without duplicates when run again, won and lost deals (with clearly fake lost reasons), deals with labels, other linked people and followers, at least one archived won or lost deal, and stage histories spread over several days so the progress bar shows varied day counts.
+- **FR-023**: The fake data command MUST add, without duplicates when run again, won and lost deals (with clearly fake lost reasons), at least four deal labels and deals with them, other linked people and followers, at least one archived won or lost deal, and stage histories spread over several days so the progress bar shows varied day counts.
 
 ### Key Entities
 
 - **Deal** (from SF-93): gains a status (open, won, lost), the date it was closed, a lost reason, labels, other linked people and followers.
 - **Deal link to a person**: a person linked to a deal besides its main person.
-- **Deal label**: a label from the shared label list given to a deal.
+- **Deal label**: a name in the admin-managed deal label list (separate from people labels); a deal has any number of them.
 - **Follower**: a user following a deal.
 - **Stage history** (from SF-93): when a deal entered and left each stage; read to show days per stage.
 - **Deal history event** (from SF-93): gains won, lost (with reason) and reopened.
@@ -191,9 +200,8 @@ On the deal page, a team member links more people to the deal besides its main p
 
 - Notes, the deal timeline's emails, files, activities and WhatsApp messages, and showing deal events on people's and organisations' timelines (and their deal lists) come in later issues (user request); the deal history here holds the events that exist today plus won, lost and reopened.
 - Lost reasons are typed freely; there is no admin-managed list of reasons.
-- Deal labels use the same label list as people (admins manage it on the existing page).
 - Users follow and unfollow only themselves; nobody is followed automatically. Notifications to followers come later.
 - Closed deals keep their stage; the board has no "show closed" option (the list has it), matching Pipedrive.
 - The list has no custom columns, saved filters or bulk actions; custom fields come later.
 - Any user can mark Won, Lost, reopen and restore any deal they can see; owner is not a permission (PRODUCT §7).
-- Technical choices already in `docs/DECISIONS.md` and `AGENTS.md` apply and are not repeated here; the list and page designs may be refined in `/speckit-clarify`.
+- Technical choices already in `docs/DECISIONS.md` and `AGENTS.md` apply and are not repeated here; the deal page follows design C.
