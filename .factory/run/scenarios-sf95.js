@@ -321,10 +321,10 @@ async function postAction(page, actionPagePath, buttonName, fields, asPage) {
     await Promise.all([ada.waitForURL(/archived=1/), ada.getByLabel("Show archived deals").check()]); await ada.waitForLoadState("networkidle");
     const rows = await ada.locator("table.deals-list tbody tr").evaluateAll((els) => els.map((e) => e.querySelector("td").textContent));
     const titles = await listTitles(ada);
-    const exp = sql(`select title from deals where archived_at is not null order by created_at desc, id desc`).split("\n");
+    const exp = sql(`select d.title from deals d where d.archived_at is not null and ${visibleWhere(uid("Ada Fake"))} order by d.created_at desc, d.id desc`).split("\n");
     await Promise.all([ada.waitForURL(/pipeline=\d/), ada.selectOption('select[name="pipeline"]', { label: "Sales" })]); await ada.waitForLoadState("networkidle");
     const t2 = await listTitles(ada);
-    const exp2 = sql(`select d.title from deals d join stages s on s.id=d.stage_id where d.archived_at is not null and s.pipeline_id=${pid("Sales")} order by d.created_at desc, d.id desc`).split("\n");
+    const exp2 = sql(`select d.title from deals d join stages s on s.id=d.stage_id where d.archived_at is not null and s.pipeline_id=${pid("Sales")} and ${visibleWhere(uid("Ada Fake"))} order by d.created_at desc, d.id desc`).split("\n");
     check("US4 scenario 1", JSON.stringify(titles) === JSON.stringify(exp) && rows.every((r) => r.includes("Archived")) && JSON.stringify(t2) === JSON.stringify(exp2), `archived only: ${JSON.stringify(titles)} each "Archived" ${rows.every((r) => r.includes("Archived"))}; + Sales: ${JSON.stringify(t2)}`);
   });
 
@@ -642,11 +642,15 @@ async function postAction(page, actionPagePath, buttonName, fields, asPage) {
   });
 
   await run("Edge case 13", async () => {
+    // US4 scenario 4 restored the seeded archived lost deal: add one so every status is archived. Ada does not see
+    // Alan's private archived "Fake leaver old deal" (SF-97), so expectations use visibleWhere.
+    mkDeal({ title: "SF95 Archived lost", periods: [["Qualified", 1, null]], status: "lost", reason: "Fake reason", archived: true });
     await go(ada, "/deals/list?closed=1&archived=1");
-    const t = await listTitles(ada); const exp = sql(`select title from deals where archived_at is not null order by created_at desc, id desc`).split("\n");
-    const st = sql(`select distinct status from deals where archived_at is not null order by 1`).replace(/\n/g, ",");
+    const vw = visibleWhere(uid("Ada Fake"));
+    const t = await listTitles(ada); const exp = sql(`select d.title from deals d where d.archived_at is not null and ${vw} order by d.created_at desc, d.id desc`).split("\n");
+    const st = sql(`select distinct d.status from deals d where d.archived_at is not null and ${vw} order by 1`).replace(/\n/g, ",");
     const c = ((await ada.locator(".head-r .count").textContent()) || "").trim();
-    check("Edge case 13", JSON.stringify(t) === JSON.stringify(exp) && st.split(",").length >= 2 && c === listExpected("Ada Fake", "d.archived_at is not null"), `both ticked: ${JSON.stringify(t)} (statuses ${st}), "${c}"`);
+    check("Edge case 13", JSON.stringify(t) === JSON.stringify(exp) && st.split(",").length === 3 && c === listExpected("Ada Fake", "d.archived_at is not null"), `both ticked: ${JSON.stringify(t)} (statuses ${st}), "${c}"`);
   });
 
   await run("Edge case 14", async () => {

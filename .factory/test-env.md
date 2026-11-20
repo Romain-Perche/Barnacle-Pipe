@@ -92,6 +92,9 @@
     Notes: Robin Leftfake is private (owned by Alan), so the script uses a public person as main person; the filter row's
     AutoSubmit posts every field (`pipeline=` empty), so wait for `/pipeline=\d/`; a "NOTE" line prints what the list does
     with unknown owner/label/pipeline ids (FR-013). Same-pipeline moves read "Moved from Proposal to Negotiation by …". US5-3 gives its deal the main person's organisation first, else saving also fills it ("Edited by …: Organisation, Labels").
+    Archived-deal expectations (US4-1, Edge 13) are filtered by `visibleWhere` for Ada: since the SF-97 merge the seed has
+    Alan's private archived "Fake leaver old deal", which Ada must not see. Edge 13 adds its own archived lost deal ("SF95
+    Archived lost") because US4-4 restores the seeded one.
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
     (real drag with `locator.dragTo`; a failed drag by aborting the server action POST with `page.route`). Board
     selectors: each column is a `region` named after its stage (`h2` name, `.tot` "<n> deals · £total"), cards are
