@@ -47,9 +47,14 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
           <h1>Organisations</h1>
         </div>
         <div className="head-r">
-          <Link className="btn solid" href="/organisations/new">
-            [ ADD ORGANISATION ]
-          </Link>
+          <div className="head-acts">
+            <Link className="btn" href="/organisations/import">
+              [ IMPORT CSV ]
+            </Link>
+            <Link className="btn solid" href="/organisations/new">
+              [ ADD ORGANISATION ]
+            </Link>
+          </div>
           <div className="label count">// {countLabel(list.total, "ORGANISATION")}</div>
         </div>
       </div>

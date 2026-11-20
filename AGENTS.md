@@ -24,14 +24,21 @@ OAuth code flow and database sessions.
   seconds; `transferDeal` records every stage move), `list.ts` (the deal list: rows, count and total, filter options),
   `links.ts` (other linked people, followers), `pipelines.ts` (admin changes).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
+  `records/import/`: the CSV import screens shared by `/people/import` and `/organisations/import` (`ImportPages.tsx`:
+  the four steps; `FileStep.tsx`: the only client part, sends the file in 512 KiB parts; `actions.ts`; `example.ts`).
 - `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms, `list/` (the deal
   list), `[id]/` (the deal page: `StageBar.tsx`, `LostBox.tsx`, `not-found.tsx`), `ViewSwitch.tsx` (Board / List);
   `src/app/(app)/admin/pipelines/` — the Pipelines admin pages.
+- `src/server/imports/` — CSV import (SF-103): `csv.ts` (reading the file), `columns.ts` (fields, suggestions, mapping
+  checks, example files), `rows.ts` (a row through `validatePerson`/`validateOrganisation`), `plan.ts` (what an import
+  will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
+  (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
+  `person_emails`, bulk inserts).
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals).
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google schema) and
   `scripts/start-isolated.mjs` (browser tests start the app without the developer's `.env*` files).
-- `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/e2e` (Playwright), `tests/fakes` (outside services only),
+- `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/e2e` (Playwright), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),
   `tests/support/reset.ts` (empties every app table; lead sources back to the six starting ones).
 
 ## Rules

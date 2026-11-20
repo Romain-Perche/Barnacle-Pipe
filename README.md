@@ -6,7 +6,8 @@ people and organisations (`/people`, `/organisations`) and works its deals on a 
 (`/deals`), in a list (`/deals/list`) and on each deal's page (`/deals/<id>`: Won, Lost, Reopen, restore,
 linked people, labels, followers); admins keep the lead source, label and deal label lists
 (`/admin/lead-sources-and-labels`) and the
-pipelines and their stages (`/admin/pipelines`). Product rules are in
+pipelines and their stages (`/admin/pipelines`). People and organisations can be imported from a CSV file
+(`[ IMPORT CSV ]` on each list, see [CSV import](#csv-import)). Product rules are in
 `docs/PRODUCT.md`, the look in `docs/DESIGN.md`, the team's choices in `docs/DECISIONS.md`.
 
 You need **no Google, Vercel or Supabase account** to develop or test: a fake Google login and fake
@@ -112,6 +113,24 @@ Environment variables. `.env.example` lists them all, with no secret values. Sec
 | `VERCEL_ENV` | set by Vercel | `preview`: sign-in off, no database. `production`: `vercel-build` migrates. `production` or `preview`: the fake login and fake data are refused, whatever `APP_ENV` says. |
 
 There is no session secret: session tokens are random and only their SHA-256 is stored.
+
+## CSV import
+
+`[ IMPORT CSV ]` on the People and Organisations lists opens a four-step import (`/people/import`,
+`/organisations/import`): file, columns, preview, report. Any signed-in user can import.
+
+- **The file**: UTF-8 (with or without a byte order mark), headings on the first row, values separated by commas,
+  semicolons or tabs (found from the first line), double-quoted values as usual in CSV. At most 5 MB and 5,000 rows.
+  Excel files and other encodings are refused with a message. `[ DOWNLOAD EXAMPLE FILE ]` gives every recognised
+  heading and two fake rows (`/people/import/example`, `/organisations/import/example`).
+- **What is imported**: each row is checked with the person or organisation form's own rules; rows whose email
+  address (people) or name (organisations) is already in the CRM are not imported and the existing record is left as
+  it is. Lead sources, labels and owners are matched to what the CRM has; nothing is added to the lists. People with
+  no consent in the file get the consent the user chooses on the preview (nothing is chosen in advance).
+- **How long the file is kept**: the browser sends the file in parts of 512 KiB (Vercel refuses request bodies over
+  4.5 MB) into the `csv_imports` table. The file is deleted when it is imported; an unfinished upload is deleted when
+  the same user starts another import; any import, file and report, older than 24 hours is deleted the next time
+  anyone starts one. Only the user who started an import can open its steps and report.
 
 ## Production notes
 

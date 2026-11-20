@@ -37,9 +37,14 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
           <h1>People</h1>
         </div>
         <div className="head-r">
-          <Link className="btn solid" href="/people/new">
-            [ ADD PERSON ]
-          </Link>
+          <div className="head-acts">
+            <Link className="btn" href="/people/import">
+              [ IMPORT CSV ]
+            </Link>
+            <Link className="btn solid" href="/people/new">
+              [ ADD PERSON ]
+            </Link>
+          </div>
           <div className="label count">// {countLabel(list.total, "PERSON", "PEOPLE")}</div>
         </div>
       </div>

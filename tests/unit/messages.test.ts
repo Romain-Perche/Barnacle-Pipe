@@ -180,6 +180,7 @@ describe("CSV import messages (SF-103)", () => {
       import_failed: "The import failed. Nothing was imported. Try again.",
       import_too_many_values: "This row has more values than the file has headings.",
       import_skip: "Don't import",
+      import_full_name_ignored: "Full name is used only when no first or last name column is set.",
     };
     for (const [code, text] of Object.entries(expected)) expect(messageFor(code), code).toBe(text);
   });

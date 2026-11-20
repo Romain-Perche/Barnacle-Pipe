@@ -16,3 +16,13 @@ describe("docs/DECISIONS.md (SF-92)", () => {
     ).toBe(true);
   });
 });
+
+// covers SF-103 spec.md § Clarifications (Session 2026-11-20): the people's choices are recorded
+describe("docs/DECISIONS.md (SF-103)", () => {
+  const sf103 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-103)"));
+  it("records the design, the duplicate rule and the consent choice", () => {
+    expect(sf103.some((l) => l.includes("CSV import uses design B"))).toBe(true);
+    expect(sf103.some((l) => l.includes("is not imported; the existing person is left as it is"))).toBe(true);
+    expect(sf103.some((l) => l.includes("consent the importing user chooses, with nothing chosen in advance"))).toBe(true);
+  });
+});

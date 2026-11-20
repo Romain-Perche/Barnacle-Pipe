@@ -90,6 +90,7 @@ export const messages = {
   import_failed: "The import failed. Nothing was imported. Try again.",
   import_too_many_values: "This row has more values than the file has headings.",
   import_skip: "Don't import",
+  import_full_name_ignored: "Full name is used only when no first or last name column is set.",
 } as const;
 
 const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} private people`);
