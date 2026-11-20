@@ -15,6 +15,12 @@
 - Q: Which design for the deal page? → A: Design: C, solid green `[ WON ]` and red `[ LOST ]` in the header, an arrow-shaped stage bar with days per stage, a strip with value, owner, expected close date and status, then `[ EDIT ]` `[ ARCHIVE ]` `[ DELETE ]` `[ FOLLOW ]`, // DETAILS and // HISTORY below; `[ LOST ]` opens a box over the page asking "Why was this deal lost?" (see `design-options.html`). The deal list follows the People list (filter row, table, preview drawer).
 - Q: How does a user give the reason when they mark a deal Lost? → A: They type it as free text.
 - Q: Which labels can a deal have? → A: A separate list of deal labels, managed by admins on the existing "Lead sources and labels" admin page.
+- Q: Where does the user land after editing, archiving or deleting a deal from its deal page? → A: Editing and archiving bring them back to the deal page; deleting takes them to the deal list with "<title> was deleted."; from the board these stay as today (back to the board) (decided by the factory, to confirm)
+- Q: What happens when a lost reason longer than 500 characters is sent? → A: It is refused with "Keep the reason under 500 characters." and the deal stays open; the box does not let more than 500 characters be typed (decided by the factory, to confirm)
+- Q: Can an archived person be linked to a deal as another person? → A: No: only people the user can see and that are not archived can be linked; a person archived after being linked stays, marked "Archived" (decided by the factory, to confirm)
+- Q: What happens when a deal's main person is changed to someone already listed under "Other people"? → A: They become the main person and leave "Other people" (a person is linked once); the history shows "Edited by <name>: Person" (decided by the factory, to confirm)
+- Q: Does the deal list show labels, which are not one of its columns? → A: Yes, under each deal's title (like the email under a person's name), so the label filter's result is visible (decided by the factory, to confirm)
+- Q: Where is the deal list's address? → A: `/deals/list`, beside the board at `/deals`, with a "Board / List" switch on both (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
