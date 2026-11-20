@@ -15,6 +15,11 @@
 - Q: Which design for notes and the timeline? → A: Design: B, the timeline grouped by day ("// TODAY · 20 NOV 2026", then "// 19 NOV 2026"…), each entry with a NOTE, DEAL or CHANGE tag, its time, and notes in a box with an orange left edge; the note box with `[ CANCEL ]` and `[ ADD NOTE ]` sits above the timeline (see `design-options.html`).
 - Q: How does a teammate learn they were mentioned in a note? → A: In the app only: "Notifications (n)" in the sidebar and a Notifications page; no email.
 - Q: Who can edit or delete a note? → A: Anyone who can see the note can edit or delete it, like Pipedrive.
+- Q: Can a deal's note be edited or deleted from a person's or organisation's timeline? → A: No: entries that come from a deal are read-only there and link to the deal page, where the note can be edited or deleted (decided by the factory, to confirm)
+- Q: Can notes be added from the deal drawer on the board and the deal list? → A: No: the drawer shows the deal's newest 50 timeline entries read-only, with no note box; notes are added on the deal page (decided by the factory, to confirm)
+- Q: When is a notification marked read? → A: Only when the user opens it from the Notifications page or presses `[ MARK ALL AS READ ]`; visiting the record another way leaves it unread (decided by the factory, to confirm)
+- Q: What happens to a mention of a teammate who was deactivated or lost sight of the record, when someone edits the note? → A: The mention is kept as it is and the edit is saved; only new mentions must be active users who can see the record (decided by the factory, to confirm)
+- Q: What does a direct request to add, edit or delete a note on an archived record answer? → A: "Restore this record before changing its notes." and nothing changes (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
