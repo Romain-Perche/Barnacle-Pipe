@@ -180,6 +180,43 @@ the user, not a record). Privacy stays in `visibility.ts`.
    no "Departs from blueprint" line. Update `AGENTS.md` § Layout with `notes.ts`, `notes-rules.ts`,
    `timeline-view.ts`, `notifications.ts`, `NoteBox.tsx`, `RecordTimeline.tsx`, `/notifications`.
 
+## Fix round 1
+
+AI review failed on two must-fix points; four small points from the same review are fixed with them.
+
+**Problem 1: a 10,000-character note with a line break is refused.** The browser posts textarea line breaks as CRLF.
+`validateNoteText` (`src/server/records/notes-rules.ts`) counts CRLF as 2 characters, the box's `maxlength` counts 1, so
+9,999 characters plus one line break gives "Keep the note under 10,000 characters." (FR-005). Notes are also stored with CRLF.
+**Fix:** `validateNoteText` turns every CRLF (and a lone CR) into LF before trimming and checking the length, and returns
+that text, so the note is stored with LF only. Add and edit both go through it; nothing else changes. Existing CRLF rows
+show the same (white-space: pre-wrap) and are left as they are: no migration.
+
+**Problem 2: a direct delete of a note on a hidden or deleted record shows the record's not-found page.** `deleteNote`
+(`src/app/(app)/records/note-actions.ts`) redirects to the record named in the form with `?error=note_not_found`; when
+that record is private to someone else or deleted, the record page answers "This deal doesn't exist or you can't see
+it." instead of "This note doesn't exist or you can't see it." (US1 scenario 6).
+**Fix:** the domain `deleteNote` (`src/server/records/notes.ts`) tells the two cases apart: `not_found` when the record
+is visible but the note is not on it, `record_not_found` when the record itself is not visible (hidden or deleted). On
+`record_not_found` the action sets the one-shot flash `note_not_found` and redirects to that kind's list page
+(`/deals`, `/people`, `/organisations`), which reads the flash and shows the message; the record is never named. A
+visible record keeps today's answer (its page with `?error=note_not_found`). A missing or unknown target also goes to
+`/deals` with the same flash, instead of `/`.
+
+**Small points (same review):**
+- `tokenizeMentions` replaces a chosen "@Bob Fake" only where the name ends at a word end (end of text, or a character
+  that is not a letter or digit), so an unchosen "@Bob Fakeson" stays plain text and is not broken into a token.
+- A successful delete keeps the page's `?timeline=<n>` (sent by the confirm form, read with `parseShown`), like edit.
+- `src/server/messages.ts`: the SF-95 comment goes back above its own templates; the SF-102 templates get their own.
+- `AGENTS.md` layout: add `note-target.ts` and `NoteNotices.tsx`.
+Not changed, on purpose: the hard-coded `[ SAVE ]` / `[ ADD NOTE ]` labels (every other form does the same); a
+mention whose user is renamed while the note is open in an editor is dropped (rare; the editor re-mentions them).
+
+**Files:** `src/server/records/notes-rules.ts`, `src/server/records/notes.ts`, `src/app/(app)/records/note-actions.ts`,
+`src/app/(app)/records/NoteDeleteConfirm.tsx`, `src/server/records/flash.ts` (allow `note_not_found`), the three list
+pages (`deals/page.tsx`, `people/page.tsx`, `organisations/page.tsx`: read it), `src/server/messages.ts`, `AGENTS.md`;
+tests in `tests/unit/notes-rules.test.ts`, `tests/integration/notes.test.ts`, `tests/integration/notes-private.test.ts`,
+`tests/e2e/notes-private.spec.ts`. No new dependency, no migration, no new outside service.
+
 ## Outside services
 
 - Supabase Postgres (through the Supavisor connection pooler): no public schema found on GitHub (looked in github.com/supabase/supavisor at commit e59909dc629230a4c07af3df16957ef22a184774, which only has an OpenAPI test for its own management API, and github.com/supabase/supabase, during SF-90 and SF-93; the app speaks the standard Postgres protocol, the new code only adds a table and columns to the app's own database, and tests use a real local Postgres rather than a fake)

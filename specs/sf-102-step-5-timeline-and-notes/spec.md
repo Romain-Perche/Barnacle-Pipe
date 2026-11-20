@@ -121,6 +121,8 @@ Notes follow the existing private rules: a note on a private person or private d
 - Two users add notes at the same moment: both are kept, each in its place.
 - A notification about a record that was archived still opens the record's page (showing "Archived").
 - A Notifications page with more than 50 notifications shows the newest 50 with `[ SHOW MORE ]`; with none, "No notifications yet.".
+- A note of exactly 10,000 characters that holds line breaks (each line break counts as one character, as in the note box) is saved, and its line breaks are kept.
+- A chosen mention of "@Bob Fake" leaves a typed "@Bob Fakeson" in the same note as plain text.
 
 ## Requirements *(mandatory)*
 
