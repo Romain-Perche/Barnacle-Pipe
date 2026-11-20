@@ -69,3 +69,22 @@ describe("duplicate email addresses", () => {
     expect((await createPerson(ada.id, personForm({ emails: emails("ada@example.com") }))).status).toBe("saved");
   });
 });
+
+// covers FR-004, US1 scenario 5 (SF-92): the owner of a private person is named in the duplicate message
+describe("a private person's address, seen by their owner", () => {
+  it("names the person to the owner and hides them from anyone else", async () => {
+    const margaret = await makeUser({ email: "margaret@barnacle.ai", name: "Margaret Fake" });
+    const grace = await makeUser({ email: "grace@barnacle.ai", name: "Grace Fake" });
+    const secret = saved(
+      await createPerson(linus.id, personForm({ private: true, ownerId: String(margaret.id), emails: emails("private.ada@example.com") })),
+    );
+    expect(await createPerson(margaret.id, personForm({ firstName: "Copy", emails: emails("private.ada@example.com") }))).toEqual({
+      status: "invalid",
+      errors: { "emails.0": { code: "duplicate_email", name: "Ada Example", href: `/people/${secret}` } },
+    });
+    expect(await createPerson(grace.id, personForm({ firstName: "Copy", emails: emails("private.ada@example.com") }))).toEqual({
+      status: "invalid",
+      errors: { "emails.0": { code: "duplicate_email_hidden" } },
+    });
+  });
+});

@@ -4,7 +4,8 @@ import type { Sql } from "@/server/db";
 import type { FieldErrors } from "@/server/records/rules";
 
 export type Fragment = postgres.PendingQuery<postgres.Row[]>;
-export type SaveResult = { status: "saved"; id: number } | { status: "invalid"; errors: FieldErrors } | { status: "not_found" };
+// "saved" with visible false: the actor's own change hid the person from them (SF-92 FR-003); `name` comes from the database.
+export type SaveResult = { status: "saved"; id: number; visible?: false; name?: string } | { status: "invalid"; errors: FieldErrors } | { status: "not_found" };
 export type DeleteResult = { status: "deleted"; name: string } | { status: "forbidden" } | { status: "not_found" };
 export type Option = { id: number; name: string };
 export type UserRef = { id: number; name: string; active: boolean };

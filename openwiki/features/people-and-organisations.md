@@ -16,10 +16,12 @@ sources:
     resource: repo://src/app/(app)/nav.ts
   - id: openwiki-source-f34ac1e549d94dc3ac475ae4
     resource: repo://src/proxy.ts
+  - id: openwiki-source-16c334cbe6c5a2c7ad77a065
+    resource: repo://src/server/records/handover.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T16:37:06.027Z
-generated: { by: "claude-code", at: "2026-11-19T16:37:06.027Z" }
+    at: 2026-11-19T18:23:26.676Z
+generated: { by: "claude-code", at: "2026-11-19T18:23:26.676Z" }
 ---
 
 # People and organisations
@@ -51,15 +53,21 @@ the user first (see [Sessions and access control](../auth/sessions-and-access-co
 
 ## Rules worth knowing
 
-- **Private people**: a private person is visible only to the person who created them, admins included.
-  Every read of `persons` goes through `visiblePerson()` in `visibility.ts`.
+- **Private people**: a private person is visible only to their creator and their current owner, admins
+  included. Every read of `persons` goes through `visiblePerson()` in `visibility.ts`.
 - **Duplicate emails** are refused; names of organisations are unique ignoring case. Typing a new organisation
   name in a person form creates or matches it.
 - **Archive and restore** are available to staff; **delete is admin only** and is re-checked inside the
-  transaction. Deleting a person removes their emails, phones, labels and timeline rows; deleting an
+  transaction. Deleting a person removes their emails, phones, labels and own timeline rows; events about them
+  on other records stay, without the person (`related_person_id` is set to null). Deleting an
   organisation leaves its people with no organisation.
+- **Hand-over**: when a user is deactivated, an admin can hand their private people to an active user
+  (`handover.ts`). One transaction locks the users, re-checks the rules, moves `owner_id`, bumps `version` and
+  writes a `handed_over` event per person; it returns only a count and the new owner's name, never a person.
+  See [User management](user-management.md).
 - **Delete notice**: after a delete the action sets a 60-second `crm_flash` cookie holding a code and the
   deleted name; the next page shows it once (`flash.ts`) and `src/proxy.ts` clears the cookie on the next GET.
+  The same cookie carries the hand-over notices (`handed_over` with a count, and a "nothing to hand over" code).
   Only the known codes are shown, and the text comes from `src/server/messages.ts`.
 
 ## Fake data

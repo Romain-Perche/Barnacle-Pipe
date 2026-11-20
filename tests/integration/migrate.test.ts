@@ -102,3 +102,35 @@ describe("npm run db:migrate", () => {
     expect(await advisoryLocks()).toBe(0);
   });
 });
+
+// covers FR-005, FR-011 (SF-92): 0003 applies on a fresh database and changes the timeline as data-model.md says
+describe("migration 0003_private_owner_handover", () => {
+  it("keeps events about a deleted person, checks handed_over events and adds the owner index", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0003_private_owner_handover.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const [u] = await c`insert into users (email, name) values ('a@barnacle.ai', 'A') returning id`;
+      const [o] = await c`insert into organisations (name, owner_id, created_by) values ('Org', ${u.id}, ${u.id}) returning id`;
+      const [p] = await c`insert into persons (first_name, last_name, owner_id, created_by) values ('Ada', 'Example', ${u.id}, ${u.id}) returning id`;
+      const [e] = await c`
+        insert into timeline_events (organisation_id, kind, actor_id, related_person_id)
+        values (${o.id}, 'person_linked', ${u.id}, ${p.id}) returning id`;
+      await c`delete from persons where id = ${p.id}`;
+      const [kept] = await c`select related_person_id, actor_id from timeline_events where id = ${e.id}`;
+      expect(kept).toEqual({ related_person_id: null, actor_id: u.id });
+
+      const [q] = await c`insert into persons (first_name, last_name, owner_id, created_by) values ('B', 'C', ${u.id}, ${u.id}) returning id`;
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      expect(await code(c`insert into timeline_events (person_id, kind) values (${q.id}, 'handed_over')`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (person_id, kind, related_user_id) values (${q.id}, 'edited', ${u.id})`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (person_id, kind, related_user_id) values (${q.id}, 'handed_over', ${u.id})`)).toBe("ok");
+      const idx = await c`select 1 from pg_indexes where indexname = 'persons_private_owner_idx'`;
+      expect(idx.length).toBe(1);
+    } finally {
+      await c.end();
+    }
+  });
+});

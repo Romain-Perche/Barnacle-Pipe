@@ -936,6 +936,33 @@
         "src/app/(app)/people/actions.ts",
         "src/server/records/flash.ts"
       ]
+    },
+    {
+      "from": "users-admin",
+      "to": "persons-table",
+      "data": "private people handed to a new owner",
+      "sources": [
+        "src/server/records/handover.ts",
+        "src/app/(app)/admin/users/actions.ts"
+      ]
+    },
+    {
+      "from": "users-admin",
+      "to": "timeline-table",
+      "data": "hand-over events on each person",
+      "sources": [
+        "src/server/records/handover.ts",
+        "src/server/records/timeline.ts"
+      ]
+    },
+    {
+      "from": "users-admin",
+      "to": "record-flash",
+      "data": "hand-over notice",
+      "sources": [
+        "src/app/(app)/admin/users/actions.ts",
+        "src/server/records/flash.ts"
+      ]
     }
   ]
 }

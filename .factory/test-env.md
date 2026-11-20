@@ -15,6 +15,10 @@
   organisations code (SF-90) keeps to the same limits: no session state (`set`, `listen`, session locks),
   every multi-statement change in one `sql.begin()` transaction; tables come from
   `migrations/0002_people_organisations.sql`, checked on a fresh database by `tests/integration/migrate.test.ts`.
+  SF-92 adds `migrations/0003_private_owner_handover.sql` (plain `alter table`/`create index`, no new table;
+  `migrate.test.ts` applies it on a fresh database and checks Postgres's own 23514 check violations) and keeps the
+  same limits: `updatePerson`'s visibility re-check, `deletePerson` and `handOverPrivatePeople` (row locks on
+  `users … for update`, no advisory lock) each run in one `sql.begin()` transaction.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -45,9 +49,12 @@
     `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
   - `bash .factory/run/reset-db.sh [db]` — empties every app table (users, sessions, people, organisations,
     labels, timeline…), puts back the six starting lead sources, and seeds again (`NO_SEED=1`: empty).
-    The seed adds 5 fake users, 32 fake people (Gus Lorem is private, created by Ada Fake; Fay Mockup is
-    archived) and 9 fake organisations ("Old Fakeco Archive" is archived), labels Hot/Investor/Partner.
+    The seed adds 5 fake users, 35 fake people (Gus Lorem is private, created by Ada Fake; Fay Mockup is
+    archived; SF-92: Pat Privatefake private, created by Ada Fake and owned by Linus Fake; Robin Leftfake (linked
+    to Fakeco Ltd) and Sam Leftfake private, owned by deactivated Alan Fake) and 9 fake organisations ("Old Fakeco Archive" is archived), labels Hot/Investor/Partner.
   - People and organisations scenarios (SF-90) are covered by `tests/e2e/{people,organisations,lists,archive-delete,private,choices}.spec.ts`;
+    SF-92 by `tests/e2e/private.spec.ts` (owner sees a private person), `archive-delete.spec.ts` ("A deleted person
+    was linked by …") and `handover.spec.ts` (Users page hand-over panel: `form.handover`, select "Hand over to");
     a "direct request" check replays a server action form post (`$ACTION_ID_…` field from the server-rendered
     page, see `tests/e2e/records.ts` `actionField`) as a non-admin.
   - SF-90 scenario script `scenarios-sf90.js` (all 47 US1–US6 and edge-case scenarios, against :3000/crm_dev):
@@ -60,6 +67,12 @@
   - SF-90 fix round 1 (edge cases 14–20: unknown sector, organisation picker typed text/Enter/case, one-shot delete
     notice, rename to a removed name): `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf90-fix1.js`.
     The spec renumbered the edge cases: `scenarios-sf90.js`'s "Edge case 14" (no Last contacted/Date added field) is now Edge case 21.
+  - SF-92 scenario script `scenarios-sf92.js` (all US1–US3 scenarios and edge cases 1–13, against :3000/crm_dev, ~3 min):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf92.js`.
+    It adds Carl Fake (user) and Dee Fake (deactivated, no private people) through the Users page, sets Sam Leftfake's
+    address to `secret@example.com` and gives Alan two extra private people by SQL (the owner select only offers
+    active users), deactivates Grace by SQL for edge 6, and replays the hand-over action as a direct post (edge 7, US3-7).
+    Person pages: `[ DELETE ]` is a link that opens the confirm, then `[ DELETE FOR GOOD ]`; phones column is `phone`.
   - Playwright scenario scripts (`NODE_PATH=/opt/playwright/node_modules node <script>`): `scenarios-main.js`
     (:3000, crm_dev freshly reset), `scenarios-env.js` (:3101 empty DB + FIRST_ADMIN boss@, :3102 empty DB no
     FIRST_ADMIN, :3103 VERCEL_ENV=preview, :3104 APP_ENV empty, :3105 production, :3106 development+VERCEL_ENV

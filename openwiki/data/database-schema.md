@@ -5,19 +5,21 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T16:37:06.027Z
+    at: 2026-11-19T18:23:26.676Z
 sources:
   - id: openwiki-source-b1b8983f5dc78551445443a8
     resource: repo://migrations/0001_users_sessions.sql
   - id: openwiki-source-4be5a90a7046f767d13b7bce
     resource: repo://migrations/0002_people_organisations.sql
+  - id: openwiki-source-dd2f09bbe9c9b040d5d61401
+    resource: repo://migrations/0003_private_owner_handover.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-19T16:37:06.027Z" }
+generated: { by: "claude-code", at: "2026-11-19T18:23:26.676Z" }
 ---
 
 # Database schema and access
@@ -72,7 +74,10 @@ Added by `0002_people_organisations.sql`; behaviour is described in
 - `lead_sources` and `labels`: names unique ignoring case, soft-removed with `removed_at`. The migration
   inserts six starting lead sources. `person_labels` links people to labels.
 - `timeline_events`: one row per event on exactly one person or organisation (`added`, `edited`, `archived`,
-  `restored`, `person_linked`, `person_unlinked`), with `actor_id` and changed `fields`.
+  `restored`, `person_linked`, `person_unlinked`, `handed_over`), with `actor_id` and changed `fields`.
+  Migration `0003_private_owner_handover.sql` makes `related_person_id` `on delete set null` (events about a
+  deleted person stay on other records, without the person), adds `related_user_id` (set exactly when the
+  kind is `handed_over`) and adds a partial index `persons_private_owner_idx` on `persons (owner_id)` where private.
 
 ## Row level security
 

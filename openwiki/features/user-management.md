@@ -5,15 +5,17 @@ description: The admin-only Users page — list, add, make or remove admin, deac
 tags: [users, admin, authorization, audit]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T12:52:49.147Z
+    at: 2026-11-19T18:23:26.676Z
 sources:
   - id: openwiki-source-e78c5b056032c61cb809d6b1
     resource: repo://src/app/(app)/admin/users/actions.ts
   - id: openwiki-source-508d4e820419bd4df282b1ee
     resource: repo://src/app/(app)/admin/users/page.tsx
+  - id: openwiki-source-16c334cbe6c5a2c7ad77a065
+    resource: repo://src/server/records/handover.ts
   - id: openwiki-source-defe190e4c7d59423daec996
     resource: repo://src/server/users.ts
-generated: { by: "claude-code", at: "2026-11-19T12:52:49.147Z" }
+generated: { by: "claude-code", at: "2026-11-19T18:23:26.676Z" }
 ---
 
 # User management (Users page)
@@ -28,7 +30,12 @@ named in settings) can sign in; see [Google sign-in flow](../auth/google-sign-in
   message to non-admins. Rows come from `listUsers()`: active users first, then by name. The header
   counts users and active admins.
 - **Row actions** shown: `[ REMOVE ADMIN ]` or `[ MAKE ADMIN ]` for active users, `[ DEACTIVATE ]` for
-  active users other than yourself, `[ REACTIVATE ]` for deactivated users.
+  active users other than yourself, `[ REACTIVATE ]` for deactivated users. A deactivated user who still owns
+  private people also shows their count and `[ HAND OVER ]`, which opens `HandOverPanel.tsx` (`?handover=<id>`)
+  to choose an active user; the panel shows only a count, never who the people are.
+- **Hand over** (`handOver` action): calls `handOverPrivatePeople()` in `src/server/records/handover.ts`, which
+  re-checks every rule in a locked transaction. Results map to a flash notice (handed or nothing to hand over)
+  or to `?error=handover_choose_user` / `handover_not_deactivated`.
 - **Server actions** `src/app/(app)/admin/users/actions.ts` each call `assertAdminForAction()` first,
   parse `userId` as a positive safe integer, call the domain function in `src/server/users.ts`, then
   `revalidatePath("/", "layout")` (roles change the sidebar) and redirect. Errors come back as
