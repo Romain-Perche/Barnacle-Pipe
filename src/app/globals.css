@@ -233,3 +233,67 @@ table.order .acts form + form, table.order .acts form + a { margin-left: 14px; }
 .handover .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
 .handover-err { margin: 0 0 10px; color: var(--danger); font-weight: 700; }
 .pp { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--orange); font-weight: 700; display: block; margin-top: 2px; }
+
+/* SF-95 deal list and deal page, design C: Board/List switch, arrow stage bar, summary strip, solid Won/Lost, Lost box. */
+.view-switch { display: inline-flex; }
+.view-switch .btn + .btn { border-left: 0; }
+.view-switch .btn[aria-current="page"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.head-r .count { letter-spacing: 0.1em; }
+table.deals-list .money { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+table.deals-list td .nm { overflow-wrap: anywhere; }
+.badge.won { color: #16a34a; border-color: #16a34a; }
+.badge.lost { color: var(--danger); border-color: var(--danger); }
+
+.deal-page h1 { overflow-wrap: anywhere; }
+.back { display: inline-block; font-family: var(--mono); font-size: 12px; letter-spacing: 0.05em; color: var(--blue); text-decoration: none; margin-bottom: 10px; }
+.back:hover { text-decoration: underline; }
+.btn.won-solid { background: #16a34a; border-color: #16a34a; color: #fff; }
+.btn.won-solid:hover { background: #12813b; border-color: #12813b; }
+.btn.lost-solid { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn.lost-solid:hover { background: #b91c1c; border-color: #b91c1c; }
+
+.stagebar-form { margin: 0; }
+.stagebar { display: flex; list-style: none; margin: 0 0 16px; padding: 0; gap: 2px; max-width: 1100px; }
+.stagebar li { flex: 1 1 0; min-width: 0; background: rgba(0, 0, 0, 0.05); color: var(--muted);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%); }
+.stagebar li:first-child { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%); }
+.stagebar li.done { background: rgba(43, 0, 255, 0.14); color: var(--ink); }
+.stagebar li.now { background: var(--blue); color: #fff; }
+.stagebar .step, .stagebar button { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 8px 18px 8px 22px; }
+.stagebar li:first-child .step, .stagebar li:first-child button { padding-left: 12px; }
+.stagebar button { cursor: pointer; }
+.stagebar button:hover { background: rgba(43, 0, 255, 0.22); color: var(--ink); }
+.stagebar button:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+.stagebar .nm { display: block; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stagebar .days { display: block; font-size: 13px; min-height: 1.3em; white-space: pre; }
+
+.strip { display: flex; margin: 0 0 12px; border: 0.5px solid var(--line-soft); background: var(--panel); max-width: 1100px; }
+.strip > div { flex: 1 1 0; min-width: 0; padding: 8px 12px; border-right: 0.5px solid var(--line-soft); }
+.strip > div:last-child { border-right: 0; }
+.strip dt { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); }
+.strip dd { margin: 2px 0 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.strip .result { display: block; }
+.strip .result.won { color: #16a34a; }
+.strip .result.lost { color: var(--danger); }
+.strip .result.archived { color: var(--muted); font-size: 14px; }
+.lost-reason { margin: 0 0 12px; max-width: 900px; font-size: 14px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.deal-acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.deal-acts form { display: inline; margin: 0; }
+.people-list { list-style: none; margin: 0 0 6px; padding: 0; }
+.people-list li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.people-list form { display: inline; margin: 0; }
+.link-person { display: flex; gap: 8px; align-items: flex-start; margin-top: 4px; }
+.link-person .picker { flex: 1; }
+
+.overlay { position: fixed; inset: 0; z-index: 20; background: rgba(17, 24, 39, 0.35); display: grid; place-items: center; padding: 16px; }
+.lostbox { width: 100%; max-width: 480px; background: var(--paper); border: 0.5px solid var(--line); border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22); padding: 20px; }
+.lostbox form { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+.lostbox textarea { resize: vertical; font-family: var(--sans); font-size: 14px; overflow-wrap: anywhere; }
+
+@media (max-width: 720px) {
+  .stagebar, .strip { flex-direction: column; }
+  .stagebar li, .stagebar li:first-child { clip-path: none; }
+  .strip > div { border-right: 0; border-bottom: 0.5px solid var(--line-soft); }
+}

@@ -1,9 +1,9 @@
-// Small server pieces shared by the two lists: sortable column headers, the filter row, the row preview link.
+// Small server pieces shared by the lists (people, organisations, deals): sortable column headers, the filter row, the row preview link.
 import Link from "next/link";
-import { withParams, type OrganisationsQuery, type PeopleQuery } from "@/server/records/list-query";
+import { withParams, type DealsQuery, type OrganisationsQuery, type PeopleQuery } from "@/server/records/list-query";
 import { AutoSubmit } from "./AutoSubmit";
 
-export function SortHeader<Q extends PeopleQuery | OrganisationsQuery>({
+export function SortHeader<Q extends PeopleQuery | OrganisationsQuery | DealsQuery>({
   label, sort, query, path,
 }: { label: string; sort: Q["sort"]; query: Q; path: string }) {
   const current = query.sort === sort;
@@ -18,17 +18,31 @@ export function SortHeader<Q extends PeopleQuery | OrganisationsQuery>({
   );
 }
 
-export function FilterRow({ id, path, q, searchLabel, archived, children }: { id: string; path: string; q: string; searchLabel: string; archived: boolean; children: React.ReactNode }) {
+type Toggle = { name: string; label: string; checked: boolean };
+
+// `toggles`: the checkboxes after the filters (each posts `<name>=1`); by default "Show archived" (people,
+// organisations). `clearHref`: a [ CLEAR ] link shown when anything is set (deals).
+export function FilterRow({
+  id, path, q, searchLabel, archived, toggles, clearHref, children,
+}: { id: string; path: string; q: string; searchLabel: string; archived: boolean; toggles?: Toggle[]; clearHref?: string; children: React.ReactNode }) {
+  const boxes = toggles ?? [{ name: "archived", label: "Show archived", checked: archived }];
   return (
     <form id={id} className="filters" action={path} method="get" role="search">
       <input className="input search" type="search" name="q" defaultValue={q} placeholder="Search…" aria-label={searchLabel} />
       {children}
-      <label className="check">
-        <input type="checkbox" name="archived" value="1" defaultChecked={archived} /> Show archived
-      </label>
+      {boxes.map((t) => (
+        <label key={t.name} className="check">
+          <input type="checkbox" name={t.name} value="1" defaultChecked={t.checked} /> {t.label}
+        </label>
+      ))}
       <button className="btn" type="submit">
         [ APPLY ]
       </button>
+      {clearHref && (
+        <Link className="btn" href={clearHref}>
+          [ CLEAR ]
+        </Link>
+      )}
       <AutoSubmit formId={id} />
     </form>
   );

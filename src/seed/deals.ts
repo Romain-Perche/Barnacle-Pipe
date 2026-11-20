@@ -1,6 +1,8 @@
 // Fake pipelines and deals (SF-93 data-model.md § Fake data, FR-021). Clearly fake titles, owners are the fake
 // users, people and organisations come from src/seed/people.ts. Idempotent: pipelines by name (stages only for a
 // pipeline just added), deals skipped when a deal with the same title is already there.
+// SF-95 (data-model.md § Fake data, FR-023): deal labels, won and lost deals with multi-stage histories (one archived),
+// labels on deals, other linked people and followers; links added with `on conflict do nothing`.
 import type { Sql } from "@/server/db";
 
 const PIPELINES: { name: string; stages: string[] }[] = [
@@ -27,12 +29,45 @@ const OWNERS = ["Ada Fake", "Grace Fake", "Linus Fake", "Margaret Fake"];
 const PIPELINE_OF = (i: number) => (i < 20 ? 0 : i < 25 ? 1 : i < 30 ? 2 : i < 35 ? 3 : i < 40 ? 4 : 0);
 const DAY = 24 * 60 * 60 * 1000;
 
+const DEAL_LABELS = ["Hot", "Warm", "Cold", "Big ticket", "Renewal"];
+// Closed deals (all in Sales): days spent in Lead in, Qualified, … in order, the last period ending when it closed.
+const CLOSED: { title: string; status: "won" | "lost"; reason?: string; days: number[]; closedDaysAgo: number; archived?: boolean }[] = [
+  { title: "Fakeco newsletter (won)", status: "won", days: [2, 3, 6], closedDaysAgo: 2 },
+  { title: "Sample Gyms signage (won)", status: "won", days: [1, 4], closedDaysAgo: 5 },
+  { title: "Mock Labs retainer (won)", status: "won", days: [3, 2, 11, 5], closedDaysAgo: 1 },
+  { title: "Dummy Leisure app (lost)", status: "lost", reason: "Went with a fake competitor", days: [2, 6], closedDaysAgo: 3 },
+  { title: "Lorem Logistics pilot (lost)", status: "lost", reason: "Fake budget cut", days: [4, 3, 2], closedDaysAgo: 8 },
+  { title: "Testfield Health kiosk (lost)", status: "lost", reason: "No fake decision maker", days: [11], closedDaysAgo: 4 },
+  { title: "Old fake tender (lost)", status: "lost", reason: "Fake tender cancelled", days: [3, 7], closedDaysAgo: 3, archived: true },
+];
+const LABELS_ON: [string, string[]][] = [
+  ["Fakeco website", ["Hot", "Big ticket"]],
+  ["Demo Studios rebuild", ["Hot"]],
+  ["Mock Labs audit", ["Warm"]],
+  ["Testfield Health portal", ["Cold"]],
+  ["Fake retainer renewal", ["Renewal"]],
+  ["Fakeco support contract", ["Renewal", "Warm"]],
+  ["Mockup Capital data room", ["Big ticket"]],
+  ["Fakeco newsletter (won)", ["Hot"]],
+  ["Dummy Leisure app (lost)", ["Cold"]],
+];
+const LINKED_ON = ["Demo Studios rebuild", "Mock Labs audit", "Sample Gyms CRM", "Fakeco AI pilot", "Mock Labs retainer (won)", "Lorem Logistics pilot (lost)"];
+const FOLLOWERS: [string, string[]][] = [
+  ["Demo Studios rebuild", ["Ada Fake", "Grace Fake"]],
+  ["Mock Labs audit", ["Linus Fake", "Alan Fake"]],
+  ["Sample Gyms CRM", ["Margaret Fake"]],
+  ["Fakeco AI pilot", ["Ada Fake"]],
+  ["Mock Labs retainer (won)", ["Grace Fake"]],
+  ["Intro call", ["Linus Fake"]],
+];
+
 export async function seedDeals(sql: Sql): Promise<string[]> {
   const users = new Map((await sql<{ id: number; name: string }[]>`select id::int as id, name from users`).map((u) => [u.name, u.id]));
   if (OWNERS.some((name) => !users.has(name))) return ["already there pipelines and deals (no fake users)"];
   const now = Date.now();
   let pipelinesAdded = 0;
   let dealsAdded = 0;
+  let extrasAdded = 0;
 
   await sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
@@ -92,8 +127,82 @@ export async function seedDeals(sql: Sql): Promise<string[]> {
       }
       dealsAdded++;
     }
+
+    // --- SF-95 ---
+    for (const name of DEAL_LABELS) {
+      const added = await db`insert into deal_labels (name) values (${name}) on conflict ((lower(name))) do nothing returning id`;
+      extrasAdded += added.length;
+    }
+    const sales = stages.filter((s) => s.pipeline === "Sales").sort((a, b) => a.position - b.position);
+    for (const [i, c] of CLOSED.entries()) {
+      if (sales.length < c.days.length) continue;
+      const taken = await db`select 1 from deals where title = ${c.title}`;
+      if (taken.length > 0) continue;
+      const owner = users.get(OWNERS[i % OWNERS.length])!;
+      const closedAt = new Date(now - c.closedDaysAgo * DAY);
+      const start = new Date(closedAt.getTime() - c.days.reduce((n, d) => n + d, 0) * DAY);
+      const last = sales[c.days.length - 1];
+      const person = people.length === 0 ? null : people[(i * 5 + 3) % people.length];
+      const [deal] = await db<{ id: number }[]>`
+        insert into deals (title, value_pence, stage_id, stage_entered_at, organisation_id, person_id, owner_id, private, created_by,
+                           created_at, status, closed_at, lost_reason, archived_at)
+        values (${c.title}, ${(i + 2) * 350000}, ${last.id}, ${new Date(closedAt.getTime() - c.days.at(-1)! * DAY)},
+                ${person?.organisation_id ?? orgs[i % Math.max(orgs.length, 1)]?.id ?? null}, ${person?.id ?? null}, ${owner}, false, ${owner},
+                ${start}, ${c.status}, ${closedAt}, ${c.reason ?? null}, ${c.archived ? new Date(now - DAY) : null})
+        returning id::int as id`;
+      await db`insert into timeline_events (deal_id, kind, actor_id, created_at) values (${deal.id}, 'added', null, ${start})`;
+      let at = start.getTime();
+      for (const [k, days] of c.days.entries()) {
+        const stage = sales[k];
+        const from = new Date(at);
+        at += days * DAY;
+        await db`insert into deal_stage_periods (deal_id, stage_id, stage_name, pipeline_name, entered_at, left_at, moved_by)
+                 values (${deal.id}, ${stage.id}, ${stage.name}, 'Sales', ${from}, ${new Date(at)}, ${k === 0 ? null : owner})`;
+        if (k > 0) {
+          await db`insert into timeline_events (deal_id, kind, actor_id, from_stage, to_stage, created_at)
+                   values (${deal.id}, 'moved', ${owner}, ${sales[k - 1].name}, ${stage.name}, ${from})`;
+        }
+      }
+      await db`insert into timeline_events (deal_id, kind, actor_id, reason, created_at)
+               values (${deal.id}, ${c.status}, ${owner}, ${c.reason ?? null}, ${closedAt})`;
+      if (c.archived) {
+        await db`insert into timeline_events (deal_id, kind, actor_id, created_at) values (${deal.id}, 'archived', ${owner}, ${new Date(now - DAY)})`;
+      }
+      dealsAdded++;
+    }
+    for (const [title, names] of LABELS_ON) {
+      const added = await db`
+        insert into deal_label_links (deal_id, label_id)
+        select d.id, l.id from deals d join deal_labels l on l.name = any(${names}::text[]) where d.title = ${title}
+        on conflict do nothing returning deal_id`;
+      extrasAdded += added.length;
+    }
+    // Other linked people: shared (never private), not archived, never the deal's main person.
+    const linkable = await db<{ id: number }[]>`select id::int as id from persons where not private and archived_at is null order by id`;
+    for (const [i, title] of LINKED_ON.entries()) {
+      const [deal] = await db<{ id: number; person_id: number | null; owner_id: number }[]>`
+        select id::int as id, person_id::int as person_id, owner_id::int as owner_id from deals where title = ${title}`;
+      if (!deal || linkable.length < 3) continue;
+      const picks = [linkable[(i * 4 + 1) % linkable.length], linkable[(i * 4 + 2) % linkable.length]].filter((p) => p.id !== deal.person_id);
+      for (const p of picks) {
+        const added = await db`
+          insert into deal_people (deal_id, person_id, linked_by, created_at) values (${deal.id}, ${p.id}, ${deal.owner_id}, ${new Date(now - 2 * DAY)})
+          on conflict do nothing returning deal_id`;
+        if (added.length === 0) continue;
+        extrasAdded++;
+        await db`insert into timeline_events (deal_id, kind, actor_id, related_person_id, created_at)
+                 values (${deal.id}, 'person_linked', ${deal.owner_id}, ${p.id}, ${new Date(now - 2 * DAY)})`;
+      }
+    }
+    for (const [title, names] of FOLLOWERS) {
+      const added = await db`
+        insert into deal_followers (deal_id, user_id)
+        select d.id, u.id from deals d join users u on u.name = any(${names}::text[]) where d.title = ${title}
+        on conflict do nothing returning deal_id`;
+      extrasAdded += added.length;
+    }
   });
 
-  if (pipelinesAdded === 0 && dealsAdded === 0) return ["already there pipelines and deals"];
+  if (pipelinesAdded === 0 && dealsAdded === 0 && extrasAdded === 0) return ["already there pipelines and deals"];
   return [`added ${pipelinesAdded} fake pipelines and ${dealsAdded} fake deals`];
 }

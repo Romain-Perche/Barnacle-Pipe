@@ -73,3 +73,13 @@ export function followDeal(actorId: number, dealId: number): Promise<FollowResul
 export function unfollowDeal(actorId: number, dealId: number): Promise<FollowResult> {
   return follow(actorId, dealId, false);
 }
+
+// People the deal page's picker offers: every person the viewer can see that is not archived (the server re-checks).
+export async function linkablePeople(viewerId: number): Promise<{ id: number; name: string; archived: boolean }[]> {
+  return [
+    ...(await sql<{ id: number; name: string; archived: boolean }[]>`
+      select p.id::int as id, btrim(p.first_name || ' ' || p.last_name) as name, false as archived from persons p
+      where p.archived_at is null and ${visiblePerson(sql, viewerId)}
+      order by lower(btrim(p.first_name || ' ' || p.last_name)), p.id`),
+  ];
+}

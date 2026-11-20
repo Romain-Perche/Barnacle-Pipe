@@ -3,7 +3,9 @@
 The Barnacle CRM: a Next.js (App Router, TypeScript) app on Postgres. The team signs in with their
 barnacle.ai Google account; admins manage who has access on the Users page. Everyone keeps the team's
 people and organisations (`/people`, `/organisations`) and works its deals on a board per pipeline
-(`/deals`); admins keep the lead source and label lists (`/admin/lead-sources-and-labels`) and the
+(`/deals`), in a list (`/deals/list`) and on each deal's page (`/deals/<id>`: Won, Lost, Reopen, restore,
+linked people, labels, followers); admins keep the lead source, label and deal label lists
+(`/admin/lead-sources-and-labels`) and the
 pipelines and their stages (`/admin/pipelines`). Product rules are in
 `docs/PRODUCT.md`, the look in `docs/DESIGN.md`, the team's choices in `docs/DECISIONS.md`.
 
@@ -41,7 +43,10 @@ The fake data also has 35 fake people (`@example.com` / `@example.net`, one arch
 created by Ada Fake; private Pat Privatefake, created by Ada Fake and owned by Linus Fake; private Robin and
 Sam Leftfake, owned by deactivated Alan Fake, to try the hand-over), 9 fake organisations (one archived), the labels
 Hot, Investor and Partner, and the pipelines Sales, Ambassadors, Fractional CTO, Exec Dinner and "Ada Fake's
-pipeline" with 44 fake deals (Sales "Closing" left empty, one archived deal, two private deals created by Ada Fake). A fresh
+pipeline" with 44 fake open deals (Sales "Closing" left empty, one archived deal, two private deals created by Ada Fake),
+plus (SF-95) the deal labels Hot, Warm, Cold, Big ticket and Renewal on nine deals, three won and four lost Sales deals
+with stage histories over several days (the lost ones with fake reasons; "Old fake tender (lost)" is also archived),
+other linked people on six deals and followers on six (deactivated Alan Fake follows one). A fresh
 database (no fake data) starts with the six lead sources Duncan's LinkedIn, Referral, Exec dinner, Inbound,
 Event and Ambassador, and no labels.
 
@@ -50,10 +55,12 @@ Event and Ambassador, and no labels.
 | `/people`, `/organisations` | everyone | Lists: search, filters, sort, "Show archived", preview drawer (`?open=<id>`); all in the address |
 | `/people/new`, `/people/<id>`, `/people/<id>/edit` | everyone (a private person: only their creator and their owner) | Add, view, edit, archive/restore; admins delete (events about a deleted person stay on organisations as "A deleted person …") |
 | `/organisations/new`, `/organisations/<id>`, `/organisations/<id>/edit` | everyone | Same for organisations, with their people |
-| `/admin/lead-sources-and-labels` | admins | Add, rename and remove lead sources and labels |
+| `/admin/lead-sources-and-labels` | admins | Add, rename and remove lead sources, people labels and deal labels (a removed label stays on the people and deals that have it) |
 | `/admin/users` | admins | Add, make admin, deactivate, reactivate; `[ HAND OVER ]` on a deactivated user who owns private people gives all of them to one active user (the admin sees only how many) |
 | `/deals` | everyone | The board of one pipeline (`?pipeline=<id>`, first pipeline by default): a column per stage with "<n> deals · £total", drag a card to move it; the deal drawer (`?open=<id>`) shows details, "Move to", edit, archive, delete (admins) and its history. A private deal is seen only by its creator and its owner |
-| `/deals/new`, `/deals/<id>/edit` | everyone (a private deal: its creator and owner) | Add a deal (`?pipeline=<id>&stage=<id>` pre-selects them), edit a deal |
+| `/deals/list` | everyone | Every deal you can see across pipelines: search, Pipeline, Stage, Owner, Label, sort by any column, "<n> deals · £total" of every match, "Show closed deals" (won and lost, with a Status filter), "Show archived deals", `[ CLEAR ]`, the deal drawer (`?open=<id>`); all in the address. `[ BOARD ]` / `[ LIST ]` switch between the two views |
+| `/deals/<id>` | everyone (a private deal: its creator and owner) | The deal page: `[ WON ]`, `[ LOST ]` (asks why), `[ REOPEN ]`; the stage bar with whole days per stage (press a stage to move an open deal); edit, archive, delete (admins), `[ RESTORE ]` for an archived deal; other linked people, labels, follow/unfollow and the history. Won and lost deals leave the board |
+| `/deals/new`, `/deals/<id>/edit` | everyone (a private deal: its creator and owner) | Add a deal (`?pipeline=<id>&stage=<id>` pre-selects them), edit a deal and its deal labels (`?back=page` returns to the deal page) |
 | `/admin/pipelines`, `/admin/pipelines/<id>` | admins | Add, rename, reorder (↑/↓) and delete pipelines and their stages; deleting one that holds deals moves them to a stage you choose |
 
 ## Tests
