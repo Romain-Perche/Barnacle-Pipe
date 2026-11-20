@@ -49,6 +49,7 @@ export default async function NewDealPage({ searchParams }: { searchParams: Prom
             ownerId: String(user.id),
             expectedClose: "",
             private: false,
+    labelIds: [],
           }}
         />
       )}

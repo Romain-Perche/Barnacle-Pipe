@@ -67,8 +67,12 @@ describe("dealFormFromData", () => {
     );
     expect(form).toEqual({
       title: "Fakeco website", value: "£4,000", pipelineId: "1", stageId: "3", organisationId: "", newOrganisationName: "Fakeco Ltd",
-      personId: "7", ownerId: "2", expectedClose: "2026-12-15", private: true,
+      personId: "7", ownerId: "2", expectedClose: "2026-12-15", private: true, labelIds: [],
     });
     expect(dealFormFromData(data([["title", "x"]]))).toMatchObject({ title: "x", value: "", stageId: "", private: false });
+  });
+  // covers SF-95 FR-017 (label checkboxes on the deal form)
+  it("reads every ticked deal label", () => {
+    expect(dealFormFromData(data([["labelIds", "3"], ["labelIds", "1"]])).labelIds).toEqual(["3", "1"]);
   });
 });

@@ -196,11 +196,12 @@ describe("fake pipelines and deals", () => {
     expect(closing.n).toBe(0);
     const empty = await sql`select p.name from pipelines p where not exists (select 1 from deals d join stages s on s.id = d.stage_id where s.pipeline_id = p.id)`;
     expect(empty).toEqual([]);
-    // Every deal: exactly one open stage period (in its stage) and an "added" event; some were moved.
+    // Every open deal: exactly one open stage period (in its stage); a won or lost deal none (SF-95: Won and Lost close
+    // it). Every deal has an "added" event; some were moved.
     const bad = await sql`
       select d.id from deals d
-      where (select count(*) from deal_stage_periods x where x.deal_id = d.id and x.left_at is null and x.stage_id = d.stage_id) <> 1
-         or (select count(*) from deal_stage_periods x where x.deal_id = d.id and x.left_at is null) <> 1
+      where (d.status = 'open' and (select count(*) from deal_stage_periods x where x.deal_id = d.id and x.left_at is null and x.stage_id = d.stage_id) <> 1)
+         or (select count(*) from deal_stage_periods x where x.deal_id = d.id and x.left_at is null) <> (case when d.status = 'open' then 1 else 0 end)
          or not exists (select 1 from timeline_events e where e.deal_id = d.id and e.kind = 'added')`;
     expect(bad).toEqual([]);
     const [moved] = await sql<{ n: number }[]>`select count(*)::int as n from timeline_events where kind = 'moved'`;
@@ -232,6 +233,60 @@ describe("fake private people (SF-92)", () => {
     await runSeeders(sql);
     expect(await count("persons")).toBe(rows);
     expect(await count("timeline_events")).toBe(events);
+  });
+});
+
+// covers SF-95 FR-023, T051: won and lost deals, deal labels, other linked people and followers, idempotent
+describe("fake deal results, labels, links and followers (SF-95)", () => {
+  async function snapshot() {
+    return {
+      deals: await count("deals"),
+      labels: await count("deal_labels"),
+      labelLinks: await count("deal_label_links"),
+      people: await count("deal_people"),
+      followers: await count("deal_followers"),
+      events: await count("timeline_events"),
+      periods: await count("deal_stage_periods"),
+    };
+  }
+
+  it("adds won, lost and an archived lost deal with histories, at least 4 deal labels, links and followers, once", async () => {
+    await runSeeders(sql);
+    const [c] = await sql<
+      { won: number; lost: number; archived_lost: number; reasons: number; labels: number; labelled: number; linked: number; followed: number;
+        multi_stage: number; won_events: number; lost_events: number }[]
+    >`
+      select (select count(*)::int from deals where status = 'won') as won,
+             (select count(*)::int from deals where status = 'lost') as lost,
+             (select count(*)::int from deals where status = 'lost' and archived_at is not null) as archived_lost,
+             (select count(*)::int from deals where status = 'lost' and lost_reason ilike '%fake%') as reasons,
+             (select count(*)::int from deal_labels) as labels,
+             (select count(distinct deal_id)::int from deal_label_links) as labelled,
+             (select count(distinct deal_id)::int from deal_people) as linked,
+             (select count(distinct deal_id)::int from deal_followers) as followed,
+             (select count(*)::int from (select deal_id from deal_stage_periods group by deal_id having count(distinct stage_id) >= 3) x) as multi_stage,
+             (select count(*)::int from timeline_events where kind = 'won') as won_events,
+             (select count(*)::int from timeline_events where kind = 'lost' and reason is not null) as lost_events`;
+    expect(c.won).toBeGreaterThanOrEqual(3);
+    expect(c.lost).toBeGreaterThanOrEqual(3);
+    expect(c.archived_lost).toBeGreaterThanOrEqual(1);
+    expect(c.reasons).toBe(c.lost);
+    expect(c.labels).toBeGreaterThanOrEqual(4);
+    expect(c.labelled).toBeGreaterThanOrEqual(8);
+    expect(c.linked).toBeGreaterThanOrEqual(5);
+    expect(c.followed).toBeGreaterThanOrEqual(5);
+    expect(c.multi_stage).toBeGreaterThanOrEqual(2);
+    expect(c.won_events).toBe(c.won);
+    expect(c.lost_events).toBe(c.lost);
+    // Never the main person, never a private person, among other linked people.
+    const wrong = await sql`
+      select 1 from deal_people dp join deals d on d.id = dp.deal_id join persons p on p.id = dp.person_id
+      where dp.person_id = d.person_id or p.private`;
+    expect(wrong).toEqual([]);
+
+    const before = await snapshot();
+    await runSeeders(sql);
+    expect(await snapshot()).toEqual(before);
   });
 });
 

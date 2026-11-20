@@ -1,6 +1,6 @@
 "use client";
 // Add / edit a deal (contracts/routes.md § Pages). Messages show next to their fields and every typed value is kept.
-// Pipeline and stage only on add: moves are made from the board.
+// Pipeline and stage only on add: moves are made from the board. Deal labels as checkboxes (SF-95, as on PersonForm).
 import Link from "next/link";
 import { useActionState } from "react";
 import type { DealChoices } from "@/server/deals/deals";
@@ -22,6 +22,8 @@ type Props = {
   id?: number;
   version?: number;
   cancelHref: string;
+  // Where the save returns (SF-95): the deal page or the list; absent: the board.
+  back?: "page" | "list";
 };
 
 function Text({ name, label, value, error, type = "text", placeholder }: { name: string; label: string; value: string; error?: FieldErrors[string]; type?: string; placeholder?: string }) {
@@ -34,7 +36,7 @@ function Text({ name, label, value, error, type = "text", placeholder }: { name:
   );
 }
 
-export function DealForm({ action, initial, choices, canSetPrivate, withStage, id, version, cancelHref }: Props) {
+export function DealForm({ action, initial, choices, canSetPrivate, withStage, id, version, cancelHref, back }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
   const v = state?.values ?? initial;
   const errors = state?.errors ?? {};
@@ -47,6 +49,7 @@ export function DealForm({ action, initial, choices, canSetPrivate, withStage, i
       )}
       {id !== undefined && <input type="hidden" name="id" value={id} />}
       {version !== undefined && <input type="hidden" name="version" value={version} />}
+      {back && <input type="hidden" name="back" value={back} />}
       <div className="grid2">
         <Text name="title" label="Title" value={v.title} error={errors.title} />
         <Text name="value" label="Value (£)" value={v.value} error={errors.value} placeholder="4000" />
@@ -81,6 +84,15 @@ export function DealForm({ action, initial, choices, canSetPrivate, withStage, i
         </label>
         <Text name="expectedClose" label="Expected close date" type="date" value={v.expectedClose} error={errors.expectedClose} />
       </div>
+      <fieldset className="choices">
+        <legend>Labels</legend>
+        {choices.labels.length === 0 && <span className="hint">No deal labels yet.</span>}
+        {choices.labels.map((l) => (
+          <label key={l.id} className="check">
+            <input type="checkbox" name="labelIds" value={l.id} defaultChecked={v.labelIds.includes(String(l.id))} /> {l.name}
+          </label>
+        ))}
+      </fieldset>
       {canSetPrivate && (
         <label className="check private">
           <input type="checkbox" name="private" defaultChecked={v.private} /> Private (only its creator and owner can see this deal)

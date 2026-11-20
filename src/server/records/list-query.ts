@@ -7,6 +7,8 @@ export type Dir = "asc" | "desc";
 
 export const PEOPLE_SORTS = ["name", "organisation", "added", "contacted"] as const;
 export const ORGANISATION_SORTS = ["name", "people", "added"] as const;
+export const DEAL_SORTS = ["title", "value", "organisation", "stage", "owner", "close", "added"] as const;
+export const DEAL_STATUSES = ["open", "won", "lost"] as const;
 export const PAGE_SIZE = 50;
 
 export type PeopleQuery = {
@@ -31,6 +33,23 @@ export type OrganisationsQuery = {
   sort: (typeof ORGANISATION_SORTS)[number];
   dir: Dir;
   page: number;
+  archived: boolean;
+  open: number | null;
+};
+
+// The deal list (SF-95 research.md §5): newest first by default; `status` is only used when closed or archived deals
+// are shown, and `stage` only when it belongs to `pipeline` (both checked by the page and list.ts).
+export type DealsQuery = {
+  q: string;
+  pipeline: number | null;
+  stage: number | null;
+  owner: number | null;
+  label: number | null;
+  status: (typeof DEAL_STATUSES)[number] | null;
+  sort: (typeof DEAL_SORTS)[number];
+  dir: Dir;
+  page: number;
+  closed: boolean;
   archived: boolean;
   open: number | null;
 };
@@ -93,6 +112,50 @@ export function parseOrganisationsQuery(params: Params): OrganisationsQuery {
   };
 }
 
+export function parseDealsQuery(params: Params): DealsQuery {
+  const c = common(params);
+  return {
+    q: c.q,
+    pipeline: parseId(first(params, "pipeline")),
+    stage: parseId(first(params, "stage")),
+    owner: c.owner,
+    label: parseId(first(params, "label")),
+    status: oneOf(first(params, "status"), DEAL_STATUSES),
+    sort: oneOf(first(params, "sort"), DEAL_SORTS) ?? "added",
+    dir: first(params, "dir") === "asc" ? "asc" : "desc",
+    page: c.page,
+    closed: first(params, "closed") === "1",
+    archived: c.archived,
+    open: c.open,
+  };
+}
+
+export function hasDealFilters(query: DealsQuery): boolean {
+  return (
+    query.q !== "" || query.pipeline !== null || query.stage !== null || query.owner !== null || query.label !== null ||
+    query.status !== null || query.closed || query.archived
+  );
+}
+
+// Only known values are kept, so they are listed, counted and shown back (FR-013): a pipeline that is an option, a
+// stage of that pipeline, an owner and a label that are options, a status when closed or archived deals are shown.
+type Known = { readonly id: number };
+export function knownDealsQuery(
+  query: DealsQuery,
+  options: { pipelines: readonly Known[]; stages: readonly Known[]; owners: readonly Known[]; labels: readonly Known[] },
+): DealsQuery {
+  const known = (id: number | null, list: readonly Known[]) => (id !== null && list.some((o) => o.id === id) ? id : null);
+  const pipeline = known(query.pipeline, options.pipelines);
+  return {
+    ...query,
+    pipeline,
+    stage: pipeline === null ? null : known(query.stage, options.stages),
+    owner: known(query.owner, options.owners),
+    label: known(query.label, options.labels),
+    status: query.closed || query.archived ? query.status : null,
+  };
+}
+
 // The sector filter only keeps a value that is one of the sectors in use (matched ignoring case), so text
 // from the address is never shown back on the page (FR-025); an unknown sector filters nothing.
 export function knownSector(sector: string | null, inUse: readonly string[]): string | null {
@@ -100,9 +163,13 @@ export function knownSector(sector: string | null, inUse: readonly string[]): st
   return inUse.find((s) => s.toLowerCase() === sector.toLowerCase()) ?? null;
 }
 
-type AnyQuery = PeopleQuery | OrganisationsQuery;
-const ORDER = ["q", "owner", "label", "source", "org", "consent", "sector", "size", "sort", "dir", "page", "archived", "open"];
-const DEFAULTS: Record<string, unknown> = { q: "", sort: "name", dir: "asc", page: 1, archived: false };
+type AnyQuery = PeopleQuery | OrganisationsQuery | DealsQuery;
+const ORDER = [
+  "q", "pipeline", "stage", "owner", "label", "source", "org", "consent", "sector", "size", "status", "sort", "dir", "page", "closed", "archived", "open",
+];
+const DEFAULTS: Record<string, unknown> = { q: "", sort: "name", dir: "asc", page: 1, closed: false, archived: false };
+// The deal list's own defaults (newest first); people and organisations keep the ones above.
+const DEAL_DEFAULTS: Record<string, unknown> = { ...DEFAULTS, sort: "added", dir: "desc" };
 
 // A link to `path` with `changes` applied. Changing anything but the page or the drawer goes back to page 1;
 // changing anything but the drawer closes the drawer.
@@ -111,12 +178,13 @@ export function withParams<Q extends AnyQuery>(path: string, current: Q, changes
   const keys = Object.keys(changes);
   if (keys.some((k) => k !== "page" && k !== "open") && !("page" in changes)) next.page = 1;
   if (keys.some((k) => k !== "open") && !("open" in changes)) next.open = null;
+  const defaults = "closed" in current ? DEAL_DEFAULTS : DEFAULTS;
   const search = new URLSearchParams();
   for (const key of ORDER) {
     if (!(key in next)) continue;
     const value = next[key];
-    if (value === null || value === undefined || value === DEFAULTS[key]) continue;
-    if (key === "archived") {
+    if (value === null || value === undefined || value === defaults[key]) continue;
+    if (key === "archived" || key === "closed") {
       if (value === true) search.set(key, "1");
       continue;
     }
@@ -126,7 +194,7 @@ export function withParams<Q extends AnyQuery>(path: string, current: Q, changes
   return text ? `${path}?${text}` : path;
 }
 
-export function hasFilters(query: AnyQuery): boolean {
+export function hasFilters(query: PeopleQuery | OrganisationsQuery): boolean {
   const { q, owner } = query;
   const extra =
     "label" in query

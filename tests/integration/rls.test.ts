@@ -1,4 +1,4 @@
-// covers FR-032, SC-010, edge case "another database role reads any app table"; SF-90 T016 (8 new tables); SF-93 T004 (4 new tables)
+// covers FR-032, SC-010, edge case "another database role reads any app table"; SF-90 T016 (8 new tables); SF-93 T004 (4 new tables); SF-95 T004 (4 new tables)
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { makeUser, resetDb } from "./db-helpers";
@@ -20,6 +20,7 @@ describe("Row Level Security", () => {
         "users", "sessions", "user_changes", "schema_migrations",
         "organisations", "persons", "person_emails", "person_phones", "lead_sources", "labels", "person_labels", "timeline_events",
         "pipelines", "stages", "deals", "deal_stage_periods",
+        "deal_labels", "deal_label_links", "deal_people", "deal_followers",
       ]),
     );
     expect(tables.filter((t) => !t.relrowsecurity).map((t) => t.relname)).toEqual([]);

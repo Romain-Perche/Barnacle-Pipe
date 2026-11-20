@@ -1,3 +1,5 @@
+import { formatMoney } from "@/server/format";
+
 // Every user-facing message, by code. The single source of these texts (contracts/routes.md § Messages).
 // Pages look codes up here; text from a URL is never shown.
 export const messages = {
@@ -65,6 +67,15 @@ export const messages = {
   handover_button: "[ HAND OVER ]",
   handover_cancel: "[ CANCEL ]",
   handover_to_label: "Hand over to",
+  // Deal list and deal page (SF-95)
+  deal_not_found: "This deal doesn't exist or you can't see it.",
+  lost_question: "Why was this deal lost?",
+  lost_reason_required: "Enter why this deal was lost.",
+  lost_reason_too_long: "Keep the reason under 500 characters.",
+  deal_person_already_linked: "This person is already linked to this deal.",
+  deal_label_exists: "This name is already used.",
+  no_deals_match: "No deals match these filters.",
+  no_deals_yet: "No deals yet.",
 } as const;
 
 const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} private people`);
@@ -95,6 +106,8 @@ export const templates = {
   handover_none: (name: string) => `${name} has no private people or deals to hand over.`,
   handed_over_event: (name: string) => `Handed to ${name}`,
   person_no_longer_visible: (name: string) => `You can no longer see ${name}: only their creator and owner can.`,
+  // SF-95: "<n> deals · £<total>" above the deal list, for every matching deal.
+  deal_list_count: (n: number, totalPence: number) => `${n} ${n === 1 ? "deal" : "deals"} · ${formatMoney(totalPence)}`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

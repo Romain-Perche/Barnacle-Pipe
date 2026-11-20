@@ -23,6 +23,13 @@
   advisory lock, checked by `tests/integration/migrate.test.ts`; every change one `sql.begin()`); its tables come from
   `migrations/0004_pipelines_deals.sql` (pipelines, stages, deals, deal_stage_periods; timeline_events gains deal_id),
   applied on a fresh database by the same test.
+  The deal list and deal page code (SF-95: `src/server/deals/list.ts`, `src/server/deals/links.ts` and the Won/Lost/
+  Reopen/Restore functions in `deals.ts`) keeps to the same pooler limits (no `set`/`listen`/session advisory lock,
+  scanned by `tests/integration/migrate.test.ts`; every change one `sql.begin()` locking the deal row `for update`); its
+  tables and columns come from `migrations/0005_deal_page.sql` (deal status/closed_at/lost_reason, deal_labels,
+  deal_label_links, deal_people, deal_followers, timeline_events.reason and the won/lost/reopened kinds), applied on a
+  fresh database by the same test, which also checks Postgres's own 23514 refusals (won without a date, lost without a
+  reason, a 501-character reason, a lost event without a reason).
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -62,8 +69,32 @@
     CTO, Exec Dinner and "Ada Fake's pipeline" with 46 fake deals: "Old fake opportunity" is archived, "Fake secret
     project" and "Ada's fake prospect 2" are private (created by Ada Fake), SF-97: "Fake leaver deal" (Sales · Lead in)
     and the archived "Fake leaver old deal" are private, created and owned by deactivated Alan Fake, "Lorem Logistics tracking" is NOT linked to
-    Gus Lorem since the SF-92 merge (the seed picks people by id; `scenarios-sf93.js` links him by SQL for US6-4), some deals have a "moved" history line. The seed already has a "Fakeco website" deal: scenario
+    Gus Lorem since the SF-92 merge (the seed picks people by id; `scenarios-sf93.js` links him by SQL for US6-4), some deals have a "moved" history line.
+    SF-95 adds the deal labels Hot, Warm, Cold, Big ticket, Renewal (on 9 deals, e.g. "Fakeco website": Hot, Big ticket),
+    won deals "Fakeco newsletter (won)", "Sample Gyms signage (won)", "Mock Labs retainer (won)", lost deals "Dummy
+    Leisure app (lost)" ("Went with a fake competitor"), "Lorem Logistics pilot (lost)" ("Fake budget cut"), "Testfield
+    Health kiosk (lost)" ("No fake decision maker") and the archived "Old fake tender (lost)" ("Fake tender cancelled"), all
+    in Sales with periods of 1–11 days through its stages; other linked people on 6 deals (never the main person, never a
+    private person) and followers on 6 ("Mock Labs audit" is followed by deactivated Alan Fake). `reset-db.sh` also
+    empties deal_followers, deal_people, deal_label_links and deal_labels. The seed already has a "Fakeco website" deal: scenario
     scripts that add their own should delete it first (the browser tests do).
+  - Deal list and deal page scenarios (SF-95) are covered by `tests/e2e/{deal-page,deal-won-lost,deal-list,deal-restore,deal-labels}.spec.ts`.
+    Selectors: the deal page's stage bar is the `list` named "Stages" (current stage `aria-current="step"`, other stages of
+    an open deal are buttons "Move to <stage>"), the strip is `dl.strip`, the Lost box is the `dialog` named "Why was this
+    deal lost?", other people are the `list` named "Other people" (buttons "Unlink <name>"), the deal labels admin list is
+    the `region` "Deal labels" (input "New deal label"). The deal list's count line is `.head-r .count`; its title links are
+    `td:first-child a.nm` (each row also has a hidden "Preview <title>" link: use `exact: true`). Saving a deal with no
+    organisation and a main person fills the person's organisation (SF-93 FR-006): an "Edited: Organisation, …" line.
+  - SF-95 AI-review scenario script `scenarios-sf95.js` (all 42 US1–US5 scenarios and edge cases 1–14 as renumbered by SF-95 fix round 1 — edge 11 is the unknown owner/label address, edge 12 the empty list, ~3 min, against
+    :3000/crm_dev on fresh fake data; makes its own "SF95 …" deals by SQL with back-dated stage periods, adds 60 "SF95 Bulk"
+    deals of Linus for paging; ends with Edge case 12, which deletes every deal):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf95.js`.
+    Notes: Robin Leftfake is private (owned by Alan), so the script uses a public person as main person; the filter row's
+    AutoSubmit posts every field (`pipeline=` empty), so wait for `/pipeline=\d/`; a "NOTE" line prints what the list does
+    with unknown owner/label/pipeline ids (FR-013). Same-pipeline moves read "Moved from Proposal to Negotiation by …". US5-3 gives its deal the main person's organisation first, else saving also fills it ("Edited by …: Organisation, Labels").
+    Archived-deal expectations (US4-1, Edge 13) are filtered by `visibleWhere` for Ada: since the SF-97 merge the seed has
+    Alan's private archived "Fake leaver old deal", which Ada must not see. Edge 13 adds its own archived lost deal ("SF95
+    Archived lost") because US4-4 restores the seeded one.
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
     (real drag with `locator.dragTo`; a failed drag by aborting the server action POST with `page.route`). Board
     selectors: each column is a `region` named after its stage (`h2` name, `.tot` "<n> deals · £total"), cards are

@@ -1,11 +1,14 @@
-// Lead sources and labels (US6): admins add, rename and remove the entries everyone picks from.
+// Lead sources and labels (US6): admins add, rename and remove the entries everyone picks from. SF-95: a third list,
+// "Deal labels", apart from the people labels.
 import { requireAdmin } from "@/server/auth/session";
 import { messageFor } from "@/server/messages";
 import { listChoices } from "@/server/records/choices";
 import { Forbidden } from "../../Forbidden";
-import { addLabel, addLeadSource, removeLabel, removeLeadSource, renameLabel, renameLeadSource } from "./actions";
+import {
+  addDealLabel, addLabel, addLeadSource, removeDealLabel, removeLabel, removeLeadSource, renameDealLabel, renameLabel, renameLeadSource,
+} from "./actions";
 
-const PAGE_ERRORS = new Set(["choice_exists", "choice_removed_exists", "choice_name_required"]);
+const PAGE_ERRORS = new Set(["choice_exists", "deal_label_exists", "choice_removed_exists", "choice_name_required"]);
 type Action = (fd: FormData) => Promise<void>;
 
 function ChoiceList({ title, noun, items, add, rename, remove }: { title: string; noun: string; items: { id: number; name: string }[]; add: Action; rename: Action; remove: Action }) {
@@ -56,7 +59,7 @@ export default async function LeadSourcesAndLabelsPage({ searchParams }: { searc
   if (!isAdmin) return <Forbidden />;
   const { error } = await searchParams;
   const message = error && PAGE_ERRORS.has(error) ? messageFor(error) : undefined;
-  const [sources, labels] = await Promise.all([listChoices("lead_source"), listChoices("label")]);
+  const [sources, labels, dealLabels] = await Promise.all([listChoices("lead_source"), listChoices("label"), listChoices("deal_label")]);
   return (
     <>
       <div className="page-head">
@@ -75,6 +78,7 @@ export default async function LeadSourcesAndLabelsPage({ searchParams }: { searc
       <div className="grid2 top">
         <ChoiceList title="Lead sources" noun="lead source" items={sources} add={addLeadSource} rename={renameLeadSource} remove={removeLeadSource} />
         <ChoiceList title="Labels" noun="label" items={labels} add={addLabel} rename={renameLabel} remove={removeLabel} />
+        <ChoiceList title="Deal labels" noun="deal label" items={dealLabels} add={addDealLabel} rename={renameDealLabel} remove={removeDealLabel} />
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 // covers clarification "last sign-in in UK time, like 19 Nov 2026, 09:12, or Never" (US2 scenario 1)
 import { describe, expect, it } from "vitest";
-import { formatLastSignIn } from "@/server/format";
+import { formatDays, formatLastSignIn } from "@/server/format";
 
 describe("formatLastSignIn", () => {
   it("writes UK time as '19 Nov 2026, 09:12'", () => {
@@ -59,5 +59,14 @@ describe("formatMoney", () => {
     expect(formatMoney(1250000)).toBe("£12,500");
     expect(formatMoney(5)).toBe("£0.05");
     expect(formatMoney(999999999999)).toBe("£9,999,999,999.99");
+  });
+});
+
+// covers SF-95 Edge Cases "whole days rounded down (0 days, 1 day, 12 days)"
+describe("formatDays", () => {
+  it("writes days with the right plural", () => {
+    expect(formatDays(0)).toBe("0 days");
+    expect(formatDays(1)).toBe("1 day");
+    expect(formatDays(12)).toBe("12 days");
   });
 });

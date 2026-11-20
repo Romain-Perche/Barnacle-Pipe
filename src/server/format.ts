@@ -43,3 +43,8 @@ export function formatMoney(pence: number | null): string {
   if (pence === null) return "—";
   return pence % 100 === 0 ? POUNDS.format(pence / 100) : PENCE.format(pence / 100);
 }
+
+// Whole days in a stage (SF-95): "0 days", "1 day", "12 days".
+export function formatDays(n: number): string {
+  return `${n} ${n === 1 ? "day" : "days"}`;
+}

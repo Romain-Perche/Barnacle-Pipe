@@ -62,13 +62,14 @@ export function history(page: Page) {
   return page.getByRole("region", { name: "History" }).getByRole("listitem");
 }
 
-// "<n> deals · £total" of the visible non-archived deals of a stage, as the database has them for a viewer.
+// "<n> deals · £total" of the visible non-archived open deals of a stage (SF-95: won and lost deals are not on the
+// board), as the database has them for a viewer.
 export async function expectedHeader(pipeline: string, stage: string, viewer: string): Promise<string> {
   const viewerId = await userId(viewer);
   const [row] = await db()<{ n: number; total: string }[]>`
     select count(*)::int as n, coalesce(sum(d.value_pence), 0)::bigint as total
     from deals d join stages s on s.id = d.stage_id join pipelines p on p.id = s.pipeline_id
-    where p.name = ${pipeline} and s.name = ${stage} and d.archived_at is null
+    where p.name = ${pipeline} and s.name = ${stage} and d.archived_at is null and d.status = 'open'
       and (not d.private or d.created_by = ${viewerId} or d.owner_id = ${viewerId})`;
   const pence = Number(row.total);
   const money = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: pence % 100 ? 2 : 0, maximumFractionDigits: pence % 100 ? 2 : 0 }).format(pence / 100);
@@ -77,4 +78,15 @@ export async function expectedHeader(pipeline: string, stage: string, viewer: st
 
 export async function expectHeader(page: Page, pipeline: string, stage: string, viewer: string) {
   await expect(columnTotal(page, stage)).toHaveText(await expectedHeader(pipeline, stage, viewer));
+}
+
+// SF-95: the deal page's parts.
+export function stageStep(page: Page, stage: string) {
+  return page.getByRole("list", { name: "Stages" }).getByRole("listitem").filter({ hasText: stage });
+}
+export function strip(page: Page) {
+  return page.locator("dl.strip");
+}
+export function lostBox(page: Page) {
+  return page.getByRole("dialog", { name: "Why was this deal lost?" });
 }

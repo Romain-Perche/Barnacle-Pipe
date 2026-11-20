@@ -16,10 +16,16 @@ sources:
     resource: repo://src/app/(app)/deals/Board.tsx
   - id: sf93-src-migration
     resource: repo://migrations/0004_pipelines_deals.sql
+  - id: sf95-src-list
+    resource: repo://src/server/deals/list.ts
+  - id: sf95-src-links
+    resource: repo://src/server/deals/links.ts
+  - id: sf95-src-migration
+    resource: repo://migrations/0005_deal_page.sql
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T10:02:45.004Z
-generated: { by: "claude-code", at: "2026-11-20T10:02:45.004Z" }
+    at: 2026-11-20T12:30:18.141Z
+generated: { by: "claude-code", at: "2026-11-20T12:30:18.141Z" }
 ---
 
 # Pipelines, deals and the board
@@ -34,6 +40,10 @@ organisations that deals link to are in [People and organisations](people-and-or
 - `src/app/(app)/deals/`: the board (`page.tsx`, `Board.tsx` using native drag and drop), the deal drawer
   (`DealDrawer.tsx`), forms (`DealForm.tsx`, `new/`, `[id]/edit/`), `StageSelect.tsx` and the server actions in
   `actions.ts`. **Deals** is in `mainNav` of `nav.ts`.
+- `deals/list/page.tsx`: the deal list (rows, "n deals · £total", filters, sort and pager, all in the page address;
+  unknown or invalid values are ignored), with `ViewSwitch.tsx` to move between Board and List.
+- `deals/[id]/`: the deal page (`page.tsx`) with the stage bar (`StageBar.tsx`), the Won/Lost/Reopen controls
+  (`LostBox.tsx`) and `not-found.tsx`.
 - `src/app/(app)/admin/pipelines/`: the admin pages for pipelines and their stages. **Pipelines** is in `adminNav`.
 
 Every page calls `requireUser()` or `requireAdmin()` and every action checks the user first (see
@@ -42,14 +52,20 @@ Every page calls `requireUser()` or `requireAdmin()` and every action checks the
 ## Domain code
 
 `src/server/deals/rules.ts` holds the pure rules (money in pence, validation, board address). `deals.ts` has the
-board (`getBoard`), the deal (`getDeal`), and add, edit, move, archive and delete. `pipelines.ts` has the admin
+board (`getBoard`), the deal (`getDeal`), and add, edit, move, archive, restore, delete, Won, Lost and Reopen
+(`markWon`, `markLost`, `reopenDeal`). `list.ts` builds the deal list (`listDeals`, `dealFilterOptions`) and `links.ts`
+links other people to a deal and manages followers. `pipelines.ts` has the admin
 changes to pipelines and stages.
 
 - **Board**: one pipeline at a time (no or an unknown id shows the first). A column's count and total cover the
   visible, non-archived deals of its stage; a deal with no value counts as £0.
 - **Private deals**: every `deals` read goes through `visibleDeal()` in `records/visibility.ts`: a private deal is
   seen by its creator or its owner only.
-- **Moves**: `moveDeal` locks the deal row and answers `stale` when the deal is gone, archived, at another
+- **Status**: a deal is open, won or lost. Lost needs a reason (at most 500 characters), recorded on the history
+  event. The board shows open deals only, and a won or lost deal cannot be moved until it is reopened.
+- **Deal labels** are their own list, separate from people labels (managed on the lead sources and labels admin page).
+  The tables are in [Database schema](../data/database-schema.md).
+- **Moves**: `moveDeal` locks the deal row and answers `stale` when the deal is gone, archived, not open, at another
   version or no longer in the stage the drag started from; `same` when the stage does not change. A real move goes
   through `transferDeal`, which closes the open `deal_stage_periods` row, opens a new one and records a `moved`
   timeline event with stage names ("Sales · Qualified" when the pipeline changes).
@@ -61,5 +77,5 @@ changes to pipelines and stages.
 
 `src/seed/deals.ts` is registered in `src/seed/index.ts` (see
 [Migrations and seeding](../operations/migrations-and-seeding.md)). Tests are in `tests/unit/deals-rules.test.ts`,
-`tests/integration/{deals,deals-move,deals-private,board,board-performance,pipelines}.test.ts` and
-`tests/e2e/{deals,deals-private,board,pipelines}.spec.ts`.
+`tests/integration/{deals,deals-move,deals-private,board,board-performance,pipelines,deals-list,deals-status,deals-links,deal-labels,deal-page}.test.ts` and
+`tests/e2e/{deals,deals-private,board,pipelines,deal-list,deal-page,deal-won-lost,deal-labels,deal-restore}.spec.ts`.

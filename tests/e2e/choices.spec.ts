@@ -16,7 +16,7 @@ test("a fresh CRM lists the six lead sources and no labels", async ({ page }) =>
   for (const n of ["Duncan's LinkedIn", "Referral", "Exec dinner", "Inbound", "Event", "Ambassador"]) {
     await expect(sources.getByLabel(`Name of ${n}`)).toHaveValue(n);
   }
-  const labels = page.getByRole("region", { name: "Labels" });
+  const labels = page.getByRole("region", { name: "Labels", exact: true });
   await expect(labels.getByLabel("New label")).toBeVisible();
   await expect(labels.locator("tbody tr")).toHaveCount(0);
 });
@@ -29,7 +29,7 @@ test("an admin renames Event, adds a label, removes Inbound; users see the effec
   await page.getByRole("button", { name: "Rename Event" }).click();
   await expect(page.getByLabel("Name of Events")).toBeVisible();
   await page.getByLabel("New label").fill(" VIP ");
-  await page.getByRole("region", { name: "Labels" }).getByRole("button", { name: "[ ADD ]" }).click();
+  await page.getByRole("region", { name: "Labels", exact: true }).getByRole("button", { name: "[ ADD ]" }).click();
   await expect(page.getByLabel("Name of VIP")).toBeVisible();
   await page.getByRole("button", { name: "Remove Inbound" }).click();
   await expect(page.getByLabel("Name of Inbound")).toHaveCount(0);

@@ -8,7 +8,7 @@ function by(actor: string | null) {
   return actor ? ` by ${actor}` : "";
 }
 
-function Line({ e }: { e: TimelineEvent }) {
+function Line({ e, onDeal }: { e: TimelineEvent; onDeal: boolean }) {
   switch (e.kind) {
     case "added":
       return <>Added{by(e.actorName)}</>;
@@ -23,6 +23,18 @@ function Line({ e }: { e: TimelineEvent }) {
       return <>Archived{by(e.actorName)}</>;
     case "restored":
       return <>Restored{by(e.actorName)}</>;
+    case "won":
+      return <>Marked as won{by(e.actorName)}</>;
+    case "lost":
+      // The reason is plain text from the database (a text node, never markup or a link).
+      return (
+        <>
+          Marked as lost{by(e.actorName)}
+          {e.reason ? `: ${e.reason}` : ""}
+        </>
+      );
+    case "reopened":
+      return <>Reopened{by(e.actorName)}</>;
     case "moved":
       return (
         <>
@@ -38,6 +50,16 @@ function Line({ e }: { e: TimelineEvent }) {
         return (
           <>
             {e.kind === "person_linked" ? messages.deleted_person_linked : messages.deleted_person_unlinked}
+            {by(e.actorName)}
+          </>
+        );
+      }
+      // On a deal (SF-95): "Linked <person> by <name>".
+      if (onDeal) {
+        return (
+          <>
+            {e.kind === "person_linked" ? "Linked " : "Unlinked "}
+            <Link href={`/people/${e.relatedPerson.id}`}>{e.relatedPerson.name}</Link>
             {by(e.actorName)}
           </>
         );
@@ -71,7 +93,7 @@ export function Timeline({ events, heading = "TIMELINE" }: { events: TimelineEve
         {events.map((e) => (
           <li key={e.id}>
             <span>
-              <Line e={e} />
+              <Line e={e} onDeal={heading === "HISTORY"} />
             </span>
             <span className="when">{formatDateTime(e.createdAt)}</span>
           </li>

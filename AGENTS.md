@@ -19,10 +19,13 @@ OAuth code flow and database sessions.
   messages built from a database name). `records/`: people, organisations, lead sources and labels —
   `rules.ts` and `list-query.ts` (pure), `visibility.ts` (the one private rule — creator or owner: every `persons` read uses
   `visiblePerson()`; `visibleDeal()` beside it: every `deals` read uses it), `handover.ts` (hand a deactivated user's private people and private deals, archived included, to an active user), `people.ts`, `organisations.ts`, `choices.ts`, `timeline.ts`, `flash.ts` (one-shot notice after a delete, a hand-over or losing sight of a person or deal; `src/proxy.ts` drops its cookie on the next page load), `form-data.ts`.
-  `deals/`: pipelines, stages and deals — `rules.ts` (pure: money in pence, validation, board address), `deals.ts`
-  (board, deal, add/edit/move/archive/delete; `transferDeal` records every stage move), `pipelines.ts` (admin changes).
+  `deals/`: pipelines, stages and deals — `rules.ts` (pure: money in pence, validation, board address, stage bar, lost
+  reason, `back`), `deals.ts` (board of open deals, deal, add/edit/move/archive/restore/delete, Won/Lost/Reopen, stage
+  seconds; `transferDeal` records every stage move), `list.ts` (the deal list: rows, count and total, filter options),
+  `links.ts` (other linked people, followers), `pipelines.ts` (admin changes).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
-- `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms;
+- `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms, `list/` (the deal
+  list), `[id]/` (the deal page: `StageBar.tsx`, `LostBox.tsx`, `not-found.tsx`), `ViewSwitch.tsx` (Board / List);
   `src/app/(app)/admin/pipelines/` — the Pipelines admin pages.
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals).
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.

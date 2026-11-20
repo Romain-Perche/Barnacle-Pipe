@@ -1,5 +1,5 @@
 "use server";
-// Lead sources and labels (contracts/routes.md): admins only. assertAdminForAction() first; choices.ts
+// Lead sources, labels and deal labels (contracts/routes.md): admins only. assertAdminForAction() first; choices.ts
 // re-checks the actor is an active admin inside its transaction.
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -52,4 +52,13 @@ export async function renameLabel(fd: FormData) {
 }
 export async function removeLabel(fd: FormData) {
   await remove("label", fd);
+}
+export async function addDealLabel(fd: FormData) {
+  await add("deal_label", fd);
+}
+export async function renameDealLabel(fd: FormData) {
+  await rename("deal_label", fd);
+}
+export async function removeDealLabel(fd: FormData) {
+  await remove("deal_label", fd);
 }

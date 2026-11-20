@@ -4,13 +4,14 @@
 import Link from "next/link";
 import { requireUser } from "@/server/auth/session";
 import { getBoard, getDeal, stageChoices } from "@/server/deals/deals";
-import { parseBoardQuery, type BoardParams } from "@/server/deals/rules";
+import { boardHref, parseBoardQuery, type BoardParams } from "@/server/deals/rules";
 import { messages } from "@/server/messages";
 import { readFlash } from "@/server/records/flash";
 import { readTimeline } from "@/server/records/timeline";
 import { AutoSubmit } from "../records/AutoSubmit";
 import { Board } from "./Board";
 import { DealDrawer } from "./DealDrawer";
+import { ViewSwitch } from "./ViewSwitch";
 
 export default async function DealsPage({ searchParams }: { searchParams: Promise<BoardParams> }) {
   const user = await requireUser();
@@ -24,7 +25,9 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
   if (!board) {
     return (
       <>
-        <Head title="Deals" />
+        <Head title="Deals">
+          <ViewSwitch current="board" />
+        </Head>
         {flash && (
           <p className="notice" role="status">
             {flash.text}
@@ -43,13 +46,14 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
   }
 
   const found = query.open ? await getDeal(user.id, query.open) : null;
-  // No drawer for a deal that is missing, archived, private to someone else or in another pipeline.
-  const open = found && !found.archived && found.pipeline.id === board.pipeline.id ? found : null;
+  // No drawer for a deal that is missing, archived, won or lost, private to someone else or in another pipeline.
+  const open = found && !found.archived && found.status === "open" && found.pipeline.id === board.pipeline.id ? found : null;
   const [events, pipelines] = open ? await Promise.all([readTimeline(user.id, { dealId: open.id }), stageChoices()]) : [[], []];
 
   return (
     <>
       <Head title={board.pipeline.name}>
+        <ViewSwitch current="board" />
         <form id="pipeline-picker" className="picker-form" action="/deals" method="get">
           <label className="pick">
             <span>Pipeline:</span>
@@ -96,7 +100,18 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
           <div className="boardmain">
             <Board key={board.pipeline.id} pipelineId={board.pipeline.id} columns={board.columns} openId={open?.id ?? null} />
           </div>
-          {open && <DealDrawer deal={open} pipelines={pipelines} events={events} isAdmin={isAdmin} confirmDelete={query.confirmDelete} />}
+          {open && (
+            <DealDrawer
+              deal={open}
+              pipelines={pipelines}
+              events={events}
+              isAdmin={isAdmin}
+              confirmDelete={query.confirmDelete}
+              hereHref={boardHref(open.pipeline.id, { open: open.id })}
+              closeHref={boardHref(open.pipeline.id)}
+              deleteHref={boardHref(open.pipeline.id, { open: open.id, confirm: "delete" })}
+            />
+          )}
         </div>
       )}
     </>

@@ -14,6 +14,7 @@ export type DealForm = {
   ownerId: string;
   expectedClose: string;
   private: boolean;
+  labelIds: string[];
 };
 
 // A deal's fields once validated (and as compared for the history). Pipeline and stage only on add.
@@ -28,6 +29,8 @@ export type DealFields = {
   ownerId: number | null;
   expectedClose: string | null;
   private: boolean;
+  // Sorted, no duplicates (SF-95): compared as a whole for "Edited by …: Labels".
+  labelIds: number[];
 };
 
 export const MAX_PENCE = 999_999_999_999;
@@ -84,6 +87,7 @@ export function validateDeal(form: DealForm): { ok: true; value: DealFields } | 
       ownerId: toId(form.ownerId),
       expectedClose: close.date,
       private: form.private === true,
+      labelIds: [...new Set((form.labelIds ?? []).map(toId).filter((id): id is number => id !== null))].sort((a, b) => a - b).slice(0, 200),
     },
   };
 }
@@ -100,6 +104,7 @@ export const DEAL_FIELDS: FieldList<DealFields> = [
   ["valuePence", "Value"],
   ["organisationId", "Organisation"],
   ["personId", "Person"],
+  ["labelIds", "Labels"],
   ["ownerId", "Owner"],
   ["expectedClose", "Expected close date"],
   ["private", "Private"],
@@ -107,6 +112,36 @@ export const DEAL_FIELDS: FieldList<DealFields> = [
 
 export function changedDealFields(before: DealFields, after: DealFields): string[] {
   return changedFields(DEAL_FIELDS, before, after);
+}
+
+// --- The deal page (SF-95 data-model.md § Stage bar, § Validation, research.md §8) ------------------------------
+
+export type StageBarItem = { id: number; name: string; state: "done" | "now" | "next"; days: number | null };
+
+// Every stage of the deal's current pipeline in order: before the current one "done", the current one "now" (both
+// with whole days, rounded down), after it "next" with no count, even when the deal was there before.
+export function stageBar(stages: { id: number; name: string; seconds: number }[], currentStageId: number): StageBarItem[] {
+  const at = stages.findIndex((s) => s.id === currentStageId);
+  return stages.map((s, i) => {
+    const state = i < at ? "done" : i === at ? "now" : "next";
+    return { id: s.id, name: s.name, state, days: state === "next" ? null : Math.floor(Math.max(0, s.seconds) / 86400) };
+  });
+}
+
+export const MAX_LOST_REASON = 500;
+
+export function validateLostReason(raw: string): { ok: true; reason: string } | { ok: false; code: "lost_reason_required" | "lost_reason_too_long" } {
+  const reason = (raw ?? "").trim();
+  if (reason === "") return { ok: false, code: "lost_reason_required" };
+  if (reason.length > MAX_LOST_REASON) return { ok: false, code: "lost_reason_too_long" };
+  return { ok: true, reason };
+}
+
+// Where the edit form, archive and delete return (research.md §8): the deal page, the deal list, else (null) the board.
+export const BACK_VALUES = ["page", "list"] as const;
+export type Back = (typeof BACK_VALUES)[number];
+export function parseBack(raw: string | null | undefined): Back | null {
+  return (BACK_VALUES as readonly string[]).includes(raw ?? "") ? (raw as Back) : null;
 }
 
 // --- The board's address (contracts/routes.md § Pages, research.md §9) ------------------------------------------
