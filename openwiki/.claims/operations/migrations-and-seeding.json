@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ceca561f602dc940eafeca85ce7b85dc7f89a79bd871f190ba37ebcb19ecf9d9",
+  "pageVersion": "sha256:e0b9aa81e5668ff1550cc6279873eb87e7396384f614c64c24b10a277b9087a1",
   "claims": [
     {
       "id": "claim_a6e28665edd74e5a8d730754a3b01eab",
@@ -54,11 +54,11 @@
     },
     {
       "id": "claim_2270fb24f8ad45fe86074bdb13f704dd",
-      "statement": "src/seed/deals.ts seeds fake pipelines with stages and fake deals, re-runnably, and is registered last in the seeder registry.",
+      "statement": "src/seed/deals.ts seeds fake pipelines with stages, fake deals, deal labels, won and lost deals, linked people and followers, re-runnably, and is registered last in the seeder registry.",
       "evidence": [
         {
-          "resource": "repo://src/seed/deals.ts#L1-L4",
-          "version": "repo-lines-v1:sha256:d614ab4551aea7150ddfc0bef8a52e872a8d9a6ea716aa070a519ead2794221b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzhkNzlhMDY4ZjRhMWFjNmMyMTRlNGM5NDI4ODVlZDNiYTU0YzQ5NzMzZTEyMDI5OTVkMjhlODY2N2E4MmMyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDFjMDg4N2VkNmJiYTQwYTM2ZDZhODUzNGNmNWJiODcyYjZmNjc1NjZjZmJiMmViMzFkMTViZmZkYzlmY2IxYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWQyNjQyOGMzZjk0ZTExZjEwY2Q4Yzg5NzdmODIzYmMzMTlhZWQ2ZWVlOWRhY2JiMzRmM2E3ZTFhYTI3ZjNjMiJ9"
+          "resource": "repo://src/seed/deals.ts#L1-L6",
+          "version": "repo-lines-v1:sha256:a2646e72c6974c9f6c661ee81095a86b6b0fcf15352aa37fa68f9b59414f1b9f:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzhkNzlhMDY4ZjRhMWFjNmMyMTRlNGM5NDI4ODVlZDNiYTU0YzQ5NzMzZTEyMDI5OTVkMjhlODY2N2E4MmMyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDFjMDg4N2VkNmJiYTQwYTM2ZDZhODUzNGNmNWJiODcyYjZmNjc1NjZjZmJiMmViMzFkMTViZmZkYzlmY2IxYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWQyNjQyOGMzZjk0ZTExZjEwY2Q4Yzg5NzdmODIzYmMzMTlhZWQ2ZWVlOWRhY2JiMzRmM2E3ZTFhYTI3ZjNjMiJ9"
         },
         {
           "resource": "repo://src/seed/index.ts",
@@ -69,6 +69,6 @@
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T10:02:45.004Z"
+    "at": "2026-11-20T11:58:24.937Z"
   }
 }

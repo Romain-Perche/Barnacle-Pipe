@@ -57,6 +57,11 @@
       "id": "deals",
       "label": "Deals",
       "description": "Pipelines, stages and the deal board, with deals kept private by their person."
+    },
+    {
+      "id": "deal-data",
+      "label": "Deal data",
+      "description": "Tables that keep pipelines, stages, deals, their labels, linked people and followers."
     }
   ],
   "actors": [
@@ -225,7 +230,9 @@
       "sources": [
         "src/app/(app)/deals",
         "src/server/deals/deals.ts",
-        "src/server/deals/rules.ts"
+        "src/server/deals/rules.ts",
+        "src/server/deals/list.ts",
+        "src/server/deals/links.ts"
       ],
       "zone": "app"
     },
@@ -342,7 +349,7 @@
     {
       "id": "pipelines-table",
       "label": "Postgres pipelines",
-      "group": "database",
+      "group": "deal-data",
       "sources": [
         "migrations/0004_pipelines_deals.sql"
       ],
@@ -351,7 +358,7 @@
     {
       "id": "stages-table",
       "label": "Postgres stages",
-      "group": "database",
+      "group": "deal-data",
       "sources": [
         "migrations/0004_pipelines_deals.sql"
       ],
@@ -360,7 +367,7 @@
     {
       "id": "deals-table",
       "label": "Postgres deals",
-      "group": "database",
+      "group": "deal-data",
       "sources": [
         "migrations/0004_pipelines_deals.sql"
       ],
@@ -369,9 +376,45 @@
     {
       "id": "deal-stage-periods-table",
       "label": "Postgres deal stage periods",
-      "group": "database",
+      "group": "deal-data",
       "sources": [
         "migrations/0004_pipelines_deals.sql"
+      ],
+      "zone": "postgres"
+    },
+    {
+      "id": "deal-labels-table",
+      "label": "Deal labels",
+      "group": "deal-data",
+      "sources": [
+        "migrations/0005_deal_page.sql"
+      ],
+      "zone": "postgres"
+    },
+    {
+      "id": "deal-label-links-table",
+      "label": "Deal label links",
+      "group": "deal-data",
+      "sources": [
+        "migrations/0005_deal_page.sql"
+      ],
+      "zone": "postgres"
+    },
+    {
+      "id": "deal-people-table",
+      "label": "Deal linked people",
+      "group": "deal-data",
+      "sources": [
+        "migrations/0005_deal_page.sql"
+      ],
+      "zone": "postgres"
+    },
+    {
+      "id": "deal-followers-table",
+      "label": "Deal followers",
+      "group": "deal-data",
+      "sources": [
+        "migrations/0005_deal_page.sql"
       ],
       "zone": "postgres"
     }
@@ -1170,6 +1213,55 @@
       "data": "fake deals",
       "sources": [
         "src/seed/deals.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deal-labels-table",
+      "data": "deal labels on deals",
+      "sources": [
+        "src/server/deals/deals.ts",
+        "migrations/0005_deal_page.sql"
+      ]
+    },
+    {
+      "from": "deal-labels-table",
+      "to": "deals-board",
+      "data": "deal labels for list and page",
+      "sources": [
+        "src/server/deals/list.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deal-people-table",
+      "data": "people linked or unlinked on a deal",
+      "sources": [
+        "src/server/deals/links.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deal-followers-table",
+      "data": "follow or unfollow a deal",
+      "sources": [
+        "src/server/deals/links.ts"
+      ]
+    },
+    {
+      "from": "choices-admin",
+      "to": "deal-labels-table",
+      "data": "deal label changes",
+      "sources": [
+        "src/server/records/choices.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "deal-labels-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0005_deal_page.sql"
       ]
     }
   ]
