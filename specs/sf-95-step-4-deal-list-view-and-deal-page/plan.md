@@ -183,6 +183,25 @@ organisations and deals. Privacy stays in `visibility.ts` (`visibleDeal`, `visib
 
 No blueprint applies, so there is no blueprint exception and no `Departs from blueprint` line for `docs/DECISIONS.md`.
 
+## Fix round 1
+
+**Problem.** The AI review (feature test US3 scenario 5 and the code review) found that `/deals/list?owner=99999` or
+`?label=99999` shows "0 deals · £0" and "No deals match these filters." while the filter row shows "Any owner" /
+"Any label". FR-013 says unknown values in the address are ignored.
+
+**Cause.** `src/app/(app)/deals/list/page.tsx` keeps `pipeline`, `stage` and `status` only when they are known, but
+passes `owner` and `label` from `parseDealsQuery` to `listDeals` and `hasDealFilters` unchecked.
+
+**Fix.** Move the "keep only known values" step out of the page into a pure function `knownDealsQuery(parsed, options)`
+in `src/server/records/list-query.ts`: it keeps `pipeline` when it is in `options.pipelines`, `stage` when the pipeline
+is kept and the stage is in `options.stages`, `owner` when it is in `options.owners`, `label` when it is in
+`options.labels`, `status` only with closed or archived shown; everything else unchanged. The page uses it for the
+query it lists, counts, totals, shows back and passes to `hasDealFilters`. An owner with no visible deal is not an
+option, so it is ignored too (the list would be empty anyway, and the filter row could not show it).
+
+**Files.** `src/server/records/list-query.ts`, `src/app/(app)/deals/list/page.tsx`, `tests/unit` (list-query test),
+`tests/e2e/deal-list.spec.ts`. No new dependency, no new outside service.
+
 ## Outside services
 
 - Supabase Postgres (through the Supavisor connection pooler): no public schema found on GitHub (looked in github.com/supabase/supavisor at commit e59909dc629230a4c07af3df16957ef22a184774, which only has an OpenAPI test for its own management API, and github.com/supabase/supabase, during SF-90 and SF-93; the app speaks the standard Postgres protocol, the new code only adds tables and columns to the app's own database, and tests use a real local Postgres rather than a fake)

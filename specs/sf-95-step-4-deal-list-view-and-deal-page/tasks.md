@@ -176,6 +176,12 @@ description: "Tasks for SF-95 Deal list view and deal page"
 - [X] T053 Run `quickstart.md` end to end: `npm test && npm run test:e2e && npm run typecheck` green with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; the SF-93 board, deals and pipelines tests still pass
 - [X] T054 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its schema) — keep Google Sign-In as it is and update the Supabase Postgres line: no fake, a real local PostgreSQL 17, no public schema on GitHub, follows https://supabase.com/docs/guides/database/connecting-to-postgres, and the SF-95 code (`src/server/deals/list.ts`, `links.ts`) keeps to the same pooler limits with tables from `migrations/0005_deal_page.sql` — and `## Schemas` (each schema's GitHub URL at its commit: oauth2-api.json unchanged, nothing added); also describe the new fake won/lost deals, labels, links and followers in the `reset-db.sh` line
 
+## Fix round 1: unknown owner and label in the list address
+
+- [ ] T055 Write the failing tests first (`// covers SF-95 FR-013, US3 scenario 5, Edge Cases (unknown owner or label)`): a unit test of `knownDealsQuery` in `tests/unit` (owner and label not in the options become `null`, known ones are kept; pipeline, stage and status keep today's rules; `hasDealFilters` of the result is false for `owner=99999` alone) and an e2e case in `tests/e2e/deal-list.spec.ts`: `/deals/list?owner=99999` and `/deals/list?label=99999` show the same count, total and first rows as `/deals/list`, the filter row shows "Any owner" / "Any label", no "No deals match these filters." and no `[ CLEAR ]`
+- [ ] T056 Add `knownDealsQuery(parsed, options)` to `src/server/records/list-query.ts` (plan.md § Fix round 1) and use it in `src/app/(app)/deals/list/page.tsx` instead of the inline pipeline/stage/status checks; T055 passes
+- [ ] T057 Run `npm test && npm run test:e2e && npm run typecheck` green with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`
+
 ---
 
 ## Dependencies & Execution Order
