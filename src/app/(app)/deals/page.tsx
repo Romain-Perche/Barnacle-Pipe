@@ -15,13 +15,11 @@ import { DealDrawer } from "./DealDrawer";
 export default async function DealsPage({ searchParams }: { searchParams: Promise<BoardParams> }) {
   const user = await requireUser();
   const query = parseBoardQuery(await searchParams);
-  const [board, deleted, hidden] = await Promise.all([
+  const [board, flash] = await Promise.all([
     getBoard(user.id, query.pipeline),
-    readFlash("deal_deleted"),
-    readFlash("deal_no_longer_visible"),
+    readFlash(["deal_deleted", "deal_no_longer_visible"]),
   ]);
   const isAdmin = user.role === "admin";
-  const flash = deleted ?? hidden;
 
   if (!board) {
     return (

@@ -3,7 +3,8 @@
 import { sql, type Sql } from "@/server/db";
 import { visibleDeal, visiblePerson } from "@/server/records/visibility";
 
-export type EventKind = "added" | "edited" | "archived" | "restored" | "person_linked" | "person_unlinked" | "moved";
+export type EventKind =
+  "added" | "edited" | "archived" | "restored" | "person_linked" | "person_unlinked" | "handed_over" | "moved";
 // Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)").
 export type MoveCause = "stage_deleted" | "pipeline_deleted";
 
@@ -12,7 +13,10 @@ export type TimelineEvent = {
   kind: EventKind;
   actorName: string | null;
   fields: string[] | null;
+  // On person_linked / person_unlinked: null once the person was deleted ("A deleted person …", SF-92 FR-005).
   relatedPerson: { id: number; name: string } | null;
+  // On handed_over: the new owner (SF-92 FR-011).
+  relatedUserName: string | null;
   fromStage: string | null;
   toStage: string | null;
   cause: MoveCause | null;
@@ -28,6 +32,7 @@ export async function recordEvent(
     actorId: number | null;
     fields?: string[];
     relatedPersonId?: number;
+    relatedUserId?: number;
     fromStage?: string;
     toStage?: string;
     cause?: MoveCause | null;
@@ -37,13 +42,15 @@ export async function recordEvent(
   const organisationId = "organisationId" in event ? event.organisationId : null;
   const dealId = "dealId" in event ? event.dealId : null;
   await db`
-    insert into timeline_events (person_id, organisation_id, deal_id, kind, actor_id, fields, related_person_id, from_stage, to_stage, cause)
+    insert into timeline_events (person_id, organisation_id, deal_id, kind, actor_id, fields, related_person_id, related_user_id,
+                                 from_stage, to_stage, cause)
     values (${personId}, ${organisationId}, ${dealId}, ${event.kind}, ${event.actorId}, ${event.fields ?? null},
-            ${event.relatedPersonId ?? null}, ${event.fromStage ?? null}, ${event.toStage ?? null}, ${event.cause ?? null})`;
+            ${event.relatedPersonId ?? null}, ${event.relatedUserId ?? null}, ${event.fromStage ?? null},
+            ${event.toStage ?? null}, ${event.cause ?? null})`;
 }
 
 // Newest first. Nothing for a person or deal the viewer cannot see; on an organisation, events about a person the
-// viewer cannot see are left out.
+// viewer cannot see are left out (events about a deleted person have no related person and stay).
 export async function readTimeline(viewerId: number, target: Target): Promise<TimelineEvent[]> {
   const where =
     "personId" in target
@@ -57,14 +64,16 @@ export async function readTimeline(viewerId: number, target: Target): Promise<Ti
   const rows = await sql<
     {
       id: number; kind: EventKind; actor_name: string | null; fields: string[] | null; rp_id: number | null; rp_name: string | null;
-      from_stage: string | null; to_stage: string | null; cause: MoveCause | null; created_at: Date;
+      ru_name: string | null; from_stage: string | null; to_stage: string | null; cause: MoveCause | null; created_at: Date;
     }[]
   >`
     select e.id::int as id, e.kind, u.name as actor_name, e.fields, rp.id::int as rp_id,
-           btrim(rp.first_name || ' ' || rp.last_name) as rp_name, e.from_stage, e.to_stage, e.cause, e.created_at
+           btrim(rp.first_name || ' ' || rp.last_name) as rp_name, ru.name as ru_name, e.from_stage, e.to_stage, e.cause,
+           e.created_at
     from timeline_events e
     left join users u on u.id = e.actor_id
     left join persons rp on rp.id = e.related_person_id
+    left join users ru on ru.id = e.related_user_id
     where ${where}
     order by e.created_at desc, e.id desc`;
   return rows.map((r) => ({
@@ -73,6 +82,7 @@ export async function readTimeline(viewerId: number, target: Target): Promise<Ti
     actorName: r.actor_name,
     fields: r.fields,
     relatedPerson: r.rp_id === null ? null : { id: r.rp_id, name: r.rp_name ?? "" },
+    relatedUserName: r.ru_name,
     fromStage: r.from_stage,
     toStage: r.to_stage,
     cause: r.cause,

@@ -1,20 +1,40 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:dff7468cee05fb116291cb8f6fc92813e8e933a31ff4eec902d6c62a90b58e79",
+  "pageVersion": "sha256:a84795a2b6f38c44bf6c98a7c78b86ecc9293c2a9c5c14df23b120496a9dbd40",
   "claims": [
     {
-      "id": "claim_b9a6846b426a47ee91c2102f9bbd3bfa",
-      "statement": "A private person is visible only to their creator; every persons read uses visiblePerson().",
+      "id": "claim_073174519ebe44d7a116c47962b22649",
+      "statement": "Deleting a person is admin only and re-checked inside the transaction.",
       "evidence": [
         {
-          "resource": "repo://src/server/records/visibility.ts",
-          "version": "repo-file-v1:sha256:568d351b165b38aec488f079e9692a32532da083cf7c79973c7581134af5778f"
+          "resource": "repo://src/server/records/people.ts#L305-L321",
+          "version": "repo-lines-v1:sha256:8ea02e5bae4f88c87f98cd38deaf1ca84e66daec85d67f41bddc3257bbc7dc62:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
         }
       ]
     },
     {
-      "id": "claim_dc1c074c7f0244f884e6a01127bd90ce",
-      "statement": "After a delete a 60-second httpOnly crm_flash cookie carries the notice, and src/proxy.ts clears it on the next GET.",
+      "id": "claim_a2385bdc49214a2b84827de9a9cd07f3",
+      "statement": "A private person is visible to their creator and current owner; every persons read uses visiblePerson().",
+      "evidence": [
+        {
+          "resource": "repo://src/server/records/visibility.ts",
+          "version": "repo-file-v1:sha256:d2e40c5ebbbb89d1ae6367ad52a956cece42e7344d051af75a071d0fd92fed7e"
+        }
+      ]
+    },
+    {
+      "id": "claim_1a360a7a48ec44c4ac52e7a032d7d48b",
+      "statement": "A hand-over moves a deactivated user's private people to an active user in one locked transaction, bumping version and writing a handed_over event per person.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/records/handover.ts",
+          "version": "repo-file-v1:sha256:2911c3c16132d81a51c9268ccb42f95e6d07897bfc80b344904b7a1a3434a659"
+        }
+      ]
+    },
+    {
+      "id": "claim_211c5b9b55a548ccbf7a3cff2cacd6f8",
+      "statement": "After a delete or hand-over a 60-second httpOnly crm_flash cookie carries the notice, and src/proxy.ts clears it on the next GET.",
       "evidence": [
         {
           "resource": "repo://src/proxy.ts",
@@ -22,23 +42,13 @@
         },
         {
           "resource": "repo://src/server/records/flash.ts",
-          "version": "repo-file-v1:sha256:1da6535aeece9b36254ee3fee5ac05003c389bc5e4c6daff796227f024e236c4"
-        }
-      ]
-    },
-    {
-      "id": "claim_073174519ebe44d7a116c47962b22649",
-      "statement": "Deleting a person is admin only and re-checked inside the transaction.",
-      "evidence": [
-        {
-          "resource": "repo://src/server/records/people.ts#L300-L311",
-          "version": "repo-lines-v1:sha256:a28f0cd83373b6992bd31dcca52f47825ee0cfcdd7e1e50d5951a7dc4174069b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
+          "version": "repo-file-v1:sha256:2743e4c366490599ba4ac777f48a84a919153556962340ee27ff60d6a7c0f763"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-19T16:37:06.027Z"
+    "at": "2026-11-19T18:23:26.676Z"
   }
 }

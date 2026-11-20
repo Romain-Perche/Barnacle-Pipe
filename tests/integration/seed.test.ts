@@ -112,7 +112,7 @@ describe("fake people and organisations", () => {
     expect(Number(c.labels)).toBe(3);
     expect(Number(c.consents)).toBe(2);
     expect(Number(c.sizes)).toBe(SIZES.length);
-    expect(Number(c.owners)).toBe(4);
+    expect(Number(c.owners)).toBe(5); // the four active fake users, and Alan Fake's private people (SF-92)
     expect(Number(c.no_org)).toBeGreaterThan(0);
     expect(Number(c.archived_people)).toBeGreaterThan(0);
     expect(Number(c.archived_orgs)).toBeGreaterThan(0);
@@ -209,5 +209,27 @@ describe("fake pipelines and deals", () => {
     const lines = await runSeeders(sql);
     expect(lines).toContain("already there pipelines and deals");
     expect(await snapshot()).toEqual(before);
+  });
+});
+
+// covers FR-015 (SF-92): fake private people owned by someone other than their creator, and by deactivated Alan Fake
+describe("fake private people (SF-92)", () => {
+  it("adds a private person whose owner is not their creator and private people owned by Alan Fake, once", async () => {
+    await runSeeders(sql);
+    const [c] = await sql`
+      select (select count(*)::int from persons where private and owner_id <> created_by) as owner_not_creator,
+             (select count(*)::int from persons p join users u on u.id = p.owner_id where p.private and u.name = 'Alan Fake') as alans,
+             (select count(*)::int from timeline_events e join organisations o on o.id = e.organisation_id
+               join persons p on p.id = e.related_person_id where p.private and o.name = 'Fakeco Ltd') as linked`;
+    expect(c.owner_not_creator).toBeGreaterThanOrEqual(1);
+    expect(c.alans).toBe(2);
+    expect(c.linked).toBeGreaterThanOrEqual(1);
+    const people = await sql`select first_name || ' ' || last_name as name from persons where private order by 1`;
+    expect(people.map((p) => p.name)).toEqual(expect.arrayContaining(["Pat Privatefake", "Robin Leftfake", "Sam Leftfake"]));
+    const rows = await count("persons");
+    const events = await count("timeline_events");
+    await runSeeders(sql);
+    expect(await count("persons")).toBe(rows);
+    expect(await count("timeline_events")).toBe(events);
   });
 });

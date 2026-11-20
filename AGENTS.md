@@ -17,8 +17,8 @@ OAuth code flow and database sessions.
   (`requireUser`, `requireAdmin`, `assertAdminForAction`), `auth/sign-in.ts`, `auth/google.ts`,
   `users.ts`, `env.ts` (`isFakeAllowed`, `isPreview`), `messages.ts` (every user-facing message; `templates` for
   messages built from a database name). `records/`: people, organisations, lead sources and labels —
-  `rules.ts` and `list-query.ts` (pure), `visibility.ts` (the one private-person rule: every `persons` read uses
-  `visiblePerson()`; `visibleDeal()` beside it: every `deals` read uses it), `people.ts`, `organisations.ts`, `choices.ts`, `timeline.ts`, `flash.ts` (one-shot delete notice; `src/proxy.ts` drops its cookie on the next page load), `form-data.ts`.
+  `rules.ts` and `list-query.ts` (pure), `visibility.ts` (the one private rule — creator or owner: every `persons` read uses
+  `visiblePerson()`; `visibleDeal()` beside it: every `deals` read uses it), `handover.ts` (hand a deactivated user's private people to an active user), `people.ts`, `organisations.ts`, `choices.ts`, `timeline.ts`, `flash.ts` (one-shot notice after a delete, a hand-over or losing sight of a person or deal; `src/proxy.ts` drops its cookie on the next page load), `form-data.ts`.
   `deals/`: pipelines, stages and deals — `rules.ts` (pure: money in pence, validation, board address), `deals.ts`
   (board, deal, add/edit/move/archive/delete; `transferDeal` records every stage move), `pipelines.ts` (admin changes).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).

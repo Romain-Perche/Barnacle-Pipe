@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5dc9e3c7b63267051754bed2a50005b18868c407b9ff5664c6a5e8eefebe7c0f",
+  "pageVersion": "sha256:28c6983380ead774700cd9d0e8c565e133c2869c6183bb7786d04a5fd67fa2e5",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L25",
-          "version": "repo-lines-v1:sha256:3823472814b415d000c4f3164496ae6bc1616b4dc61eb293ee50d16c5b75e2c4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L24",
+          "version": "repo-lines-v1:sha256:1e60683c7e543254918ca6798d7728914fa5e294c992173200fbb443dafefe39:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -71,10 +71,20 @@
           "version": "repo-file-v1:sha256:f950b975b57d1971c6e43a33dfabb008e67966acc238e8d9f30b757e1b0f7e43"
         }
       ]
+    },
+    {
+      "id": "claim_a3279ca45e04437a8e1a1eae644325d5",
+      "statement": "Migration 0003 makes timeline_events.related_person_id on delete set null, adds a handed_over event kind with related_user_id, and a partial index on private persons' owner_id.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0003_private_owner_handover.sql",
+          "version": "repo-file-v1:sha256:750c5e3a21f7fc73665cd3b3f56998fd4e4d63f2e63bf2bdcac602dc8bfbd07f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-19T18:56:29.439Z"
+    "at": "2026-11-19T18:23:26.676Z"
   }
 }

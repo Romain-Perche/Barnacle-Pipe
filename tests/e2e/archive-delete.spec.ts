@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { templates } from "@/server/messages";
 import { closeDb, db, resetAndSeed, signInAs } from "./helpers";
-import { actionField, details, email, expectNotFound, personId, save, timeline } from "./records";
+import { actionField, details, email, expectNotFound, organisationId, personId, pickOrganisation, save, timeline } from "./records";
 
 test.beforeEach(resetAndSeed);
 test.afterAll(closeDb);
@@ -83,4 +83,29 @@ test("deleting an organisation leaves its people without one; an archived organi
   await expectNotFound(page, new URL(orgUrl).pathname);
   await page.goto(`/people/${cleo}`);
   await expect(details(page).getByRole("link", { name: "Sample Studios Fake" })).toHaveCount(0);
+});
+
+// covers SF-92 US2 scenario 1, FR-005, FR-006
+test("deleting a linked person leaves an anonymous line on the organisation's timeline", async ({ page, browser }) => {
+  await signInAs(page, "Linus Fake", "/people/new");
+  await page.getByLabel("First name").fill("Gone");
+  await page.getByLabel("Last name").fill("Soonfake");
+  await pickOrganisation(page, "Fakeco", "Fakeco Ltd");
+  await save(page);
+  await expect(page).toHaveURL(/\/people\/\d+$/);
+  const id = await personId("Gone Soonfake");
+  const org = await organisationId("Fakeco Ltd");
+
+  const ctx = await browser.newContext();
+  const ada = await ctx.newPage();
+  await signInAs(ada, "Ada Fake", `/people/${id}?confirm=delete`);
+  await ada.getByRole("button", { name: "[ DELETE FOR GOOD ]" }).click();
+  await expect(ada).toHaveURL(/\/people$/);
+  await ada.goto(`/organisations/${org}`);
+  const line = timeline(ada).filter({ hasText: "A deleted person was linked by Linus Fake" });
+  await expect(line).toHaveCount(1);
+  await expect(line.getByRole("link")).toHaveCount(0);
+  await expect(line.locator(".when")).toHaveText(/\d{1,2} \w{3} \d{4}.*\d{2}:\d{2}/);
+  await expect(ada.getByRole("main")).not.toContainText("Soonfake");
+  await ctx.close();
 });

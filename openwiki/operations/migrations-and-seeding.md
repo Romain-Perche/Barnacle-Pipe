@@ -5,7 +5,7 @@ description: How npm run db:migrate applies migrations/*.sql safely through Supa
 tags: [migrations, seed, database, operations, fake-data]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T18:56:29.439Z
+    at: 2026-11-19T16:37:06.027Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -17,7 +17,7 @@ sources:
     resource: repo://src/seed/index.ts
   - id: openwiki-source-010903950424d10f20cb451d
     resource: repo://src/seed/users.ts
-generated: { by: "claude-code", at: "2026-11-19T18:56:29.439Z" }
+generated: { by: "claude-code", at: "2026-11-19T16:37:06.027Z" }
 ---
 
 # Migrations and fake data
@@ -51,7 +51,7 @@ and otherwise prints "Fake data can only be loaded when APP_ENV is development o
 (see [Configuration and environments](./configuration-and-environments.md)).
 
 It then runs `runSeeders()` from `src/seed/index.ts`, the **seeder registry**: an ordered list of
-`{ name, run(sql) }` entries, each returning lines to print. Today it holds three seeders. The first,
+`{ name, run(sql) }` entries, each returning lines to print. Today it holds two seeders. The first,
 `src/seed/users.ts`, inserts five clearly fake `@barnacle.ai` users — Ada Fake and Grace Fake
 (admins), Linus Fake and Margaret Fake (users), Alan Fake (deactivated) — each with a `user_changes`
 `added` row, in its own transaction and with `on conflict (email) do nothing`. Seeders must be
@@ -60,9 +60,6 @@ The second, `src/seed/people.ts`, runs after it: it needs the fake users as owne
 organisations, people, labels and timeline rows for the
 [People and organisations](../features/people-and-organisations.md) pages. Migration
 `0002_people_organisations.sql` creates their tables.
-The third, `src/seed/deals.ts`, adds five fake pipelines with their stages and a set of clearly fake deals owned
-by the fake users (pipelines by name, deals skipped when the title exists). Migration `0004_pipelines_deals.sql`
-creates their tables; see [Deals, pipelines and the board](../features/deals-and-pipelines.md).
 
 Later features append their seeder to the registry; see [Adding a feature](../workflows/adding-a-feature.md).
 Fake data never uses the real team's names.

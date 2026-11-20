@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createSession, lookupSession } from "@/server/auth/session";
 import { closeDb, sql } from "@/server/db";
 import { addUser, deactivate, listUsers, makeAdmin, reactivate, removeAdmin } from "@/server/users";
-import { count, getUser, makeUser, resetDb, type TestUser } from "./db-helpers";
+import { count, getUser, makePerson, makeUser, resetDb, type TestUser } from "./db-helpers";
 
 let ada: TestUser;
 let grace: TestUser;
@@ -141,5 +141,20 @@ describe("listUsers", () => {
       "linus@barnacle.ai",
       "alan@barnacle.ai",
     ]);
+  });
+});
+
+// covers FR-009 (SF-92): the Users page count of private people, deactivated users only
+describe("listUsers private_people", () => {
+  it("counts a deactivated user's private people, archived included, and shows 0 for active users", async () => {
+    const alan = await makeUser({ email: "alan@barnacle.ai", name: "Alan Fake", status: "deactivated" });
+    await makePerson({ createdBy: alan.id, private: true });
+    await makePerson({ createdBy: alan.id, private: true, archived: true });
+    await makePerson({ createdBy: alan.id, private: false });
+    await makePerson({ createdBy: linus.id, private: true });
+    const rows = await listUsers();
+    expect(rows.find((u) => u.id === alan.id)!.private_people).toBe(2);
+    expect(rows.find((u) => u.id === linus.id)!.private_people).toBe(0);
+    expect(rows.find((u) => u.id === ada.id)!.private_people).toBe(0);
   });
 });

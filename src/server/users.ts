@@ -12,6 +12,8 @@ export type UserRow = {
   role: "admin" | "user";
   status: "active" | "deactivated";
   last_sign_in_at: Date | null;
+  // Private people they own (SF-92 FR-009); counted for deactivated users only, 0 for active ones.
+  private_people: number;
 };
 export type ChangeCode = "forbidden" | "invalid_domain" | "duplicate" | "last_admin" | "self_deactivate";
 export type ChangeResult = { ok: true } | { ok: false; code: ChangeCode };
@@ -25,7 +27,10 @@ class Refused extends Error {
 
 export async function listUsers(): Promise<UserRow[]> {
   return sql<UserRow[]>`
-    select id::int as id, email, name, role, status, last_sign_in_at from users
+    select id::int as id, email, name, role, status, last_sign_in_at,
+           case when status = 'deactivated'
+                then (select count(*)::int from persons p where p.private and p.owner_id = users.id) else 0 end as private_people
+    from users
     order by status = 'active' desc, lower(name), email`;
 }
 
