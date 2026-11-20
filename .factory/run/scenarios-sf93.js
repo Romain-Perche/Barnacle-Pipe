@@ -562,6 +562,8 @@ const historyItems = async (page) => drawer(page).getByRole("region", { name: "H
   await run("US6 scenario 4", async () => {
     // Gus Lorem is private to Ada (creator); make Ada his owner too
     sql(`update persons set owner_id=${uid("Ada Fake")} where first_name='Gus' and last_name='Lorem'`);
+    // The seed's person for each deal depends on person ids (SF-92 added people): link Gus Lorem here.
+    sql(`update deals set person_id=(select id from persons where first_name='Gus' and last_name='Lorem') where title='Lorem Logistics tracking'`);
     const id = did("Lorem Logistics tracking"); const per = one(`select first_name from persons p join deals d on d.person_id=p.id where d.id=${id}`);
     const s = one(`select s.name||'|'||p.name from deals d join stages s on s.id=d.stage_id join pipelines p on p.id=s.pipeline_id where d.id=${id}`).split("|");
     await go(linus, `/deals?pipeline=${pid(s[1])}&open=${id}`);

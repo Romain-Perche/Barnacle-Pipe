@@ -60,8 +60,8 @@
     Archive" is archived), labels Hot/Investor/Partner, and (SF-93)
     the pipelines Sales (Lead in, Qualified, Proposal, Negotiation, Closing — Closing empty), Ambassadors, Fractional
     CTO, Exec Dinner and "Ada Fake's pipeline" with 44 fake deals: "Old fake opportunity" is archived, "Fake secret
-    project" and "Ada's fake prospect 2" are private (created by Ada Fake), "Lorem Logistics tracking" has the private
-    person Gus Lorem, some deals have a "moved" history line. The seed already has a "Fakeco website" deal: scenario
+    project" and "Ada's fake prospect 2" are private (created by Ada Fake), "Lorem Logistics tracking" is NOT linked to
+    Gus Lorem since the SF-92 merge (the seed picks people by id; `scenarios-sf93.js` links him by SQL for US6-4), some deals have a "moved" history line. The seed already has a "Fakeco website" deal: scenario
     scripts that add their own should delete it first (the browser tests do).
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
     (real drag with `locator.dragTo`; a failed drag by aborting the server action POST with `page.route`). Board
