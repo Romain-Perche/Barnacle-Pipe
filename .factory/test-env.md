@@ -96,6 +96,15 @@
     `email:work`…); preview/report regions "Rows not imported", "Warnings", "First people"; consent radios "Subscribed" /
     "Unsubscribed" (`exact: true`). Seeded labels are Hot, Investor, Partner, so "Cold" is not on the list.
     `reset-db.sh` also empties `csv_imports`.
+  - SF-103 AI-review scenario script `scenarios-sf103.js` (all 40 US1–US3 scenarios and edge cases 1–24, ~4 min, against
+    :3000/crm_dev on fresh fake data; it makes its own CSV files in memory, adds "Ada Example" and the private "Hidden Privfake"
+    (Linus) by SQL, a removed lead source/label by SQL; Edge 22 makes the import fail part-way with a temporary trigger on
+    `timeline_events` (dropped after); Edge 24 replays the [ IMPORT ] form post without cookies):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf103.js` (pass scenario
+    name prefixes, e.g. `"Edge case 7"`, to run only those; US1 3–5 need US1 2 first). Notes: the heading
+    "Source" is suggested as Lead source, so a later "Lead source" column is suggested "Don't import"; the report lists only rows
+    not imported (an imported row's values appear on the preview and the person's page); wait ~1 s after the columns URL before
+    using the selects (the client navigation re-renders once).
   - Deal list and deal page scenarios (SF-95) are covered by `tests/e2e/{deal-page,deal-won-lost,deal-list,deal-restore,deal-labels}.spec.ts`.
     Selectors: the deal page's stage bar is the `list` named "Stages" (current stage `aria-current="step"`, other stages of
     an open deal are buttons "Move to <stage>"), the strip is `dl.strip`, the Lost box is the `dialog` named "Why was this
