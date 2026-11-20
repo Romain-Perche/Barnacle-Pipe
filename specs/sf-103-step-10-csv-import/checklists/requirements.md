@@ -32,5 +32,5 @@
 ## Notes
 
 - File-format terms (CSV, UTF-8, byte order mark, separators) are kept: they describe what the user's file must look like, not how the CRM is built.
-- No clarification markers: the open choices were settled with defaults that follow existing decisions (see Assumptions). The ones most worth confirming in `/speckit-clarify`: existing records are left as they are (no update from CSV); unknown lead sources and labels are reported, not added; the user must choose the consent of rows without one (no default); the import page design (no design options yet).
+- No clarification markers: the open choices were settled with defaults that follow existing decisions (see Assumptions). Clarify (2026-11-20) confirmed: design B, existing records left as they are, consent chosen by the user. Unknown lead sources and labels are reported, not added (follows the admin-only lists decision).
 - Validation passed on the first iteration.
