@@ -16,12 +16,16 @@ sources:
     resource: repo://src/app/(app)/nav.ts
   - id: openwiki-source-f34ac1e549d94dc3ac475ae4
     resource: repo://src/proxy.ts
+  - id: openwiki-source-9ebb64fab176b6e210f7c3a3
+    resource: repo://src/server/notifications.ts
   - id: openwiki-source-16c334cbe6c5a2c7ad77a065
     resource: repo://src/server/records/handover.ts
+  - id: openwiki-source-615b00ed02d4d38087bb7a47
+    resource: repo://src/server/records/notes.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T11:20:44.617Z
-generated: { by: "claude-code", at: "2026-11-20T11:20:44.617Z" }
+    at: 2026-11-20T16:18:56.075Z
+generated: { by: "claude-code", at: "2026-11-20T16:18:56.075Z" }
 ---
 
 # People and organisations
@@ -70,7 +74,14 @@ the user first (see [Sessions and access control](../auth/sessions-and-access-co
 - **Delete notice**: after a delete the action sets a 60-second `crm_flash` cookie holding a code and the
   deleted name; the next page shows it once (`flash.ts`) and `src/proxy.ts` clears the cookie on the next GET.
   The same cookie carries the hand-over notices (`handed_over` with a people count and a deals count, and a "nothing to hand over" code).
+  The note codes (`note_deleted`, `note_not_found`) and the "no longer visible" codes use it too.
   Only the known codes are shown, and the text comes from `src/server/messages.ts`.
+- **Notes and @mentions**: a note is a `timeline_events` row of kind `note`, added, edited (with an optimistic
+  version) and deleted by `src/server/records/notes.ts` through `src/app/(app)/records/note-actions.ts`. Text
+  rules and `@[user:<id>]` mention tokens are in `notes-rules.ts`; mentions are `note_mentions` rows and a
+  user's mentions appear on the Notifications page (`src/server/notifications.ts`) only while the record is
+  visible to them. `RecordTimeline.tsx` draws the timeline of every record page. See
+  [Database schema](../data/database-schema.md) and [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Fake data
 
