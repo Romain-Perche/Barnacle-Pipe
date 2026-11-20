@@ -5,7 +5,7 @@ description: How npm run db:migrate applies migrations/*.sql safely through Supa
 tags: [migrations, seed, database, operations, fake-data]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T16:37:06.027Z
+    at: 2026-11-20T10:02:45.004Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -13,11 +13,13 @@ sources:
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-919c449abaee368e1ca5c9bf
     resource: repo://scripts/seed.ts
+  - id: openwiki-source-ab1c1cfa98da1cff6ba18bf0
+    resource: repo://src/seed/deals.ts
   - id: openwiki-source-1c34aa4b66ba96eefc78bf08
     resource: repo://src/seed/index.ts
   - id: openwiki-source-010903950424d10f20cb451d
     resource: repo://src/seed/users.ts
-generated: { by: "claude-code", at: "2026-11-19T16:37:06.027Z" }
+generated: { by: "claude-code", at: "2026-11-20T10:02:45.004Z" }
 ---
 
 # Migrations and fake data
@@ -51,7 +53,7 @@ and otherwise prints "Fake data can only be loaded when APP_ENV is development o
 (see [Configuration and environments](./configuration-and-environments.md)).
 
 It then runs `runSeeders()` from `src/seed/index.ts`, the **seeder registry**: an ordered list of
-`{ name, run(sql) }` entries, each returning lines to print. Today it holds two seeders. The first,
+`{ name, run(sql) }` entries, each returning lines to print. Today it holds three seeders. The first,
 `src/seed/users.ts`, inserts five clearly fake `@barnacle.ai` users — Ada Fake and Grace Fake
 (admins), Linus Fake and Margaret Fake (users), Alan Fake (deactivated) — each with a `user_changes`
 `added` row, in its own transaction and with `on conflict (email) do nothing`. Seeders must be
@@ -60,6 +62,10 @@ The second, `src/seed/people.ts`, runs after it: it needs the fake users as owne
 organisations, people, labels and timeline rows for the
 [People and organisations](../features/people-and-organisations.md) pages. Migration
 `0002_people_organisations.sql` creates their tables.
+The third, `src/seed/deals.ts`, runs last: it adds five fake pipelines with their stages and a set of clearly fake
+deals owned by the fake users (some private), for the
+[Deals board](../features/pipelines-and-deals.md). It is re-runnable: pipelines are matched by name and deals
+skipped when one with the same title exists. Migration `0004_pipelines_deals.sql` creates their tables.
 
 Later features append their seeder to the registry; see [Adding a feature](../workflows/adding-a-feature.md).
 Fake data never uses the real team's names.

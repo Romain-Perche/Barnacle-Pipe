@@ -4,6 +4,7 @@ export type NavItem = { href: string; label: string };
 
 export const mainNav: NavItem[] = [
   { href: "/", label: "Home" },
+  { href: "/deals", label: "Deals" },
   { href: "/people", label: "People" },
   { href: "/organisations", label: "Organisations" },
 ];
@@ -11,4 +12,5 @@ export const mainNav: NavItem[] = [
 export const adminNav: NavItem[] = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/lead-sources-and-labels", label: "Lead sources and labels" },
+  { href: "/admin/pipelines", label: "Pipelines" },
 ];

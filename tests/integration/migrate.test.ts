@@ -1,5 +1,6 @@
 // covers FR-027, SC-009, edge cases "migration twice in a row" and "two at the same time"
 import { spawn } from "node:child_process";
+import { readdirSync, readFileSync } from "node:fs";
 import postgres from "postgres";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -85,6 +86,46 @@ describe("npm run db:migrate", () => {
     expect(state.users).toBe(1);
     expect(state.leadSources).toEqual(["Duncan's LinkedIn", "Referral", "Exec dinner", "Inbound", "Event", "Ambassador"]);
     expect(await advisoryLocks()).toBe(0);
+  });
+
+  // covers SF-93 T004, SC-007: the pipelines and deals migration on a fresh database
+  it("applies 0004_pipelines_deals.sql: one target per event, a stage holding a deal cannot be deleted", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0004_pipelines_deals.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [p] = await c`insert into pipelines (name, position) values ('Sales', 1) returning id`;
+      const [s] = await c`insert into stages (pipeline_id, name, position) values (${p.id}, 'Lead in', 1) returning id`;
+      const [d] = await c`insert into deals (title, stage_id, owner_id, created_by) values ('Fakeco website', ${s.id}, ${u.id}, ${u.id}) returning id`;
+      const [person] = await c`insert into persons (first_name, owner_id, created_by) values ('Ada', ${u.id}, ${u.id}) returning id`;
+      await c`insert into timeline_events (deal_id, kind, actor_id, from_stage, to_stage) values (${d.id}, 'moved', ${u.id}, 'A', 'B')`;
+      await c`insert into timeline_events (person_id, kind, related_user_id) values (${person.id}, 'handed_over', ${u.id})`;
+      await expect(c`insert into timeline_events (deal_id, person_id, kind) values (${d.id}, ${person.id}, 'added')`).rejects.toThrow(
+        /timeline_events_target_check/,
+      );
+      await expect(c`insert into timeline_events (kind) values ('added')`).rejects.toThrow(/timeline_events_target_check/);
+      await expect(c`delete from stages where id = ${s.id}`).rejects.toThrow(/deals_stage_id_fkey/);
+      await expect(c`delete from pipelines where id = ${p.id}`).rejects.toThrow(/deals_stage_id_fkey/);
+      const [{ n }] = await c`select count(*)::int as n from deals`;
+      expect(n).toBe(1);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-93 T013: the deals code keeps to the Supabase transaction-mode pooler's limits (no session state)
+  it("keeps the deals code free of session state (set, listen, session advisory locks)", () => {
+    const dir = "src/server/deals";
+    for (const file of readdirSync(dir)) {
+      const text = readFileSync(`${dir}/${file}`, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0004_pipelines_deals.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
   });
 
   it("runs twice at the same time: both finish, each migration applied once, no lock left", async () => {

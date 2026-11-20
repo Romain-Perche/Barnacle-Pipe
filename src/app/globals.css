@@ -175,12 +175,52 @@ table.list tr.sel td { background: rgba(255, 66, 0, 0.04); }
 .choice-list .addrow { max-width: none; }
 .choice-list form.inline { display: flex; gap: 8px; align-items: center; }
 
+/* Deals board, design A (SF-93): stage columns, rounded cards (the one rounded surface), drawer on the right. */
+.picker-form { display: flex; gap: 8px; align-items: center; margin: 0; }
+.pick { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.pick .sel { width: auto; max-width: 260px; font-size: 12px; padding: 8px; }
+.boardwrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.boardwrap.open { grid-template-columns: minmax(0, 1fr) 320px; }
+.boardmain { min-width: 0; }
+.board { display: flex; gap: 12px; overflow-x: auto; align-items: stretch; padding-bottom: 8px; }
+.col { flex: 0 0 240px; display: flex; flex-direction: column; background: rgba(0, 0, 0, 0.03); padding: 0 8px 8px; max-height: calc(100vh - 210px); min-height: 240px; }
+.col.over { outline: 2px dashed var(--blue); outline-offset: -2px; background: rgba(43, 0, 255, 0.04); }
+.ch { padding: 10px 2px 8px; border-bottom: 0.5px solid var(--line); margin-bottom: 8px; }
+.ch .nm { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ch h2 { margin: 0; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; overflow-wrap: anywhere; }
+.ch .plus { color: var(--muted); text-decoration: none; font-family: var(--mono); font-weight: 700; font-size: 16px; line-height: 1; }
+.ch .plus:hover { color: var(--blue); }
+.ch .tot { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 4px; white-space: nowrap; }
+.cards { flex: 1; overflow-y: auto; min-height: 60px; }
+.col .none { font-size: 13px; color: var(--muted); margin: 4px 2px; }
+.card { display: block; background: var(--panel); border: 0.5px solid var(--line-soft); border-radius: 8px; padding: 9px 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.4; color: inherit; text-decoration: none; overflow-wrap: anywhere; cursor: grab; }
+.card:hover { border-color: var(--line); }
+.card.sel { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+.card .t { display: block; font-weight: 600; font-size: 14px; }
+.card .ln { display: block; }
+.card .val { display: block; font-family: var(--mono); font-size: 12px; margin-top: 4px; }
+.card .badge.tag, .drawer h2 .badge.tag { margin-left: 6px; font-size: 9px; vertical-align: middle; }
+.move-to { display: flex; gap: 8px; align-items: flex-end; margin-top: 18px; }
+.move-to .field span { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); }
+.deal-drawer .drawer-acts { flex-wrap: wrap; }
+.deal-drawer .drawer-acts form { display: inline; }
+.deal-drawer .confirm { margin: 0 0 12px; }
+.deal-drawer .tl li { flex-direction: column; gap: 2px; font-size: 13px; }
+.recform .full { grid-column: 1 / -1; }
+table.order td.nm { font-weight: 600; white-space: nowrap; }
+table.order form.inline { display: flex; gap: 8px; align-items: center; }
+table.order .acts form + form, table.order .acts form + a { margin-left: 14px; }
+.confirm-form { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex: 1 1 400px; margin: 0; }
+.confirm-form p { margin: 0; }
+
 @media (max-width: 720px) {
   .shell { grid-template-columns: 1fr; }
   .side { position: static; height: auto; }
   .main { padding: 24px 16px; overflow-x: auto; }
   .listwrap.open, .details, .grid2 { grid-template-columns: 1fr; }
   .drawer { position: static; }
+  .boardwrap.open { grid-template-columns: 1fr; }
+  .col { flex-basis: 78vw; }
 }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 

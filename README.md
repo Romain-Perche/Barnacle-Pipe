@@ -2,8 +2,9 @@
 
 The Barnacle CRM: a Next.js (App Router, TypeScript) app on Postgres. The team signs in with their
 barnacle.ai Google account; admins manage who has access on the Users page. Everyone keeps the team's
-people and organisations (`/people`, `/organisations`); admins keep the lead source and label lists
-(`/admin/lead-sources-and-labels`). Product rules are in
+people and organisations (`/people`, `/organisations`) and works its deals on a board per pipeline
+(`/deals`); admins keep the lead source and label lists (`/admin/lead-sources-and-labels`) and the
+pipelines and their stages (`/admin/pipelines`). Product rules are in
 `docs/PRODUCT.md`, the look in `docs/DESIGN.md`, the team's choices in `docs/DECISIONS.md`.
 
 You need **no Google, Vercel or Supabase account** to develop or test: a fake Google login and fake
@@ -26,7 +27,7 @@ npm install
 npx playwright install chromium     # browser for the browser tests
 cp .env.example .env.local          # APP_ENV=development, DATABASE_URL=…/crm_dev, FIRST_ADMIN_EMAIL=ada@barnacle.ai
 npm run db:migrate                  # update the database structure
-npm run db:seed                     # load fake data (fake users, people and organisations)
+npm run db:seed                     # load fake data (fake users, people, organisations, pipelines and deals)
 npm run dev                         # http://localhost:3000
 ```
 
@@ -38,7 +39,9 @@ The fake data team is Ada Fake and Grace Fake (admins), Linus Fake and Margaret 
 Alan Fake (deactivated), all `@barnacle.ai`. On the fake login you can also type any email and name.
 The fake data also has 35 fake people (`@example.com` / `@example.net`, one archived, one private person
 created by Ada Fake; private Pat Privatefake, created by Ada Fake and owned by Linus Fake; private Robin and
-Sam Leftfake, owned by deactivated Alan Fake, to try the hand-over), 9 fake organisations (one archived) and the labels Hot, Investor and Partner. A fresh
+Sam Leftfake, owned by deactivated Alan Fake, to try the hand-over), 9 fake organisations (one archived), the labels
+Hot, Investor and Partner, and the pipelines Sales, Ambassadors, Fractional CTO, Exec Dinner and "Ada Fake's
+pipeline" with 44 fake deals (Sales "Closing" left empty, one archived deal, two private deals created by Ada Fake). A fresh
 database (no fake data) starts with the six lead sources Duncan's LinkedIn, Referral, Exec dinner, Inbound,
 Event and Ambassador, and no labels.
 
@@ -49,6 +52,9 @@ Event and Ambassador, and no labels.
 | `/organisations/new`, `/organisations/<id>`, `/organisations/<id>/edit` | everyone | Same for organisations, with their people |
 | `/admin/lead-sources-and-labels` | admins | Add, rename and remove lead sources and labels |
 | `/admin/users` | admins | Add, make admin, deactivate, reactivate; `[ HAND OVER ]` on a deactivated user who owns private people gives all of them to one active user (the admin sees only how many) |
+| `/deals` | everyone | The board of one pipeline (`?pipeline=<id>`, first pipeline by default): a column per stage with "<n> deals · £total", drag a card to move it; the deal drawer (`?open=<id>`) shows details, "Move to", edit, archive, delete (admins) and its history. A private deal is seen only by its creator and its owner |
+| `/deals/new`, `/deals/<id>/edit` | everyone (a private deal: its creator and owner) | Add a deal (`?pipeline=<id>&stage=<id>` pre-selects them), edit a deal |
+| `/admin/pipelines`, `/admin/pipelines/<id>` | admins | Add, rename, reorder (↑/↓) and delete pipelines and their stages; deleting one that holds deals moves them to a stage you choose |
 
 ## Tests
 

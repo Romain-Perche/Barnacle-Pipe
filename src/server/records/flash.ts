@@ -1,11 +1,11 @@
-// One-shot notice after a change that leaves the page ("Ada Example was deleted.", "2 private people handed to
+// One-shot notice after a change that leaves the page (a deal delete or a save that hides a private deal, "Ada Example was deleted.", "2 private people handed to
 // Margaret Fake."), research.md §8. The name is the server's copy from the database, never text from the URL;
 // the cookie lives 60 seconds and src/proxy.ts deletes it on the next page load, so it shows once.
 import { cookies } from "next/headers";
 import { templates } from "@/server/messages";
 import { FLASH_COOKIE as COOKIE } from "@/server/records/flash-cookie";
 
-const CODES = ["person_deleted", "organisation_deleted", "person_no_longer_visible", "handed_over", "handover_none"] as const;
+const CODES = ["person_deleted", "organisation_deleted", "person_no_longer_visible", "handed_over", "handover_none", "deal_deleted", "deal_no_longer_visible"] as const;
 export type FlashCode = (typeof CODES)[number];
 type Flash = { code: FlashCode; name: string; count?: number };
 

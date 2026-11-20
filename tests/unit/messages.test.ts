@@ -43,6 +43,45 @@ describe("record messages", () => {
   });
 });
 
+// covers FR-019, contracts/routes.md § Messages (SF-93 pipelines, deals and the board)
+describe("deal and pipeline messages", () => {
+  it("has the fixed texts of SF-93 contracts/routes.md", () => {
+    const expected: Record<string, string> = {
+      deal_title_required: "Enter a deal title.",
+      deal_title_too_long: "Keep the title under 200 characters.",
+      deal_value_invalid: "Enter a value in pounds, for example 4000 or 4000.50.",
+      deal_stage_required: "Choose a pipeline and stage.",
+      deal_close_date_invalid: "Enter a valid date.",
+      deal_edit_conflict: "Someone else changed this deal while you were editing. Reload to see their changes.",
+      deal_changed: "This deal changed since you loaded the board. The board has been refreshed.",
+      deal_move_failed: "The deal could not be moved. Try again.",
+      no_pipelines_yet: "No pipelines yet.",
+      no_stages_yet: "This pipeline has no stages yet.",
+      no_deals_in_stage: "No deals in this stage.",
+      pipeline_name_required: "Enter a name.",
+      pipeline_name_exists: "This name is already used.",
+      stage_last_with_deals: "A pipeline with deals needs at least one stage.",
+      stage_target_invalid: "Choose another stage of this pipeline to move the deals to.",
+      pipeline_target_invalid: "Choose a stage in another pipeline to move the deals to.",
+      pipeline_delete_no_target: "Add a stage to another pipeline first, so its deals have somewhere to go.",
+    };
+    for (const [code, text] of Object.entries(expected)) expect(messageFor(code), code).toBe(text);
+  });
+  it("builds the deal templates from database names only", () => {
+    expect(templates.deal_count(0)).toBe("0 deals");
+    expect(templates.deal_count(1)).toBe("1 deal");
+    expect(templates.deal_count(200)).toBe("200 deals");
+    expect(templates.deal_deleted("Fakeco website")).toBe("Fakeco website was deleted.");
+    expect(templates.deal_no_longer_visible("Fakeco website")).toBe("You can no longer see Fakeco website: only its creator and owner can.");
+    expect(templates.pipeline_has_deals("Qualified", 3)).toBe("Qualified has 3 deals. Move them to:");
+    expect(templates.pipeline_delete_confirm("Partners")).toBe("Delete Partners? This can't be undone.");
+    expect(templates.delete_confirm("Fakeco website")).toBe("Delete Fakeco website for good? This can't be undone.");
+    // A template is never reachable through a code from the address.
+    expect(messageFor("deal_deleted")).toBeUndefined();
+    expect(messageFor("deal_no_longer_visible")).toBeUndefined();
+  });
+});
+
 // covers FR-016 (SF-92): the hand-over, the deleted-person lines and the owner notice, contracts/routes.md § Messages
 describe("SF-92 messages", () => {
   it("has the fixed texts", () => {

@@ -230,7 +230,7 @@ export function escapeLike(text: string): string {
 }
 
 // Fields compared for an "Edited by …: <fields>" event, in the order the form shows them.
-type FieldList<T> = readonly (readonly [keyof T, string])[];
+export type FieldList<T> = readonly (readonly [keyof T, string])[];
 
 export const PERSON_FIELDS: FieldList<PersonFields> = [
   ["firstName", "First name"],

@@ -52,6 +52,11 @@
       "id": "records",
       "label": "People and organisations",
       "description": "Staff list, search, create, edit, archive and delete people and organisations, with a timeline and shared lead sources and labels."
+    },
+    {
+      "id": "deals",
+      "label": "Deals",
+      "description": "Pipelines, stages and the deal board, with deals kept private by their person."
     }
   ],
   "actors": [
@@ -212,6 +217,27 @@
         "src/server/records/flash.ts",
         "src/server/records/flash-cookie.ts"
       ]
+    },
+    {
+      "id": "deals-board",
+      "label": "Deals board and deal pages",
+      "group": "deals",
+      "sources": [
+        "src/app/(app)/deals",
+        "src/server/deals/deals.ts",
+        "src/server/deals/rules.ts"
+      ],
+      "zone": "app"
+    },
+    {
+      "id": "pipelines-admin",
+      "label": "Pipelines admin",
+      "group": "deals",
+      "sources": [
+        "src/app/(app)/admin/pipelines",
+        "src/server/deals/pipelines.ts"
+      ],
+      "zone": "app"
     }
   ],
   "stores": [
@@ -312,6 +338,42 @@
       "sources": [
         "migrations/0002_people_organisations.sql"
       ]
+    },
+    {
+      "id": "pipelines-table",
+      "label": "Postgres pipelines",
+      "group": "database",
+      "sources": [
+        "migrations/0004_pipelines_deals.sql"
+      ],
+      "zone": "postgres"
+    },
+    {
+      "id": "stages-table",
+      "label": "Postgres stages",
+      "group": "database",
+      "sources": [
+        "migrations/0004_pipelines_deals.sql"
+      ],
+      "zone": "postgres"
+    },
+    {
+      "id": "deals-table",
+      "label": "Postgres deals",
+      "group": "database",
+      "sources": [
+        "migrations/0004_pipelines_deals.sql"
+      ],
+      "zone": "postgres"
+    },
+    {
+      "id": "deal-stage-periods-table",
+      "label": "Postgres deal stage periods",
+      "group": "database",
+      "sources": [
+        "migrations/0004_pipelines_deals.sql"
+      ],
+      "zone": "postgres"
     }
   ],
   "flows": [
@@ -962,6 +1024,152 @@
       "sources": [
         "src/app/(app)/admin/users/actions.ts",
         "src/server/records/flash.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "deals-board",
+      "data": "signed-in user and admin check",
+      "sources": [
+        "src/app/(app)/deals/page.tsx"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "pipelines-admin",
+      "data": "admin check",
+      "sources": [
+        "src/app/(app)/admin/pipelines/page.tsx"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "deals-board",
+      "data": "deal form fields, board drags",
+      "sources": [
+        "src/app/(app)/deals/actions.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "staff",
+      "data": "board, deal drawer and forms",
+      "sources": [
+        "src/app/(app)/deals/page.tsx"
+      ]
+    },
+    {
+      "from": "admin",
+      "to": "pipelines-admin",
+      "data": "pipeline and stage changes",
+      "sources": [
+        "src/app/(app)/admin/pipelines/actions.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deals-table",
+      "data": "deal details, stage moves",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "deals-table",
+      "to": "deals-board",
+      "data": "visible deals (private people hidden)",
+      "sources": [
+        "src/server/records/visibility.ts",
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "pipelines-admin",
+      "to": "pipelines-table",
+      "data": "pipeline changes",
+      "sources": [
+        "src/server/deals/pipelines.ts"
+      ]
+    },
+    {
+      "from": "pipelines-admin",
+      "to": "stages-table",
+      "data": "stage changes",
+      "sources": [
+        "src/server/deals/pipelines.ts"
+      ]
+    },
+    {
+      "from": "pipelines-table",
+      "to": "deals-board",
+      "data": "pipelines for the board",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "stages-table",
+      "to": "deals-board",
+      "data": "stages for the board",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deal-stage-periods-table",
+      "data": "time spent in each stage",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "timeline-table",
+      "data": "deal added, edited, moved, archived events",
+      "sources": [
+        "src/server/records/timeline.ts",
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "pipelines-admin",
+      "to": "timeline-table",
+      "data": "moves caused by stage or pipeline changes",
+      "sources": [
+        "src/server/deals/pipelines.ts"
+      ]
+    },
+    {
+      "from": "pipelines-admin",
+      "to": "deals-table",
+      "data": "deals moved when a stage is removed",
+      "sources": [
+        "src/server/deals/pipelines.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "persons-table",
+      "data": "linked people read for visibility",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "deals-table",
+      "data": "table definitions",
+      "sources": [
+        "scripts/migrate.ts"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "deals-table",
+      "data": "fake deals",
+      "sources": [
+        "src/seed/deals.ts"
       ]
     }
   ]

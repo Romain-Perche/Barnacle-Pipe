@@ -1,4 +1,5 @@
-// Reads what the person and organisation forms post (contracts/routes.md § Server actions). Pure.
+// Reads what the person, organisation and deal forms post (contracts/routes.md § Server actions). Pure.
+import type { DealForm } from "@/server/deals/rules";
 import { toId, type OrganisationForm, type PersonForm } from "@/server/records/rules";
 
 const MAX_ROWS = 50;
@@ -47,6 +48,21 @@ export function organisationFormFromData(fd: FormData): OrganisationForm {
     size: text(fd, "size"),
     location: text(fd, "location"),
     ownerId: text(fd, "ownerId"),
+  };
+}
+
+export function dealFormFromData(fd: FormData): DealForm {
+  return {
+    title: text(fd, "title"),
+    value: text(fd, "value"),
+    pipelineId: text(fd, "pipelineId"),
+    stageId: text(fd, "stageId"),
+    organisationId: text(fd, "organisationId"),
+    newOrganisationName: text(fd, "newOrganisationName"),
+    personId: text(fd, "personId"),
+    ownerId: text(fd, "ownerId"),
+    expectedClose: text(fd, "expectedClose"),
+    private: text(fd, "private") === "on",
   };
 }
 

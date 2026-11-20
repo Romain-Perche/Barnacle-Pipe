@@ -54,3 +54,21 @@ describe("organisationFormFromData and idFrom", () => {
     expect(idFrom(data([["version", "3"]]), "version")).toBe(3);
   });
 });
+
+// covers contracts/routes.md § Server actions (SF-93 createDeal/updateDeal field names)
+import { dealFormFromData } from "@/server/records/form-data";
+describe("dealFormFromData", () => {
+  it("reads every field of the deal form; Private only when ticked", () => {
+    const form = dealFormFromData(
+      data([
+        ["title", "Fakeco website"], ["value", "£4,000"], ["pipelineId", "1"], ["stageId", "3"], ["organisationId", ""],
+        ["newOrganisationName", "Fakeco Ltd"], ["personId", "7"], ["ownerId", "2"], ["expectedClose", "2026-12-15"], ["private", "on"],
+      ]),
+    );
+    expect(form).toEqual({
+      title: "Fakeco website", value: "£4,000", pipelineId: "1", stageId: "3", organisationId: "", newOrganisationName: "Fakeco Ltd",
+      personId: "7", ownerId: "2", expectedClose: "2026-12-15", private: true,
+    });
+    expect(dealFormFromData(data([["title", "x"]]))).toMatchObject({ title: "x", value: "", stageId: "", private: false });
+  });
+});

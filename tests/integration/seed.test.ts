@@ -149,6 +149,69 @@ describe("fake people and organisations", () => {
   });
 });
 
+// covers FR-021 (SF-93): fake pipelines and deals, idempotent
+describe("fake pipelines and deals", () => {
+  async function snapshot() {
+    return {
+      pipelines: await sql`select name, position from pipelines order by position`,
+      stages: await count("stages"),
+      deals: await count("deals"),
+      periods: await count("deal_stage_periods"),
+      events: await sql`select count(*)::int as n from timeline_events where deal_id is not null`,
+    };
+  }
+
+  it("adds the five pipelines and at least 40 varied deals, and a second run adds nothing", async () => {
+    await runSeeders(sql);
+    const pipelines = await sql<{ id: number; name: string }[]>`select id::int as id, name from pipelines order by position, id`;
+    expect(pipelines.map((p) => p.name)).toEqual(["Sales", "Ambassadors", "Fractional CTO", "Exec Dinner", "Ada Fake's pipeline"]);
+    for (const p of pipelines) {
+      const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from stages where pipeline_id = ${p.id}`;
+      expect(n, p.name).toBeGreaterThanOrEqual(3);
+      expect(n, p.name).toBeLessThanOrEqual(7);
+    }
+    const [stats] = await sql<
+      { total: number; owners: number; with_value: number; without_value: number; with_org: number; without_org: number;
+        with_person: number; without_person: number; archived: number; private_by_ada: number; titles: number }[]
+    >`
+      select count(*)::int as total, count(distinct owner_id)::int as owners,
+             count(value_pence)::int as with_value, (count(*) - count(value_pence))::int as without_value,
+             count(organisation_id)::int as with_org, (count(*) - count(organisation_id))::int as without_org,
+             count(person_id)::int as with_person, (count(*) - count(person_id))::int as without_person,
+             count(*) filter (where archived_at is not null)::int as archived,
+             count(*) filter (where private and created_by = (select id from users where name = 'Ada Fake'))::int as private_by_ada,
+             count(distinct title)::int as titles
+      from deals`;
+    expect(stats.total).toBeGreaterThanOrEqual(40);
+    expect(stats.titles).toBe(stats.total);
+    expect(stats.owners).toBeGreaterThanOrEqual(3);
+    for (const k of ["with_value", "without_value", "with_org", "without_org", "with_person", "without_person", "archived", "private_by_ada"] as const) {
+      expect(stats[k], k).toBeGreaterThanOrEqual(1);
+    }
+    // Sales "Closing" is left empty; every pipeline has deals.
+    const [closing] = await sql<{ n: number }[]>`
+      select count(d.id)::int as n from stages s join pipelines p on p.id = s.pipeline_id left join deals d on d.stage_id = s.id
+      where p.name = 'Sales' and s.name = 'Closing'`;
+    expect(closing.n).toBe(0);
+    const empty = await sql`select p.name from pipelines p where not exists (select 1 from deals d join stages s on s.id = d.stage_id where s.pipeline_id = p.id)`;
+    expect(empty).toEqual([]);
+    // Every deal: exactly one open stage period (in its stage) and an "added" event; some were moved.
+    const bad = await sql`
+      select d.id from deals d
+      where (select count(*) from deal_stage_periods x where x.deal_id = d.id and x.left_at is null and x.stage_id = d.stage_id) <> 1
+         or (select count(*) from deal_stage_periods x where x.deal_id = d.id and x.left_at is null) <> 1
+         or not exists (select 1 from timeline_events e where e.deal_id = d.id and e.kind = 'added')`;
+    expect(bad).toEqual([]);
+    const [moved] = await sql<{ n: number }[]>`select count(*)::int as n from timeline_events where kind = 'moved'`;
+    expect(moved.n).toBeGreaterThanOrEqual(1);
+
+    const before = await snapshot();
+    const lines = await runSeeders(sql);
+    expect(lines).toContain("already there pipelines and deals");
+    expect(await snapshot()).toEqual(before);
+  });
+});
+
 // covers FR-015 (SF-92): fake private people owned by someone other than their creator, and by deactivated Alan Fake
 describe("fake private people (SF-92)", () => {
   it("adds a private person whose owner is not their creator and private people owned by Alan Fake, once", async () => {

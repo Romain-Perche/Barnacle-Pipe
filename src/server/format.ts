@@ -34,3 +34,12 @@ export function formatLastSignIn(date: Date | null): string {
 export function countLabel(n: number, word: string, plural = `${word}S`): string {
   return `${n} ${n === 1 ? word : plural}`;
 }
+
+const POUNDS = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const PENCE = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// GBP from whole pence (research.md §2): "£4,000" for whole pounds, "£4,000.50" otherwise, "—" for no value.
+export function formatMoney(pence: number | null): string {
+  if (pence === null) return "—";
+  return pence % 100 === 0 ? POUNDS.format(pence / 100) : PENCE.format(pence / 100);
+}

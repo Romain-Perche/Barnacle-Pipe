@@ -77,3 +77,19 @@ test("People and Organisations are in everyone's sidebar; Lead sources and label
   await expect(sidebar(ada).getByRole("link", { name: "Lead sources and labels" })).toBeVisible();
   await ctx.close();
 });
+
+// covers FR-018 (SF-93): "Deals" in everyone's sidebar right after Home; "Pipelines" only in the admins' "// Admin" group
+test("Deals is in everyone's sidebar after Home; Pipelines only for admins", async ({ page, browser }) => {
+  await signInAs(page, "Linus Fake", "/deals");
+  const links = sidebar(page).getByRole("link");
+  await expect(sidebar(page).getByRole("link", { name: "Deals" })).toHaveAttribute("aria-current", "page");
+  const names = await links.allTextContents();
+  expect(names.indexOf("Deals")).toBe(names.indexOf("Home") + 1);
+  await expect(sidebar(page).getByRole("link", { name: "Pipelines" })).toHaveCount(0);
+  const ctx = await browser.newContext();
+  const ada = await ctx.newPage();
+  await signInAs(ada, "Ada Fake");
+  await expect(sidebar(ada).getByRole("link", { name: "Deals" })).toBeVisible();
+  await expect(sidebar(ada).getByRole("link", { name: "Pipelines" })).toHaveAttribute("href", "/admin/pipelines");
+  await ctx.close();
+});
