@@ -1,4 +1,4 @@
-// SF-102 AI-review scenarios (US1 1–8, US2 1–7, US3 1–7, US4 1–5, edge cases 1–16), against :3000/crm_dev on fresh fake
+// SF-102 AI-review scenarios (US1 1–8, US2 1–7, US3 1–7, US4 1–5, edge cases 1–18), against :3000/crm_dev on fresh fake
 // data: `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf102.js`
 // Each scenario makes its own "SF102 …" records by SQL (setup only) and drives the app as a user would.
 const { execSync } = require("child_process");
@@ -170,6 +170,7 @@ async function run(name, fn) {
     const pn = sqlNote("deal_id", priv, "Secret six", U.ada);
     // a deleted record's note id
     const gd = mkDeal("SF102 Gone Six"); const gn = sqlNote("deal_id", gd, "Gone six", U.ada); sql(`delete from deals where id=${gd}`);
+    const msg = "This note doesn't exist or you can't see it.";
     const pe = mkPerson("Sfsix", "Person"); const own = sqlNote("person_id", pe, "Linus own six", U.linus);
     const linus = await as("linus"); const out = [];
     for (const [label, nid, tgt, tid] of [["private, form names the hidden deal", pn, "deal", priv], ["deleted, form names the deleted deal", gn, "deal", gd], ["private, form names Linus's own visible person", pn, "person", pe]]) {
@@ -183,11 +184,10 @@ async function run(name, fn) {
       const df = linus.getByRole("alertdialog", { name: "Confirm note delete" }).locator("form");
       await df.evaluate((f, a) => { f.querySelector("input[name=noteId]").value = a.nid; f.querySelector("input[name=target]").value = a.tgt; f.querySelector("input[name=targetId]").value = a.tid; }, { nid, tgt, tid });
       await df.getByRole("button", { name: "[ DELETE ]" }).click(); await linus.waitForURL(/error=/, { timeout: 5000 }).catch(() => {}); await linus.waitForLoadState("networkidle");
-      const dm = norm((await linus.locator("p.err").allTextContents()).join(" | ") || (await linus.locator("main").innerText()).slice(0, 60)) + ` (url ${linus.url().replace(BASE, "")})`;
+      const mt = await linus.locator("main").innerText(); const dm = (mt.includes(msg) ? msg : norm(mt).slice(0, 80)) + ` (url ${linus.url().replace(BASE, "")}; names the record: ${/SF102 (Private|Gone) Six/.test(mt)})`;
       out.push({ label, m, dm });
     }
     const body = sql(`select body from timeline_events where id=${pn}`), ownBody = sql(`select body from timeline_events where id=${own}`);
-    const msg = "This note doesn't exist or you can't see it.";
     check("US1 scenario 6", out.every((o) => o.m === msg && o.dm.includes(msg)) && body === "Secret six" && ownBody === "Linus own six", out.map((o) => `${o.label}: edit → "${o.m}", delete → "${o.dm}"`).join("; ") + `; private note body still "${body}", Linus's own note unchanged "${ownBody}"`);
   });
 
@@ -693,6 +693,34 @@ async function run(name, fn) {
     const more = await linus.getByRole("link", { name: "[ SHOW MORE ]" }).count();
     const sb = await sidebar(linus);
     check("Edge case 16", empty && c1 === 50 && c2 === 60 && more === 0 && first.startsWith("Many 1 "), `none: "No notifications yet." ${empty}; 60: first page ${c1} (newest "${first}"), after SHOW MORE ${c2}, SHOW MORE left ${more}; sidebar "${sb}"`);
+  });
+
+  await run("Edge case 17", async () => {
+    // exactly 10,000 characters counting each line break once, typed in the box (the browser posts CRLF)
+    const pe = mkPerson("Sfseventeen", "Person"); const ada = await as("ada"); await go(ada, `/people/${pe}`);
+    const line = "y".repeat(99) + "\n"; let text = line.repeat(100); text = text.slice(0, 9999) + "z"; // 100 lines, 99 breaks
+    const t = box(ada).getByRole("textbox", { name: "Note" }); await t.fill(text);
+    const boxLen = (await t.inputValue()).length;
+    await box(ada).getByRole("button", { name: "[ ADD NOTE ]" }).click(); await ada.waitForTimeout(1000); await ada.waitForLoadState("networkidle");
+    const err = norm(await box(ada).getByRole("alert").textContent().catch(() => ""));
+    const row = sql(`select length(body)||'|'||(body like '%'||chr(13)||'%')||'|'||(length(body)-length(replace(body, chr(10), ''))) from timeline_events where person_id=${pe} and kind='note'`);
+    const shown = await ents(ada).first().locator(".notebody").textContent().catch(() => "");
+    check("Edge case 17", boxLen === 10000 && err === "" && row === "10000|false|99" && shown.replace(/\r\n/g, "\n") === text, `box holds ${boxLen} chars; error "${err}"; stored length|has CR|line breaks = ${row}; shown text equal: ${shown.replace(/\r\n/g, "\n") === text}`);
+  });
+
+  await run("Edge case 18", async () => {
+    const pe = mkPerson("Sfeighteen", "Person"); const ada = await as("ada"); await go(ada, `/people/${pe}`);
+    const t = box(ada).getByRole("textbox", { name: "Note" }); await t.fill("Ask");
+    await typeMention(ada, "Lin", "Linus Fake");
+    await t.press("End"); await t.pressSequentially("and @Linus Fakeson too", { delay: 10 });
+    await ada.keyboard.press("Escape").catch(() => {});
+    const before = unread(U.linus);
+    await box(ada).getByRole("button", { name: "[ ADD NOTE ]" }).click(); await ada.waitForTimeout(1000); await ada.waitForLoadState("networkidle");
+    const nb = ents(ada).first().locator(".notebody");
+    const marks = await nb.locator("mark.mention").allTextContents(); const txt = norm(await nb.textContent());
+    const body = sql(`select body from timeline_events where person_id=${pe} and kind='note'`);
+    const after = unread(U.linus);
+    check("Edge case 18", marks.length === 1 && marks[0] === "@Linus Fake" && txt.includes("and @Linus Fakeson too") && /@\[user:3\]/.test(body) && body.includes("@Linus Fakeson") && after - before === 1, `marks ${JSON.stringify(marks)}; shown "${txt}"; stored "${body}"; Linus unread ${before}→${after}`);
   });
 
   await browser.close();
