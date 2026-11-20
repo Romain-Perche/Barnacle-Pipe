@@ -1171,6 +1171,22 @@
       "sources": [
         "src/seed/deals.ts"
       ]
+    },
+    {
+      "from": "users-admin",
+      "to": "deals-table",
+      "data": "private deals handed to a new owner",
+      "sources": [
+        "src/server/records/handover.ts"
+      ]
+    },
+    {
+      "from": "users-admin",
+      "to": "timeline-table",
+      "data": "hand-over events on each deal",
+      "sources": [
+        "src/server/records/handover.ts"
+      ]
     }
   ]
 }

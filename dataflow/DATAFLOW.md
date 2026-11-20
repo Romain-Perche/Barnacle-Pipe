@@ -54,7 +54,7 @@ flowchart LR
     n10 -->|"4 flows"| n6
     n10 -->|"2 flows"| n4
     n7 -->|"users table and error messages"| n8
-    n7 -->|"5 flows"| n1
+    n7 -->|"7 flows"| n1
     n7 -->|"hand-over notice"| n4
     n1 -->|"user list"| n7
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
@@ -103,7 +103,7 @@ flowchart LR
     n5 -->|"3 flows"| n1
     n1 -->|"6 flows"| n9
     n2 -->|"3 flows"| n1
-    n1 -->|"22 flows"| n4
+    n1 -->|"24 flows"| n4
     n4 -->|"11 flows"| n1
     n6 -->|"migrate command / seed command"| n3
     n7 -->|"3 flows"| n1
@@ -185,9 +185,10 @@ flowchart LR
     n6 -->|"pipelines for the board"| n14
     n8 -->|"session state with user role and status"| n16
     n9 -->|"stages for the board"| n14
+    n17 -->|"private deals handed to a new owner"| n3
     n17 -->|"private people handed to a new owner"| n5
     n17 -->|"revoked sessions of deactivated users"| n8
-    n17 -->|"hand-over events on each person"| n10
+    n17 -->|"2 flows"| n10
     n17 -->|"who changed which user, and how"| n11
     n17 -->|"added users, role and status changes"| n12
     n12 -->|"3 flows"| n16
@@ -456,7 +457,7 @@ flowchart LR
     n7 -->|"signed-in user (name, role)"| n3
     n7 -->|"signed-in user and admin check"| n4
     n4 -->|"users table and error messages"| n1
-    n4 -->|"5 flows"| n5
+    n4 -->|"7 flows"| n5
     n4 -->|"hand-over notice"| n6
     n5 -->|"user list"| n4
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
@@ -600,9 +601,11 @@ flowchart LR
 | Barnacle staff user | Session check, end and sign-out | sign-out request | `src/app/(app)/actions.ts` |
 | Postgres stages | Deals board and deal pages | stages for the board | `src/server/deals/deals.ts` |
 | Users admin page and actions | Barnacle admin | users table and error messages | `src/app/(app)/admin/users/page.tsx` |
+| Users admin page and actions | Postgres deals | private deals handed to a new owner | `src/server/records/handover.ts` |
 | Users admin page and actions | persons, emails, phones and person_labels tables | private people handed to a new owner | `src/app/(app)/admin/users/actions.ts`, `src/server/records/handover.ts` |
 | Users admin page and actions | One-shot delete notice | hand-over notice | `src/app/(app)/admin/users/actions.ts`, `src/server/records/flash.ts` |
 | Users admin page and actions | sessions table (token hashes) | revoked sessions of deactivated users | `src/server/auth/session.ts`, `src/server/users.ts` |
+| Users admin page and actions | timeline_events table | hand-over events on each deal | `src/server/records/handover.ts` |
 | Users admin page and actions | timeline_events table | hand-over events on each person | `src/server/records/handover.ts`, `src/server/records/timeline.ts` |
 | Users admin page and actions | user_changes log | who changed which user, and how | `src/server/users.ts` |
 | Users admin page and actions | users table | added users, role and status changes | `src/server/users.ts` |

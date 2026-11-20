@@ -5,7 +5,7 @@ description: The admin-only Users page — list, add, make or remove admin, deac
 tags: [users, admin, authorization, audit]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T18:23:26.676Z
+    at: 2026-11-20T11:20:44.617Z
 sources:
   - id: openwiki-source-e78c5b056032c61cb809d6b1
     resource: repo://src/app/(app)/admin/users/actions.ts
@@ -15,7 +15,7 @@ sources:
     resource: repo://src/server/records/handover.ts
   - id: openwiki-source-defe190e4c7d59423daec996
     resource: repo://src/server/users.ts
-generated: { by: "claude-code", at: "2026-11-19T18:23:26.676Z" }
+generated: { by: "claude-code", at: "2026-11-20T11:20:44.617Z" }
 ---
 
 # User management (Users page)
@@ -31,9 +31,9 @@ named in settings) can sign in; see [Google sign-in flow](../auth/google-sign-in
   counts users and active admins.
 - **Row actions** shown: `[ REMOVE ADMIN ]` or `[ MAKE ADMIN ]` for active users, `[ DEACTIVATE ]` for
   active users other than yourself, `[ REACTIVATE ]` for deactivated users. A deactivated user who still owns
-  private people also shows their count and `[ HAND OVER ]`, which opens `HandOverPanel.tsx` (`?handover=<id>`)
-  to choose an active user; the panel shows only a count, never who the people are.
-- **Hand over** (`handOver` action): calls `handOverPrivatePeople()` in `src/server/records/handover.ts`, which
+  private people or private deals also shows their counts and `[ HAND OVER ]`, which opens `HandOverPanel.tsx` (`?handover=<id>`)
+  to choose an active user; the panel shows only counts, never which people or deals.
+- **Hand over** (`handOver` action): calls `handOverPrivateRecords()` in `src/server/records/handover.ts`, which
   re-checks every rule in a locked transaction. Results map to a flash notice (handed or nothing to hand over)
   or to `?error=handover_choose_user` / `handover_not_deactivated`.
 - **Server actions** `src/app/(app)/admin/users/actions.ts` each call `assertAdminForAction()` first,
