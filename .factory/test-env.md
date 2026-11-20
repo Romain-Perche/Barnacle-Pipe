@@ -116,6 +116,15 @@
     (type with `pressSequentially`, it follows the caret); mentions are `mark.mention`. The sidebar link's accessible
     name is "Notifications (n)" from 1, else "Notifications"; the Notifications page is the `list` "Notifications", each
     row a button. Delete `note_mentions` first when a scenario needs a user at zero notifications (the seed gives Linus 1).
+  - SF-102 AI-review scenario script `scenarios-sf102.js` (all 43 US1–US4 scenarios and edge cases 1–16, ~4 min, against
+    :3000/crm_dev on fresh fake data; makes its own "SF102 …" records by SQL, so reset before every run — names are unique):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf102.js`
+    (`ONLY="US1 scenario 6,Edge case 4"` runs a subset; US2-2/3/4 and Edge 13 share one setup, Edge 12 reads US2-5's result).
+    Notes: the seed's users are Ada/Grace (admins), Linus/Margaret, deactivated Alan — the spec's "Bob"/"Cy" map to
+    Linus/Margaret. The @ picker needs a space before "@" (`(?:^|\s)@`). The browser posts line breaks as CRLF and they
+    are stored as such (compare `textContent` with `\r\n`→`\n`). Direct requests are made by rewriting the edit/delete
+    forms' hidden `noteId`/`target`/`targetId` (or adding a hidden `mention` input) in the page before submitting.
+    Archive/restore, making a deal private/shared, changing a deal's organisation and deactivation are done by SQL.
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
     (real drag with `locator.dragTo`; a failed drag by aborting the server action POST with `page.route`). Board
     selectors: each column is a `region` named after its stage (`h2` name, `.tot` "<n> deals · £total"), cards are
