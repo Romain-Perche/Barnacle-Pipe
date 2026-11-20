@@ -118,3 +118,23 @@ describe("SF-92 messages", () => {
     }
   });
 });
+
+// covers SF-95 FR-021, contracts/routes.md § Messages
+describe("deal page and list messages (SF-95)", () => {
+  it("has the 8 new fixed texts", () => {
+    expect(messageFor("deal_not_found")).toBe("This deal doesn't exist or you can't see it.");
+    expect(messageFor("lost_question")).toBe("Why was this deal lost?");
+    expect(messageFor("lost_reason_required")).toBe("Enter why this deal was lost.");
+    expect(messageFor("lost_reason_too_long")).toBe("Keep the reason under 500 characters.");
+    expect(messageFor("deal_person_already_linked")).toBe("This person is already linked to this deal.");
+    expect(messageFor("deal_label_exists")).toBe("This name is already used.");
+    expect(messageFor("no_deals_match")).toBe("No deals match these filters.");
+    expect(messageFor("no_deals_yet")).toBe("No deals yet.");
+  });
+  it("counts the list's deals and their total", () => {
+    expect(templates.deal_list_count(1, 400000)).toBe("1 deal · £4,000");
+    expect(templates.deal_list_count(12, 1234550)).toBe("12 deals · £12,345.50");
+    expect(templates.deal_list_count(0, 0)).toBe("0 deals · £0");
+    expect(messageFor("deal_list_count")).toBeUndefined();
+  });
+});

@@ -1,14 +1,19 @@
-// Lead sources and labels, kept by admins (research.md §11). Remove = hide from new choices; people keep it.
+// Lead sources, labels and deal labels (SF-95), kept by admins (research.md §11). Remove = hide from new choices; the
+// people and deals that have it keep it.
 // Every change re-checks, in its transaction, that the actor is an active admin.
 import { sql, type Sql } from "@/server/db";
 import { isActiveAdmin, isUniqueViolation, type Option } from "@/server/records/common";
 import { validateChoiceName } from "@/server/records/rules";
 
-export type ChoiceKind = "lead_source" | "label";
-export type ChoiceResult = { ok: true } | { ok: false; code: "forbidden" | "choice_exists" | "choice_removed_exists" | "choice_name_required" | "not_found" };
+export type ChoiceKind = "lead_source" | "label" | "deal_label";
+export type ChoiceResult =
+  | { ok: true }
+  | { ok: false; code: "forbidden" | "choice_exists" | "deal_label_exists" | "choice_removed_exists" | "choice_name_required" | "not_found" };
 
-const TABLES: Record<ChoiceKind, string> = { lead_source: "lead_sources", label: "labels" };
-const KEYS: Record<ChoiceKind, string> = { lead_source: "lead_sources_name_key", label: "labels_name_key" };
+const TABLES: Record<ChoiceKind, string> = { lead_source: "lead_sources", label: "labels", deal_label: "deal_labels" };
+const KEYS: Record<ChoiceKind, string> = { lead_source: "lead_sources_name_key", label: "labels_name_key", deal_label: "deal_labels_name_key" };
+// Deal labels answer "This name is already used." (SF-95 spec US5 scenario 4); the others keep their message.
+const EXISTS = (kind: ChoiceKind) => (kind === "deal_label" ? ("deal_label_exists" as const) : ("choice_exists" as const));
 
 class Stop extends Error {
   constructor(readonly result: ChoiceResult) {
@@ -34,7 +39,7 @@ async function asAdmin(actorId: number, kind: ChoiceKind, change: (db: Sql, tabl
     });
   } catch (err) {
     if (err instanceof Stop) return err.result;
-    if (isUniqueViolation(err, KEYS[kind])) return { ok: false, code: "choice_exists" };
+    if (isUniqueViolation(err, KEYS[kind])) return { ok: false, code: EXISTS(kind) };
     throw err;
   }
 }
@@ -46,7 +51,7 @@ export function addChoice(actorId: number, kind: ChoiceKind, raw: string): Promi
   return asAdmin(actorId, kind, async (db, table) => {
     const [same] = await db<{ id: number; removed: boolean }[]>`
       select id::int as id, removed_at is not null as removed from ${db(table)} where lower(name) = lower(${v.name}) for update`;
-    if (same && !same.removed) return { ok: false, code: "choice_exists" };
+    if (same && !same.removed) return { ok: false, code: EXISTS(kind) };
     if (same) await db`update ${db(table)} set removed_at = null where id = ${same.id}`;
     else await db`insert into ${db(table)} (name) values (${v.name})`;
     return { ok: true };
@@ -60,7 +65,7 @@ export function renameChoice(actorId: number, kind: ChoiceKind, id: number, raw:
     const [other] = await db<{ removed: boolean }[]>`
       select removed_at is not null as removed from ${db(table)} where lower(name) = lower(${v.name}) and id <> ${id}`;
     // A removed entry keeps its name: adding that name again brings it back (clarification Q4).
-    if (other) return { ok: false, code: other.removed ? "choice_removed_exists" : "choice_exists" };
+    if (other) return { ok: false, code: other.removed ? "choice_removed_exists" : EXISTS(kind) };
     const rows = await db`update ${db(table)} set name = ${v.name} where id = ${id} returning id`;
     return rows.length === 1 ? { ok: true } : { ok: false, code: "not_found" };
   });

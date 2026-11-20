@@ -44,6 +44,7 @@ export function dealForm(over: Partial<DealForm> = {}): DealForm {
     ownerId: "",
     expectedClose: "",
     private: false,
+    labelIds: [],
     ...over,
   };
 }
@@ -74,4 +75,33 @@ export async function dealEvents(dealId: number) {
 export async function dealCount(): Promise<number> {
   const [row] = await sql<{ n: number }[]>`select count(*)::int as n from deals`;
   return row.n;
+}
+
+// SF-95: a deal label (optionally already removed), and a label on a deal.
+export async function makeDealLabel(name: string, removed = false): Promise<number> {
+  const [row] = await sql<{ id: number }[]>`
+    insert into deal_labels (name, removed_at) values (${name}, ${removed ? new Date() : null}) returning id::int as id`;
+  return row.id;
+}
+
+export async function labelDeal(dealId: number, labelId: number) {
+  await sql`insert into deal_label_links (deal_id, label_id) values (${dealId}, ${labelId})`;
+}
+
+// Replaces a deal's stage periods with back-to-back ones, ending now (the last one open) or closed `closedDaysAgo`.
+// Each period is [stageId, days]. For tests that need days spent in stages without waiting.
+export async function setPeriods(dealId: number, list: [number, number][], opts: { lastClosed?: boolean } = {}) {
+  await sql`delete from deal_stage_periods where deal_id = ${dealId}`;
+  const DAY = 86_400_000;
+  const total = list.reduce((n, [, d]) => n + d, 0);
+  let at = Date.now() - total * DAY - 1000;
+  for (const [i, [stageId, days]] of list.entries()) {
+    const start = new Date(at);
+    at += days * DAY;
+    const last = i === list.length - 1;
+    await sql`
+      insert into deal_stage_periods (deal_id, stage_id, stage_name, pipeline_name, entered_at, left_at)
+      select ${dealId}, s.id, s.name, p.name, ${start}, ${last && !opts.lastClosed ? null : new Date(at)}
+      from stages s join pipelines p on p.id = s.pipeline_id where s.id = ${stageId}`;
+  }
 }

@@ -3,7 +3,7 @@
 // inside its transaction, so a private deal of someone else behaves exactly like a missing one. People shown on a
 // deal always go through visiblePerson().
 import { sql, type Sql } from "@/server/db";
-import { changedDealFields, validateDeal, type DealFields, type DealForm } from "@/server/deals/rules";
+import { changedDealFields, validateDeal, validateLostReason, type DealFields, type DealForm } from "@/server/deals/rules";
 import { isActiveAdmin, isUniqueViolation, ownerOptions, refuse, Refused, resolveOwner, type Option, type UserRef } from "@/server/records/common";
 import { organisationExistsAfterRace, resolveOrganisation } from "@/server/records/organisations";
 import type { FieldErrors } from "@/server/records/rules";
@@ -23,6 +23,8 @@ export type BoardCard = {
 export type BoardColumn = { id: number; name: string; count: number; totalPence: number; cards: BoardCard[] };
 export type Board = { pipelines: Option[]; pipeline: Option; columns: BoardColumn[] };
 
+export type DealStatus = "open" | "won" | "lost";
+
 export type DealView = {
   id: number;
   title: string;
@@ -38,8 +40,25 @@ export type DealView = {
   createdBy: number;
   createdAt: Date;
   archived: boolean;
+  archivedAt: Date | null;
   version: number;
+  // SF-95: result, labels, other linked people, followers.
+  status: DealStatus;
+  closedAt: Date | null;
+  lostReason: string | null;
+  // Every label the deal has, removed ones included, A–Z.
+  labels: Option[];
+  // Visible to the viewer only (a private person is never named or counted), A–Z.
+  otherPeople: { id: number; name: string; archived: boolean }[];
+  followers: UserRef[];
+  followedByViewer: boolean;
 };
+
+export type StatusResult =
+  | { status: "ok" }
+  | { status: "conflict" }
+  | { status: "invalid"; code: "lost_reason_required" | "lost_reason_too_long" }
+  | { status: "not_found" };
 
 export type DealSaveResult =
   | { status: "saved"; id: number; pipelineId: number }
@@ -58,7 +77,8 @@ const pence = (v: string | number | null) => (v === null ? null : Number(v));
 // --- Board ---------------------------------------------------------------------------------------------------
 
 // One pipeline's board (research.md §7). No pipeline id or an unknown one → the first pipeline; no pipelines → null.
-// Counts and totals are of every visible, non-archived deal of the stage (a missing value counts £0).
+// Counts and totals are of every visible, non-archived, open deal of the stage (a missing value counts £0); won and
+// lost deals are never on the board (SF-95 FR-006).
 export async function getBoard(viewerId: number, pipelineId: number | null): Promise<Board | null> {
   const pipelines = [...(await sql<Option[]>`select id::int as id, name from pipelines order by position, id`)];
   if (pipelines.length === 0) return null;
@@ -76,7 +96,7 @@ export async function getBoard(viewerId: number, pipelineId: number | null): Pro
       join stages s on s.id = d.stage_id
       left join organisations o on o.id = d.organisation_id
       left join persons p on p.id = d.person_id and ${visiblePerson(sql, viewerId)}
-      where s.pipeline_id = ${pipeline.id} and d.archived_at is null and ${visibleDeal(sql, viewerId)}
+      where s.pipeline_id = ${pipeline.id} and d.archived_at is null and d.status = 'open' and ${visibleDeal(sql, viewerId)}
       order by d.stage_entered_at desc, d.id desc`,
   ]);
   const columns: BoardColumn[] = stages.map((s) => ({ id: s.id, name: s.name, count: 0, totalPence: 0, cards: [] }));
@@ -109,7 +129,8 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
       id: number; title: string; value_pence: string | null; pipeline_id: number; pipeline_name: string; stage_id: number; stage_name: string;
       org_id: number | null; org_name: string | null; org_archived: boolean | null; person_id: number | null; person_name: string | null;
       person_archived: boolean | null; owner_id: number; owner_name: string; owner_active: boolean; expected_close: string | null;
-      private: boolean; created_by: number; created_at: Date; archived: boolean; version: number;
+      private: boolean; created_by: number; created_at: Date; archived_at: Date | null; version: number; status: DealStatus;
+      closed_at: Date | null; lost_reason: string | null;
     }[]
   >`
     select d.id::int as id, d.title, d.value_pence, pl.id::int as pipeline_id, pl.name as pipeline_name, s.id::int as stage_id,
@@ -117,7 +138,7 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
            p.id::int as person_id, btrim(p.first_name || ' ' || p.last_name) as person_name, p.archived_at is not null as person_archived,
            u.id::int as owner_id, u.name as owner_name, u.status = 'active' as owner_active,
            to_char(d.expected_close_on, 'YYYY-MM-DD') as expected_close, d.private, d.created_by::int as created_by, d.created_at,
-           d.archived_at is not null as archived, d.version
+           d.archived_at, d.version, d.status, d.closed_at, d.lost_reason
     from deals d
     join stages s on s.id = d.stage_id
     join pipelines pl on pl.id = s.pipeline_id
@@ -126,6 +147,20 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
     left join persons p on p.id = d.person_id and ${visiblePerson(db, viewerId)}
     where d.id = ${id} and ${visibleDeal(db, viewerId)}`;
   if (!r) return null;
+  const [labels, otherPeople, followers] = await Promise.all([
+    db<Option[]>`
+      select l.id::int as id, l.name from deal_label_links dl join deal_labels l on l.id = dl.label_id
+      where dl.deal_id = ${id} order by lower(l.name), l.id`,
+    db<{ id: number; name: string; archived: boolean }[]>`
+      select p.id::int as id, ${PERSON_NAME()} as name, p.archived_at is not null as archived
+      from deal_people dp join persons p on p.id = dp.person_id
+      where dp.deal_id = ${id} and ${visiblePerson(db, viewerId)}
+      order by lower(${PERSON_NAME()}), p.id`,
+    db<UserRef[]>`
+      select u.id::int as id, u.name, u.status = 'active' as active
+      from deal_followers f join users u on u.id = f.user_id
+      where f.deal_id = ${id} order by lower(u.name), u.id`,
+  ]);
   return {
     id: r.id,
     title: r.title,
@@ -139,9 +174,32 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
     private: r.private,
     createdBy: r.created_by,
     createdAt: r.created_at,
-    archived: r.archived,
+    archived: r.archived_at !== null,
+    archivedAt: r.archived_at,
     version: r.version,
+    status: r.status,
+    closedAt: r.closed_at,
+    lostReason: r.lost_reason,
+    labels: [...labels],
+    otherPeople: [...otherPeople],
+    followers: [...followers],
+    followedByViewer: followers.some((f) => f.id === viewerId),
   };
+}
+
+// Seconds spent in each stage of `pipelineId`, in order (data-model.md § Stage bar): the deal's periods in that stage
+// summed, the open one counted up to now. Won and Lost close the open period, so closed deals stop counting.
+export async function getStageSeconds(dealId: number, pipelineId: number): Promise<{ id: number; name: string; seconds: number }[]> {
+  return [
+    ...(await sql<{ id: number; name: string; seconds: number }[]>`
+      select s.id::int as id, s.name,
+             coalesce(sum(extract(epoch from coalesce(p.left_at, now()) - p.entered_at)), 0)::float8 as seconds
+      from stages s
+      left join deal_stage_periods p on p.stage_id = s.id and p.deal_id = ${dealId}
+      where s.pipeline_id = ${pipelineId}
+      group by s.id, s.name, s.position
+      order by s.position, s.id`),
+  ];
 }
 
 export function dealToForm(d: DealView): DealForm {
@@ -156,6 +214,7 @@ export function dealToForm(d: DealView): DealForm {
     ownerId: String(d.owner.id),
     expectedClose: d.expectedClose ?? "",
     private: d.private,
+    labelIds: d.labels.map((l) => String(l.id)),
   };
 }
 
@@ -181,12 +240,14 @@ export type DealChoices = {
   organisations: { id: number; name: string; archived: boolean }[];
   people: { id: number; name: string; archived: boolean }[];
   pipelines: PipelineStages[];
+  // Non-removed deal labels plus the ones the deal already has (SF-95, as people labels).
+  labels: Option[];
 };
 
 // What the deal form offers: active owners, non-archived organisations and visible non-archived people, plus
 // whatever the deal already has (a hidden person is never listed).
 export async function dealFormChoices(viewerId: number, deal: DealView | null): Promise<DealChoices> {
-  const [owners, organisations, people, pipelines] = await Promise.all([
+  const [owners, organisations, people, pipelines, labels] = await Promise.all([
     ownerOptions(sql, deal ? sql`u.id = ${deal.owner.id}` : null),
     sql<{ id: number; name: string; archived: boolean }[]>`
       select id::int as id, name, archived_at is not null as archived from organisations
@@ -196,8 +257,12 @@ export async function dealFormChoices(viewerId: number, deal: DealView | null): 
       where (p.archived_at is null or p.id = ${deal?.person?.id ?? 0}) and ${visiblePerson(sql, viewerId)}
       order by lower(${PERSON_NAME()}), p.id`,
     stageChoices(),
+    sql<Option[]>`
+      select id::int as id, name from deal_labels
+      where removed_at is null or id = any(${deal?.labels.map((l) => l.id) ?? []}::bigint[])
+      order by lower(name), id`,
   ]);
-  return { owners, organisations: [...organisations], people: [...people], pipelines };
+  return { owners, organisations: [...organisations], people: [...people], pipelines, labels: [...labels] };
 }
 
 // --- Changes -------------------------------------------------------------------------------------------------
@@ -223,10 +288,13 @@ async function allowedPerson(db: Sql, actorId: number, requested: number | null,
 // pipeline deletes (pipelines.ts), which pass their cause.
 export async function transferDeal(db: Sql, dealId: number, from: StageRef, to: StageRef, actorId: number, cause: MoveCause | null = null): Promise<number> {
   const crossing = from.pipelineId !== to.pipelineId;
+  const [{ status }] = await db<{ status: DealStatus }[]>`select status from deals where id = ${dealId}`;
   await db`update deal_stage_periods set left_at = now() where deal_id = ${dealId} and left_at is null`;
+  // A won or lost deal (moved by a stage or pipeline delete) gets its new period already closed, so its days do not
+  // start counting again until it is reopened (SF-95 research.md §3).
   await db`
-    insert into deal_stage_periods (deal_id, stage_id, stage_name, pipeline_name, moved_by)
-    values (${dealId}, ${to.id}, ${to.name}, ${to.pipelineName}, ${actorId})`;
+    insert into deal_stage_periods (deal_id, stage_id, stage_name, pipeline_name, moved_by, left_at)
+    values (${dealId}, ${to.id}, ${to.name}, ${to.pipelineName}, ${actorId}, ${status === "open" ? null : db`now()`})`;
   const [row] = await db<{ version: number }[]>`
     update deals set stage_id = ${to.id}, stage_entered_at = now(), version = version + 1 where id = ${dealId} returning version`;
   await recordEvent(db, {
@@ -295,7 +363,16 @@ function fieldsOf(d: DealView, personId: number | null): DealFields {
     ownerId: d.owner.id,
     expectedClose: d.expectedClose,
     private: d.private,
+    labelIds: d.labels.map((l) => l.id).sort((a, b) => a - b),
   };
+}
+
+// Deal labels the actor may keep on a deal: non-removed ones, or ones the deal already has (as people labels).
+async function allowedDealLabels(db: Sql, requested: number[], current: number[]): Promise<number[]> {
+  if (requested.length === 0) return [];
+  const rows = await db<{ id: number }[]>`
+    select id::int as id from deal_labels where id = any(${requested}::bigint[]) and (removed_at is null or id = any(${current}::bigint[]))`;
+  return rows.map((r) => r.id).sort((a, b) => a - b);
 }
 
 // Edit (not the stage: moves go through moveDeal). Archived, missing or not visible → not_found.
@@ -332,12 +409,17 @@ export async function updateDeal(actorId: number, id: number, version: number, f
         personId: person?.id ?? null,
         ownerId: await resolveOwner(db, value.ownerId, current.owner.id, current.owner.id),
         private: canSetPrivate ? value.private : current.private,
+        labelIds: await allowedDealLabels(db, value.labelIds, before.labelIds),
       };
       await db`
         update deals set title = ${after.title}, value_pence = ${after.valuePence}, organisation_id = ${after.organisationId},
                person_id = ${after.personId}, owner_id = ${after.ownerId}, expected_close_on = ${after.expectedClose},
                private = ${after.private}, version = version + 1
         where id = ${id}`;
+      await db`delete from deal_label_links where deal_id = ${id}`;
+      for (const labelId of after.labelIds) await db`insert into deal_label_links (deal_id, label_id) values (${id}, ${labelId})`;
+      // A person is linked once: the new main person leaves "Other people" (spec Clarifications).
+      if (after.personId !== null) await db`delete from deal_people where deal_id = ${id} and person_id = ${after.personId}`;
       const fields = changedDealFields(before, after);
       if (fields.length > 0) await recordEvent(db, { dealId: id, kind: "edited", actorId, fields });
       if (after.private && actorId !== current.createdBy && actorId !== after.ownerId) {
@@ -348,7 +430,7 @@ export async function updateDeal(actorId: number, id: number, version: number, f
   );
 }
 
-// A board drag or the drawer's "Move to" (research.md §4). Refused as stale when the deal is gone, archived, not
+// A board drag, the drawer's "Move to" or the deal page's stage bar (research.md §4). Refused as stale when the deal is gone, archived, not
 // visible, changed since the board was loaded (version, or not in `fromStageId` any more), or the target is unknown.
 export async function moveDeal(
   actorId: number,
@@ -356,10 +438,11 @@ export async function moveDeal(
 ): Promise<MoveResult> {
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
-    const [deal] = await db<{ stage_id: number; version: number; archived: boolean }[]>`
-      select d.stage_id::int as stage_id, d.version, d.archived_at is not null as archived from deals d
+    const [deal] = await db<{ stage_id: number; version: number; archived: boolean; status: DealStatus }[]>`
+      select d.stage_id::int as stage_id, d.version, d.archived_at is not null as archived, d.status from deals d
       where d.id = ${input.dealId} and ${visibleDeal(db, actorId)} for update`;
-    if (!deal || deal.archived || deal.version !== input.version) return { status: "stale" as const };
+    // A won or lost deal keeps its stage until it is reopened (SF-95 research.md §10).
+    if (!deal || deal.archived || deal.status !== "open" || deal.version !== input.version) return { status: "stale" as const };
     if (input.fromStageId !== null && deal.stage_id !== input.fromStageId) return { status: "stale" as const };
     if (deal.stage_id === input.toStageId) return { status: "same" as const };
     const [from, to] = await Promise.all([stageRef(db, deal.stage_id), stageRef(db, input.toStageId)]);
@@ -383,6 +466,75 @@ export async function archiveDeal(actorId: number, id: number): Promise<{ status
       await recordEvent(db, { dealId: id, kind: "archived", actorId });
     }
     return { status: "archived" as const, pipelineId: cur.pipeline_id };
+  });
+}
+
+// Any user who sees the deal (SF-95 FR-014): back where it is, status and stage unchanged. Not archived: nothing to do.
+export async function restoreDeal(actorId: number, id: number): Promise<StatusResult> {
+  return sql.begin(async (tx) => {
+    const db = tx as unknown as Sql;
+    const [cur] = await db<{ archived: boolean }[]>`
+      select d.archived_at is not null as archived from deals d where d.id = ${id} and ${visibleDeal(db, actorId)} for update`;
+    if (!cur) return { status: "not_found" as const };
+    if (cur.archived) {
+      await db`update deals set archived_at = null, version = version + 1 where id = ${id}`;
+      await recordEvent(db, { dealId: id, kind: "restored", actorId });
+    }
+    return { status: "ok" as const };
+  });
+}
+
+// --- Won, Lost, Reopen (SF-95 data-model.md § State changes) -----------------------------------------------------
+// Each: one transaction, the deal locked through visibleDeal(); a wrong version, an archived deal or a status that no
+// longer allows the change is a conflict (shown as deal_edit_conflict); a missing or hidden deal is not_found.
+
+type Locked = { status: DealStatus; archived: boolean; version: number; stage_id: number };
+
+async function lockForResult(db: Sql, actorId: number, id: number): Promise<Locked | undefined> {
+  const [row] = await db<Locked[]>`
+    select d.status, d.archived_at is not null as archived, d.version, d.stage_id::int as stage_id from deals d
+    where d.id = ${id} and ${visibleDeal(db, actorId)} for update`;
+  return row;
+}
+
+function closeDeal(actorId: number, id: number, version: number, outcome: "won" | "lost", reason: string | null): Promise<StatusResult> {
+  return sql.begin(async (tx) => {
+    const db = tx as unknown as Sql;
+    const deal = await lockForResult(db, actorId, id);
+    if (!deal) return { status: "not_found" as const };
+    if (deal.archived || deal.status !== "open" || deal.version !== version) return { status: "conflict" as const };
+    await db`update deals set status = ${outcome}, closed_at = now(), lost_reason = ${reason}, version = version + 1 where id = ${id}`;
+    // Stage days stop while the deal is closed.
+    await db`update deal_stage_periods set left_at = now() where deal_id = ${id} and left_at is null`;
+    await recordEvent(db, { dealId: id, kind: outcome, actorId, reason: reason ?? undefined });
+    return { status: "ok" as const };
+  });
+}
+
+export function markWon(actorId: number, id: number, version: number): Promise<StatusResult> {
+  return closeDeal(actorId, id, version, "won", null);
+}
+
+export async function markLost(actorId: number, id: number, version: number, raw: string): Promise<StatusResult> {
+  const v = validateLostReason(raw);
+  if (!v.ok) return { status: "invalid", code: v.code };
+  return closeDeal(actorId, id, version, "lost", v.reason);
+}
+
+// Back to the board in the stage it kept; its stage days go on from where they stopped.
+export async function reopenDeal(actorId: number, id: number, version: number): Promise<StatusResult> {
+  return sql.begin(async (tx) => {
+    const db = tx as unknown as Sql;
+    const deal = await lockForResult(db, actorId, id);
+    if (!deal) return { status: "not_found" as const };
+    if (deal.archived || deal.status === "open" || deal.version !== version) return { status: "conflict" as const };
+    const stage = (await stageRef(db, deal.stage_id))!;
+    await db`update deals set status = 'open', closed_at = null, lost_reason = null, version = version + 1 where id = ${id}`;
+    await db`
+      insert into deal_stage_periods (deal_id, stage_id, stage_name, pipeline_name, moved_by)
+      values (${id}, ${stage.id}, ${stage.name}, ${stage.pipelineName}, ${actorId})`;
+    await recordEvent(db, { dealId: id, kind: "reopened", actorId });
+    return { status: "ok" as const };
   });
 }
 

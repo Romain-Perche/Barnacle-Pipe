@@ -63,6 +63,7 @@ export function dealFormFromData(fd: FormData): DealForm {
     ownerId: text(fd, "ownerId"),
     expectedClose: text(fd, "expectedClose"),
     private: text(fd, "private") === "on",
+    labelIds: fd.getAll("labelIds").filter((v): v is string => typeof v === "string").slice(0, 200),
   };
 }
 

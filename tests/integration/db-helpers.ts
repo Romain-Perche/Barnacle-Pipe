@@ -23,7 +23,8 @@ export async function getUser(email: string) {
 
 type Table =
   | "users" | "sessions" | "user_changes" | "persons" | "organisations" | "person_emails" | "person_phones"
-  | "person_labels" | "timeline_events" | "lead_sources" | "labels" | "pipelines" | "stages" | "deals" | "deal_stage_periods";
+  | "person_labels" | "timeline_events" | "lead_sources" | "labels" | "pipelines" | "stages" | "deals" | "deal_stage_periods"
+  | "deal_labels" | "deal_label_links" | "deal_people" | "deal_followers";
 
 export async function count(table: Table): Promise<number> {
   const [row] = await sql<{ n: number }[]>`select count(*)::int as n from ${sql(table)}`;

@@ -1,7 +1,7 @@
 // covers FR-012, FR-013, FR-014, contracts/list-query.md (both lists), edge cases "page beyond the last" and
 // "search text is never echoed as a message"
 import { describe, expect, it } from "vitest";
-import { knownSector, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
+import { hasDealFilters, knownSector, parseDealsQuery, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
 
 describe("parsePeopleQuery", () => {
   it("has the defaults: sort by name A–Z, page 1, no filter", () => {
@@ -92,5 +92,61 @@ describe("knownSector", () => {
     expect(knownSector("fitness", inUse)).toBe("Fitness");
     expect(knownSector("Your account is locked, call 0800 000", inUse)).toBeNull();
     expect(knownSector(null, inUse)).toBeNull();
+  });
+});
+
+// covers SF-95 FR-010, FR-011, FR-013, US3 scenario 5 (research.md §5)
+describe("parseDealsQuery", () => {
+  it("has the defaults: newest first, page 1, open deals only", () => {
+    expect(parseDealsQuery({})).toEqual({
+      q: "", pipeline: null, stage: null, owner: null, label: null, status: null,
+      sort: "added", dir: "desc", page: 1, closed: false, archived: false, open: null,
+    });
+  });
+  it("reads every parameter and the seven sorts", () => {
+    expect(
+      parseDealsQuery({
+        q: " fake ", pipeline: "1", stage: "2", owner: "3", label: "4", status: "won", sort: "value", dir: "asc", page: "2",
+        closed: "1", archived: "1", open: "8",
+      }),
+    ).toEqual({
+      q: "fake", pipeline: 1, stage: 2, owner: 3, label: 4, status: "won", sort: "value", dir: "asc", page: 2,
+      closed: true, archived: true, open: 8,
+    });
+    for (const sort of ["title", "value", "organisation", "stage", "owner", "close", "added"]) expect(parseDealsQuery({ sort }).sort).toBe(sort);
+    for (const status of ["open", "won", "lost"]) expect(parseDealsQuery({ status }).status).toBe(status);
+  });
+  it("ignores invalid values", () => {
+    expect(
+      parseDealsQuery({
+        sort: "evil", dir: "up", stage: "abc", pipeline: "0", owner: "-2", label: "1.5", status: "deleted", page: "x",
+        closed: "yes", archived: "true", open: "<b>",
+      }),
+    ).toEqual(parseDealsQuery({}));
+    expect(parseDealsQuery({ q: "x".repeat(300) }).q.length).toBe(200);
+  });
+  it("knows when a filter is set", () => {
+    expect(hasDealFilters(parseDealsQuery({}))).toBe(false);
+    expect(hasDealFilters(parseDealsQuery({ sort: "value", page: "2" }))).toBe(false);
+    for (const key of ["q", "pipeline", "stage", "owner", "label"]) expect(hasDealFilters(parseDealsQuery({ [key]: "5" })), key).toBe(true);
+    expect(hasDealFilters(parseDealsQuery({ closed: "1" }))).toBe(true);
+    expect(hasDealFilters(parseDealsQuery({ archived: "1" }))).toBe(true);
+  });
+});
+
+describe("withParams on the deal list", () => {
+  it("drops the deal defaults (sort=added, dir=desc) but keeps sort=name and dir=asc", () => {
+    expect(withParams("/deals/list", parseDealsQuery({}), {})).toBe("/deals/list");
+    expect(withParams("/deals/list", parseDealsQuery({ sort: "title", dir: "asc" }), {})).toBe("/deals/list?sort=title&dir=asc");
+  });
+  it("writes the deal filters in a fixed order, closed and archived as 1", () => {
+    const q = parseDealsQuery({ q: "fake", pipeline: "1", stage: "2", owner: "3", label: "4", status: "lost", closed: "1", page: "2", open: "7" });
+    expect(withParams("/deals/list", q, {})).toBe("/deals/list?q=fake&pipeline=1&stage=2&owner=3&label=4&status=lost&page=2&closed=1&open=7");
+  });
+  it("goes back to page 1 and closes the drawer when a filter changes", () => {
+    const q = parseDealsQuery({ pipeline: "1", page: "3", open: "7" });
+    expect(withParams("/deals/list", q, { owner: 2 })).toBe("/deals/list?pipeline=1&owner=2");
+    expect(withParams("/deals/list", q, { closed: true })).toBe("/deals/list?pipeline=1&closed=1");
+    expect(withParams("/deals/list", q, { open: 9 })).toBe("/deals/list?pipeline=1&page=3&open=9");
   });
 });

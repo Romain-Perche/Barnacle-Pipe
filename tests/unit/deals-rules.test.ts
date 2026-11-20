@@ -1,7 +1,9 @@
 // covers FR-005, FR-001, FR-002, FR-007 (edited field labels), edge case "£4,000.50 / 4000.5 saved as £4,000.50",
 // clarification "largest value £9,999,999,999.99" (research.md §2, data-model.md § Validation)
 import { describe, expect, it } from "vitest";
-import { changedDealFields, parseMoney, validateDeal, validatePipelineName, type DealFields, type DealForm } from "@/server/deals/rules";
+import {
+  changedDealFields, parseBack, parseMoney, stageBar, validateDeal, validateLostReason, validatePipelineName, type DealFields, type DealForm,
+} from "@/server/deals/rules";
 
 function form(over: Partial<DealForm> = {}): DealForm {
   return {
@@ -15,6 +17,7 @@ function form(over: Partial<DealForm> = {}): DealForm {
     ownerId: "",
     expectedClose: "",
     private: false,
+    labelIds: [],
     ...over,
   };
 }
@@ -78,6 +81,7 @@ describe("validateDeal", () => {
         ownerId: 4,
         expectedClose: null,
         private: true,
+        labelIds: [],
       },
     });
     const typed = validateDeal(form({ organisationId: "", newOrganisationName: "  New Fakeco  ", personId: "abc", stageId: "-1" }));
@@ -105,6 +109,7 @@ describe("changedDealFields", () => {
     ownerId: 3,
     expectedClose: null,
     private: false,
+    labelIds: [],
   };
   it("lists only the labels of changed fields, in form order", () => {
     expect(changedDealFields(before, { ...before })).toEqual([]);
@@ -143,5 +148,72 @@ describe("parseBoardQuery and boardHref", () => {
     expect(boardHref(3, { open: 12 })).toBe("/deals?pipeline=3&open=12");
     expect(boardHref(3, { open: 12, confirm: "delete" })).toBe("/deals?pipeline=3&open=12&confirm=delete");
     expect(boardHref(3, { error: "deal_changed" })).toBe("/deals?pipeline=3&error=deal_changed");
+  });
+});
+
+// covers SF-95 FR-002, US1 scenario 2, Edge Cases "whole days rounded down", "later stages show no count"
+describe("stageBar", () => {
+  const DAY = 86400;
+  const stages = [
+    { id: 1, name: "Lead in", seconds: 0 },
+    { id: 2, name: "Qualified", seconds: 3 * DAY + 3600 },
+    { id: 3, name: "Proposal", seconds: 5 * DAY + 10 },
+    { id: 4, name: "Negotiation", seconds: 2 * DAY },
+    { id: 5, name: "Closing", seconds: 0 },
+  ];
+  it("marks earlier stages done with whole days, the current one now, later ones next with no count", () => {
+    expect(stageBar(stages, 3)).toEqual([
+      { id: 1, name: "Lead in", state: "done", days: 0 },
+      { id: 2, name: "Qualified", state: "done", days: 3 },
+      { id: 3, name: "Proposal", state: "now", days: 5 },
+      { id: 4, name: "Negotiation", state: "next", days: null },
+      { id: 5, name: "Closing", state: "next", days: null },
+    ]);
+  });
+  it("rounds down: under a day is 0 days", () => {
+    expect(stageBar([{ id: 9, name: "Intro", seconds: DAY - 1 }], 9)).toEqual([{ id: 9, name: "Intro", state: "now", days: 0 }]);
+  });
+});
+
+// covers SF-95 FR-005, US2 scenario 3, Edge Cases "a lost reason is up to 500 characters; spaces around it are removed"
+describe("validateLostReason", () => {
+  it("trims the reason and refuses an empty one", () => {
+    expect(validateLostReason("  Went with a competitor  ")).toEqual({ ok: true, reason: "Went with a competitor" });
+    expect(validateLostReason("")).toEqual({ ok: false, code: "lost_reason_required" });
+    expect(validateLostReason("   ")).toEqual({ ok: false, code: "lost_reason_required" });
+  });
+  it("takes 500 characters and refuses 501", () => {
+    expect(validateLostReason("x".repeat(500))).toEqual({ ok: true, reason: "x".repeat(500) });
+    expect(validateLostReason("x".repeat(501))).toEqual({ ok: false, code: "lost_reason_too_long" });
+    expect(validateLostReason(` ${"x".repeat(500)} `)).toEqual({ ok: true, reason: "x".repeat(500) });
+  });
+});
+
+// covers SF-95 FR-017, US5 scenario 3 ("Edited by <name>: Labels")
+describe("deal labels on the form", () => {
+  it("reads label ids sorted, without duplicates or junk, at most 200", () => {
+    const v = validateDeal(form({ labelIds: ["3", "1", "3", "abc", "0", "2"] }));
+    expect(v.ok && v.value.labelIds).toEqual([1, 2, 3]);
+    const many = validateDeal(form({ labelIds: Array.from({ length: 300 }, (_, i) => String(i + 1)) }));
+    expect(many.ok && many.value.labelIds.length).toBe(200);
+  });
+  it("lists Labels after Person when they differ, not when only the order differs", () => {
+    const base = validateDeal(form({ labelIds: ["1", "2"] }));
+    const reordered = validateDeal(form({ labelIds: ["2", "1"] }));
+    const changed = validateDeal(form({ labelIds: ["1"], personId: "4" }));
+    if (!base.ok || !reordered.ok || !changed.ok) throw new Error("invalid");
+    expect(changedDealFields(base.value, reordered.value)).toEqual([]);
+    expect(changedDealFields(base.value, changed.value)).toEqual(["Person", "Labels"]);
+  });
+});
+
+// covers SF-95 research.md §8: where actions from the deal page return
+describe("parseBack", () => {
+  it("allows page and list only; anything else means the board", () => {
+    expect(parseBack("page")).toBe("page");
+    expect(parseBack("list")).toBe("list");
+    expect(parseBack("")).toBeNull();
+    expect(parseBack("https://example.com")).toBeNull();
+    expect(parseBack(null)).toBeNull();
   });
 });

@@ -116,6 +116,44 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-95 T001, T004, FR-005, FR-008: 0005_deal_page.sql on a fresh database keeps status, closed date and reason consistent
+  it("applies 0005_deal_page.sql: refuses a won deal without a date, a lost deal without a reason, a long reason, a lost event without a reason", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0005_deal_page.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [p] = await c`insert into pipelines (name, position) values ('Sales', 1) returning id`;
+      const [s] = await c`insert into stages (pipeline_id, name, position) values (${p.id}, 'Lead in', 1) returning id`;
+      const [d] = await c`insert into deals (title, stage_id, owner_id, created_by) values ('Fakeco website', ${s.id}, ${u.id}, ${u.id}) returning id, status`;
+      expect(d.status).toBe("open");
+      expect(await code(c`update deals set status = 'won' where id = ${d.id}`)).toBe("23514");
+      expect(await code(c`update deals set status = 'lost', closed_at = now() where id = ${d.id}`)).toBe("23514");
+      expect(await code(c`update deals set status = 'lost', closed_at = now(), lost_reason = ${"x".repeat(501)} where id = ${d.id}`)).toBe("23514");
+      expect(await code(c`update deals set status = 'lost', closed_at = now(), lost_reason = ' padded ' where id = ${d.id}`)).toBe("23514");
+      expect(await code(c`update deals set status = 'lost', closed_at = now(), lost_reason = ${"x".repeat(500)} where id = ${d.id}`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (deal_id, kind, actor_id) values (${d.id}, 'lost', ${u.id})`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (deal_id, kind, actor_id, reason) values (${d.id}, 'won', ${u.id}, 'x')`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (deal_id, kind, actor_id, reason) values (${d.id}, 'lost', ${u.id}, 'Fake budget cut')`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (deal_id, kind, actor_id) values (${d.id}, 'reopened', ${u.id})`)).toBe("ok");
+      const [l] = await c`insert into deal_labels (name) values ('Hot') returning id`;
+      expect(await code(c`insert into deal_labels (name) values (' hot')`)).toBe("23514");
+      expect(await code(c`insert into deal_labels (name) values ('HOT')`)).toBe("23505");
+      await c`insert into deal_label_links (deal_id, label_id) values (${d.id}, ${l.id})`;
+      const [person] = await c`insert into persons (first_name, owner_id, created_by) values ('Bob', ${u.id}, ${u.id}) returning id`;
+      await c`insert into deal_people (deal_id, person_id, linked_by) values (${d.id}, ${person.id}, ${u.id})`;
+      await c`insert into deal_followers (deal_id, user_id) values (${d.id}, ${u.id})`;
+      await c`delete from deals where id = ${d.id}`;
+      const [{ n }] = await c`select (select count(*) from deal_label_links) + (select count(*) from deal_people) + (select count(*) from deal_followers) as n`;
+      expect(Number(n)).toBe(0);
+    } finally {
+      await c.end();
+    }
+  });
+
   // covers SF-93 T013: the deals code keeps to the Supabase transaction-mode pooler's limits (no session state)
   it("keeps the deals code free of session state (set, listen, session advisory locks)", () => {
     const dir = "src/server/deals";
@@ -124,8 +162,12 @@ describe("npm run db:migrate", () => {
       expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
       expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
     }
-    const migration = readFileSync("migrations/0004_pipelines_deals.sql", "utf8");
-    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    // SF-95 T012: the list and links files are in the folder scanned above; check they exist so the scan covers them.
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["list.ts", "links.ts"]));
+    for (const file of ["0004_pipelines_deals.sql", "0005_deal_page.sql"]) {
+      const migration = readFileSync(`migrations/${file}`, "utf8");
+      expect(migration, file).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    }
   });
 
   it("runs twice at the same time: both finish, each migration applied once, no lock left", async () => {
