@@ -17,7 +17,7 @@
   `migrations/0002_people_organisations.sql`, checked on a fresh database by `tests/integration/migrate.test.ts`.
   SF-92 adds `migrations/0003_private_owner_handover.sql` (plain `alter table`/`create index`, no new table;
   `migrate.test.ts` applies it on a fresh database and checks Postgres's own 23514 check violations) and keeps the
-  same limits: `updatePerson`'s visibility re-check, `deletePerson` and `handOverPrivatePeople` (row locks on
+  same limits: `updatePerson`'s visibility re-check, `deletePerson` and `handOverPrivateRecords` (SF-97: also moves private deals; row locks on
   `users … for update`, no advisory lock) each run in one `sql.begin()` transaction.
   The pipelines and deals code (SF-93, `src/server/deals/`) keeps to the same pooler limits (no `set`/`listen`/session
   advisory lock, checked by `tests/integration/migrate.test.ts`; every change one `sql.begin()`); its tables come from
@@ -59,8 +59,9 @@
     to Fakeco Ltd) and Sam Leftfake private, owned by deactivated Alan Fake) and 9 fake organisations ("Old Fakeco
     Archive" is archived), labels Hot/Investor/Partner, and (SF-93)
     the pipelines Sales (Lead in, Qualified, Proposal, Negotiation, Closing — Closing empty), Ambassadors, Fractional
-    CTO, Exec Dinner and "Ada Fake's pipeline" with 44 fake deals: "Old fake opportunity" is archived, "Fake secret
-    project" and "Ada's fake prospect 2" are private (created by Ada Fake), "Lorem Logistics tracking" is NOT linked to
+    CTO, Exec Dinner and "Ada Fake's pipeline" with 46 fake deals: "Old fake opportunity" is archived, "Fake secret
+    project" and "Ada's fake prospect 2" are private (created by Ada Fake), SF-97: "Fake leaver deal" (Sales · Lead in)
+    and the archived "Fake leaver old deal" are private, created and owned by deactivated Alan Fake, "Lorem Logistics tracking" is NOT linked to
     Gus Lorem since the SF-92 merge (the seed picks people by id; `scenarios-sf93.js` links him by SQL for US6-4), some deals have a "moved" history line. The seed already has a "Fakeco website" deal: scenario
     scripts that add their own should delete it first (the browser tests do).
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
@@ -78,7 +79,8 @@
     `innerText` (the page's `<script>` payload holds the address). Deactivation is done by SQL (`users.status`).
   - People and organisations scenarios (SF-90) are covered by `tests/e2e/{people,organisations,lists,archive-delete,private,choices}.spec.ts`;
     SF-92 by `tests/e2e/private.spec.ts` (owner sees a private person), `archive-delete.spec.ts` ("A deleted person
-    was linked by …") and `handover.spec.ts` (Users page hand-over panel: `form.handover`, select "Hand over to");
+    was linked by …") and `handover.spec.ts` (Users page hand-over panel: `form.handover`, select "Hand over to"; SF-97 adds the private
+    deals: Alan's row reads "2 private people · 2 private deals");
     a "direct request" check replays a server action form post (`$ACTION_ID_…` field from the server-rendered
     page, see `tests/e2e/records.ts` `actionField`) as a non-admin.
   - SF-90 scenario script `scenarios-sf90.js` (all 47 US1–US6 and edge-case scenarios, against :3000/crm_dev):
@@ -97,6 +99,12 @@
     address to `secret@example.com` and gives Alan two extra private people by SQL (the owner select only offers
     active users), deactivates Grace by SQL for edge 6, and replays the hand-over action as a direct post (edge 7, US3-7).
     Person pages: `[ DELETE ]` is a link that opens the confirm, then `[ DELETE FOR GOOD ]`; phones column is `phone`.
+  - SF-97 scenario script `scenarios-sf97.js` (US1 1–6, US2 1–3, edge cases 1–13, 27 checks, ~2 min, :3000/crm_dev): it
+    resets the data itself (five phases, `reset-db.sh` between them), so just run
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf97.js`. Notes: the `deals` column is
+    `expected_close_on`; the deal drawer has no creator field (creator shows as "Added by <name>" in // HISTORY, without
+    "(deactivated)"; the seeded deals' `added` event has no actor); an empty drawer field shows "—"; reload the panel page
+    before reading its `$ACTION_ID_` input for a direct post.
   - Playwright scenario scripts (`NODE_PATH=/opt/playwright/node_modules node <script>`): `scenarios-main.js`
     (:3000, crm_dev freshly reset), `scenarios-env.js` (:3101 empty DB + FIRST_ADMIN boss@, :3102 empty DB no
     FIRST_ADMIN, :3103 VERCEL_ENV=preview, :3104 APP_ENV empty, :3105 production, :3106 development+VERCEL_ENV

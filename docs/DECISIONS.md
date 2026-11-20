@@ -51,3 +51,4 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - An admin can hand all of a deactivated user's private people to one active user, who becomes their owner; the admin only sees how many there are (SF-92)
 - Handing over a deactivated user's private people uses design B: [ HAND OVER ] on the user's row opens a panel above the Users table with the user choice and the question (SF-92)
 - Handing over private people removes nothing automatically: the new owner sees the people and their email addresses and can remove an address or make the person shared (SF-92)
+- Handing over a deactivated user's private people also hands over the private deals they own, archived ones included, so a private deal is never left visible to nobody (SF-97)

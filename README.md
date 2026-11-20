@@ -41,7 +41,9 @@ The fake data also has 35 fake people (`@example.com` / `@example.net`, one arch
 created by Ada Fake; private Pat Privatefake, created by Ada Fake and owned by Linus Fake; private Robin and
 Sam Leftfake, owned by deactivated Alan Fake, to try the hand-over), 9 fake organisations (one archived), the labels
 Hot, Investor and Partner, and the pipelines Sales, Ambassadors, Fractional CTO, Exec Dinner and "Ada Fake's
-pipeline" with 44 fake deals (Sales "Closing" left empty, one archived deal, two private deals created by Ada Fake). A fresh
+pipeline" with 46 fake deals (Sales "Closing" left empty, one archived deal, two private deals created by Ada Fake, and
+two private Sales deals created and owned by Alan Fake, "Fake leaver deal" and the archived "Fake leaver old deal", for
+the hand-over). A fresh
 database (no fake data) starts with the six lead sources Duncan's LinkedIn, Referral, Exec dinner, Inbound,
 Event and Ambassador, and no labels.
 
