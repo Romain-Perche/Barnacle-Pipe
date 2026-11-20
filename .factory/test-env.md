@@ -17,7 +17,7 @@
   `migrations/0002_people_organisations.sql`, checked on a fresh database by `tests/integration/migrate.test.ts`.
   SF-92 adds `migrations/0003_private_owner_handover.sql` (plain `alter table`/`create index`, no new table;
   `migrate.test.ts` applies it on a fresh database and checks Postgres's own 23514 check violations) and keeps the
-  same limits: `updatePerson`'s visibility re-check, `deletePerson` and `handOverPrivatePeople` (row locks on
+  same limits: `updatePerson`'s visibility re-check, `deletePerson` and `handOverPrivateRecords` (SF-97: also moves private deals; row locks on
   `users … for update`, no advisory lock) each run in one `sql.begin()` transaction.
   The pipelines and deals code (SF-93, `src/server/deals/`) keeps to the same pooler limits (no `set`/`listen`/session
   advisory lock, checked by `tests/integration/migrate.test.ts`; every change one `sql.begin()`); its tables come from
@@ -59,8 +59,9 @@
     to Fakeco Ltd) and Sam Leftfake private, owned by deactivated Alan Fake) and 9 fake organisations ("Old Fakeco
     Archive" is archived), labels Hot/Investor/Partner, and (SF-93)
     the pipelines Sales (Lead in, Qualified, Proposal, Negotiation, Closing — Closing empty), Ambassadors, Fractional
-    CTO, Exec Dinner and "Ada Fake's pipeline" with 44 fake deals: "Old fake opportunity" is archived, "Fake secret
-    project" and "Ada's fake prospect 2" are private (created by Ada Fake), "Lorem Logistics tracking" is NOT linked to
+    CTO, Exec Dinner and "Ada Fake's pipeline" with 46 fake deals: "Old fake opportunity" is archived, "Fake secret
+    project" and "Ada's fake prospect 2" are private (created by Ada Fake), SF-97: "Fake leaver deal" (Sales · Lead in)
+    and the archived "Fake leaver old deal" are private, created and owned by deactivated Alan Fake, "Lorem Logistics tracking" is NOT linked to
     Gus Lorem since the SF-92 merge (the seed picks people by id; `scenarios-sf93.js` links him by SQL for US6-4), some deals have a "moved" history line. The seed already has a "Fakeco website" deal: scenario
     scripts that add their own should delete it first (the browser tests do).
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
@@ -78,7 +79,8 @@
     `innerText` (the page's `<script>` payload holds the address). Deactivation is done by SQL (`users.status`).
   - People and organisations scenarios (SF-90) are covered by `tests/e2e/{people,organisations,lists,archive-delete,private,choices}.spec.ts`;
     SF-92 by `tests/e2e/private.spec.ts` (owner sees a private person), `archive-delete.spec.ts` ("A deleted person
-    was linked by …") and `handover.spec.ts` (Users page hand-over panel: `form.handover`, select "Hand over to");
+    was linked by …") and `handover.spec.ts` (Users page hand-over panel: `form.handover`, select "Hand over to"; SF-97 adds the private
+    deals: Alan's row reads "2 private people · 2 private deals");
     a "direct request" check replays a server action form post (`$ACTION_ID_…` field from the server-rendered
     page, see `tests/e2e/records.ts` `actionField`) as a non-admin.
   - SF-90 scenario script `scenarios-sf90.js` (all 47 US1–US6 and edge-case scenarios, against :3000/crm_dev):

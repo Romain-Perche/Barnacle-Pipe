@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertAdminForAction } from "@/server/auth/session";
 import { setFlash } from "@/server/records/flash";
-import { handOverPrivatePeople } from "@/server/records/handover";
+import { handOverPrivateRecords } from "@/server/records/handover";
 import * as users from "@/server/users";
 
 const PAGE = "/admin/users";
@@ -49,8 +49,9 @@ export async function reactivate(formData: FormData) {
   await onUser(formData, users.reactivate);
 }
 
-// Hand a deactivated user's private people to an active user (SF-92 contracts/routes.md § handOver).
-// handOverPrivatePeople re-checks every rule inside its locked transaction.
+// Hand a deactivated user's private people and private deals to an active user (SF-92 contracts/routes.md §
+// handOver, SF-97).
+// handOverPrivateRecords re-checks every rule inside its locked transaction.
 export async function handOver(formData: FormData) {
   const actor = await assertAdminForAction();
   const userId = userIdFrom(formData);
@@ -58,12 +59,13 @@ export async function handOver(formData: FormData) {
   const to = Number(formData.get("toUserId"));
   const chooseAgain = `${PAGE}?handover=${userId}&error=handover_choose_user`;
   if (!Number.isSafeInteger(to) || to <= 0) redirect(chooseAgain);
-  const result = await handOverPrivatePeople(actor.id, userId, to);
+  const result = await handOverPrivateRecords(actor.id, userId, to);
   revalidatePath("/admin/users");
   revalidatePath("/people");
+  revalidatePath("/deals");
   switch (result.status) {
     case "handed":
-      await setFlash({ code: "handed_over", name: result.toName, count: result.count });
+      await setFlash({ code: "handed_over", name: result.toName, count: result.people, deals: result.deals });
       redirect(PAGE);
     case "none":
       await setFlash({ code: "handover_none", name: result.fromName });

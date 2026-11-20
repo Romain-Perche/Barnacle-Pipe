@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { runSeeders } from "@/seed";
+import { listUsers } from "@/server/users";
 import { count, resetDb } from "./db-helpers";
 
 beforeEach(resetDb);
@@ -231,5 +232,28 @@ describe("fake private people (SF-92)", () => {
     await runSeeders(sql);
     expect(await count("persons")).toBe(rows);
     expect(await count("timeline_events")).toBe(events);
+  });
+});
+
+// covers FR-010 (SF-97): two private deals created and owned by deactivated Alan Fake, one archived, added once
+describe("fake private deals of Alan Fake (SF-97)", () => {
+  it("adds Fake leaver deal (open) and Fake leaver old deal (archived), and a second run adds no duplicate", async () => {
+    await runSeeders(sql);
+    const leaver = () => sql`
+      select d.title, d.private, cu.name as creator, ou.name as owner, d.archived_at is not null as archived, s.name as stage, p.name as pipeline,
+             (select array_agg(e.kind order by e.id) from timeline_events e where e.deal_id = d.id) as events,
+             (select count(*)::int from deal_stage_periods x where x.deal_id = d.id and x.left_at is null and x.stage_id = d.stage_id) as open_periods
+      from deals d join users cu on cu.id = d.created_by join users ou on ou.id = d.owner_id
+      join stages s on s.id = d.stage_id join pipelines p on p.id = s.pipeline_id
+      where d.title like 'Fake leaver%' order by d.title`;
+    const rows = await leaver();
+    expect(rows).toEqual([
+      { title: "Fake leaver deal", private: true, creator: "Alan Fake", owner: "Alan Fake", archived: false, stage: expect.any(String), pipeline: "Sales", events: ["added"], open_periods: 1 },
+      { title: "Fake leaver old deal", private: true, creator: "Alan Fake", owner: "Alan Fake", archived: true, stage: expect.any(String), pipeline: "Sales", events: ["added", "archived"], open_periods: 1 },
+    ]);
+    const alan = (await listUsers()).find((u) => u.name === "Alan Fake")!;
+    expect([alan.private_people, alan.private_deals]).toEqual([2, 2]);
+    await runSeeders(sql);
+    expect(await leaver()).toEqual(rows);
   });
 });
