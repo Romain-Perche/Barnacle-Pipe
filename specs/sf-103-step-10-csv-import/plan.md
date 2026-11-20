@@ -25,7 +25,8 @@ unit-tested, database module integration-tested), server pages, one client compo
 already in the repo. CSV parsing in-repo (research.md §1); `TextDecoder` with `fatal: true` for UTF-8.
 
 **Storage**: PostgreSQL (local for dev/tests, Supabase through its pooler in production). New migration
-`migrations/0006_csv_imports.sql`: table `csv_imports`, timeline kind `imported` (data-model.md).
+`migrations/0006_csv_imports.sql`: table `csv_imports`, timeline kind `imported`; the kind list also keeps `note`
+from SF-102, built at the same time, so the two migrations work in either order (data-model.md).
 
 **Testing**: Vitest unit (`csv.ts`: delimiters, quotes, BOM, line ends, invalid UTF-8, xlsx header; `columns.ts`:
 suggestions, mapping checks, example file; `rows.ts`: full name, splitting, consent, size, lengths; `plan.ts`:

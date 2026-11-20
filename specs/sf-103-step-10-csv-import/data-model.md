@@ -4,6 +4,8 @@
 
 Only statements allowed in a transaction; RLS on the new table, no policy. Confirm the constraint name
 `timeline_events_kind_check` on a migrated database first (it was re-created by 0003, 0004 and 0005).
+The kind list also keeps `'note'`: SF-102 (timeline and notes) is built at the same time and its migration
+adds `'note'` to the same constraint, so both orders keep both kinds (person's reply, 2026-11-20).
 
 ```sql
 -- SF-103: CSV imports of people and organisations, and the "imported" timeline event.
@@ -31,7 +33,7 @@ create index csv_imports_created_at_idx on csv_imports (created_at);
 alter table timeline_events drop constraint timeline_events_kind_check;
 alter table timeline_events add constraint timeline_events_kind_check
   check (kind in ('added', 'edited', 'archived', 'restored', 'person_linked', 'person_unlinked', 'handed_over', 'moved',
-                  'won', 'lost', 'reopened', 'imported'));
+                  'won', 'lost', 'reopened', 'imported', 'note'));
 ```
 
 No change to `persons`, `organisations` or their child tables: imported records are ordinary records

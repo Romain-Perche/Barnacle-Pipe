@@ -15,6 +15,7 @@
 - Q: Which design do you want for the CSV import page? → A: Design: B, step by step: one screen per step (1 FILE, 2 COLUMNS, 3 PREVIEW, 4 REPORT) with a step bar and `[ BACK ]` (see `design-options.html`).
 - Q: A CSV row has the email address of a person already in the CRM. What happens? → A: The row is not imported; the existing person stays as it is, and the report lists the row.
 - Q: A person row in the file has no consent value. Which consent does the person get? → A: The user must choose Subscribed or Unsubscribed for these rows before `[ IMPORT ]`; nothing is chosen in advance.
+- Q: SF-102 (timeline and notes) is built at the same time and its migration also replaces the list of timeline event kinds, adding 'note'. → A: This step's migration keeps 'note' in the list of timeline event kinds too, beside 'imported', so the two steps work in either order. (alexis@barnacle.ai)
 
 ### Plan 2026-11-20
 
