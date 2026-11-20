@@ -1,8 +1,8 @@
 // SF-95 (deal list, deal page, Won/Lost/Reopen, restore, links, labels, followers) AI-review scenario script: every
-// US1–US5 scenario and edge cases 1–13 of the spec. Run on a freshly seeded crm_dev with the app on :3000:
+// US1–US5 scenario and edge cases 1–14 of the spec. Run on a freshly seeded crm_dev with the app on :3000:
 //   bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf95.js
 // Scenarios run in order; each makes its own "SF95 …" deals by SQL (with back-dated stage periods where days matter).
-// Edge case 11 runs last: it deletes every deal.
+// Edge case 12 runs last: it deletes every deal. (Numbering follows the spec after fix round 1: edge 11 = unknown owner/label.)
 const { execFileSync } = require("child_process");
 const { chromium, results, check, signIn } = require("./lib");
 const BASE = "http://localhost:3000";
@@ -402,6 +402,8 @@ async function postAction(page, actionPagePath, buttonName, fields, asPage) {
   });
 
   await run("US5 scenario 3", async () => {
+    // give the deal its main person's organisation first, so saving changes only the labels (SF-93 FR-006 fills an empty organisation)
+    sql(`update deals d set organisation_id=p.organisation_id from persons p where p.id=d.person_id and d.id=${linkId} and d.organisation_id is null`);
     await go(ada, `/deals/${linkId}/edit?back=page`);
     await ada.getByRole("group", { name: "Labels" }).getByLabel("Renewal").check(); await ada.getByRole("group", { name: "Labels" }).getByLabel("Big ticket").check();
     await click(ada, ada.locator("text=[ SAVE ]"));
@@ -629,15 +631,25 @@ async function postAction(page, actionPagePath, buttonName, fields, asPage) {
     check("Edge case 10", JSON.stringify(last) === JSON.stringify(p2) && last.length > 0 && c === listExpected("Linus Fake", `d.archived_at is null and d.status='open' and s.pipeline_id=${amb}`) && stageSel === "", `page=99 shows the last page (= page 2, ${last.length} rows, pager ${pager}); Ambassadors + a Sales stage → "${c}" (whole pipeline), stage select "${stageSel}"`);
   });
 
-  await run("Edge case 12", async () => {
+  await run("Edge case 11", async () => {
+    const base = async (q) => { await go(linus, "/deals/list" + q); return { c: ((await linus.locator(".head-r .count").textContent()) || "").trim(), t: await listTitles(linus),
+      owner: await linus.locator('select[name="owner"] option:checked').textContent().catch(() => "none"), label: await linus.locator('select[name="label"] option:checked').textContent().catch(() => "none"),
+      clear: await linus.getByRole("link", { name: /CLEAR/ }).count(), txt: await vis(linus) }; };
+    const plain = await base(""); const o = await base("?owner=99999"); const l = await base("?label=99999"); const both = await base("?owner=99999&label=99999&sort=value&dir=desc");
+    const sorted = await base("?sort=value&dir=desc");
+    const ok = (x, y) => x.c === y.c && JSON.stringify(x.t) === JSON.stringify(y.t) && /Any owner/.test(x.owner) && /Any label/.test(x.label) && x.clear === 0 && !x.txt.includes("99999") && !x.txt.includes("No deals match");
+    check("Edge case 11", ok(o, plain) && ok(l, plain) && ok(both, sorted) && plain.c === listExpected("Linus Fake"), `plain "${plain.c}"; owner=99999 "${o.c}" sel "${o.owner}" clear ${o.clear}; label=99999 "${l.c}" sel "${l.label}" clear ${l.clear}; both+sort "${both.c}" rows same ${JSON.stringify(both.t) === JSON.stringify(sorted.t)}`);
+  });
+
+  await run("Edge case 13", async () => {
     await go(ada, "/deals/list?closed=1&archived=1");
     const t = await listTitles(ada); const exp = sql(`select title from deals where archived_at is not null order by created_at desc, id desc`).split("\n");
     const st = sql(`select distinct status from deals where archived_at is not null order by 1`).replace(/\n/g, ",");
     const c = ((await ada.locator(".head-r .count").textContent()) || "").trim();
-    check("Edge case 12", JSON.stringify(t) === JSON.stringify(exp) && st.split(",").length >= 2 && c === listExpected("Ada Fake", "d.archived_at is not null"), `both ticked: ${JSON.stringify(t)} (statuses ${st}), "${c}"`);
+    check("Edge case 13", JSON.stringify(t) === JSON.stringify(exp) && st.split(",").length >= 2 && c === listExpected("Ada Fake", "d.archived_at is not null"), `both ticked: ${JSON.stringify(t)} (statuses ${st}), "${c}"`);
   });
 
-  await run("Edge case 13", async () => {
+  await run("Edge case 14", async () => {
     const id = mkDeal({ title: "SF95 Delete me", periods: [["Lead in", 1, null]] });
     await go(ada, `/deals/${id}`); await click(ada, ada.getByRole("link", { name: "[ DELETE ]" }));
     const conf = (await vis(ada)).includes("Delete SF95 Delete me for good? This can't be undone.");
@@ -651,14 +663,14 @@ async function postAction(page, actionPagePath, buttonName, fields, asPage) {
     await linus.request.post(BASE + `/deals/${id2}`, { multipart: { [field]: "", id: String(id2), back: "list" }, maxRedirects: 0 });
     const kept = one(`select count(*) from deals where id=${id2}`);
     await go(linus, `/deals/${id2}`); const noBtn = await linus.getByRole("link", { name: "[ DELETE ]" }).count();
-    check("Edge case 13", conf && url.endsWith("/deals/list") && msg && gone === "0" && kept === "1" && noBtn === 0, `confirm text ${conf}; → ${url} "SF95 Delete me was deleted." ${msg}; deleted ${gone === "0"}; Linus direct delete refused (deal kept ${kept}), no [ DELETE ] for him ${noBtn === 0}`);
+    check("Edge case 14", conf && url.endsWith("/deals/list") && msg && gone === "0" && kept === "1" && noBtn === 0, `confirm text ${conf}; → ${url} "SF95 Delete me was deleted." ${msg}; deleted ${gone === "0"}; Linus direct delete refused (deal kept ${kept}), no [ DELETE ] for him ${noBtn === 0}`);
   });
 
-  await run("Edge case 11", async () => {
+  await run("Edge case 12", async () => {
     await go(ada, "/deals/list?q=zzzznothing"); const a = (await vis(ada)).includes("No deals match these filters.");
     sql("delete from deals");
     await go(ada, "/deals/list"); const b = (await vis(ada)).includes("No deals yet.");
-    check("Edge case 11", a && b, `filter with no match → "No deals match these filters." ${a}; no deals at all → "No deals yet." ${b}`);
+    check("Edge case 12", a && b, `filter with no match → "No deals match these filters." ${a}; no deals at all → "No deals yet." ${b}`);
   });
 
   await browser.close();

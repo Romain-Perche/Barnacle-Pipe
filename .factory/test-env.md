@@ -84,13 +84,13 @@
     the `region` "Deal labels" (input "New deal label"). The deal list's count line is `.head-r .count`; its title links are
     `td:first-child a.nm` (each row also has a hidden "Preview <title>" link: use `exact: true`). Saving a deal with no
     organisation and a main person fills the person's organisation (SF-93 FR-006): an "Edited: Organisation, …" line.
-  - SF-95 AI-review scenario script `scenarios-sf95.js` (all 41 US1–US5 scenarios and edge cases 1–13, ~3 min, against
+  - SF-95 AI-review scenario script `scenarios-sf95.js` (all 42 US1–US5 scenarios and edge cases 1–14 as renumbered by SF-95 fix round 1 — edge 11 is the unknown owner/label address, edge 12 the empty list, ~3 min, against
     :3000/crm_dev on fresh fake data; makes its own "SF95 …" deals by SQL with back-dated stage periods, adds 60 "SF95 Bulk"
-    deals of Linus for paging; ends with Edge case 11, which deletes every deal):
+    deals of Linus for paging; ends with Edge case 12, which deletes every deal):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf95.js`.
     Notes: Robin Leftfake is private (owned by Alan), so the script uses a public person as main person; the filter row's
     AutoSubmit posts every field (`pipeline=` empty), so wait for `/pipeline=\d/`; a "NOTE" line prints what the list does
-    with unknown owner/label/pipeline ids (FR-013). Same-pipeline moves read "Moved from Proposal to Negotiation by …".
+    with unknown owner/label/pipeline ids (FR-013). Same-pipeline moves read "Moved from Proposal to Negotiation by …". US5-3 gives its deal the main person's organisation first, else saving also fills it ("Edited by …: Organisation, Labels").
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
     (real drag with `locator.dragTo`; a failed drag by aborting the server action POST with `page.route`). Board
     selectors: each column is a `region` named after its stage (`h2` name, `.tot` "<n> deals · £total"), cards are
