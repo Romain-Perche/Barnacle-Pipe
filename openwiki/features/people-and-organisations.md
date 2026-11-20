@@ -20,8 +20,8 @@ sources:
     resource: repo://src/server/records/handover.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T18:23:26.676Z
-generated: { by: "claude-code", at: "2026-11-19T18:23:26.676Z" }
+    at: 2026-11-20T11:20:44.617Z
+generated: { by: "claude-code", at: "2026-11-20T11:20:44.617Z" }
 ---
 
 # People and organisations
@@ -61,13 +61,15 @@ the user first (see [Sessions and access control](../auth/sessions-and-access-co
   transaction. Deleting a person removes their emails, phones, labels and own timeline rows; events about them
   on other records stay, without the person (`related_person_id` is set to null). Deleting an
   organisation leaves its people with no organisation.
-- **Hand-over**: when a user is deactivated, an admin can hand their private people to an active user
-  (`handover.ts`). One transaction locks the users, re-checks the rules, moves `owner_id`, bumps `version` and
-  writes a `handed_over` event per person; it returns only a count and the new owner's name, never a person.
+- **Hand-over**: when a user is deactivated, an admin can hand their private people and private deals (archived
+  included) to an active user (`handOverPrivateRecords()` in `handover.ts`). One transaction locks the users,
+  re-checks the rules, moves `owner_id`, bumps `version` and writes a `handed_over` event per person and per
+  deal; a deal keeps its creator, stage and stage history (no "moved" event). It returns only the two counts and
+  the new owner's name, never a person or deal.
   See [User management](user-management.md).
 - **Delete notice**: after a delete the action sets a 60-second `crm_flash` cookie holding a code and the
   deleted name; the next page shows it once (`flash.ts`) and `src/proxy.ts` clears the cookie on the next GET.
-  The same cookie carries the hand-over notices (`handed_over` with a count, and a "nothing to hand over" code).
+  The same cookie carries the hand-over notices (`handed_over` with a people count and a deals count, and a "nothing to hand over" code).
   Only the known codes are shown, and the text comes from `src/server/messages.ts`.
 
 ## Fake data

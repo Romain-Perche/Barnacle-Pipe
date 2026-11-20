@@ -3,6 +3,8 @@
 // pipeline just added), deals skipped when a deal with the same title is already there.
 // SF-95 (data-model.md § Fake data, FR-023): deal labels, won and lost deals with multi-stage histories (one archived),
 // labels on deals, other linked people and followers; links added with `on conflict do nothing`.
+// SF-97 (FR-010): two private Sales deals created and owned by deactivated Alan Fake ("Fake leaver deal", open, and
+// "Fake leaver old deal", archived) for the Users page hand-over.
 import type { Sql } from "@/server/db";
 
 const PIPELINES: { name: string; stages: string[] }[] = [
@@ -200,6 +202,24 @@ export async function seedDeals(sql: Sql): Promise<string[]> {
         select d.id, u.id from deals d join users u on u.name = any(${names}::text[]) where d.title = ${title}
         on conflict do nothing returning deal_id`;
       extrasAdded += added.length;
+    }
+    const alan = users.get("Alan Fake");
+    const lead = stages.find((s) => s.pipeline === "Sales" && s.name === "Lead in");
+    if (alan !== undefined && lead) {
+      for (const [title, archived] of [["Fake leaver deal", false], ["Fake leaver old deal", true]] as const) {
+        if ((await db`select 1 from deals where title = ${title}`).length > 0) continue;
+        const added = new Date(now - 30 * DAY);
+        const archivedAt = archived ? new Date(now - DAY) : null;
+        const [deal] = await db<{ id: number }[]>`
+          insert into deals (title, value_pence, stage_id, stage_entered_at, owner_id, private, created_by, created_at, archived_at)
+          values (${title}, ${archived ? 150000 : 320000}, ${lead.id}, ${added}, ${alan}, true, ${alan}, ${added}, ${archivedAt})
+          returning id::int as id`;
+        await db`insert into timeline_events (deal_id, kind, actor_id, created_at) values (${deal.id}, 'added', null, ${added})`;
+        await db`insert into deal_stage_periods (deal_id, stage_id, stage_name, pipeline_name, entered_at)
+                 values (${deal.id}, ${lead.id}, ${lead.name}, ${"Sales"}, ${added})`;
+        if (archivedAt) await db`insert into timeline_events (deal_id, kind, actor_id, created_at) values (${deal.id}, 'archived', null, ${archivedAt})`;
+        dealsAdded++;
+      }
     }
   });
 

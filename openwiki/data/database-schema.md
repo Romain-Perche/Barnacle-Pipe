@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T11:58:24.937Z
+    at: 2026-11-20T10:02:45.004Z
 sources:
   - id: openwiki-source-b1b8983f5dc78551445443a8
     resource: repo://migrations/0001_users_sessions.sql
@@ -15,21 +15,19 @@ sources:
     resource: repo://migrations/0003_private_owner_handover.sql
   - id: openwiki-source-abc8a772ef516a80f8a1e53a
     resource: repo://migrations/0004_pipelines_deals.sql
-  - id: openwiki-source-e76eb4c99b18ad1f6531c4f8
-    resource: repo://migrations/0005_deal_page.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-20T11:58:24.937Z" }
+generated: { by: "claude-code", at: "2026-11-20T10:02:45.004Z" }
 ---
 
 # Database schema and access
 
 The schema is defined by numbered SQL files in `migrations/` (`0001_users_sessions.sql` and
-`0002_people_organisations.sql`, `0003_private_owner_handover.sql`, `0004_pipelines_deals.sql`, `0005_deal_page.sql`) plus the `schema_migrations` table created by the migrate command. How each
+`0002_people_organisations.sql`, `0003_private_owner_handover.sql`, `0004_pipelines_deals.sql`) plus the `schema_migrations` table created by the migrate command. How each
 part reads and writes these tables is drawn in [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Tables
@@ -97,26 +95,12 @@ Added by `0004_pipelines_deals.sql`; behaviour is described in [Pipelines, deals
 - `timeline_events` gains `deal_id`, `from_stage`, `to_stage` and `cause` (`stage_deleted` or
   `pipeline_deleted`), a new kind `moved`, and now needs exactly one of person, organisation or deal.
 
-### Deal page tables (migration 0005)
-
-Added by `0005_deal_page.sql` for the deal list and deal page (SF-95), described in
-[Pipelines, deals and the board](../features/pipelines-and-deals.md).
-
-- `deals` gains `status` (`open`, `won` or `lost`, default `open`), `closed_at` and `lost_reason`; a check keeps
-  them consistent (open means no `closed_at`, lost means a reason). The board index now covers open,
-  non-archived deals only, and `deals_created_at_idx` serves the list.
-- `deal_labels`: deal label names (unique ignoring case, soft-removed with `removed_at`), separate from people
-  labels. `deal_label_links` joins them to deals.
-- `deal_people`: other people linked to a deal (with `linked_by`); `deal_followers`: users following a deal.
-  Both are deleted with the deal.
-- `timeline_events` gains `reason` (set exactly for `lost` events) and the kinds `won`, `lost` and `reopened`.
-
 ## Row level security
 
 Every `create table` is followed by `alter table … enable row level security`, with no policies. On
 Supabase this means the Data API roles (`anon`, `authenticated`) can neither read nor write app data,
 while the app's own database user, which owns the tables, is not affected. `tests/integration/rls.test.ts`
-fails if any table in the public schema lacks it (it also checks that the app's tables, including the four from migration 0004 and the four from migration 0005, exist). Migration files may only contain statements allowed inside a transaction.
+fails if any table in the public schema lacks it (it also checks that the app's tables, including the four from migration 0004, exist). Migration files may only contain statements allowed inside a transaction.
 
 ## Connecting
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a4bc680345d97c5252869062e6b50a7b6dfd37fbb2d9ad8f3f882a461dd012c2",
+  "pageVersion": "sha256:5b584623980b32371a401f4f1fa1ad9252a2cdd73d5caddf1e35aecd6d35c32f",
   "claims": [
     {
       "id": "claim_cdee755dd04e4193ad40c04d8fc08f84",
@@ -14,11 +14,11 @@
     },
     {
       "id": "claim_1f5c42d993bd4eb19cfe01a52edefb48",
-      "statement": "moveDeal answers stale when the deal is missing, archived, won or lost, or at another version, or not in the expected stage; a real move records a stage period and a moved timeline event via transferDeal.",
+      "statement": "moveDeal answers stale when the deal is missing, archived or at another version, or not in the expected stage; a real move records a stage period and a moved timeline event via transferDeal.",
       "evidence": [
         {
-          "resource": "repo://src/server/deals/deals.ts#L435-L454",
-          "version": "repo-lines-v1:sha256:9de79b83a52ede3351cb5dca367bc7f8b19ddaf1c528222cf047588435fbbab3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNjZlNzkwZTlmN2RhNDM4ZjlmZWQyMTQ3YjBlZjM0ZGMwODdhNjA5M2I5YjBjOWNhNzZmNWVlYTIzZjFmNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmMzI1ZGViYTY3NDlkNmU2ODBkMTM4ZjRhNDM4YWJlODQ1ZDhhOGI0NTUwNGVlZDgzNWE0Y2ViNDI5NDFiMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMjgwNTExNzJiMWVmNmQzZGI5YmYxMzlkOWEzZjI3MWM0N2RlZGNmYmIxZmMwNDAwMjFkNDc2NmYzOGZmZWYifQ"
+          "resource": "repo://src/server/deals/deals.ts#L353-L372",
+          "version": "repo-lines-v1:sha256:277710450b2a92499028579fd76c1819756672e14a9339f3b4e0765558be8e13:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNjZlNzkwZTlmN2RhNDM4ZjlmZWQyMTQ3YjBlZjM0ZGMwODdhNjA5M2I5YjBjOWNhNzZmNWVlYTIzZjFmNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiMTlhNDY1YjM3NzgzNjYzYzg3MjJlYjA2OTA1MmY0YjlhNGYzYWZhZmU4ZDE4YmZhODA2OTQ3MWViZjZhZjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlZGJjMmJmYjlmMGFjNmE0MjZkNmIwMTg5ZDk2MDA0MGMyYThkYmI5ZjYwZmM3MTgzMDA1M2EwZjAyN2QyODYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3ZDgwMzMzMjU1M2NjOTNjZGNiMDFmZTNlNDBjOGNlOTIzMzJmMzI1Y2IwNjdlM2Q2NDI2MGZiYWM2OGVlNzgifQ"
         }
       ]
     },
@@ -31,20 +31,10 @@
           "version": "repo-lines-v1:sha256:fa07ac277d4d87224c29c5dc7a2393eda2ed00244678d23802779bb4ba8821c9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmYzQ0MzY4MDc4MzUwM2VmNTRiMTc0YjY3ZTAzM2U5NTYwMzAzOGViM2M1NmZiZjE5ZWEyZjMzMTJlMzdmMTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMWJjMTQxZWNlOTBiOGNhZDBhZTFiMjE4YzNjYzc0Yjg4MjkzZGQyZGIyMWUwN2NkNzE1YmU1YmI0NTUzZjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0Y2E0Y2UyMTVjNGE3NWE4MDJlMmY0ZTBiYjBjYzkwOWUwNTE4NjU2ODE4ZGVhM2FiMzE3ZGI0MDBiNzk5MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJkMGYyZDNhM2FhZGEyNzU4NjQ1NzhkMGE0MzkxNTYzOGQ1NDNmZWNhMmM5NDg1OGRiOTQxMjExZTg2Y2VmMmIifQ"
         }
       ]
-    },
-    {
-      "id": "claim_d95646856c1148d08a6018e6daddb671",
-      "statement": "markWon, markLost and reopenDeal lock the deal and answer conflict for a wrong version or archived deal; closing ends the open stage period and each records a won, lost or reopened timeline event.",
-      "evidence": [
-        {
-          "resource": "repo://src/server/deals/deals.ts#L496-L540",
-          "version": "repo-lines-v1:sha256:af0d0e11bce288e0900f087503b9166368b165d4b745dc187e22b1740b725f4d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyOTA3Yzk3NWVhZmI2MTQ4N2ExYjg2MWFiOGE5MGQ0NjZjZTU5YjBkODgxODllMGFmOGE3YTY2YzY1ZjczZTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhZDI1YzVjMGQ5MTg0YmYxYzFjNmU3NGY4NTMzYmZlYmRlNzg1MWUwMDZmM2M5MjU3NjhmOWI3ODQwNjhmZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxYTE5MDBmMGY5ZTg0M2VjZjQ0NGRlNzhlMDM3NjllOWI4MmNmY2FlZGY3MDA3Mzc4Mzc0NDczNWM5YjU5YWMifQ"
-        }
-      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T11:58:24.937Z"
+    "at": "2026-11-20T10:02:45.004Z"
   }
 }

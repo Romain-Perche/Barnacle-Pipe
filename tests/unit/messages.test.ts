@@ -90,7 +90,7 @@ describe("SF-92 messages", () => {
     expect(messageFor("deleted_person_unlinked")).toBe("A deleted person was unlinked");
     expect(messageFor("handover_choose")).toBe("Choose a user");
     expect(messageFor("handover_choose_user")).toBe("Choose an active user.");
-    expect(messageFor("handover_not_deactivated")).toBe("Only a deactivated user's private people can be handed over.");
+    expect(messageFor("handover_not_deactivated")).toBe("Only a deactivated user's private records can be handed over.");
     expect(messageFor("handover_explain_unchosen")).toBe(
       "They stay private. The user you choose becomes their owner and can see them. You will not see who they are.",
     );
@@ -98,22 +98,46 @@ describe("SF-92 messages", () => {
     expect(messageFor("handover_cancel")).toBe("[ CANCEL ]");
     expect(messageFor("handover_to_label")).toBe("Hand over to");
   });
+  // covers FR-002, FR-003, FR-006, US2 scenarios 1–3 (SF-97): people-only wording stays SF-92's
   it("builds the templates, singular and plural", () => {
-    expect(templates.private_people(1)).toBe("1 private person");
-    expect(templates.private_people(2)).toBe("2 private people");
-    expect(templates.handover_question("Alan Fake", 2, "Margaret Fake")).toBe("Hand Alan Fake's 2 private people to Margaret Fake?");
-    expect(templates.handover_question("Alan Fake", 1, "Margaret Fake")).toBe("Hand Alan Fake's 1 private person to Margaret Fake?");
-    expect(templates.handover_explain("Margaret Fake")).toBe(
+    expect(templates.private_records(1, 0)).toBe("1 private person");
+    expect(templates.private_records(2, 0)).toBe("2 private people");
+    expect(templates.handover_question("Alan Fake", 2, 0, "Margaret Fake")).toBe("Hand Alan Fake's 2 private people to Margaret Fake?");
+    expect(templates.handover_question("Alan Fake", 1, 0, "Margaret Fake")).toBe("Hand Alan Fake's 1 private person to Margaret Fake?");
+    expect(templates.handover_explain("Margaret Fake", 0)).toBe(
       "They stay private. Margaret Fake becomes their owner and can see them. You will not see who they are.",
     );
-    expect(templates.handed_over("Margaret Fake", 2)).toBe("2 private people handed to Margaret Fake.");
-    expect(templates.handed_over("Margaret Fake", 1)).toBe("1 private person handed to Margaret Fake.");
-    expect(templates.handover_none("Alan Fake")).toBe("Alan Fake has no private people to hand over.");
+    expect(templates.handed_over("Margaret Fake", 2, 0)).toBe("2 private people handed to Margaret Fake.");
+    expect(templates.handed_over("Margaret Fake", 1, 0)).toBe("1 private person handed to Margaret Fake.");
+    expect(templates.handover_none("Alan Fake")).toBe("Alan Fake has no private people or deals to hand over.");
     expect(templates.handed_over_event("Margaret Fake")).toBe("Handed to Margaret Fake");
     expect(templates.person_no_longer_visible("Ada Example")).toBe("You can no longer see Ada Example: only their creator and owner can.");
   });
+  // covers FR-002, FR-003, FR-006, US1 scenarios 1–3 (SF-97)
+  it("names private people and private deals together", () => {
+    expect(templates.private_records(2, 1)).toBe("2 private people · 1 private deal");
+    expect(templates.private_records(1, 2)).toBe("1 private person · 2 private deals");
+    expect(templates.handover_question("Alan Fake", 2, 1, "Margaret Fake")).toBe("Hand Alan Fake's 2 private people and 1 private deal to Margaret Fake?");
+    expect(templates.handover_explain("Margaret Fake", 1)).toBe(
+      "They stay private. Margaret Fake becomes their owner and can see them. You will not see what they are.",
+    );
+    expect(messageFor("handover_explain_unchosen_records")).toBe(
+      "They stay private. The user you choose becomes their owner and can see them. You will not see what they are.",
+    );
+    expect(templates.handed_over("Margaret Fake", 2, 1)).toBe("2 private people and 1 private deal handed to Margaret Fake.");
+  });
+  // covers FR-002, FR-003, FR-006, US2 scenarios 1–3 (SF-97)
+  it("names private deals alone", () => {
+    expect(templates.private_records(0, 1)).toBe("1 private deal");
+    expect(templates.private_records(0, 3)).toBe("3 private deals");
+    expect(templates.handover_question("Alan Fake", 0, 1, "Margaret Fake")).toBe("Hand Alan Fake's 1 private deal to Margaret Fake?");
+    expect(templates.handover_explain("Margaret Fake", 2)).toBe(
+      "They stay private. Margaret Fake becomes their owner and can see them. You will not see what they are.",
+    );
+    expect(templates.handed_over("Margaret Fake", 0, 1)).toBe("1 private deal handed to Margaret Fake.");
+  });
   it("never answers the new template codes from messageFor", () => {
-    for (const code of ["private_people", "handover_question", "handover_explain", "handed_over", "handover_none", "handed_over_event", "person_no_longer_visible"]) {
+    for (const code of ["private_records", "handover_question", "handover_explain", "handed_over", "handover_none", "handed_over_event", "person_no_longer_visible"]) {
       expect(messageFor(code), code).toBeUndefined();
     }
   });

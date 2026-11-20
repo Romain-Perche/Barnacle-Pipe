@@ -32,7 +32,7 @@ describe("flash notices", () => {
     await setFlash({ code: "handed_over", name: "Margaret Fake", count: 2 });
     expect(await readFlash(["handed_over", "handover_none"])).toEqual({ text: "2 private people handed to Margaret Fake." });
     await setFlash({ code: "handover_none", name: "Alan Fake" });
-    expect(await readFlash(["handed_over", "handover_none"])).toEqual({ text: "Alan Fake has no private people to hand over." });
+    expect(await readFlash(["handed_over", "handover_none"])).toEqual({ text: "Alan Fake has no private people or deals to hand over." });
     await setFlash({ code: "person_deleted", name: "Ada Example" });
     expect(await readFlash(["person_deleted"])).toEqual({ text: "Ada Example was deleted." });
   });
@@ -44,6 +44,24 @@ describe("flash notices", () => {
     }
     put({ code: "handed_over", name: "Margaret Fake", count: 10_000 });
     expect(await readFlash(["handed_over"])).toEqual({ text: "10000 private people handed to Margaret Fake." });
+  });
+
+  // covers FR-006 (SF-97): the notice names both kinds; a cookie without deals still reads as people only
+  it("renders people and deals counts for handed_over", async () => {
+    await setFlash({ code: "handed_over", name: "Margaret Fake", count: 2, deals: 1 });
+    expect(await readFlash(["handed_over"])).toEqual({ text: "2 private people and 1 private deal handed to Margaret Fake." });
+    await setFlash({ code: "handed_over", name: "Margaret Fake", count: 0, deals: 2 });
+    expect(await readFlash(["handed_over"])).toEqual({ text: "2 private deals handed to Margaret Fake." });
+    put({ code: "handed_over", name: "Margaret Fake", count: 2 });
+    expect(await readFlash(["handed_over"])).toEqual({ text: "2 private people handed to Margaret Fake." });
+  });
+
+  // covers FR-006 (SF-97)
+  it("ignores invalid or zero deals counts", async () => {
+    for (const [count, deals] of [[0, 0], [0, -1], [1, -1], [0, 1.5], [0, "1"], [0, 10_001], [-1, 2], [undefined, 1], [0, null]]) {
+      put({ code: "handed_over", name: "Margaret Fake", count, deals });
+      expect(await readFlash(["handed_over"]), `${count}/${deals}`).toBeUndefined();
+    }
   });
 
   it("ignores long names, non-string names and invalid JSON", async () => {

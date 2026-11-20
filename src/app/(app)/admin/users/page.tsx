@@ -1,18 +1,21 @@
 // Users page, design A: a table with the actions on each row (spec Clarifications, design-options.html).
-// SF-92: a deactivated user's row shows how many private people they own and [ HAND OVER ], which opens the
-// design-B panel above the add row (`?handover=<id>`). The panel shows a count, never who the people are.
+// SF-92, SF-97: a deactivated user's row shows how many private people and private deals they own and
+// [ HAND OVER ], which opens the design-B panel above the add row (`?handover=<id>`). The panel shows counts,
+// never which people or deals they are.
 import Link from "next/link";
 import { requireAdmin } from "@/server/auth/session";
 import { countLabel, formatLastSignIn } from "@/server/format";
 import { messageFor, messages, templates } from "@/server/messages";
 import { readFlash } from "@/server/records/flash";
-import { listUsers } from "@/server/users";
+import { listUsers, type UserRow } from "@/server/users";
 import { Forbidden } from "../../Forbidden";
 import { addUser, deactivate, handOver, makeAdmin, reactivate, removeAdmin } from "./actions";
 import { HandOverPanel } from "./HandOverPanel";
 
 const PAGE_ERRORS = new Set(["invalid_domain", "duplicate", "last_admin", "self_deactivate", "handover_choose_user", "handover_not_deactivated"]);
 const ID = /^[1-9][0-9]{0,15}$/;
+
+const hasRecords = (u: UserRow) => u.private_people + u.private_deals > 0;
 
 type Props = { searchParams: Promise<{ error?: string; handover?: string }> };
 
@@ -36,7 +39,7 @@ export default async function UsersPage({ searchParams }: Props) {
   const users = await listUsers();
   const admins = users.filter((u) => u.role === "admin" && u.status === "active").length;
   const handoverId = typeof handover === "string" && ID.test(handover) ? Number(handover) : null;
-  const from = users.find((u) => u.id === handoverId && u.status === "deactivated" && u.private_people > 0);
+  const from = users.find((u) => u.id === handoverId && u.status === "deactivated" && hasRecords(u));
   const recipients = users
     .filter((u) => u.status === "active" && u.id !== from?.id)
     .map((u) => ({ id: u.id, name: u.name }))
@@ -61,7 +64,7 @@ export default async function UsersPage({ searchParams }: Props) {
       </div>
 
       {from && (
-        <HandOverPanel fromUserId={from.id} fromName={from.name} count={from.private_people} users={recipients} error={panelError} action={handOver} />
+        <HandOverPanel fromUserId={from.id} fromName={from.name} people={from.private_people} deals={from.private_deals} users={recipients} error={panelError} action={handOver} />
       )}
 
       <form action={addUser} className="addrow">
@@ -113,7 +116,7 @@ export default async function UsersPage({ searchParams }: Props) {
                   ) : (
                     <>
                       <span className="badge off">Deactivated</span>
-                      {u.private_people > 0 && <span className="pp">{templates.private_people(u.private_people)}</span>}
+                      {hasRecords(u) && <span className="pp">{templates.private_records(u.private_people, u.private_deals)}</span>}
                     </>
                   )}
                 </td>
@@ -122,7 +125,7 @@ export default async function UsersPage({ searchParams }: Props) {
                   {active && u.role === "admin" && <RowAction action={removeAdmin} userId={u.id} label="[ REMOVE ADMIN ]" />}
                   {active && u.role === "user" && <RowAction action={makeAdmin} userId={u.id} label="[ MAKE ADMIN ]" />}
                   {active && u.id !== me.id && <RowAction action={deactivate} userId={u.id} label="[ DEACTIVATE ]" red />}
-                  {!active && u.private_people > 0 && (
+                  {!active && hasRecords(u) && (
                     <Link className="btn link" href={`/admin/users?handover=${u.id}`}>
                       {messages.handover_button}
                     </Link>

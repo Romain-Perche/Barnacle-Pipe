@@ -60,8 +60,10 @@ export const messages = {
   deleted_person_unlinked: "A deleted person was unlinked",
   handover_choose: "Choose a user",
   handover_choose_user: "Choose an active user.",
-  handover_not_deactivated: "Only a deactivated user's private people can be handed over.",
+  handover_not_deactivated: "Only a deactivated user's private records can be handed over.",
   handover_explain_unchosen: "They stay private. The user you choose becomes their owner and can see them. You will not see who they are.",
+  // SF-97: when private deals are handed over too
+  handover_explain_unchosen_records: "They stay private. The user you choose becomes their owner and can see them. You will not see what they are.",
   handover_button: "[ HAND OVER ]",
   handover_cancel: "[ CANCEL ]",
   handover_to_label: "Hand over to",
@@ -77,6 +79,10 @@ export const messages = {
 } as const;
 
 const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} private people`);
+const privateDeals = (n: number) => (n === 1 ? "1 private deal" : `${n} private deals`);
+// The non-zero kinds only, e.g. ["2 private people", "1 private deal"] (SF-97).
+const recordLabels = (people: number, deals: number) => [people > 0 ? privatePeople(people) : "", deals > 0 ? privateDeals(deals) : ""].filter(Boolean);
+const recordsPhrase = (people: number, deals: number) => recordLabels(people, deals).join(" and ");
 
 // Messages built from a record's name, always read from the database. Kept apart from `messages` so a
 // code taken from a URL can never produce them.
@@ -91,12 +97,13 @@ export const templates = {
   deal_count: (n: number) => `${n} ${n === 1 ? "deal" : "deals"}`,
   pipeline_has_deals: (name: string, n: number) => `${name} has ${n} deals. Move them to:`,
   pipeline_delete_confirm: (name: string) => `Delete ${name}? This can't be undone.`,
-  // SF-92
-  private_people: privatePeople,
-  handover_question: (from: string, n: number, to: string) => `Hand ${from}'s ${privatePeople(n)} to ${to}?`,
-  handover_explain: (to: string) => `They stay private. ${to} becomes their owner and can see them. You will not see who they are.`,
-  handed_over: (name: string, n: number) => `${privatePeople(n)} handed to ${name}.`,
-  handover_none: (name: string) => `${name} has no private people to hand over.`,
+  // SF-92, SF-97: a deactivated user's private people and private deals
+  private_records: (people: number, deals: number) => recordLabels(people, deals).join(" · "),
+  handover_question: (from: string, people: number, deals: number, to: string) => `Hand ${from}'s ${recordsPhrase(people, deals)} to ${to}?`,
+  handover_explain: (to: string, deals: number) =>
+    `They stay private. ${to} becomes their owner and can see them. You will not see ${deals > 0 ? "what" : "who"} they are.`,
+  handed_over: (name: string, people: number, deals: number) => `${recordsPhrase(people, deals)} handed to ${name}.`,
+  handover_none: (name: string) => `${name} has no private people or deals to hand over.`,
   handed_over_event: (name: string) => `Handed to ${name}`,
   person_no_longer_visible: (name: string) => `You can no longer see ${name}: only their creator and owner can.`,
   // SF-95: "<n> deals · £<total>" above the deal list, for every matching deal.

@@ -16,67 +16,62 @@ config:
 flowchart LR
     n1[["Database"]]
     n2[["Database commands"]]
-    n3[["Deal data"]]
-    n4[["Deals"]]
-    n5[["People and organisations"]]
-    n6[["Settings"]]
-    n7[["Sign-in and sessions"]]
-    n8[["Signed-in app and user admin"]]
-    n9["Barnacle admin"]
-    n10["Developer or Vercel build"]
-    n11["Barnacle staff user"]
+    n3[["Deals"]]
+    n4[["People and organisations"]]
+    n5[["Settings"]]
+    n6[["Sign-in and sessions"]]
+    n7[["Signed-in app and user admin"]]
+    n8["Barnacle admin"]
+    n9["Developer or Vercel build"]
+    n10["Barnacle staff user"]
     subgraph z1["GOOGLE (THIRD PARTY)"]
-        n12["Google OAuth and userinfo API"]
+        n11["Google OAuth and userinfo API"]
     end
-    n9 -->|"new, renamed and removed lead sources and labels"| n5
-    n9 -->|"pipeline and stage changes"| n4
-    n9 -->|"new user email, role and status changes"| n8
-    n8 -->|"sidebar and signed-in pages"| n11
-    n5 -->|"5 flows"| n1
-    n5 -->|"deal label changes"| n3
-    n1 -->|"3 flows"| n5
-    n7 -->|"4 flows"| n1
-    n3 -->|"4 flows"| n4
-    n4 -->|"8 flows"| n3
-    n4 -->|"3 flows"| n1
-    n4 -->|"board, deal drawer and forms"| n11
-    n10 -->|"migrate command / seed command"| n2
-    n6 -->|"3 flows"| n7
-    n6 -->|"2 flows"| n2
-    n7 -->|"auth code, PKCE verifier, client id and secret"| n12
-    n7 -->|"2 flows"| n11
-    n12 -->|"access token, then email, domain and name"| n7
-    n2 -->|"fake deals / table definitions"| n3
-    n2 -->|"6 flows"| n1
-    n5 -->|"2 flows"| n11
-    n5 -->|"crm_flash cookie"| n7
-    n7 -->|"2 flows"| n8
-    n7 -->|"admin check / signed-in user and admin check"| n5
-    n7 -->|"admin check / signed-in user and admin check"| n4
-    n1 -->|"4 flows"| n7
-    n11 -->|"deal form fields, board drags"| n4
-    n11 -->|"4 flows"| n7
-    n11 -->|"2 flows"| n5
-    n8 -->|"users table and error messages"| n9
-    n8 -->|"5 flows"| n1
-    n8 -->|"hand-over notice"| n5
-    n1 -->|"user list"| n8
+    n8 -->|"new, renamed and removed lead sources and labels"| n4
+    n8 -->|"pipeline and stage changes"| n3
+    n8 -->|"new user email, role and status changes"| n7
+    n7 -->|"sidebar and signed-in pages"| n10
+    n4 -->|"5 flows"| n1
+    n1 -->|"3 flows"| n4
+    n6 -->|"4 flows"| n1
+    n3 -->|"8 flows"| n1
+    n3 -->|"board, deal drawer and forms"| n10
+    n1 -->|"3 flows"| n3
+    n9 -->|"migrate command / seed command"| n2
+    n5 -->|"3 flows"| n6
+    n5 -->|"2 flows"| n2
+    n6 -->|"auth code, PKCE verifier, client id and secret"| n11
+    n6 -->|"2 flows"| n10
+    n11 -->|"access token, then email, domain and name"| n6
+    n2 -->|"7 flows"| n1
+    n4 -->|"2 flows"| n10
+    n4 -->|"crm_flash cookie"| n6
+    n6 -->|"2 flows"| n7
+    n6 -->|"admin check / signed-in user and admin check"| n4
+    n6 -->|"admin check / signed-in user and admin check"| n3
+    n1 -->|"4 flows"| n6
+    n10 -->|"deal form fields, board drags"| n3
+    n10 -->|"4 flows"| n6
+    n10 -->|"2 flows"| n4
+    n7 -->|"users table and error messages"| n8
+    n7 -->|"7 flows"| n1
+    n7 -->|"hand-over notice"| n4
+    n1 -->|"user list"| n7
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n9,n10,n11,n12 actor
-    class n1,n2,n3,n4,n5,n6,n7,n8 group
+    class n8,n9,n10,n11 actor
+    class n1,n2,n3,n4,n5,n6,n7 group
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
 ```
 
 | Subsystem | What it does | Parts |
 |---|---|---|
-| Database | The Postgres tables every part reads and writes: users, sessions, the user change log and applied migrations. | lead_sources and labels tables, organisations table, persons, emails, phones and person_labels tables, schema_migrations table, sessions table (token hashes), timeline_events table, user_changes log, users table |
+| Database | The Postgres tables every part reads and writes: users, sessions, the user change log and applied migrations. | lead_sources and labels tables, Postgres deal stage periods, Postgres deals, organisations table, persons, emails, phones and person_labels tables, Postgres pipelines, schema_migrations table, sessions table (token hashes), Postgres stages, timeline_events table, user_changes log, users table |
 | Database commands | Command-line tools that apply SQL migrations and load fake data into Postgres. | db:migrate command, SQL migration files, db:seed command (fake data) |
-| Deal data | Tables that keep pipelines, stages, deals, their labels, linked people and followers. | Deal followers, Deal label links, Deal labels, Deal linked people, Postgres deal stage periods, Postgres deals, Postgres pipelines, Postgres stages |
 | Deals | Pipelines, stages and the deal board, with deals kept private by their person. | Deals board and deal pages, Pipelines admin |
 | People and organisations | Staff list, search, create, edit, archive and delete people and organisations, with a timeline and shared lead sources and labels. | Lead sources and labels admin, Organisation pages and actions, People pages and actions, One-shot delete notice |
 | Settings | Environment variables (.env.local or Vercel settings) that hold secrets and switch features on or off. | Environment settings (.env.local / Vercel) |
@@ -108,8 +103,8 @@ flowchart LR
     n5 -->|"3 flows"| n1
     n1 -->|"6 flows"| n9
     n2 -->|"3 flows"| n1
-    n1 -->|"26 flows"| n4
-    n4 -->|"12 flows"| n1
+    n1 -->|"24 flows"| n4
+    n4 -->|"11 flows"| n1
     n6 -->|"migrate command / seed command"| n3
     n7 -->|"3 flows"| n1
     n7 -->|"2 flows"| n3
@@ -146,53 +141,66 @@ config:
 flowchart LR
     subgraph z1["POSTGRES (SUPABASE OR LOCAL)"]
         n1[("lead_sources and labels tables")]
-        n2[("organisations table")]
-        n3[("persons, emails, phones and person_labels tables")]
-        n4[("schema_migrations table")]
-        n5[("sessions table (token hashes)")]
-        n6[("timeline_events table")]
-        n7[("user_changes log")]
-        n8[("users table")]
+        n2[("Postgres deal stage periods")]
+        n3[("Postgres deals")]
+        n4[("organisations table")]
+        n5[("persons, emails, phones and person_labels tables")]
+        n6[("Postgres pipelines")]
+        n7[("schema_migrations table")]
+        n8[("sessions table (token hashes)")]
+        n9[("Postgres stages")]
+        n10[("timeline_events table")]
+        n11[("user_changes log")]
+        n12[("users table")]
     end
-    n9[["Database commands"]]
-    n10[["Deals"]]
-    n11[["People and organisations"]]
-    n12[["Sign-in and sessions"]]
-    n13[["Signed-in app and user admin"]]
-    n11 -->|"lead source and label changes"| n1
-    n1 -->|"lead source and label choices"| n11
-    n12 -->|"2 flows"| n5
-    n12 -->|"first admin added"| n7
-    n12 -->|"first admin, name, last sign-in time"| n8
-    n10 -->|"linked people read for visibility"| n3
-    n10 -->|"2 flows"| n6
-    n9 -->|"fake organisations / table definitions"| n2
-    n9 -->|"fake people / table definitions"| n3
-    n9 -->|"applied migration names"| n4
-    n9 -->|"table definitions"| n5
-    n9 -->|"fake users added / table definitions"| n7
-    n9 -->|"fake users / table definitions"| n8
-    n11 -->|"organisation details"| n2
-    n11 -->|"2 flows"| n6
-    n2 -->|"organisations and their people"| n11
-    n11 -->|"person details, emails, phones, labels"| n3
-    n3 -->|"visible persons (private ones hidden)"| n11
-    n5 -->|"session state with user role and status"| n12
-    n13 -->|"private people handed to a new owner"| n3
-    n13 -->|"revoked sessions of deactivated users"| n5
-    n13 -->|"hand-over events on each person"| n6
-    n13 -->|"who changed which user, and how"| n7
-    n13 -->|"added users, role and status changes"| n8
-    n8 -->|"3 flows"| n12
-    n8 -->|"user list"| n13
+    n13[["Database commands"]]
+    n14[["Deals"]]
+    n15[["People and organisations"]]
+    n16[["Sign-in and sessions"]]
+    n17[["Signed-in app and user admin"]]
+    n15 -->|"lead source and label changes"| n1
+    n1 -->|"lead source and label choices"| n15
+    n16 -->|"2 flows"| n8
+    n16 -->|"first admin added"| n11
+    n16 -->|"first admin, name, last sign-in time"| n12
+    n14 -->|"time spent in each stage"| n2
+    n14 -->|"2 flows"| n3
+    n14 -->|"linked people read for visibility"| n5
+    n14 -->|"2 flows"| n10
+    n3 -->|"visible deals (private people hidden)"| n14
+    n13 -->|"fake deals / table definitions"| n3
+    n13 -->|"fake organisations / table definitions"| n4
+    n13 -->|"fake people / table definitions"| n5
+    n13 -->|"applied migration names"| n7
+    n13 -->|"table definitions"| n8
+    n13 -->|"fake users added / table definitions"| n11
+    n13 -->|"fake users / table definitions"| n12
+    n15 -->|"organisation details"| n4
+    n15 -->|"2 flows"| n10
+    n4 -->|"organisations and their people"| n15
+    n15 -->|"person details, emails, phones, labels"| n5
+    n5 -->|"visible persons (private ones hidden)"| n15
+    n14 -->|"pipeline changes"| n6
+    n14 -->|"stage changes"| n9
+    n6 -->|"pipelines for the board"| n14
+    n8 -->|"session state with user role and status"| n16
+    n9 -->|"stages for the board"| n14
+    n17 -->|"private deals handed to a new owner"| n3
+    n17 -->|"private people handed to a new owner"| n5
+    n17 -->|"revoked sessions of deactivated users"| n8
+    n17 -->|"2 flows"| n10
+    n17 -->|"who changed which user, and how"| n11
+    n17 -->|"added users, role and status changes"| n12
+    n12 -->|"3 flows"| n16
+    n12 -->|"user list"| n17
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n1,n2,n3,n4,n5,n6,n7,n8 store
-    class n9,n10,n11,n12,n13 stub
+    class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11,n12 store
+    class n13,n14,n15,n16,n17 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -213,17 +221,14 @@ flowchart LR
         n4("db:seed command (fake data)")
     end
     n5[["Database"]]
-    n6[["Deal data"]]
-    n7[["Settings"]]
+    n6[["Settings"]]
     n1 -->|"migrate command"| n3
     n1 -->|"seed command"| n4
-    n7 -->|"DATABASE_URL"| n3
-    n7 -->|"APP_ENV, VERCEL_ENV, DATABASE_URL"| n4
-    n3 -->|"table definitions"| n6
+    n6 -->|"DATABASE_URL"| n3
+    n6 -->|"APP_ENV, VERCEL_ENV, DATABASE_URL"| n4
     n3 -->|"applied migration names / table definitions"| n5
     n2 -->|"SQL migration text"| n3
-    n4 -->|"fake deals"| n6
-    n4 -->|"4 flows"| n5
+    n4 -->|"5 flows"| n5
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -233,55 +238,7 @@ flowchart LR
     class n1 actor
     class n3,n4 process
     class n2 store
-    class n5,n6,n7 stub
-    style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
-```
-
-### Deal data
-
-Tables that keep pipelines, stages, deals, their labels, linked people and followers.
-
-```mermaid
----
-config:
-  layout: elk
----
-flowchart LR
-    subgraph z1["POSTGRES (SUPABASE OR LOCAL)"]
-        n1[("Deal followers")]
-        n2[("Deal label links")]
-        n3[("Deal labels")]
-        n4[("Deal linked people")]
-        n5[("Postgres deal stage periods")]
-        n6[("Postgres deals")]
-        n7[("Postgres pipelines")]
-        n8[("Postgres stages")]
-    end
-    n9[["Database commands"]]
-    n10[["Deals"]]
-    n11[["People and organisations"]]
-    n11 -->|"deal label changes"| n3
-    n3 -->|"deal labels for list and page"| n10
-    n10 -->|"follow or unfollow a deal"| n1
-    n10 -->|"deal labels on deals"| n3
-    n10 -->|"people linked or unlinked on a deal"| n4
-    n10 -->|"time spent in each stage"| n5
-    n10 -->|"2 flows"| n6
-    n6 -->|"visible deals (private people hidden)"| n10
-    n9 -->|"table definitions"| n3
-    n9 -->|"fake deals / table definitions"| n6
-    n10 -->|"pipeline changes"| n7
-    n10 -->|"stage changes"| n8
-    n7 -->|"pipelines for the board"| n10
-    n8 -->|"stages for the board"| n10
-    classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
-    classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
-    classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
-    classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
-    classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
-    classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n1,n2,n3,n4,n5,n6,n7,n8 store
-    class n9,n10,n11 stub
+    class n5,n6 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -302,17 +259,14 @@ flowchart LR
         n4("Pipelines admin")
     end
     n5[["Database"]]
-    n6[["Deal data"]]
-    n7[["Sign-in and sessions"]]
+    n6[["Sign-in and sessions"]]
     n1 -->|"pipeline and stage changes"| n4
-    n6 -->|"4 flows"| n3
-    n3 -->|"5 flows"| n6
-    n3 -->|"2 flows"| n5
+    n3 -->|"4 flows"| n5
     n3 -->|"board, deal drawer and forms"| n2
-    n4 -->|"3 flows"| n6
-    n4 -->|"moves caused by stage or pipeline changes"| n5
-    n7 -->|"signed-in user and admin check"| n3
-    n7 -->|"admin check"| n4
+    n5 -->|"3 flows"| n3
+    n4 -->|"4 flows"| n5
+    n6 -->|"signed-in user and admin check"| n3
+    n6 -->|"admin check"| n4
     n2 -->|"deal form fields, board drags"| n3
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -322,7 +276,7 @@ flowchart LR
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1,n2 actor
     class n3,n4 process
-    class n5,n6,n7 stub
+    class n5,n6 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -345,12 +299,10 @@ flowchart LR
         n6("One-shot delete notice")
     end
     n7[["Database"]]
-    n8[["Deal data"]]
-    n9[["Sign-in and sessions"]]
-    n10[["Signed-in app and user admin"]]
+    n8[["Sign-in and sessions"]]
+    n9[["Signed-in app and user admin"]]
     n1 -->|"new, renamed and removed lead sources and labels"| n3
     n3 -->|"lead source and label changes"| n7
-    n3 -->|"deal label changes"| n8
     n7 -->|"2 flows"| n5
     n4 -->|"2 flows"| n7
     n4 -->|"delete notice"| n6
@@ -359,13 +311,13 @@ flowchart LR
     n5 -->|"2 flows"| n7
     n5 -->|"delete notice"| n6
     n5 -->|"person lists, details and timeline"| n2
-    n6 -->|"crm_flash cookie"| n9
-    n9 -->|"admin check"| n3
-    n9 -->|"signed-in user and admin check"| n4
-    n9 -->|"signed-in user and admin check"| n5
+    n6 -->|"crm_flash cookie"| n8
+    n8 -->|"admin check"| n3
+    n8 -->|"signed-in user and admin check"| n4
+    n8 -->|"signed-in user and admin check"| n5
     n2 -->|"organisation form fields, search and filters"| n4
     n2 -->|"person form fields, search and filters"| n5
-    n10 -->|"hand-over notice"| n6
+    n9 -->|"hand-over notice"| n6
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -374,7 +326,7 @@ flowchart LR
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1,n2 actor
     class n3,n4,n5,n6 process
-    class n7,n8,n9,n10 stub
+    class n7,n8,n9 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -505,7 +457,7 @@ flowchart LR
     n7 -->|"signed-in user (name, role)"| n3
     n7 -->|"signed-in user and admin check"| n4
     n4 -->|"users table and error messages"| n1
-    n4 -->|"5 flows"| n5
+    n4 -->|"7 flows"| n5
     n4 -->|"hand-over notice"| n6
     n5 -->|"user list"| n4
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
@@ -530,13 +482,9 @@ flowchart LR
 | Lead sources and labels admin | process | People and organisations | Next.js app server (Vercel or local) | `src/app/(app)/admin/lead-sources-and-labels`, `src/server/records/choices.ts` |
 | lead_sources and labels tables | store | Database | Postgres (Supabase or local) | `migrations/0002_people_organisations.sql` |
 | Sign-in rules and session creation | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/server/auth/rules.ts`, `src/server/auth/sign-in.ts` |
-| Deal followers | store | Deal data | Postgres (Supabase or local) | `migrations/0005_deal_page.sql` |
-| Deal label links | store | Deal data | Postgres (Supabase or local) | `migrations/0005_deal_page.sql` |
-| Deal labels | store | Deal data | Postgres (Supabase or local) | `migrations/0005_deal_page.sql` |
-| Deal linked people | store | Deal data | Postgres (Supabase or local) | `migrations/0005_deal_page.sql` |
-| Postgres deal stage periods | store | Deal data | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
-| Deals board and deal pages | process | Deals | Next.js app server (Vercel or local) | `src/app/(app)/deals`, `src/server/deals/deals.ts`, `src/server/deals/links.ts`, `src/server/deals/list.ts`, `src/server/deals/rules.ts` |
-| Postgres deals | store | Deal data | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
+| Postgres deal stage periods | store | Database | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
+| Deals board and deal pages | process | Deals | Next.js app server (Vercel or local) | `src/app/(app)/deals`, `src/server/deals/deals.ts`, `src/server/deals/rules.ts` |
+| Postgres deals | store | Database | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
 | Developer or Vercel build | actor |  |  |  |
 | Environment settings (.env.local / Vercel) | store | Settings |  | `.env.example`, `src/server/env.ts` |
 | Fake Google login (dev and test only) | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/dev/fake-google` |
@@ -549,7 +497,7 @@ flowchart LR
 | People pages and actions | process | People and organisations | Next.js app server (Vercel or local) | `src/app/(app)/people`, `src/server/records/people.ts`, `src/server/records/visibility.ts` |
 | persons, emails, phones and person_labels tables | store | Database | Postgres (Supabase or local) | `migrations/0002_people_organisations.sql` |
 | Pipelines admin | process | Deals | Next.js app server (Vercel or local) | `src/app/(app)/admin/pipelines`, `src/server/deals/pipelines.ts` |
-| Postgres pipelines | store | Deal data | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
+| Postgres pipelines | store | Database | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
 | Request proxy (cookie gate) | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/proxy.ts` |
 | One-shot delete notice | process | People and organisations | Next.js app server (Vercel or local) | `src/server/records/flash-cookie.ts`, `src/server/records/flash.ts` |
 | schema_migrations table | store | Database | Postgres (Supabase or local) | `scripts/migrate.ts` |
@@ -558,7 +506,7 @@ flowchart LR
 | sessions table (token hashes) | store | Database | Postgres (Supabase or local) | `migrations/0001_users_sessions.sql` |
 | Sign-in page | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/sign-in/page.tsx`, `src/server/sign-in-page.ts` |
 | Barnacle staff user | actor |  |  |  |
-| Postgres stages | store | Deal data | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
+| Postgres stages | store | Database | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
 | timeline_events table | store | Database | Postgres (Supabase or local) | `migrations/0002_people_organisations.sql` |
 | user_changes log | store | Database | Postgres (Supabase or local) | `migrations/0001_users_sessions.sql` |
 | Users admin page and actions | process | Signed-in app and user admin | Next.js app server (Vercel or local) | `src/app/(app)/admin/users`, `src/server/users.ts` |
@@ -576,16 +524,11 @@ flowchart LR
 | Browser cookies (crm_session, crm_oauth) | Request proxy (cookie gate) | crm_flash cookie to clear | `src/proxy.ts` |
 | Browser cookies (crm_session, crm_oauth) | Session check, end and sign-out | session token | `src/app/auth/end/route.ts`, `src/server/auth/session.ts` |
 | Lead sources and labels admin | lead_sources and labels tables | lead source and label changes | `src/server/records/choices.ts` |
-| Lead sources and labels admin | Deal labels | deal label changes | `src/server/records/choices.ts` |
 | lead_sources and labels tables | People pages and actions | lead source and label choices | `src/server/records/choices.ts` |
 | Sign-in rules and session creation | Google sign-in routes | session token or refusal code | `src/app/auth/google/callback/route.ts`, `src/server/auth/sign-in.ts` |
 | Sign-in rules and session creation | sessions table (token hashes) | new session token hash, expiry | `src/server/auth/session.ts`, `src/server/auth/sign-in.ts` |
 | Sign-in rules and session creation | user_changes log | first admin added | `src/server/auth/sign-in.ts` |
 | Sign-in rules and session creation | users table | first admin, name, last sign-in time | `src/server/auth/sign-in.ts` |
-| Deal labels | Deals board and deal pages | deal labels for list and page | `src/server/deals/list.ts` |
-| Deals board and deal pages | Deal followers | follow or unfollow a deal | `src/server/deals/links.ts` |
-| Deals board and deal pages | Deal labels | deal labels on deals | `migrations/0005_deal_page.sql`, `src/server/deals/deals.ts` |
-| Deals board and deal pages | Deal linked people | people linked or unlinked on a deal | `src/server/deals/links.ts` |
 | Deals board and deal pages | Postgres deal stage periods | time spent in each stage | `src/server/deals/deals.ts` |
 | Deals board and deal pages | Postgres deals | deal details, stage moves | `src/server/deals/deals.ts` |
 | Deals board and deal pages | persons, emails, phones and person_labels tables | linked people read for visibility | `src/server/deals/deals.ts` |
@@ -606,7 +549,6 @@ flowchart LR
 | Google sign-in routes | Google OAuth and userinfo API | auth code, PKCE verifier, client id and secret | `src/server/auth/google.ts` |
 | Google sign-in routes | Barnacle staff user | redirect to Google account chooser | `src/app/auth/google/start/route.ts`, `src/server/auth/google.ts` |
 | Google OAuth and userinfo API | Google sign-in routes | access token, then email, domain and name | `src/server/auth/google.ts` |
-| db:migrate command | Deal labels | table definitions | `migrations/0005_deal_page.sql` |
 | db:migrate command | Postgres deals | table definitions | `scripts/migrate.ts` |
 | db:migrate command | organisations table | table definitions | `migrations/0002_people_organisations.sql`, `scripts/migrate.ts` |
 | db:migrate command | persons, emails, phones and person_labels tables | table definitions | `migrations/0002_people_organisations.sql`, `scripts/migrate.ts` |
@@ -659,9 +601,11 @@ flowchart LR
 | Barnacle staff user | Session check, end and sign-out | sign-out request | `src/app/(app)/actions.ts` |
 | Postgres stages | Deals board and deal pages | stages for the board | `src/server/deals/deals.ts` |
 | Users admin page and actions | Barnacle admin | users table and error messages | `src/app/(app)/admin/users/page.tsx` |
+| Users admin page and actions | Postgres deals | private deals handed to a new owner | `src/server/records/handover.ts` |
 | Users admin page and actions | persons, emails, phones and person_labels tables | private people handed to a new owner | `src/app/(app)/admin/users/actions.ts`, `src/server/records/handover.ts` |
 | Users admin page and actions | One-shot delete notice | hand-over notice | `src/app/(app)/admin/users/actions.ts`, `src/server/records/flash.ts` |
 | Users admin page and actions | sessions table (token hashes) | revoked sessions of deactivated users | `src/server/auth/session.ts`, `src/server/users.ts` |
+| Users admin page and actions | timeline_events table | hand-over events on each deal | `src/server/records/handover.ts` |
 | Users admin page and actions | timeline_events table | hand-over events on each person | `src/server/records/handover.ts`, `src/server/records/timeline.ts` |
 | Users admin page and actions | user_changes log | who changed which user, and how | `src/server/users.ts` |
 | Users admin page and actions | users table | added users, role and status changes | `src/server/users.ts` |

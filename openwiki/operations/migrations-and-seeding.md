@@ -5,7 +5,7 @@ description: How npm run db:migrate applies migrations/*.sql safely through Supa
 tags: [migrations, seed, database, operations, fake-data]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T11:58:24.937Z
+    at: 2026-11-20T10:02:45.004Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -19,7 +19,7 @@ sources:
     resource: repo://src/seed/index.ts
   - id: openwiki-source-010903950424d10f20cb451d
     resource: repo://src/seed/users.ts
-generated: { by: "claude-code", at: "2026-11-20T11:58:24.937Z" }
+generated: { by: "claude-code", at: "2026-11-20T10:02:45.004Z" }
 ---
 
 # Migrations and fake data
@@ -65,9 +65,7 @@ organisations, people, labels and timeline rows for the
 The third, `src/seed/deals.ts`, runs last: it adds five fake pipelines with their stages and a set of clearly fake
 deals owned by the fake users (some private), for the
 [Deals board](../features/pipelines-and-deals.md). It is re-runnable: pipelines are matched by name and deals
-skipped when one with the same title exists. It also adds fake deal labels, won and lost deals with multi-stage histories (one archived), labels on deals, other
-linked people and followers (links use `on conflict do nothing`). Migrations `0004_pipelines_deals.sql` and
-`0005_deal_page.sql` create their tables.
+skipped when one with the same title exists. Migration `0004_pipelines_deals.sql` creates their tables.
 
 Later features append their seeder to the registry; see [Adding a feature](../workflows/adding-a-feature.md).
 Fake data never uses the real team's names.
