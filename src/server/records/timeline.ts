@@ -6,7 +6,9 @@ import { visibleDeal, visiblePerson } from "@/server/records/visibility";
 export type EventKind =
   | "added" | "edited" | "archived" | "restored" | "person_linked" | "person_unlinked" | "handed_over" | "moved"
   // SF-95: deal results
-  | "won" | "lost" | "reopened";
+  | "won" | "lost" | "reopened"
+  // SF-103: added by a CSV import (in place of "added")
+  | "imported";
 // Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)").
 export type MoveCause = "stage_deleted" | "pipeline_deleted";
 

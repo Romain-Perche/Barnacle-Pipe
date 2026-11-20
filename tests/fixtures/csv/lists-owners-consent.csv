@@ -1,0 +1,9 @@
+First name,Last name,Email,Lead source,Labels,Owner,Consent
+Lana,Listfake,lana.listfake@fakeco.example,Your account is locked,Hot,linus@barnacle.ai,Unsubscribed
+Leo,Listfake,leo.listfake@fakeco.example,referral,hot,Linus Fake,
+Lily,Listfake,lily.listfake@fakeco.example,REFERRAL,,Nobody Fake,no
+Luke,Listfake,luke.listfake@fakeco.example,,Hot,alan@barnacle.ai,
+Lena,Listfake,lena.listfake@fakeco.example,Referral,,,yes
+Lou,Listfake,lou.listfake@fakeco.example,,"Hot; Cold, hot",MARGARET@barnacle.ai,
+Lisa,Listfake,lisa.listfake@fakeco.example,,,,opted out
+Lars,Listfake,lars.listfake@fakeco.example,,,,

@@ -170,6 +170,48 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-103 T004, T014, FR-016, FR-017: 0006_csv_imports.sql on a fresh database keeps an import's states consistent
+  it("applies 0006_csv_imports.sql: refuses a done import without a report or with its file, a file over 5 MB, deals; accepts an imported event", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0006_csv_imports.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [i] = await c`insert into csv_imports (user_id, kind, file_name, size_bytes) values (${u.id}, 'people', 'a.csv', 10) returning id, status`;
+      expect(i.status).toBe("uploading");
+      expect(await code(c`update csv_imports set status = 'done', imported_at = now() where id = ${i.id}`)).toBe("23514");
+      expect(
+        await code(c`update csv_imports set status = 'done', imported_at = now(), report = '{}', content = ${Buffer.from([1])} where id = ${i.id}`),
+      ).toBe("23514");
+      expect(await code(c`update csv_imports set content = ${Buffer.alloc(5_242_881)} where id = ${i.id}`)).toBe("23514");
+      expect(await code(c`update csv_imports set content = ${Buffer.alloc(5_242_880)} where id = ${i.id}`)).toBe("ok");
+      expect(await code(c`update csv_imports set status = 'done', imported_at = now(), report = '{}', content = null where id = ${i.id}`)).toBe("ok");
+      expect(await code(c`insert into csv_imports (user_id, kind, file_name, size_bytes) values (${u.id}, 'deals', 'a.csv', 10)`)).toBe("23514");
+      expect(await code(c`insert into csv_imports (user_id, kind, file_name, size_bytes) values (${u.id}, 'people', 'a.csv', 5242881)`)).toBe("23514");
+      const [person] = await c`insert into persons (first_name, owner_id, created_by) values ('Ada', ${u.id}, ${u.id}) returning id`;
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id) values (${person.id}, 'imported', ${u.id})`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id) values (${person.id}, 'note', ${u.id})`)).toBe("ok");
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-103 T014: the import code keeps to the Supabase transaction-mode pooler's limits (no session state)
+  it("keeps the import code free of session state (set, listen, session advisory locks)", () => {
+    const dir = "src/server/imports";
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["csv.ts", "columns.ts", "rows.ts", "plan.ts", "imports.ts"]));
+    for (const file of readdirSync(dir)) {
+      const text = readFileSync(`${dir}/${file}`, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0006_csv_imports.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+  });
+
   it("runs twice at the same time: both finish, each migration applied once, no lock left", async () => {
     const db = await scratchDb();
     const [a, b] = await Promise.all([runMigrate(db), runMigrate(db)]);
