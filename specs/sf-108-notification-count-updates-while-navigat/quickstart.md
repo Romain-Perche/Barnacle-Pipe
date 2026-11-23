@@ -13,7 +13,8 @@ Manual check (two browsers, fake sign-in):
 
 1. Window A: sign in as Bob Fake, open `/deals`. Window B: sign in as Ada Fake, add a note on a deal mentioning
    "@Bob Fake".
-2. Window A, no reload: click "People" → sidebar shows "Notifications (1)".
+2. Window A, no reload: click "People" → sidebar shows "Notifications (1)" (the count can change a moment after
+   the page shows: it is asked again right after the navigation).
 3. Click "People" again → still "(1)"; Ada adds a second mention; click "People" again → "(2)".
 4. Open a person from the list, then press Back → the people list shows the current count.
 5. Ada deletes one note; Bob clicks any link → "(1)". Bob presses `[ MARK ALL AS READ ]` → no badge.

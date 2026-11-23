@@ -11,14 +11,19 @@ re-rendered on client navigation (partial rendering: only the segments that chan
 restores pages from the client cache without asking the server (research.md §1). So the count only changes on a full
 load or after an action that revalidates the layout.
 
-Fix, with no new dependency and no database change:
+Fix, with no new dependency and no database change (as built; research.md §2 "Changed during Build"):
 
-1. The Notifications link moves out of the layout into a **parallel route slot `@unread`** of the `(app)` layout whose
-   pages are a catch-all. A slot's leaf page is rendered by the server on every navigation, including a click on the
-   link of the page already open, a link inside a page and the redirect after a form (research.md §2). The slot page
-   calls `requireUser()` and `unreadCount()` and renders the same `SidebarLink` as today.
+1. The layout still computes `unreadCount()` and hands it as `initial` to a small **client component `UnreadLink`**,
+   with a new `key` on each layout render, so a full load, `router.refresh()` or `revalidatePath` always wins.
+   `UnreadLink` calls the read-only server action **`currentUnread()`** (`src/app/(app)/notifications/actions.ts`:
+   `requireUser()` first, read only, FR-004) when the path or query changes, and on a click on a link to the page
+   already open (an in-page `#` link also asks again: harmless, one extra read). A reply older than the latest request
+   is dropped.
 2. A tiny client component **`RefreshOnHistory`** in the layout calls `router.refresh()` on the browser's `popstate`
    (back and forward), so the restored page and its sidebar are brought up to date from the server (research.md §3).
+
+Planned and dropped: an `@unread` parallel-route slot; the Next.js 16.4.6 client router kept an old slot subpage, so
+the count went stale (see research.md §2).
 
 Everything else in the sidebar (highlight, admin links, name, `[ Sign out ]`) stays in the layout, unchanged.
 
@@ -26,11 +31,11 @@ Everything else in the sidebar (highlight, admin links, name, `[ Sign out ]`) st
 
 **Language/Version**: TypeScript 6.0 on Node.js 24 LTS (unchanged)
 
-**Primary Dependencies**: Next.js 16.4.6 (App Router parallel routes, `useRouter().refresh()`), React 19.3 — already in
-the repo. Nothing added or upgraded (`dependencies.json` is `[]`).
+**Primary Dependencies**: Next.js 16.4.6 (`usePathname`, `useSearchParams`, server actions,
+`useRouter().refresh()`), React 19.3 — already in the repo. Nothing added or upgraded (`dependencies.json` is `[]`).
 
 **Storage**: PostgreSQL, unchanged. No migration. The existing `unreadCount(userId)` query (one indexed query,
-`note_mentions_unread_idx`) now runs once per navigation instead of once per full load.
+`note_mentions_unread_idx`) now runs once per full load and once more per client navigation (`currentUnread()`).
 
 **Testing**: Playwright (FR-007: two browser contexts, Ada mentions Bob while Bob has a page open; Bob's count after a
 sidebar link, a link inside a page, the same-page sidebar link, a note save, back and forward, with no full reload).
@@ -40,15 +45,17 @@ Vitest: no new pure logic; existing `unreadCount` integration tests stay as they
 
 **Project Type**: Web application (single Next.js project, server-rendered).
 
-**Performance Goals**: FR-006 — navigation stays a client-side transition; the extra cost is one `unreadCount` query
-inside the request Next already makes for the new page (no extra round trip). Back/forward costs one `router.refresh()`
-request (accepted, research.md §3).
+**Performance Goals**: FR-006 — navigation stays a client-side transition, no reload. The extra cost is one small POST
+(`currentUnread()`, one indexed `unreadCount` query) per navigation, sent after the new page shows; for that moment the
+old count can show. Back/forward costs one `router.refresh()` request (accepted, research.md §3).
 
-**Constraints**: AGENTS.md rules: server components by default (the slot pages are server components; only
-`RefreshOnHistory` is a client component, it needs `window`); every signed-in page calls `requireUser()` (the slot
-pages do too); user-facing text from `src/server/messages.ts` (`templates.notifications_label`, unchanged).
+**Constraints**: AGENTS.md rules: server components by default (only `UnreadLink`, which needs the current address and
+clicks, and `RefreshOnHistory`, which needs `window`, are client components); every signed-in page calls
+`requireUser()` and every server action calls it first (`currentUnread()` does, and only reads); user-facing text from
+`src/server/messages.ts` (`templates.notifications_label`, unchanged).
 
-**Scale/Scope**: 3 new files under `src/app/(app)/@unread/`, 1 new client component, `layout.tsx` edited; 1 new e2e spec.
+**Scale/Scope**: 2 new client components (`UnreadLink.tsx`, `RefreshOnHistory.tsx`), 1 server action added to
+`notifications/actions.ts`, `layout.tsx` and `nav.ts` edited; 1 new e2e spec and its helpers.
 
 ## Constitution Check
 
@@ -59,9 +66,9 @@ are the repo's own rules (AGENTS.md, docs/PRODUCT.md, docs/DECISIONS.md):
 
 | Gate | Status |
 |------|--------|
-| Server components by default; client only where the browser is needed | PASS — only `RefreshOnHistory` (listens to `popstate`) |
-| Every signed-in page calls `requireUser()` | PASS — the `@unread` pages call it before reading the count |
-| User-facing text from `messages.ts`, nothing taken from a URL | PASS — the catch-all `path` param is never read or shown |
+| Server components by default; client only where the browser is needed | PASS — only `UnreadLink` (address and clicks) and `RefreshOnHistory` (`popstate`) |
+| Every signed-in page calls `requireUser()` | PASS — the layout calls it; the server action `currentUnread()` calls it first and only reads |
+| User-facing text from `messages.ts`, nothing taken from a URL | PASS — the label comes from `mainNav`/`templates`; the address is only compared, never shown |
 | Migrations rules | N/A — no migration |
 | No secrets, settings listed | N/A — no new setting |
 | Tests name what they cover | Planned — `// covers SF-108 FR-001, FR-007, US1 scenarios 1–3, …` |
@@ -87,16 +94,14 @@ specs/sf-108-notification-count-updates-while-navigat/
 
 ```text
 src/app/(app)/
-├── layout.tsx                 # EDIT: takes the `unread` slot; drops unreadCount(); renders <RefreshOnHistory />
+├── layout.tsx                 # EDIT: unreadCount() → <UnreadLink initial key=new per render/>; renders <RefreshOnHistory />
+├── UnreadLink.tsx             # NEW client component: initial count, currentUnread() on new path/query or same-page click
 ├── RefreshOnHistory.tsx       # NEW client component: popstate → router.refresh()
-├── UnreadLink.tsx             # NEW server component: requireUser() + unreadCount() → <SidebarLink …/>
-├── @unread/
-│   ├── page.tsx               # NEW: matches "/"           → <UnreadLink />
-│   ├── [...path]/page.tsx     # NEW: matches every other URL → <UnreadLink />
-│   └── default.tsx            # NEW: fallback on a full load → <UnreadLink />
-├── nav.ts                     # EDIT: comment only (the Notifications item is rendered by the @unread slot)
+├── notifications/actions.ts   # EDIT: adds currentUnread() (requireUser() first, read only)
+├── nav.ts                     # EDIT: comment only (UnreadLink keeps the count up to date)
 └── SidebarLink.tsx            # unchanged
 tests/e2e/
+├── notification-count-helpers.ts
 └── notification-count.spec.ts # NEW (FR-007)
 ```
 
@@ -104,24 +109,23 @@ tests/e2e/
 
 ## Implementation steps (for Build)
 
-1. **`src/app/(app)/UnreadLink.tsx`** (server component, no `"use client"`):
-   `export async function UnreadLink() { const user = await requireUser(); const n = await unreadCount(user.id);
-   return <SidebarLink href="/notifications" label="Notifications" count={n} />; }`. Take `href`/`label` from the
-   `mainNav` entry whose `href === "/notifications"` so the registry stays the one source of the label.
-   `requireUser()` is wrapped in React `cache` per request, so calling it in the slot and in the page costs one session
-   lookup.
-2. **`src/app/(app)/@unread/page.tsx`**, **`@unread/[...path]/page.tsx`**, **`@unread/default.tsx`**: each
-   `export default function X() { return <UnreadLink />; }` (the catch-all ignores its `params`; never read it).
-   Together they match every URL under `(app)`, including `/[...missing]` and pages that call `notFound()`.
-3. **`src/app/(app)/layout.tsx`**: signature `AppLayout({ children, unread }: { children: React.ReactNode; unread:
-   React.ReactNode })`. Remove the `unreadCount` import and call. In the `mainNav.map`, render `unread` in place of the
-   item whose `href === "/notifications"` (wrap in a keyed `<Fragment>`), and plain `<SidebarLink {...item} />` for the
-   others. Keep the order of the links, `export const dynamic = "force-dynamic"`, the admin group and the `.me` block
-   exactly as they are. Add `<RefreshOnHistory />` once inside `.shell`.
+As built (the first plan used an `@unread` parallel-route slot; planned and dropped, see research.md §2).
+
+1. **`src/app/(app)/notifications/actions.ts`**: add `export async function currentUnread(): Promise<number>` that
+   calls `requireUser()` first and returns `unreadCount(user.id)`. Read only (FR-004).
+2. **`src/app/(app)/UnreadLink.tsx`** (`"use client"`): props `{ href, label, initial }`; state starts at `initial`;
+   calls `currentUnread()` when `usePathname()` or `useSearchParams()` changes, and on a document click on an
+   `a[href]` whose origin, path and query equal the current page's; each request gets a sequence number and only the
+   latest reply is applied. Renders `<SidebarLink href label count />`.
+3. **`src/app/(app)/layout.tsx`**: keep `unreadCount(user.id)`; in `mainNav.map` render
+   `<UnreadLink key={`${item.href}#${crypto.randomUUID()}`} {...item} initial={unread} />` for the item whose
+   `href === "/notifications"` (a new `key` per layout render so a fresh layout count always wins) and plain
+   `<SidebarLink {...item} />` for the others. Keep the order of the links, `export const dynamic = "force-dynamic"`,
+   the admin group and the `.me` block exactly as they are. Add `<RefreshOnHistory />` once inside `.shell`.
 4. **`src/app/(app)/RefreshOnHistory.tsx`** (`"use client"`): `useEffect` adds a `popstate` listener that calls
    `router.refresh()` (from `useRouter()` of `next/navigation`) and removes it on unmount; renders `null`.
-5. **`src/app/(app)/nav.ts`**: update the SF-102 comment: the Notifications link and its count are rendered by the
-   `@unread` slot (`UnreadLink.tsx`) so the count is fresh on every navigation (SF-108).
+5. **`src/app/(app)/nav.ts`**: update the SF-102 comment: the layout adds the unread count; `UnreadLink.tsx` keeps it
+   up to date on client navigation (SF-108).
 6. Keep `revalidatePath("/", "layout")` in `notifications/actions.ts` and `records/note-actions.ts` (harmless, and it
    still clears the client cache after Bob's own actions).
 7. **`tests/e2e/notification-count.spec.ts`**: reuse `resetAndSeed`, `signInAs`, `sidebar`, `insertDeal`, `addNote`
@@ -131,8 +135,9 @@ tests/e2e/
    (people list → person); note save by Bob (US2-3); count going down after the note is deleted (US1-4) and the record
    made private (US1-5: no badge, name "Notifications"); `[ MARK ALL AS READ ]` (no badge); back and forward (US3);
    deleted deal's not-found page shows the current count; 13 unread shows "13".
-8. **`AGENTS.md` Layout section**: one phrase that the sidebar count lives in the `@unread` slot (`UnreadLink.tsx`)
-   and `RefreshOnHistory.tsx` refreshes on back/forward (SF-108).
+8. **`AGENTS.md` Layout section**: one phrase that the sidebar count starts from `layout.tsx` and `UnreadLink.tsx`
+   (client) asks it again (`currentUnread`) after every client navigation; `RefreshOnHistory.tsx` refreshes the page on
+   back/forward (SF-108).
 
 No blueprint exception, so no `docs/DECISIONS.md` line is required.
 
