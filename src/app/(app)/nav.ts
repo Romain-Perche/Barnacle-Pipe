@@ -7,6 +7,8 @@ export const mainNav: NavItem[] = [
   { href: "/deals", label: "Deals" },
   { href: "/people", label: "People" },
   { href: "/organisations", label: "Organisations" },
+  // SF-102: the layout adds the unread count.
+  { href: "/notifications", label: "Notifications" },
 ];
 
 export const adminNav: NavItem[] = [

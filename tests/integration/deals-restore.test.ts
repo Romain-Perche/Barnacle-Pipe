@@ -51,7 +51,7 @@ describe("restoreDeal", () => {
     expect(await deals.restoreDeal(linus.id, id)).toEqual({ status: "ok" });
     expect(await dealRow(id)).toMatchObject({ archived: false, stage_id: stage, version: 3 });
     expect(await boardTitles(ada.id, stage)).toEqual(["Fakeco website"]);
-    const [line] = await readTimeline(ada.id, { dealId: id });
+    const [line] = (await readTimeline(ada.id, { dealId: id })).entries;
     expect(line).toMatchObject({ kind: "restored", actorName: "Linus Fake" });
   });
 
@@ -80,7 +80,7 @@ describe("restoreDeal", () => {
     const id = await makeDeal({ title: "Fakeco website", stageId: sales.stages[0], createdBy: ada.id });
     expect(await deals.restoreDeal(ada.id, id)).toEqual({ status: "ok" });
     expect(await dealRow(id)).toMatchObject({ version: 1 });
-    expect(await readTimeline(ada.id, { dealId: id })).toEqual([]);
+    expect((await readTimeline(ada.id, { dealId: id })).entries).toEqual([]);
     expect(await deals.restoreDeal(ada.id, 999999)).toEqual({ status: "not_found" });
     const priv = await makeDeal({ title: "Fake secret project", stageId: sales.stages[0], createdBy: ada.id, private: true, archived: true });
     expect(await deals.restoreDeal(linus.id, priv)).toEqual({ status: "not_found" });

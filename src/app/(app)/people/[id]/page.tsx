@@ -3,16 +3,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
 import { formatDate } from "@/server/format";
-import { parseId } from "@/server/records/list-query";
+import { parseId, type Params } from "@/server/records/list-query";
 import { getPerson } from "@/server/records/people";
 import { CONSENT_LABELS, KIND_LABELS } from "@/server/records/rules";
-import { readTimeline } from "@/server/records/timeline";
 import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { RecordHeader } from "../../records/RecordHeader";
-import { Timeline } from "../../records/Timeline";
+import { NoteNotices } from "../../records/NoteNotices";
+import { RecordTimeline } from "../../records/RecordTimeline";
 import { archivePerson, deletePerson, restorePerson } from "../actions";
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ confirm?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<Params> };
+
+function first(params: Params, key: string): string | undefined {
+  const v = params[key];
+  return Array.isArray(v) ? v[0] : v;
+}
 
 export default async function PersonPage({ params, searchParams }: Props) {
   const user = await requireUser();
@@ -20,9 +25,9 @@ export default async function PersonPage({ params, searchParams }: Props) {
   if (id === null) notFound();
   const person = await getPerson(user.id, id);
   if (!person) notFound();
-  const events = await readTimeline(user.id, { personId: id });
+  const query = await searchParams;
   const isAdmin = user.role === "admin";
-  const confirming = isAdmin && (await searchParams).confirm === "delete";
+  const confirming = isAdmin && first(query, "confirm") === "delete";
   const href = `/people/${id}`;
 
   return (
@@ -48,6 +53,7 @@ export default async function PersonPage({ params, searchParams }: Props) {
         restore={restorePerson}
       />
       {confirming && <DeleteConfirm name={person.name} id={id} action={deletePerson} cancelHref={href} />}
+      <NoteNotices error={first(query, "error")} />
 
       <section aria-label="Details">
         <div className="label sect">
@@ -134,7 +140,12 @@ export default async function PersonPage({ params, searchParams }: Props) {
         </dl>
       </section>
 
-      <Timeline events={events} />
+      <RecordTimeline
+        viewerId={user.id}
+        target={{ personId: id }}
+        archived={person.archived}
+        query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+      />
     </>
   );
 }

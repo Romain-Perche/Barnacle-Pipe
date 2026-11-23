@@ -47,7 +47,9 @@ test("add Ada Example, find her by her second address, edit her and see the edit
   await expect(details(page)).toContainText("07700 900123");
   await expect(details(page)).not.toContainText("ada.home@example.net");
   await expect(timeline(page).first()).toContainText("Edited by Ada Fake: Role, Email addresses, Phone numbers");
-  await expect(timeline(page).first()).toContainText(/\d{2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2}/);
+  // SF-102 design B: the UK time on the entry, the date in its day heading.
+  await expect(timeline(page).first().locator(".when")).toHaveText(/^\d{2}:\d{2}$/);
+  await expect(page.getByRole("region", { name: "Timeline" }).locator(".day").first()).toHaveText(/TODAY · \d{2} [A-Z]{3} \d{4}/);
 });
 
 // covers US1 scenario 4

@@ -5,10 +5,12 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T12:30:18.141Z
+    at: 2026-11-20T16:18:56.075Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
+  - id: sf102-src-migration
+    resource: repo://migrations/0007_notes_mentions.sql
   - id: openwiki-source-b1b8983f5dc78551445443a8
     resource: repo://migrations/0001_users_sessions.sql
   - id: openwiki-source-4be5a90a7046f767d13b7bce
@@ -23,13 +25,13 @@ sources:
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-20T12:30:18.141Z" }
+generated: { by: "claude-code", at: "2026-11-20T16:18:56.075Z" }
 ---
 
 # Database schema and access
 
 The schema is defined by numbered SQL files in `migrations/` (`0001_users_sessions.sql` and
-`0002_people_organisations.sql`, `0003_private_owner_handover.sql`, `0004_pipelines_deals.sql`, `0005_deal_page.sql`) plus the `schema_migrations` table created by the migrate command. How each
+`0002_people_organisations.sql`, `0003_private_owner_handover.sql`, `0004_pipelines_deals.sql`, `0005_deal_page.sql`, `0007_notes_mentions.sql`) plus the `schema_migrations` table created by the migrate command. How each
 part reads and writes these tables is drawn in [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Tables
@@ -108,12 +110,23 @@ Added by `0005_deal_page.sql` (see [Pipelines, deals and the board](../features/
 - `deal_people`: other people linked to a deal, and `deal_followers`: users following a deal. Both cascade with the deal.
 - `timeline_events` gains `reason` and the kinds `won`, `lost` and `reopened`; a `lost` event always has a reason.
 
+### Notes and mentions tables (migration 0007)
+
+Added by `0007_notes_mentions.sql` (see [People and organisations](../features/people-and-organisations.md)):
+
+- `timeline_events` gains `body` (note text, at most 100000 characters), `edited_by`, `edited_at` and an
+  optimistic `version`, and the new kind `note` (the kind list also holds `imported`). Checks keep a row a note
+  exactly when it has a body, allow edit fields on notes only, and require an author (`actor_id`) for every note.
+- `note_mentions`: one row per mentioned user of a note (`event_id`, `user_id`, `mentioned_by`, `created_at`,
+  `read_at`), primary key `(event_id, user_id)`, deleted with the note. A mention of someone other than the author is
+  a notification; two indexes serve the user's list and the unread count.
+
 ## Row level security
 
 Every `create table` is followed by `alter table … enable row level security`, with no policies. On
 Supabase this means the Data API roles (`anon`, `authenticated`) can neither read nor write app data,
 while the app's own database user, which owns the tables, is not affected. `tests/integration/rls.test.ts`
-fails if any table in the public schema lacks it (it also checks that the app's tables, including the four from migration 0004 and the four from migration 0005, exist). Migration files may only contain statements allowed inside a transaction.
+fails if any table in the public schema lacks it (it also checks that the app's tables, including the tables from migrations 0004, 0005 and `note_mentions` from 0007, exist). Migration files may only contain statements allowed inside a transaction.
 
 ## Connecting
 

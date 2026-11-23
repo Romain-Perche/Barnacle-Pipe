@@ -26,7 +26,7 @@ describe("concurrent edits", () => {
     const p = await getPerson(ada.id, id);
     expect(p!.role).toBe("CEO");
     expect(p!.version).toBe(2);
-    expect((await readTimeline(ada.id, { personId: id })).map((e) => e.actorName)).toEqual(["Ada Fake", "Ada Fake"]);
+    expect(((await readTimeline(ada.id, { personId: id })).entries).map((e) => e.actorName)).toEqual(["Ada Fake", "Ada Fake"]);
   });
 
   it("lets exactly one of two saves running at the same time win", async () => {

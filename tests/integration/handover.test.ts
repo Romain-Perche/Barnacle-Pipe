@@ -67,7 +67,7 @@ describe("handOverPrivateRecords", () => {
     }
     const events = await sql`select person_id::int as person_id, kind, actor_id::int as actor_id, related_user_id::int as related_user_id from timeline_events where kind = 'handed_over' order by person_id`;
     expect(events).toEqual([robin, sam, pat].sort((a, b) => a - b).map((id) => ({ person_id: id, kind: "handed_over", actor_id: ada.id, related_user_id: margaret.id })));
-    expect((await readTimeline(margaret.id, { personId: sam }))[0]).toMatchObject({ kind: "handed_over", actorName: "Ada Fake", relatedUserName: "Margaret Fake" });
+    expect(((await readTimeline(margaret.id, { personId: sam })).entries)[0]).toMatchObject({ kind: "handed_over", actorName: "Ada Fake", relatedUserName: "Margaret Fake" });
 
     const mine = await listPeople(margaret.id, parsePeopleQuery({ owner: String(margaret.id), archived: "1" }));
     expect(mine.rows.map((r) => r.id).sort((a, b) => a - b)).toEqual([robin, sam, pat, own].sort((a, b) => a - b));
@@ -225,7 +225,7 @@ describe("handOverPrivateRecords with private deals (SF-97)", () => {
     expect(await sql`select * from deal_stage_periods order by id`).toEqual(periodsBefore);
     const [{ n: movedEventsAfter }] = await sql`select count(*)::int as n from timeline_events where kind = 'moved'`;
     expect(movedEventsAfter).toBe(movedEventsBefore);
-    expect((await readTimeline(margaret.id, { dealId: open }))[0]).toMatchObject({ kind: "handed_over", actorName: "Ada Fake", relatedUserName: "Margaret Fake" });
+    expect(((await readTimeline(margaret.id, { dealId: open })).entries)[0]).toMatchObject({ kind: "handed_over", actorName: "Ada Fake", relatedUserName: "Margaret Fake" });
     expect(await sql`select id from deals where private and owner_id = ${alan.id}`).toHaveLength(0);
     expect((await listUsers()).find((u) => u.id === alan.id)).toMatchObject({ private_people: 0, private_deals: 0 });
 
@@ -246,7 +246,7 @@ describe("handOverPrivateRecords with private deals (SF-97)", () => {
     for (const viewer of [linus, ada]) {
       expect(await sees(viewer, open), viewer.name).toBe(false);
       expect(await sees(viewer, old), viewer.name).toBe(false);
-      expect(await readTimeline(viewer.id, { dealId: open })).toEqual([]);
+      expect((await readTimeline(viewer.id, { dealId: open })).entries).toEqual([]);
     }
     const column = (await getBoard(ada.id, sales.id))!.columns[1];
     expect([column.count, column.totalPence]).toEqual([0, 0]);

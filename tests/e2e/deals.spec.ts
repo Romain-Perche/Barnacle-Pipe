@@ -103,7 +103,7 @@ test("selecting a card opens the drawer; edit, archive and delete from it", asyn
   await expect(drawer.getByRole("link", { name: "Fakeco Ltd" })).toHaveAttribute("href", `/organisations/${(await db()`select id::int as id from organisations where name = 'Fakeco Ltd'`)[0].id}`);
   await expect(drawer.getByRole("link", { name: "Abe Example" })).toHaveAttribute("href", /\/people\/\d+$/);
   await expect(drawer).toContainText("Ada Fake");
-  await expect(drawer).toContainText("// HISTORY");
+  await expect(drawer).toContainText("// TIMELINE");
   await expect(card(page, "Fakeco website")).toHaveClass(/sel/);
   // The drawer is in the address: a reload keeps it.
   await page.reload();

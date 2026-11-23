@@ -56,3 +56,6 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - Deal labels are a separate list, managed by admins on the Lead sources and labels page (SF-95)
 - A removed deal label stays on the deals that have it and in the list's label filter, and is no longer offered on the edit form, as people labels (SF-95)
 - Handing over a deactivated user's private people also hands over the private deals they own, archived ones included, so a private deal is never left visible to nobody (SF-97)
+- The timeline uses design B: entries grouped by day with a NOTE, DEAL or CHANGE tag and the time, notes in a box with an orange left edge, the note box above the timeline (SF-102)
+- A teammate mentioned in a note is told in the app only: Notifications in the sidebar and a Notifications page, no email (SF-102)
+- Anyone who can see a note can edit or delete it (SF-102)

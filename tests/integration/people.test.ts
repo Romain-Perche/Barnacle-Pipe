@@ -63,7 +63,7 @@ describe("createPerson", () => {
       version: 1,
     });
     expect(Math.abs(p!.createdAt.getTime() - Date.now())).toBeLessThan(60_000);
-    const events = await readTimeline(ada.id, { personId: id });
+    const events = (await readTimeline(ada.id, { personId: id })).entries;
     expect(events).toMatchObject([{ kind: "added", actorName: "Ada Fake" }]);
   });
 
@@ -136,7 +136,7 @@ describe("updatePerson", () => {
     expect(p!.phones.map((x) => x.phone)).toEqual(["+44 20 7946 0000", "07700 900000"]);
     expect(p!.version).toBe(2);
     expect(await count("person_emails")).toBe(1);
-    const events = await readTimeline(ada.id, { personId: id });
+    const events = (await readTimeline(ada.id, { personId: id })).entries;
     expect(events[0]).toMatchObject({ kind: "edited", actorName: "Linus Fake", fields: ["Role", "Email addresses", "Phone numbers"] });
     expect(events).toHaveLength(2);
   });
@@ -153,13 +153,13 @@ describe("updatePerson", () => {
       phones: [{ value: "+44 20 7946 0000", kind: "work" }],
     });
     expect((await updatePerson(ada.id, id, 1, same)).status).toBe("saved");
-    expect(await readTimeline(ada.id, { personId: id })).toHaveLength(1);
+    expect((await readTimeline(ada.id, { personId: id })).entries).toHaveLength(1);
   });
 
   it("records a consent change as Consent (FR-006)", async () => {
     const id = saved(await createPerson(ada.id, personForm()));
     await updatePerson(linus.id, id, 1, personForm({ ownerId: String(ada.id), consent: "unsubscribed" }));
-    const [last] = await readTimeline(ada.id, { personId: id });
+    const [last] = (await readTimeline(ada.id, { personId: id })).entries;
     expect(last).toMatchObject({ kind: "edited", actorName: "Linus Fake", fields: ["Consent"] });
     expect((await getPerson(ada.id, id))!.consent).toBe("unsubscribed");
   });

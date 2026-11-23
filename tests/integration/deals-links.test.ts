@@ -31,7 +31,7 @@ describe("linkPerson / unlinkPerson", () => {
     const id = await makeDeal({ title: "Fakeco website", stageId: sales.stages[0], createdBy: ada.id, personId: main });
     expect(await linkPerson(linus.id, id, bob)).toEqual({ status: "ok" });
     expect((await deals.getDeal(linus.id, id))!.otherPeople).toEqual([{ id: bob, name: "Bob Example", archived: false }]);
-    const [line] = await readTimeline(linus.id, { dealId: id });
+    const [line] = (await readTimeline(linus.id, { dealId: id })).entries;
     expect(line).toMatchObject({ kind: "person_linked", actorName: "Linus Fake", relatedPerson: { id: bob, name: "Bob Example" } });
     expect(await unlinkPerson(linus.id, id, bob)).toEqual({ status: "ok" });
     expect(await linked(id)).toEqual([]);
@@ -80,7 +80,7 @@ describe("linkPerson / unlinkPerson", () => {
     expect(await linkPerson(ada.id, id, bob)).toEqual({ status: "ok" });
     await sql`update persons set archived_at = now() where id = ${bob}`;
     expect((await deals.getDeal(linus.id, id))!.otherPeople).toEqual([{ id: bob, name: "Bob Example", archived: true }]);
-    expect((await readTimeline(linus.id, { dealId: id })).map((e) => e.relatedPerson?.name)).toEqual(["Bob Example"]);
+    expect(((await readTimeline(linus.id, { dealId: id })).entries).map((e) => e.relatedPerson?.name)).toEqual(["Bob Example"]);
     // Linus cannot unlink (or learn about) Gus.
     expect(await unlinkPerson(linus.id, id, hidden)).toEqual({ status: "not_linked" });
     expect(await linked(id)).toEqual([hidden, bob].sort((a, b) => a - b));
@@ -92,7 +92,7 @@ describe("linkPerson / unlinkPerson", () => {
     await linkPerson(ada.id, id, bob);
     expect((await deletePerson(ada.id, bob)).status).toBe("deleted");
     expect(await linked(id)).toEqual([]);
-    const [line] = await readTimeline(ada.id, { dealId: id });
+    const [line] = (await readTimeline(ada.id, { dealId: id })).entries;
     expect(line).toMatchObject({ kind: "person_linked", relatedPerson: null });
   });
 

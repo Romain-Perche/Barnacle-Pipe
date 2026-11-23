@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b9aae8f37c5ecb138da3ed79760f355dbac72411824aae49a7465c16d5bb513a",
+  "pageVersion": "sha256:1764bfb9fe230c4b56aee729c23d9a8ce1bcd56466b4fbe6b1ffcbbfdadfe4d9",
   "claims": [
     {
       "id": "claim_42864019d2874e63b5942a7c8bb9312f",
       "statement": "The (app) layout calls requireUser(), is force-dynamic, and shows the admin nav group only to users with the admin role.",
       "evidence": [
         {
-          "resource": "repo://src/app/(app)/layout.tsx#L8-L44",
-          "version": "repo-lines-v1:sha256:7e01d366d561449fff0edafc714c7e03c2fbbf6aed7320ba18772cf7ed68192b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlZWIzMjNhNTFhY2U3MmUxZTgyOWZkNTE1MzE3NGFmOTU0YzM1MDNkYjU1NGUxMWNmNTdjMGRiNmE4NzI4NGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3NzU4NGRiZTdkYTM5NTAwMzcwOGZkZGVmOWRiOTc3OGI0MmMzOTQ1ZWE1YjhjZWYzM2U2NTgyMjNlODkwYTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src/app/(app)/layout.tsx#L9-L46",
+          "version": "repo-lines-v1:sha256:f75bc151f0275d5055cce53db8cd6118489600c15a92e9ed47d5642524852b1c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlZWIzMjNhNTFhY2U3MmUxZTgyOWZkNTE1MzE3NGFmOTU0YzM1MDNkYjU1NGUxMWNmNTdjMGRiNmE4NzI4NGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3NzU4NGRiZTdkYTM5NTAwMzcwOGZkZGVmOWRiOTc3OGI0MmMzOTQ1ZWE1YjhjZWYzM2U2NTgyMjNlODkwYTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -17,8 +17,8 @@
       "statement": "Sidebar links come from the mainNav and adminNav registries in nav.ts.",
       "evidence": [
         {
-          "resource": "repo://src/app/(app)/nav.ts#L1-L16",
-          "version": "repo-lines-v1:sha256:24ad9485b7c56a7c43fcfb452894048fbc50b2b1389e4b88171b43f438c7092a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3Y2M1NjgyNDhhZmEzMTU0MzEwNTZlMjZjZDdkYjFlMGJkNzRlZTQ4NzEwMzc5NGE5MTYyNGU1MmY3MWU2M2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMmQyYzBkNmRjNWU3NGQ5MmZhMTRiOTFkYmVhMjY0MDkwYmViMzVmZGI5MTg4ZDliMzQxMTgxZGNlOWY0Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src/app/(app)/nav.ts#L1-L18",
+          "version": "repo-lines-v1:sha256:ccfa578e6322440878e0aeaba3cf1f97cbd93cdfddcb0c6f03cd6f5336fc2efa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3Y2M1NjgyNDhhZmEzMTU0MzEwNTZlMjZjZDdkYjFlMGJkNzRlZTQ4NzEwMzc5NGE5MTYyNGU1MmY3MWU2M2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMmQyYzBkNmRjNWU3NGQ5MmZhMTRiOTFkYmVhMjY0MDkwYmViMzVmZGI5MTg4ZDliMzQxMTgxZGNlOWY0Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -51,8 +51,8 @@
       "statement": "All user-facing messages come from one code-to-text map, and messageFor() returns nothing for unknown codes.",
       "evidence": [
         {
-          "resource": "repo://src/server/messages.ts#L1-L108",
-          "version": "repo-lines-v1:sha256:202eec2177f4b50b0a3fbc0b008718c1969a99fbee26d105b4c4eefd85555ea0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5YzJmNzIxN2MwYTVhZTI5NjYzOWZkYWU4Yzg2MDEzOTNmOTIzNThhOWExNjhhN2M2N2JlN2Q0YmVhNzJjZTc4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://src/server/messages.ts#L1-L145",
+          "version": "repo-lines-v1:sha256:db76590242c3d18bab805a86feec950561ca59d517f1b4e46ed9bd0c511332ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyMGIwZjYzZDZhNGRmZTcyYWEyYzQwYWE3MTllYmMxZmYxODk3MTBlN2QxYzcxOGU3NzFjNzc0NjI3YjViMTIwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -69,6 +69,6 @@
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T10:02:45.004Z"
+    "at": "2026-11-20T16:18:56.075Z"
   }
 }

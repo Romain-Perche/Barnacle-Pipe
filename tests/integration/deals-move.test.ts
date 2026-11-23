@@ -38,7 +38,7 @@ describe("moveDeal", () => {
     const [entered] = await sql<{ fresh: boolean }[]>`select stage_entered_at > now() - interval '1 minute' as fresh from deals where id = ${id}`;
     expect(entered.fresh).toBe(true);
     expect(await dealEvents(id)).toEqual([{ kind: "moved", actor_id: linus.id, fields: null, from_stage: "Qualified", to_stage: "Proposal", cause: null }]);
-    const [line] = await readTimeline(ada.id, { dealId: id });
+    const [line] = (await readTimeline(ada.id, { dealId: id })).entries;
     expect(line).toMatchObject({ kind: "moved", actorName: "Linus Fake", fromStage: "Qualified", toStage: "Proposal", cause: null });
   });
 

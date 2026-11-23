@@ -55,7 +55,7 @@ const NAMES = { "ada@barnacle.ai": "Ada Fake", "grace@barnacle.ai": "Grace Fake"
 async function login(browser, email) { const ctx = await browser.newContext({ viewport: { width: 1900, height: 1000 } }); const page = await ctx.newPage(); await signIn(page, BASE, email, NAMES[email]); return page; }
 async function run(name, fn) { try { await fn(); } catch (e) { check(name, false, "error: " + String(e.message).split("\n")[0]); } }
 const bar = async (page) => page.getByRole("list", { name: "Stages" }).locator("li").evaluateAll((els) => els.map((e) => ({ name: e.querySelector(".nm").textContent.trim(), days: e.querySelector(".days").textContent.trim(), now: e.getAttribute("aria-current") === "step", btn: !!e.querySelector("button") })));
-const history = async (page) => page.getByRole("region", { name: "History" }).getByRole("listitem").allTextContents();
+const history = async (page) => page.getByRole("region", { name: "Timeline" }).getByRole("listitem").allTextContents();
 const listTitles = async (page) => page.locator("td:first-child a.nm").allTextContents();
 const status = (id) => one(`select status||'|'||coalesce(closed_at::text,'')||'|'||coalesce(lost_reason,'')||'|'||stage_id||'|'||coalesce(value_pence::text,'')||'|'||owner_id||'|'||(archived_at is not null) from deals where id=${id}`);
 async function postAction(page, actionPagePath, buttonName, fields, asPage) {
@@ -90,7 +90,7 @@ async function postAction(page, actionPagePath, buttonName, fields, asPage) {
       followers: /Followers\s*Grace Fake/.test(tc), close: tc.includes("19 Dec 2026"), labels: /Labels\s*Warm/.test(tc),
       org: org === `/organisations/${one("select id from organisations where name='Fakeco Ltd'")}`, person: per === `/people/${personId(MAINP)}`,
       other: (await ada.getByRole("list", { name: "Other people" }).textContent()).includes(other), added: /Date added\s*\d+ \w{3} 2026/.test(tc),
-      status: /Status\s*Open/.test(tc), hist: t.includes("// HISTORY"), newest: h.length >= 2 && /edited/i.test(h[0]) && /added/i.test(h[h.length - 1]),
+      status: /Status\s*Open/.test(tc), hist: t.includes("// TIMELINE"), newest: h.length >= 2 && /edited/i.test(h[0]) && /added/i.test(h[h.length - 1]),
     };
     const bad = Object.entries(checks).filter(([, v]) => !v).map(([k]) => k);
     check("US1 scenario 1", bad.length === 0, `deal page of "SF95 Page deal": all fields shown; failing: ${bad.join(",") || "none"}; history ${JSON.stringify(h)}`);

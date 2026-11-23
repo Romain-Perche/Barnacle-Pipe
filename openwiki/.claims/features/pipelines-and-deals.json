@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:76d3d0addf07d82da0ccd70da529709a52e82fa0ade7ecb34db1b8e0f615f108",
+  "pageVersion": "sha256:cc37d92d92a1d7471faa23230e3adfdcee07990706ce464f786a6713039fa959",
   "claims": [
     {
       "id": "claim_cdee755dd04e4193ad40c04d8fc08f84",
       "statement": "Every deals read uses visibleDeal(), so a private deal is visible only to its creator or owner.",
       "evidence": [
         {
-          "resource": "repo://src/server/records/visibility.ts#L12-L14",
-          "version": "repo-lines-v1:sha256:36b370992cef4c8b921ae558671ca7d1bc2ccb8fc485770c2a7e75cfb4d96adb:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMzYjk2OGNhNTc3ZTFiZTEzMGE1OGQyMTc3MWRkMjNmZWE0NDI2ZTdhYmVlMWRlYzEyMjE1NWFkZTFjMDI1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGNkOTM5NzY2OTk5NDFhNDYxYjExZDA2ZmIzNmU3OGJlM2NiODY0ODU5ZDkzMTYzYTY3ZmMyODI4MzQ0YjE5YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+          "resource": "repo://src/server/records/visibility.ts#L15-L17",
+          "version": "repo-lines-v1:sha256:6f30d747490dcb08d6c6e1c17b2de9ddbecf59373b8a3d94e4f6a9c78661b3db:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjE4ZDNhZjZjOTA0NTdhNDdhYTc1M2Y4ODZkMTI1NjUzMTg5YTUxMzg2NGZmYTk3ZjczNGZjYTcwYmRkNGQxYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGNkOTM5NzY2OTk5NDFhNDYxYjExZDA2ZmIzNmU3OGJlM2NiODY0ODU5ZDkzMTYzYTY3ZmMyODI4MzQ0YjE5YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         }
       ]
     },
@@ -49,6 +49,6 @@
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T12:30:18.141Z"
+    "at": "2026-11-20T16:18:56.075Z"
   }
 }

@@ -59,7 +59,7 @@ export function dealDrawer(page: Page) {
   return page.getByRole("complementary", { name: "Deal" });
 }
 export function history(page: Page) {
-  return page.getByRole("region", { name: "History" }).getByRole("listitem");
+  return page.getByRole("region", { name: "Timeline" }).getByRole("listitem");
 }
 
 // "<n> deals · £total" of the visible non-archived open deals of a stage (SF-95: won and lost deals are not on the
