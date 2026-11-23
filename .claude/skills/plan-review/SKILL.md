@@ -84,30 +84,36 @@ Sections, in this order:
 2. **Decide.** The open decisions, 5 at most, numbered as in the comment: every question still open,
    and every `(decided by the factory, to confirm)` choice in `spec.md`. Each one: the question, the
    options (A, B, ...), "My recommendation: A, because ...". None: "Nothing to decide."
-3. **What you will see.** A faithful HTML and CSS mock of the screen after the change, with the app's
+3. **Why it happens today.** Only when the issue reports something that does not work (a bug); otherwise
+   leave this section out. The cause the plan found (`research.md`, `plan.md`), in plain words and a few
+   sentences: what the app does today, step by step, and where that goes wrong ("The sidebar is built once,
+   when the first page opens. A link only replaces the middle of the screen, so the number is never counted
+   again."). Then how the plan knows: what it read or tried. When the cause is not certain, say so here and
+   add an **Unknown** line in "Risks and unknowns".
+4. **What you will see.** A faithful HTML and CSS mock of the screen after the change, with the app's
    real text and labels (read the app's code for them). When `<feature>/design-options.html` exists,
    show the option the spec records ("You chose B") next to the current screen. No screen change: show
    the behaviour before and after with an example.
-4. **How it will work.** One diagram as inline SVG in plain pseudo-code: each box says what happens
+5. **How it will work.** One diagram as inline SVG in plain pseudo-code: each box says what happens
    ("Routes come back", "Time of arrival = departure + trip time"), never a function name. Mark the
    new boxes.
-5. **How it will be checked.** Every acceptance scenario and edge case of `spec.md`, one row each, with a
+6. **How it will be checked.** Every acceptance scenario and edge case of `spec.md`, one row each, with a
    readable title ("Testing if switching to Bike keeps the stops", "What happens if no route is found") and
    what the user must see. Under the table: Build writes deterministic tests for them with the code, and the AI
    review then tries each one in the running app.
-6. **Scope.** What is in, what is out.
-7. **Dependencies.** Exactly the rows of `<feature>/dependencies.json` (the list the factory checks the
+7. **Scope.** What is in, what is out.
+8. **Dependencies.** Exactly the rows of `<feature>/dependencies.json` (the list the factory checks the
    pull request against): one table row per item, name, version, what it is for in plain words. `[]`:
    "No new dependency." The Linear comment never lists them.
-8. **Blueprints.** Exactly the rows of `<feature>/blueprints.json`, the factory's standard ways this change
+9. **Blueprints.** Exactly the rows of `<feature>/blueprints.json`, the factory's standard ways this change
    follows: one table row per item, the blueprint and its version (`data/database@1`), what it is (its
    `description` in `$WS/blueprints/INDEX.md`), and the exception in plain words with who decided it ("the
    issue", "the repo already does it", "you", "the factory, to confirm"), else "Followed". Exceptions first.
    No file or `[]`: "No blueprint applies." A choice to confirm is also in **Decide**.
-9. **Risks and unknowns.** Lines labelled **Risk** or **Unknown**, as the skill says. First, one
+10. **Risks and unknowns.** Lines labelled **Risk** or **Unknown**, as the skill says. First, one
    **Warning** line per outside service that `plan.md` marks `no public schema found on GitHub`: its fake
    follows the service's docs only, so the tests cannot catch a wrong field name.
-10. **The plan in detail.** In `<details>`, closed: `plan.md` only (not the task list), rendered from
+11. **The plan in detail.** In `<details>`, closed: `plan.md` only (not the task list), rendered from
    Markdown to HTML as a Markdown viewer shows it (headings, lists, tables, bold, links, code blocks in
    `<pre>`, task checkboxes as ☐ / ☑), never as raw Markdown text. Escape the text. The one place for
    code names and file paths.

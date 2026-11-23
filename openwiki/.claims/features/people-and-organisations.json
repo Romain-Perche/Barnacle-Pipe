@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:31417fbe1729df23707a72ac02687a2bf4a4f172bd8073b8e5df7430e232fbb1",
+  "pageVersion": "sha256:52c602ece832eb96b1d2d029e7078716edc3c3ff771b4d8917b27261575b2a3f",
   "claims": [
     {
       "id": "claim_073174519ebe44d7a116c47962b22649",
@@ -59,10 +59,20 @@
           "version": "repo-file-v1:sha256:273d1fb7d35f5c991de8aa9ca55fc2fb59ab36bcd3b7ec4bdae391870940d94f"
         }
       ]
+    },
+    {
+      "id": "claim_51592edc361145639b411fed9eb06192",
+      "statement": "CSV imports are rows of csv_imports readable only by the user who started them; unfinished imports and imports older than 24 hours are purged.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/imports/imports.ts#L1-L45",
+          "version": "repo-lines-v1:sha256:64d0aa2a99809646124532104d97f55a28f021b68266b4aaf1ca50a025537f82:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxYjczMWQzNjI4OGE0MDBiNjRjNTUwODYyZjY5NDFmYjc0YmU1YWQ4YmNkNzdhODAyZTk1MjkzNTYyOGJiM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2YjhmMTc1MmY0MzVjNDBkNzYxY2M2ZTU0N2UyNDNjODFjMTFhMDY1YWJmM2NkZmNmMDM2YzlkNDU5ODRiY2QifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T16:18:56.075Z"
+    "at": "2026-11-23T13:22:05.502Z"
   }
 }

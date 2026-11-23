@@ -59,3 +59,6 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - A teammate mentioned in a note is told in the app only: Notifications in the sidebar and a Notifications page, no email (SF-102)
 - Anyone who can see a note can edit or delete it (SF-102)
 - No browser tests in the repo: Build writes unit and integration tests (on the local Postgres) and never starts the app in a browser; the AI review checks the screens. This replaces the SF-80 choice of Playwright browser tests (2026-11-23)
+- The CSV import uses design B: one screen per step (file, columns, preview, report) with a step bar and [ BACK ] (SF-103)
+- A CSV row whose email address a person in the CRM already has is not imported; the existing person is left as it is and the report lists the row (SF-103)
+- People imported from CSV with no consent in the file get the consent the importing user chooses, with nothing chosen in advance (SF-103)

@@ -301,6 +301,35 @@ table.deals-list td .nm { overflow-wrap: anywhere; }
   .strip > div { border-right: 0; border-bottom: 0.5px solid var(--line-soft); }
 }
 
+/* SF-103 CSV import, design B: one screen per step with a step bar, count tiles, Users-style tables. */
+.steps { display: flex; list-style: none; margin: 0 0 20px; padding: 0; max-width: 1100px; font-family: var(--mono); font-size: 11px;
+  font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; }
+.steps li { flex: 1 1 0; min-width: 0; border: 0.5px solid var(--line); margin-right: -0.5px; padding: 8px 10px; color: var(--muted); }
+.steps li.done { color: var(--ink); }
+.steps li.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.import-file-name { font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; overflow-wrap: anywhere; text-align: right; }
+.import-file { display: flex; flex-direction: column; gap: 12px; max-width: 640px; border: 0.5px dashed var(--line); padding: 16px; }
+.import-file .err, .import-file .hint, .import-file .chosen { margin: 0; }
+.import-file .chosen .nm { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+.import-acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 20px; }
+table.import-table td { overflow-wrap: anywhere; white-space: pre-line; }
+table.import-table td.nm { font-weight: 600; }
+table.import-table td .m { display: block; color: var(--muted); font-size: 13px; }
+table.import-table .sel { width: auto; max-width: 280px; font-size: 12px; padding: 8px; }
+.tiles { display: flex; gap: 16px; margin: 0 0 16px; max-width: 1100px; }
+.tiles > div { flex: 1 1 0; min-width: 0; border-top: 0.5px solid var(--line); padding-top: 10px; }
+.tiles .big { font-size: 32px; font-weight: 700; line-height: 1; }
+.tiles .big.o { color: var(--orange); }
+.tiles .k { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+.tiles .v { font-size: 14px; margin-top: 4px; overflow-wrap: anywhere; }
+.import-warnings { list-style: none; margin: 0; padding: 0; max-width: 1100px; }
+.import-warnings .err { margin: 0 0 8px; overflow-wrap: anywhere; }
+.import .consent { border: 0; margin: 0; padding: 0; min-width: 0; }
+.import .consent legend { width: 100%; padding: 12px 0 0; }
+.radios { display: flex; gap: 16px; margin-top: 8px; }
+@media (max-width: 720px) {
+  .steps, .tiles { flex-direction: column; }
+}
 /* SF-102 timeline, design B: day headings, NOTE / DEAL / CHANGE tags, notes with an orange left edge. */
 .timeline { max-width: 900px; }
 .timeline .day { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); margin: 18px 0 4px; }

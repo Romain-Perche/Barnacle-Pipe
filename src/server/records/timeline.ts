@@ -10,7 +10,9 @@ export type EventKind =
   // SF-95: deal results
   | "won" | "lost" | "reopened"
   // SF-102: a note written on the record
-  | "note";
+  | "note"
+  // SF-103: added by a CSV import (in place of "added")
+  | "imported";
 // Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)").
 export type MoveCause = "stage_deleted" | "pipeline_deleted";
 

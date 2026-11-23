@@ -16,6 +16,8 @@ sources:
     resource: repo://src/app/(app)/nav.ts
   - id: openwiki-source-f34ac1e549d94dc3ac475ae4
     resource: repo://src/proxy.ts
+  - id: openwiki-source-7a68905e9fd3093f14ae72f5
+    resource: repo://src/server/imports/imports.ts
   - id: openwiki-source-9ebb64fab176b6e210f7c3a3
     resource: repo://src/server/notifications.ts
   - id: openwiki-source-16c334cbe6c5a2c7ad77a065
@@ -24,8 +26,8 @@ sources:
     resource: repo://src/server/records/notes.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T16:18:56.075Z
-generated: { by: "claude-code", at: "2026-11-20T16:18:56.075Z" }
+    at: 2026-11-23T13:22:05.502Z
+generated: { by: "claude-code", at: "2026-11-23T13:22:05.502Z" }
 ---
 
 # People and organisations
@@ -82,6 +84,18 @@ the user first (see [Sessions and access control](../auth/sessions-and-access-co
   user's mentions appear on the Notifications page (`src/server/notifications.ts`) only while the record is
   visible to them. `RecordTimeline.tsx` draws the timeline of every record page. See
   [Database schema](../data/database-schema.md) and [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
+
+## CSV import
+
+`/people/import` and `/organisations/import` share the screens in `src/app/(app)/records/import/`
+(`ImportPages.tsx`: file, columns, preview and report; `FileStep.tsx` sends the file in 512 KiB parts;
+`actions.ts`). Each import is a `csv_imports` row that only its starter can read (`src/server/imports/imports.ts`);
+unfinished imports and any import older than 24 hours are purged. The pure code in `src/server/imports/`
+reads the file (`csv.ts`), suggests and checks the column mapping (`columns.ts`), validates rows with the normal
+person and organisation rules (`rows.ts`) and plans the result: duplicates, organisations, lists, owners and
+consent (`plan.ts`, texts in `text.ts`). `runImport` does the whole import in one transaction and writes an
+`imported` timeline event. Example files come from `example/route.ts` on each import route. See
+[Database schema](../data/database-schema.md) and [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Fake data
 

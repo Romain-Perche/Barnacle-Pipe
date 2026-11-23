@@ -264,6 +264,17 @@
         "src/app/(app)/notifications",
         "src/server/notifications.ts"
       ]
+    },
+    {
+      "id": "csv-import",
+      "label": "CSV import",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/server/imports/imports.ts",
+        "src/app/(app)/records/import/actions.ts",
+        "src/app/(app)/records/import/FileStep.tsx"
+      ]
     }
   ],
   "stores": [
@@ -435,6 +446,16 @@
       "group": "records",
       "sources": [
         "migrations/0007_notes_mentions.sql"
+      ]
+    },
+    {
+      "id": "csv-imports-table",
+      "label": "Postgres csv_imports",
+      "zone": "postgres",
+      "group": "records",
+      "sources": [
+        "migrations/0006_csv_imports.sql",
+        "src/server/imports/imports.ts"
       ]
     }
   ],
@@ -1468,6 +1489,80 @@
       "sources": [
         "src/app/(app)/notifications/actions.ts",
         "src/app/(app)/layout.tsx"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "csv-import",
+      "data": "CSV file in parts, column mapping, run request",
+      "sources": [
+        "src/app/(app)/records/import/actions.ts",
+        "src/app/(app)/records/import/FileStep.tsx"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "staff",
+      "data": "preview, report and example CSV files",
+      "sources": [
+        "src/app/(app)/records/import/ImportPages.tsx",
+        "src/app/(app)/records/import/example.ts"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "csv-imports-table",
+      "data": "uploaded file, mapping, report",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "csv-imports-table",
+      "to": "csv-import",
+      "data": "stored file and mapping",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "persons-table",
+      "data": "imported people, emails, phones",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "organisations-table",
+      "data": "imported organisations",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "timeline-table",
+      "data": "created-by-import timeline events",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "choices-table",
+      "to": "csv-import",
+      "data": "lead sources and labels to match",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "users-table",
+      "to": "csv-import",
+      "data": "active users matched as owners",
+      "sources": [
+        "src/server/imports/imports.ts"
       ]
     }
   ]
