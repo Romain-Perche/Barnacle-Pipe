@@ -5,7 +5,7 @@ description: How npm run db:migrate applies migrations/*.sql safely through Supa
 tags: [migrations, seed, database, operations, fake-data]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T16:18:56.075Z
+    at: 2026-11-23T16:36:16.962Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -15,11 +15,9 @@ sources:
     resource: repo://scripts/seed.ts
   - id: openwiki-source-1c34aa4b66ba96eefc78bf08
     resource: repo://src/seed/index.ts
-  - id: openwiki-source-6751a2917bc5c39b6a606c45
-    resource: repo://src/seed/notes.ts
   - id: openwiki-source-010903950424d10f20cb451d
     resource: repo://src/seed/users.ts
-generated: { by: "claude-code", at: "2026-11-20T16:18:56.075Z" }
+generated: { by: "claude-code", at: "2026-11-23T16:36:16.962Z" }
 ---
 
 # Migrations and fake data
@@ -66,9 +64,12 @@ The third, `src/seed/deals.ts`, adds five fake pipelines with their stages and a
 deals owned by the fake users (some private), for the
 [Deals board](../features/pipelines-and-deals.md). It is re-runnable: pipelines are matched by name and deals
 skipped when one with the same title exists. Migration `0004_pipelines_deals.sql` creates their tables.
-The fourth, `src/seed/notes.ts`, runs last: it adds clearly fake notes on deals, people and an organisation, two
+The fourth, `src/seed/notes.ts`, adds clearly fake notes on deals, people and an organisation, two
 with @mentions (one read, one unread notification), re-runnably (a note is found by its record and exact body).
 Migration `0007_notes_mentions.sql` creates the mention table.
+The fifth, `src/seed/ambassadors.ts`, runs last: it adds fake ambassadors and referred people and deals, using the users,
+organisations and pipelines the earlier seeders made. Migration `0008_ambassadors.sql` adds the referral columns
+(see [Ambassadors and referrals](../features/ambassadors.md)).
 
 Later features append their seeder to the registry; see [Adding a feature](../workflows/adding-a-feature.md).
 Fake data never uses the real team's names.

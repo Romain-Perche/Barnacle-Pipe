@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:52c602ece832eb96b1d2d029e7078716edc3c3ff771b4d8917b27261575b2a3f",
+  "pageVersion": "sha256:70c83614fd9782c4045672f67f57303bf328caba4b71b30f575e8ca3d506edf1",
   "claims": [
     {
       "id": "claim_073174519ebe44d7a116c47962b22649",
       "statement": "Deleting a person is admin only and re-checked inside the transaction.",
       "evidence": [
         {
-          "resource": "repo://src/server/records/people.ts#L305-L321",
-          "version": "repo-lines-v1:sha256:8ea02e5bae4f88c87f98cd38deaf1ca84e66daec85d67f41bddc3257bbc7dc62:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
+          "resource": "repo://src/server/records/people.ts#L355-L382",
+          "version": "repo-lines-v1:sha256:73d549f2d36ba57c72bc944214ec1b4cdb610f7789dfa4d9b57269cfc069f00c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
         }
       ]
     },
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/records/visibility.ts",
-          "version": "repo-file-v1:sha256:2ddab4608fcda895f2109843beef6eca8516f1ed8bd15e198b3abba12fa96c74"
+          "version": "repo-file-v1:sha256:d574816d93678de3f77e2b126a150ab7c87b49663bd654e4ca3abe4d0c6a2caa"
         }
       ]
     },
@@ -73,6 +73,6 @@
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T13:22:05.502Z"
+    "at": "2026-11-23T16:36:16.962Z"
   }
 }

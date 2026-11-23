@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2f68d9212d92a69b08de36ebfd925e2df379df62bd41e8ce23e1f224303b3cd4",
+  "pageVersion": "sha256:d70388148d386a2409e043cc1acce0ef3919854e33edd3b54b52841eb93ed0aa",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -121,10 +121,20 @@
           "version": "repo-lines-v1:sha256:457da7ae86ba02a83621a503e2abf1f705d0c1dd71e2d53ddf116e9ee05d9731:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwNjIyOGQyMWVjNTE4NDFjYTcyNDdhYTUxMzkyMWNlNzVjNDQ2OTRlMjUzZTExZjY4NGZiNDA0NjE2ZGYxOGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkMzhkYmU0Y2IxMTE4MmIzOWMxZGJhZjY4MzQ2OTc5Y2FjZjA4NTdiMGRkOGNhYThkMjcwNjFjZTNiZTRhMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVkYTI0OWU5NTMxMWQ3NmI2ZTRmYmU0YjkzNzY4MTIyYzNhY2Q1NzU2MzZhY2Y0M2E3MWZmYjZlMTliNDg0MGQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_3236ec99d42d40c28dfde916a0c7ccff",
+      "statement": "Migration 0008 adds persons.is_ambassador, referred_by_id and referred_at, deals.referred_by_id and referred_at, timeline_events.from_person_id and five referral event kinds.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0008_ambassadors.sql",
+          "version": "repo-file-v1:sha256:cecc816defeddf88f5a99100d085dd3c5703acfc78616b6ddc5276c629b4c368"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T13:22:05.502Z"
+    "at": "2026-11-23T16:36:16.962Z"
   }
 }

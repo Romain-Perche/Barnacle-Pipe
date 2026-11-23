@@ -275,6 +275,17 @@
         "src/app/(app)/records/import/actions.ts",
         "src/app/(app)/records/import/FileStep.tsx"
       ]
+    },
+    {
+      "id": "ambassadors",
+      "label": "Ambassadors pages and referrals",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/app/(app)/ambassadors",
+        "src/server/records/ambassadors.ts",
+        "src/server/records/referral-rules.ts"
+      ]
     }
   ],
   "stores": [
@@ -1563,6 +1574,89 @@
       "data": "active users matched as owners",
       "sources": [
         "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "ambassadors",
+      "data": "signed-in user check",
+      "sources": [
+        "src/app/(app)/ambassadors/page.tsx"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "ambassadors",
+      "data": "ambassadors, referred people, referrer links (visible only)",
+      "sources": [
+        "src/server/records/ambassadors.ts",
+        "src/server/records/visibility.ts"
+      ]
+    },
+    {
+      "from": "deals-table",
+      "to": "ambassadors",
+      "data": "referred deals and their counts",
+      "sources": [
+        "src/server/records/ambassadors.ts"
+      ]
+    },
+    {
+      "from": "timeline-table",
+      "to": "ambassadors",
+      "data": "referral events for ambassador updates",
+      "sources": [
+        "src/server/records/ambassadors.ts"
+      ]
+    },
+    {
+      "from": "ambassadors",
+      "to": "staff",
+      "data": "ambassador list, ambassador page, latest updates",
+      "sources": [
+        "src/app/(app)/ambassadors/page.tsx",
+        "src/app/(app)/ambassadors/[id]/page.tsx"
+      ]
+    },
+    {
+      "from": "people-pages",
+      "to": "persons-table",
+      "data": "ambassador flag, referrer and referral date",
+      "sources": [
+        "src/server/records/people.ts",
+        "src/server/records/referral-rules.ts"
+      ]
+    },
+    {
+      "from": "people-pages",
+      "to": "timeline-table",
+      "data": "referral events (ambassador added, referrer set or changed)",
+      "sources": [
+        "src/server/records/people.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "deals-table",
+      "data": "deal referrer and referral date",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "persons-table",
+      "data": "referral columns and event kinds",
+      "sources": [
+        "migrations/0008_ambassadors.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "persons-table",
+      "data": "fake ambassadors and referrals",
+      "sources": [
+        "src/seed/ambassadors.ts"
       ]
     }
   ]

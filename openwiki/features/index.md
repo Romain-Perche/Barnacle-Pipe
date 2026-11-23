@@ -1,5 +1,6 @@
 # Files
 
+- [Ambassadors and referrals (SF-114)](ambassadors.md) - The Ambassadors page and ambassador page, the ambassador flag on people, the Referred by field on people and deals, referral events on timelines, and the rule that hides private referrers.
 - [People and organisations](people-and-organisations.md) - The signed-in People, Organisations and Lead sources and labels pages — lists with search and filters, forms, the private-person rule, archive and delete, timelines, optimistic versions and the one-shot delete notice.
 - [Pipelines, deals and the board](pipelines-and-deals.md) - The Deals board with native drag and drop, deal drawer and forms, private deals, optimistic stage moves with history, and the admin Pipelines pages that add, reorder and delete pipelines and stages.
 - [Signed-in layout, pages and messages](signed-in-layout-and-pages.md) - The sidebar shell shared by every signed-in page, the nav registry, the home, forbidden and not-found pages, the sign-in page's states, and the single catalogue of user-facing messages.
