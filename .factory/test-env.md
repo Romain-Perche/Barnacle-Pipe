@@ -155,6 +155,15 @@
     one `aria-current="page"`), selects "Assignee" and "Type"; overdue rows `tr.over`, marks `.od` / `.td`; card lines
     `.card .warnline` / `.card .nextline`. A quick way to sign in from a script: insert a `sessions` row whose
     `token_hash` is the SHA-256 of a token and send it as the `crm_session` cookie.
+  - SF-109 AI-review scenario script `scenarios-sf109.js` (all 44 US1–US6 scenarios and edge cases 1–14, ~6 min, against
+    :3000/crm_dev on fresh fake data; makes its own "SF109 …" records and activities by SQL, signs in through a `sessions`
+    row; it needs the repo's `postgres` package on NODE_PATH):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules:$PWD/node_modules node .factory/run/scenarios-sf109.js`
+    (`ONLY="US6 scenario 1,Edge case 4"` runs a subset). Notes: the sidebar link's text is "Notifications" + the count in its
+    own element (read the digits, not "(n)"); the hand-over panel opens at `/admin/users?handover=5`; record deletes use
+    `?confirm=delete` then `button.danger-solid`; uppercase CSS: compare `innerText` case-insensitively. Start the app ONCE:
+    two `start-app.sh` running at the same time rebuild `.next` under the running server and every server action then
+    fails with "Failed to find Server Action" (stop the server by pid, run `start-app.sh` again).
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
     (real drag with `locator.dragTo`; a failed drag by aborting the server action POST with `page.route`). Board
     selectors: each column is a `region` named after its stage (`h2` name, `.tot` "<n> deals · £total"), cards are
