@@ -1,4 +1,4 @@
-// REGISTRY of fake data, run in this order by `npm run db:seed` and by the browser tests.
+// REGISTRY of fake data, run in this order by `npm run db:seed` and by the tests.
 // Later features append their seeder here (pipelines, deals, contacts…). Each one must be re-runnable.
 import type { Sql } from "@/server/db";
 import { seedActivities } from "@/seed/activities";

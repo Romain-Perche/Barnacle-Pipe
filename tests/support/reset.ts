@@ -1,5 +1,5 @@
 // Empties every app table and puts the six starting lead sources back (as the migration left them).
-// Shared by the integration tests and the browser tests; .factory/run/reset-db.sh does the same in SQL.
+// Used by the integration tests; .factory/run/reset-db.sh does the same in SQL.
 import type postgres from "postgres";
 
 export const STARTING_LEAD_SOURCES = ["Duncan's LinkedIn", "Referral", "Exec dinner", "Inbound", "Event", "Ambassador"];
