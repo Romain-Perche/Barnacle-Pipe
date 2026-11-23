@@ -24,6 +24,7 @@ notification kinds and changes nothing about when a notification is read.
 
 - Q: Must the count also change while the user stays on one page (live updates)? → A: No: the issue asks for the count on every page the user opens; it is worked out when a page opens, and live updates without navigation stay out of scope (decided by the factory from the issue text)
 - Q: What does "shows Notifications (n)" mean on screen? → A: The sidebar's "Notifications" link shows the orange badge with n and its accessible name is "Notifications (n)"; with no unread notification there is no badge and the name is "Notifications" (as built in SF-102)
+- Q: After the browser's back or forward button, is only the count brought up to date, or the whole page? → A: The whole page is fetched again from the server just after it is restored, so the count and the page agree and a record hidden meanwhile is not left on screen; the cached page shows for a moment first (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
