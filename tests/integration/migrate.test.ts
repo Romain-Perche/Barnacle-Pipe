@@ -154,6 +154,49 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-102 T001, T004, T014, FR-008: 0007_notes_mentions.sql on a fresh database keeps notes consistent
+  it("applies 0007_notes_mentions.sql: notes need a body and an author, other events no body or editor, one mention per user per note", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0007_notes_mentions.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [b] = await c`insert into users (email, name) values ('bob@barnacle.ai', 'Bob') returning id`;
+      const [o] = await c`insert into organisations (name, owner_id, created_by) values ('Fakeco', ${u.id}, ${u.id}) returning id`;
+      expect(await code(c`insert into timeline_events (organisation_id, kind, actor_id) values (${o.id}, 'note', ${u.id})`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (organisation_id, kind, actor_id, body) values (${o.id}, 'edited', ${u.id}, 'x')`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (organisation_id, kind, actor_id, edited_by) values (${o.id}, 'edited', ${u.id}, ${u.id})`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (organisation_id, kind, actor_id, body) values (${o.id}, 'note', null, 'x')`)).toBe("23514");
+      // SF-103's kind 'imported' stays allowed, so 0006_csv_imports.sql and this migration apply in either order.
+      expect(await code(c`insert into timeline_events (organisation_id, kind, actor_id) values (${o.id}, 'imported', ${u.id})`)).toBe("ok");
+      const [n] = await c`insert into timeline_events (organisation_id, kind, actor_id, body) values (${o.id}, 'note', ${u.id}, 'Hi') returning id, version`;
+      expect(n.version).toBe(1);
+      await c`insert into note_mentions (event_id, user_id, mentioned_by) values (${n.id}, ${b.id}, ${u.id})`;
+      expect(await code(c`insert into note_mentions (event_id, user_id, mentioned_by) values (${n.id}, ${b.id}, ${u.id})`)).toBe("23505");
+      await c`delete from timeline_events where id = ${n.id}`;
+      const [{ m }] = await c`select count(*)::int as m from note_mentions`;
+      expect(m).toBe(0);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-102 T014: the notes, timeline and notifications code keeps to the pooler's limits (no session state)
+  it("keeps the notes, timeline and notifications code free of session state", () => {
+    for (const file of ["src/server/records/notes.ts", "src/server/records/timeline.ts", "src/server/notifications.ts"]) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0007_notes_mentions.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration).toMatch(/'note'/);
+    expect(migration).toMatch(/'imported'/);
+  });
+
   // covers SF-93 T013: the deals code keeps to the Supabase transaction-mode pooler's limits (no session state)
   it("keeps the deals code free of session state (set, listen, session advisory locks)", () => {
     const dir = "src/server/deals";
@@ -193,7 +236,7 @@ describe("npm run db:migrate", () => {
       expect(await code(c`insert into csv_imports (user_id, kind, file_name, size_bytes) values (${u.id}, 'people', 'a.csv', 5242881)`)).toBe("23514");
       const [person] = await c`insert into persons (first_name, owner_id, created_by) values ('Ada', ${u.id}, ${u.id}) returning id`;
       expect(await code(c`insert into timeline_events (person_id, kind, actor_id) values (${person.id}, 'imported', ${u.id})`)).toBe("ok");
-      expect(await code(c`insert into timeline_events (person_id, kind, actor_id) values (${person.id}, 'note', ${u.id})`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, body) values (${person.id}, 'note', ${u.id}, 'A fake note')`)).toBe("ok");
     } finally {
       await c.end();
     }

@@ -105,7 +105,9 @@ test("deleting a linked person leaves an anonymous line on the organisation's ti
   const line = timeline(ada).filter({ hasText: "A deleted person was linked by Linus Fake" });
   await expect(line).toHaveCount(1);
   await expect(line.getByRole("link")).toHaveCount(0);
-  await expect(line.locator(".when")).toHaveText(/\d{1,2} \w{3} \d{4}.*\d{2}:\d{2}/);
+  // SF-102 design B: the UK time on the entry, the date in its day heading.
+  await expect(line.locator(".when")).toHaveText(/^\d{2}:\d{2}$/);
+  await expect(ada.getByRole("region", { name: "Timeline" }).locator(".day").first()).toHaveText(/TODAY · \d{2} [A-Z]{3} \d{4}/);
   await expect(ada.getByRole("main")).not.toContainText("Soonfake");
   await ctx.close();
 });

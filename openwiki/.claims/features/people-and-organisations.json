@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2edae2492714079386854d446e18714aedbfd96f3d79efa133076e9b26d77cae",
+  "pageVersion": "sha256:31417fbe1729df23707a72ac02687a2bf4a4f172bd8073b8e5df7430e232fbb1",
   "claims": [
     {
       "id": "claim_073174519ebe44d7a116c47962b22649",
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/records/visibility.ts",
-          "version": "repo-file-v1:sha256:dcf127f4d0bb509523aa9ae6ad4cd032cbc8e275172423d81364a7b63b2a0c18"
+          "version": "repo-file-v1:sha256:2ddab4608fcda895f2109843beef6eca8516f1ed8bd15e198b3abba12fa96c74"
         }
       ]
     },
@@ -32,7 +32,7 @@
         },
         {
           "resource": "repo://src/server/records/flash.ts",
-          "version": "repo-file-v1:sha256:1ca1d33ceb2c0d1d9da118741d0af9150f554d0e2102d8564a596ce7b0984c26"
+          "version": "repo-file-v1:sha256:df269bf707e172c9de1713c440b0b2d1cefd792040959baadd0584667c97dffc"
         }
       ]
     },
@@ -47,22 +47,22 @@
       ]
     },
     {
-      "id": "claim_8e7a11565c5c4c769ab4835be64e1af2",
-      "statement": "The CSV import sends the file in 512 KiB parts (5 MiB at most) and keeps it in the csv_imports table until runImport does the whole import in one transaction.",
+      "id": "claim_567ec8d7b7d647608672584b911fa046",
+      "statement": "Notes are timeline_events rows of kind note, managed by notes.ts; mentions are note_mentions rows shown as notifications.",
       "evidence": [
         {
-          "resource": "repo://src/server/imports/csv.ts#L5-L8",
-          "version": "repo-lines-v1:sha256:2adfb32475307892d34841e2ffff42df278324ef33855647935766cac1f2465e:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2IyZjMzOGJjNjM0NTYyNTkxYjExMjExZWRlMjBmOGFkZDE4ZGI2OTI5MTIxNTlkNGRhNjY3YmMxZTZkMmNhNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTJiMjI3NmY4YmI2MDIwODA4MzMzMmE4YTM3NGE3NzVkM2Q1ODVhMDIyYTI0Y2YxNDRlOTM2MDZmNDI4OGUwMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQ4YTMxYjA5NDEzMGMzMjQzNzhiNTU2YjVlNmJjMTNmOGE1MDc0NDgyNzE4OTg0ZWJlNGRkOTk1YTM0ODU0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTY5NzAzZDJmZWRmOTUxYjhkN2YxNWY0YjQ1OTRhOTg3MTY1NjM0NWM5OWMyZmQzNDgwYWQ0MjBjMTJiMzMxNyJ9"
+          "resource": "repo://src/server/notifications.ts",
+          "version": "repo-file-v1:sha256:12adea890a53a27369dea96b10a48197f809345651c97fcd5319e520c5f98aca"
         },
         {
-          "resource": "repo://src/server/imports/imports.ts#L363-L370",
-          "version": "repo-lines-v1:sha256:ae95de47775b0f06299f32bccaf0f24e8df29aea730eb711346b61fc80d6b83f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGY4YzYwNmE1YjUxNzZjYThkOTIzMzc5MjE0NzVmNjg3OTEzYzUyMTI5YWQxZTU3ZDhiNTdiODM4NmU0ZjcyNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGRkMWUyOGJmYzYxZjA1Mzg0MjczZjVkYzNhZjI0YTk1OWI5MjY5ZTY3ZmI3MDJjNzQyNDRhNGZmN2JkNzA4MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJjZGY1ZDM5ZWRiNWY0ODJkMDRhZDdlNTM5YTE5NTJkNTAzZjJjMTdjOWYzOTgwZGIzMDNmZTQ2ZTExZmUwZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2ZmNDM1YWJkOTBmODgxYjM2MTRkYTUwYzcyN2MxNTBlZTgyNmFmOTRlYmVlMDZhZGI2ZjQ2ZDc3MmZmZDI0YyJ9"
+          "resource": "repo://src/server/records/notes.ts",
+          "version": "repo-file-v1:sha256:273d1fb7d35f5c991de8aa9ca55fc2fb59ab36bcd3b7ec4bdae391870940d94f"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T12:49:35.741Z"
+    "at": "2026-11-20T16:18:56.075Z"
   }
 }

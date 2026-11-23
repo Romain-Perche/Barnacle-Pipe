@@ -89,7 +89,7 @@ describe("the deal history", () => {
     const bob = await makePerson({ firstName: "Bob", lastName: "Example", createdBy: ada.id });
     await sql`insert into timeline_events (deal_id, kind, actor_id, related_person_id) values
       (${id}, 'person_linked', ${ada.id}, ${hidden}), (${id}, 'person_linked', ${ada.id}, ${bob})`;
-    expect((await readTimeline(linus.id, { dealId: id })).map((e) => e.relatedPerson?.name)).toEqual(["Bob Example"]);
-    expect((await readTimeline(ada.id, { dealId: id })).map((e) => e.relatedPerson?.name)).toEqual(["Bob Example", "Gus Lorem"]);
+    expect(((await readTimeline(linus.id, { dealId: id })).entries).map((e) => e.relatedPerson?.name)).toEqual(["Bob Example"]);
+    expect(((await readTimeline(ada.id, { dealId: id })).entries).map((e) => e.relatedPerson?.name)).toEqual(["Bob Example", "Gus Lorem"]);
   });
 });

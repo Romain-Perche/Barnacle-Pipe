@@ -75,3 +75,12 @@ describe("flash notices", () => {
     expect(await readFlash(["person_deleted"])).toBeUndefined();
   });
 });
+
+// covers SF-102 US1 scenario 5 ("Note deleted." after a delete)
+describe("note deleted notice", () => {
+  it("shows Note deleted. only where allowed", async () => {
+    await setFlash({ code: "note_deleted", name: "" });
+    expect(await readFlash(["person_deleted"])).toBeUndefined();
+    expect(await readFlash(["note_deleted"])).toEqual({ text: "Note deleted." });
+  });
+});

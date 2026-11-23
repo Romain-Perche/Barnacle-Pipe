@@ -91,6 +91,15 @@ export const messages = {
   import_too_many_values: "This row has more values than the file has headings.",
   import_skip: "Don't import",
   import_full_name_ignored: "Full name is used only when no first or last name column is set.",
+  // Timeline and notes (SF-102)
+  note_required: "Write something before adding the note.",
+  note_too_long: "Keep the note under 10,000 characters.",
+  note_not_found: "This note doesn't exist or you can't see it.",
+  note_gone: "This note doesn't exist any more.",
+  note_edit_conflict: "Someone else changed this note while you were editing. Reload to see their changes.",
+  note_record_archived: "Restore this record before changing its notes.",
+  note_delete_confirm: "Delete this note? This can't be undone.",
+  no_notifications: "No notifications yet.",
 } as const;
 
 const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} private people`);
@@ -124,6 +133,14 @@ export const templates = {
   handover_none: (name: string) => `${name} has no private people or deals to hand over.`,
   handed_over_event: (name: string) => `Handed to ${name}`,
   person_no_longer_visible: (name: string) => `You can no longer see ${name}: only their creator and owner can.`,
+  // SF-102: notes, mentions and notifications
+  mention_cannot_see: (name: string) => `${name} can't see this record, so they can't be mentioned.`,
+  mentioned_you: (name: string, record: string) => `${name} mentioned you in a note on ${record}`,
+  edited_by: (name: string) => `edited by ${name}`,
+  notifications_label: (n: number) => `Notifications (${n})`,
+  note_deleted: (_name: string) => "Note deleted.",
+  // A delete on a record the user cannot see, shown on its kind's list (fix round 1).
+  note_not_found: (_name: string) => messages.note_not_found,
   // SF-95: "<n> deals · £<total>" above the deal list, for every matching deal.
   deal_list_count: (n: number, totalPence: number) => `${n} ${n === 1 ? "deal" : "deals"} · ${formatMoney(totalPence)}`,
   // SF-103 CSV import: values from the file appear only inside quotes; field labels and names come from the app or the database.
@@ -152,7 +169,7 @@ export type TemplateCode = keyof typeof templates;
 
 // A form field's message: a template when the server gave a name, else a fixed text.
 export function fieldMessage(error: { code: string; name?: string }): string | undefined {
-  if (error.name !== undefined && (error.code === "duplicate_email" || error.code === "organisation_exists")) {
+  if (error.name !== undefined && (error.code === "duplicate_email" || error.code === "organisation_exists" || error.code === "mention_cannot_see")) {
     return templates[error.code](error.name);
   }
   return messageFor(error.code);

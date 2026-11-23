@@ -245,15 +245,24 @@
       "zone": "app"
     },
     {
-      "id": "csv-import",
-      "label": "CSV import",
+      "id": "notes",
+      "label": "Notes and @mentions",
       "zone": "app",
       "group": "records",
       "sources": [
-        "src/app/(app)/records/import",
-        "src/app/(app)/people/import",
-        "src/app/(app)/organisations/import",
-        "src/server/imports/imports.ts"
+        "src/app/(app)/records/note-actions.ts",
+        "src/server/records/notes.ts",
+        "src/server/records/notes-rules.ts"
+      ]
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications page",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/app/(app)/notifications",
+        "src/server/notifications.ts"
       ]
     }
   ],
@@ -420,12 +429,12 @@
       ]
     },
     {
-      "id": "csv-imports-table",
-      "label": "Postgres csv_imports",
-      "zone": "postgres",
-      "group": "database",
+      "id": "note-mentions-table",
+      "label": "Postgres note mentions",
+      "zone": "app",
+      "group": "records",
       "sources": [
-        "migrations/0006_csv_imports.sql"
+        "migrations/0007_notes_mentions.sql"
       ]
     }
   ],
@@ -1341,108 +1350,124 @@
     },
     {
       "from": "session-guard",
-      "to": "csv-import",
+      "to": "notes",
       "data": "signed-in user check",
       "sources": [
-        "src/app/(app)/records/import/actions.ts"
+        "src/app/(app)/records/note-actions.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "notifications",
+      "data": "signed-in user check",
+      "sources": [
+        "src/app/(app)/notifications/actions.ts"
       ]
     },
     {
       "from": "staff",
-      "to": "csv-import",
-      "data": "CSV file in parts, column mapping, consent choice",
+      "to": "notes",
+      "data": "note text and mentions",
       "sources": [
-        "src/app/(app)/records/import/FileStep.tsx",
-        "src/app/(app)/records/import/actions.ts"
+        "src/app/(app)/records/note-actions.ts"
       ]
     },
     {
-      "from": "csv-import",
+      "from": "notes",
       "to": "staff",
-      "data": "columns, preview, report, example file",
+      "data": "timeline notes",
       "sources": [
-        "src/app/(app)/records/import/ImportPages.tsx",
-        "src/app/(app)/records/import/example.ts"
+        "src/app/(app)/records/RecordTimeline.tsx"
       ]
     },
     {
-      "from": "csv-import",
-      "to": "csv-imports-table",
-      "data": "uploaded file, mapping, report",
-      "sources": [
-        "src/server/imports/imports.ts"
-      ]
-    },
-    {
-      "from": "csv-imports-table",
-      "to": "csv-import",
-      "data": "stored file, mapping, report",
-      "sources": [
-        "src/server/imports/imports.ts"
-      ]
-    },
-    {
-      "from": "csv-import",
-      "to": "persons-table",
-      "data": "imported people, emails, phones",
-      "sources": [
-        "src/server/imports/imports.ts"
-      ]
-    },
-    {
-      "from": "persons-table",
-      "to": "csv-import",
-      "data": "visible people (duplicate check)",
-      "sources": [
-        "src/server/imports/imports.ts"
-      ]
-    },
-    {
-      "from": "csv-import",
-      "to": "organisations-table",
-      "data": "imported organisations",
-      "sources": [
-        "src/server/imports/imports.ts"
-      ]
-    },
-    {
-      "from": "organisations-table",
-      "to": "csv-import",
-      "data": "existing organisations (duplicate check)",
-      "sources": [
-        "src/server/imports/imports.ts"
-      ]
-    },
-    {
-      "from": "choices-table",
-      "to": "csv-import",
-      "data": "lead sources and labels to match",
-      "sources": [
-        "src/server/imports/imports.ts"
-      ]
-    },
-    {
-      "from": "users-table",
-      "to": "csv-import",
-      "data": "active users (owner match)",
-      "sources": [
-        "src/server/imports/imports.ts"
-      ]
-    },
-    {
-      "from": "csv-import",
+      "from": "notes",
       "to": "timeline-table",
-      "data": "imported events",
+      "data": "note events",
       "sources": [
-        "src/server/imports/imports.ts"
+        "src/server/records/notes.ts"
+      ]
+    },
+    {
+      "from": "timeline-table",
+      "to": "notes",
+      "data": "note events",
+      "sources": [
+        "src/server/records/notes.ts"
+      ]
+    },
+    {
+      "from": "notes",
+      "to": "note-mentions-table",
+      "data": "mentions",
+      "sources": [
+        "src/server/records/notes.ts"
+      ]
+    },
+    {
+      "from": "note-mentions-table",
+      "to": "notifications",
+      "data": "a user's mentions",
+      "sources": [
+        "src/server/notifications.ts"
+      ]
+    },
+    {
+      "from": "notifications",
+      "to": "note-mentions-table",
+      "data": "read marks",
+      "sources": [
+        "src/server/notifications.ts"
+      ]
+    },
+    {
+      "from": "notifications",
+      "to": "staff",
+      "data": "notifications list",
+      "sources": [
+        "src/app/(app)/notifications/page.tsx"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "notifications",
+      "data": "open, mark all read",
+      "sources": [
+        "src/app/(app)/notifications/actions.ts"
+      ]
+    },
+    {
+      "from": "notes",
+      "to": "record-flash",
+      "data": "note deleted notice",
+      "sources": [
+        "src/server/records/flash.ts"
       ]
     },
     {
       "from": "migrate",
-      "to": "csv-imports-table",
-      "data": "table definitions",
+      "to": "note-mentions-table",
+      "data": "schema",
       "sources": [
-        "scripts/migrate.ts"
+        "migrations/0007_notes_mentions.sql"
+      ]
+    },
+    {
+      "from": "app-shell",
+      "to": "notifications",
+      "data": "unread count request after navigation",
+      "sources": [
+        "src/app/(app)/UnreadLink.tsx",
+        "src/app/(app)/notifications/actions.ts"
+      ]
+    },
+    {
+      "from": "notifications",
+      "to": "app-shell",
+      "data": "current unread count",
+      "sources": [
+        "src/app/(app)/notifications/actions.ts",
+        "src/app/(app)/layout.tsx"
       ]
     }
   ]

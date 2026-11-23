@@ -54,7 +54,7 @@ async function newDeal(page, pipeline, f) {
   if (f.priv) await page.check('input[name="private"]');
   await save(page);
 }
-const historyItems = async (page) => drawer(page).getByRole("region", { name: "History" }).getByRole("listitem").allTextContents();
+const historyItems = async (page) => drawer(page).getByRole("region", { name: "Timeline" }).getByRole("listitem").allTextContents();
 
 (async () => {
   const browser = await chromium.launch();
@@ -220,7 +220,7 @@ const historyItems = async (page) => drawer(page).getByRole("region", { name: "H
     await go(linus, "/deals"); await card(linus, "Fakeco website").click(); await linus.waitForURL(/open=/); await linus.waitForLoadState("networkidle");
     const d = drawer(linus); const t = (await d.textContent()) || "";
     const orgHref = await d.getByRole("link", { name: "Fakeco Ltd" }).getAttribute("href"); const perHref = await d.getByRole("link", { name: "Ada Example" }).getAttribute("href");
-    const fields = ["Fakeco website", "Sales · Proposal", "£4,000", "Linus Fake", "// HISTORY"].every((x) => t.includes(x)) && /Date added/.test(t) && /Expected close/.test(t) && /Owner/.test(t);
+    const fields = ["Fakeco website", "Sales · Proposal", "£4,000", "Linus Fake", "// TIMELINE"].every((x) => t.includes(x)) && /Date added/.test(t) && /Expected close/.test(t) && /Owner/.test(t);
     const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
     // newest first: add a second event by editing the title, then compare
     const id = did("Fakeco website");

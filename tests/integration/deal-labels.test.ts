@@ -72,7 +72,7 @@ describe("labels on deals", () => {
     expect((await deals.updateDeal(linus.id, id, 1, editForm([warm, hot]))).status).toBe("saved");
     expect(await labelIdsOf(id)).toEqual([hot, warm].sort((a, b) => a - b));
     expect((await dealEvents(id)).at(-1)).toMatchObject({ kind: "edited", fields: ["Labels"] });
-    const [line] = await readTimeline(ada.id, { dealId: id });
+    const [line] = (await readTimeline(ada.id, { dealId: id })).entries;
     expect(line.fields).toEqual(["Labels"]);
     expect((await deals.getDeal(ada.id, id))!.labels.map((l) => l.name)).toEqual(["Hot", "Warm"]);
     const list = await listDeals(ada.id, parseDealsQuery({ label: String(hot) }));

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeDb, expectSignInPage, resetAndSeed, sidebar, signInAs } from "./helpers";
+import { closeDb, db, expectSignInPage, resetAndSeed, sidebar, signInAs } from "./helpers";
 
 test.beforeEach(resetAndSeed);
 test.afterAll(closeDb);
@@ -92,4 +92,16 @@ test("Deals is in everyone's sidebar after Home; Pipelines only for admins", asy
   await expect(sidebar(ada).getByRole("link", { name: "Deals" })).toBeVisible();
   await expect(sidebar(ada).getByRole("link", { name: "Pipelines" })).toHaveAttribute("href", "/admin/pipelines");
   await ctx.close();
+});
+
+// covers SF-102 FR-012, T036: every signed-in page has a Notifications link after Organisations, with no count at zero
+test("the sidebar has a Notifications link after Organisations", async ({ page }) => {
+  await db()`delete from note_mentions`;
+  await signInAs(page, "Margaret Fake");
+  const links = await sidebar(page).getByRole("navigation", { name: "Main" }).getByRole("link").allTextContents();
+  expect(links).toEqual(["Home", "Deals", "People", "Organisations", "Notifications"]);
+  await sidebar(page).getByRole("link", { name: "Notifications", exact: true }).click();
+  await expect(page).toHaveURL(/\/notifications$/);
+  await expect(sidebar(page).getByRole("link", { name: "Notifications", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByText("No notifications yet.")).toBeVisible();
 });

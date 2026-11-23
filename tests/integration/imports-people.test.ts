@@ -106,9 +106,9 @@ describe("importing people-20.csv", () => {
     const events = await sql<{ kind: string; n: number }[]>`select kind, count(*)::int as n from timeline_events group by kind order by kind`;
     expect(events).toEqual([{ kind: "imported", n: 19 }, { kind: "person_linked", n: 11 }]);
     const brianLine = await readTimeline(ada.id, { personId: brian.id });
-    expect(brianLine.map((e) => [e.kind, e.actorName])).toEqual([["imported", "Ada Fake"]]);
+    expect(brianLine.entries.map((e) => [e.kind, e.actorName])).toEqual([["imported", "Ada Fake"]]);
     const fakecoLine = await readTimeline(ada.id, { organisationId: fakeco });
-    expect(fakecoLine.filter((e) => e.kind === "person_linked").map((e) => e.relatedPerson?.name)).toContain("Brian Importfake");
+    expect(fakecoLine.entries.filter((e) => e.kind === "person_linked").map((e) => e.relatedPerson?.name)).toContain("Brian Importfake");
 
     // The existing people are left as they are.
     expect(await sql`select * from persons where id in (${dupOne}, ${dupTwo}) order by id`).toEqual(before);

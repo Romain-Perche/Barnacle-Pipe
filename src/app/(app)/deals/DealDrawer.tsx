@@ -1,22 +1,21 @@
 // The deal drawer (design A, contracts/routes.md § Pages), on the board and on the deal list (SF-95): details,
 // "Move to" (works with a keyboard and without JavaScript), [ EDIT ], [ ARCHIVE ], [ DELETE ] for admins,
-// [ OPEN DEAL PAGE ], [ CLOSE ] and // HISTORY. A won or lost deal shows its status and no "Move to"; an archived one
+// [ OPEN DEAL PAGE ], [ CLOSE ] and // TIMELINE (SF-102: the newest 50 entries, read-only, no note box). A won or lost deal shows its status and no "Move to"; an archived one
 // (only reachable from the list) shows "Archived" and only [ OPEN DEAL PAGE ] and [ CLOSE ].
 import Link from "next/link";
 import type { DealView, PipelineStages } from "@/server/deals/deals";
 import { formatDate, formatMoney } from "@/server/format";
 import { ownerName } from "@/server/records/common";
-import type { TimelineEvent } from "@/server/records/timeline";
 import { Field } from "../records/Drawer";
 import { DeleteConfirm } from "../records/DeleteConfirm";
-import { Timeline } from "../records/Timeline";
+import { RecordTimeline } from "../records/RecordTimeline";
 import { archiveDeal, deleteDeal, moveDeal } from "./actions";
 import { day, StatusBadge } from "./DealBits";
 
 type Props = {
   deal: DealView;
   pipelines: PipelineStages[];
-  events: TimelineEvent[];
+  viewerId: number;
   isAdmin: boolean;
   confirmDelete: boolean;
   // Links of the page the drawer is on: the drawer itself, closed, and with the delete confirmation.
@@ -27,7 +26,7 @@ type Props = {
   back?: "list";
 };
 
-export function DealDrawer({ deal, pipelines, events, isAdmin, confirmDelete, hereHref, closeHref, deleteHref, back }: Props) {
+export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, hereHref, closeHref, deleteHref, back }: Props) {
   const canMove = deal.status === "open" && !deal.archived;
   return (
     <aside className="drawer deal-drawer" aria-label="Deal">
@@ -119,7 +118,7 @@ export function DealDrawer({ deal, pipelines, events, isAdmin, confirmDelete, he
           [ CLOSE ]
         </Link>
       </div>
-      <Timeline events={events} heading="HISTORY" />
+      <RecordTimeline viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} readOnly />
     </aside>
   );
 }

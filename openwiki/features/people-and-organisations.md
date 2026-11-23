@@ -14,18 +14,18 @@ sources:
     resource: repo://src/server/records/flash.ts
   - id: sf90-src-nav
     resource: repo://src/app/(app)/nav.ts
-  - id: sf103-src-imports
-    resource: repo://src/server/imports/imports.ts
   - id: openwiki-source-f34ac1e549d94dc3ac475ae4
     resource: repo://src/proxy.ts
-  - id: openwiki-source-0f21076b06742b5b091c2986
-    resource: repo://src/server/imports/csv.ts
+  - id: openwiki-source-9ebb64fab176b6e210f7c3a3
+    resource: repo://src/server/notifications.ts
   - id: openwiki-source-16c334cbe6c5a2c7ad77a065
     resource: repo://src/server/records/handover.ts
+  - id: openwiki-source-615b00ed02d4d38087bb7a47
+    resource: repo://src/server/records/notes.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T12:49:35.741Z
-generated: { by: "claude-code", at: "2026-11-23T12:49:35.741Z" }
+    at: 2026-11-20T16:18:56.075Z
+generated: { by: "claude-code", at: "2026-11-20T16:18:56.075Z" }
 ---
 
 # People and organisations
@@ -74,24 +74,14 @@ the user first (see [Sessions and access control](../auth/sessions-and-access-co
 - **Delete notice**: after a delete the action sets a 60-second `crm_flash` cookie holding a code and the
   deleted name; the next page shows it once (`flash.ts`) and `src/proxy.ts` clears the cookie on the next GET.
   The same cookie carries the hand-over notices (`handed_over` with a people count and a deals count, and a "nothing to hand over" code).
+  The note codes (`note_deleted`, `note_not_found`) and the "no longer visible" codes use it too.
   Only the known codes are shown, and the text comes from `src/server/messages.ts`.
-
-## CSV import (SF-103)
-
-`/people/import` and `/organisations/import` let a signed-in user bring in a CSV file in four steps: file, columns,
-preview, report (`src/app/(app)/records/import/`: `ImportPages.tsx` for the steps, `FileStep.tsx` the only client
-part, `actions.ts`, `example.ts` for the example files). The browser sends the file in 512 KiB parts (5 MiB at most).
-Every server action calls `requireUser()` first, and every query checks the import belongs to the user.
-
-- Pure modules in `src/server/imports/`: `csv.ts` (reading the file), `columns.ts` (fields, suggestions, mapping checks),
-  `rows.ts` (each row through the same validation as the forms), `plan.ts` (duplicates, organisations, lists, owners,
-  consent) and `text.ts` (reasons and warnings).
-- `imports.ts` keeps the upload, mapping and report in the `csv_imports` table (see
-  [Database schema](../data/database-schema.md)); `runImport` does the whole import in one transaction that locks
-  `organisations` and `person_emails`, with bulk inserts, and writes an `imported` timeline event.
-- Tests: `tests/unit/import-*.test.ts`, `tests/integration/imports-*.test.ts`, `tests/e2e/import-*.spec.ts`.
-
-How the import moves data is drawn in [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
+- **Notes and @mentions**: a note is a `timeline_events` row of kind `note`, added, edited (with an optimistic
+  version) and deleted by `src/server/records/notes.ts` through `src/app/(app)/records/note-actions.ts`. Text
+  rules and `@[user:<id>]` mention tokens are in `notes-rules.ts`; mentions are `note_mentions` rows and a
+  user's mentions appear on the Notifications page (`src/server/notifications.ts`) only while the record is
+  visible to them. `RecordTimeline.tsx` draws the timeline of every record page. See
+  [Database schema](../data/database-schema.md) and [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Fake data
 

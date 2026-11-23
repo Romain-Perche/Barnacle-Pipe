@@ -10,7 +10,6 @@ import { messages, templates } from "@/server/messages";
 import { ownerName } from "@/server/records/common";
 import { readFlash } from "@/server/records/flash";
 import { hasDealFilters, knownDealsQuery, parseDealsQuery, withParams, type DealsQuery, type Params } from "@/server/records/list-query";
-import { readTimeline } from "@/server/records/timeline";
 import { Cell, FilterRow, PreviewLink, Select, SortHeader } from "../../records/ListBits";
 import { Pager } from "../../records/Pager";
 import { DealDrawer } from "../DealDrawer";
@@ -35,7 +34,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
     readFlash(["deal_deleted", "deal_no_longer_visible"]),
     query.open ? getDeal(user.id, query.open) : null,
   ]);
-  const [events, pipelines] = found ? await Promise.all([readTimeline(user.id, { dealId: found.id }), stageChoices()]) : [[], []];
+  const pipelines = found ? await stageChoices() : [];
   const shown = { ...query, page: list.page };
   const link = (changes: Partial<DealsQuery>) => withParams(PATH, shown, changes);
   const preview = (id: number) => link({ open: id });
@@ -193,7 +192,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
           <DealDrawer
             deal={found}
             pipelines={pipelines}
-            events={events}
+            viewerId={user.id}
             isAdmin={isAdmin}
             confirmDelete={confirmDelete}
             hereHref={preview(found.id)}

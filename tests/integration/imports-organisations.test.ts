@@ -43,7 +43,7 @@ describe("importing organisations-10.csv", () => {
     const [{ n }] = await sql`select count(*)::int as n from timeline_events where kind = 'imported' and organisation_id is not null and actor_id = ${ada.id}`;
     expect(n).toBe(9);
     const [first] = await sql<{ id: number }[]>`select id::int as id from organisations where name = 'Imaginary Gyms Fake'`;
-    expect((await readTimeline(ada.id, { organisationId: first.id })).map((e) => [e.kind, e.actorName])).toEqual([["imported", "Ada Fake"]]);
+    expect((await readTimeline(ada.id, { organisationId: first.id })).entries.map((e) => [e.kind, e.actorName])).toEqual([["imported", "Ada Fake"]]);
 
     const report = (await getImport(ada.id, id))!.report!;
     expect(templates.import_summary_organisations(report.imported, report.skipped.length)).toBe("9 organisations imported. 1 row not imported.");

@@ -5,7 +5,7 @@ description: The sidebar shell shared by every signed-in page, the nav registry,
 tags: [ui, layout, navigation, messages, sign-in-page]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T10:02:45.004Z
+    at: 2026-11-23T11:55:25.809Z
 sources:
   - id: openwiki-source-9c37e70856dfc7e98b60d790
     resource: repo://src/app/(app)/%5B...missing%5D/page.tsx
@@ -15,13 +15,19 @@ sources:
     resource: repo://src/app/(app)/nav.ts
   - id: openwiki-source-6e6147c60d91cff3c0050f23
     resource: repo://src/app/(app)/not-found.tsx
+  - id: openwiki-source-069fcc27db1b076d635470f8
+    resource: repo://src/app/(app)/notifications/actions.ts
+  - id: openwiki-source-8407c3e3ac340b23e3472777
+    resource: repo://src/app/(app)/RefreshOnHistory.tsx
+  - id: openwiki-source-d4ce59a55777f00d30143744
+    resource: repo://src/app/(app)/UnreadLink.tsx
   - id: openwiki-source-ed3f6cf4c5684edf2049ee88
     resource: repo://src/server/format.ts
   - id: openwiki-source-c952f67a81bc8f97643c325b
     resource: repo://src/server/messages.ts
   - id: openwiki-source-8bf427df8e393c62d99adf6b
     resource: repo://src/server/sign-in-page.ts
-generated: { by: "claude-code", at: "2026-11-20T10:02:45.004Z" }
+generated: { by: "claude-code", at: "2026-11-23T11:55:25.809Z" }
 ---
 
 # Signed-in layout, pages and messages
@@ -31,14 +37,24 @@ generated: { by: "claude-code", at: "2026-11-20T10:02:45.004Z" }
 Every signed-in page lives under `src/app/(app)/` and gets `layout.tsx`:
 
 - a blue left sidebar with the Barnacle wordmark (`src/app/Wordmark.tsx`);
-- the **Main** nav from `mainNav` in `nav.ts` (today `Home`, `Deals`, `People` and `Organisations`);
+- the **Main** nav from `mainNav` in `nav.ts` (today `Home`, `Deals`, `People`, `Organisations` and `Notifications`, which shows the user's unread mention count: `layout.tsx` gives the start value and `UnreadLink.tsx` keeps it current, see below);
 - an `// ADMIN` group with `adminNav` (today `Users`, `Lead sources and labels` and `Pipelines`), rendered only when the user's role is `admin`;
 - the user's name and a `[ Sign out ]` button (the `signOut` server action, see
   [Sessions and access control](../auth/sessions-and-access-control.md)).
 
 The layout calls `requireUser()` and sets `dynamic = "force-dynamic"`, so every signed-in page is
-rendered per request, previews included. `SidebarLink.tsx` is the only client component: it uses
-`usePathname()` to mark the current link with `aria-current="page"`.
+rendered per request, previews included. `SidebarLink.tsx` uses `usePathname()` to mark the current link
+with `aria-current="page"`.
+
+### Unread count on client navigation (SF-108)
+
+The layout is not rendered again on client navigation, so the count would go stale. `UnreadLink.tsx`
+(client) wraps `SidebarLink` for `/notifications`: after every navigation, or a click on a link to the page
+already open, it calls the read-only `currentUnread` server action (`notifications/actions.ts`, behind
+`requireUser()`) and drops replies older than the newest request. The layout gives the link a fresh `key` on each
+render, so its own count always wins as the start value. `RefreshOnHistory.tsx` (client) calls
+`router.refresh()` on back/forward. Opening a page never marks anything read. Data flow:
+[DATAFLOW.md](../../dataflow/DATAFLOW.md).
 
 The look follows `docs/DESIGN.md` (cream surface, electric blue, signal orange, monospace labels);
 styles are in `src/app/globals.css` and fonts are Geist (`src/app/layout.tsx`).
@@ -53,6 +69,10 @@ styles are in `src/app/globals.css` and fonts are Geist (`src/app/layout.tsx`).
 | — | `(app)/Forbidden.tsx` | "You don't have access to this page." shown inside the shell when `requireAdmin()` says the user is not an admin. |
 | `/sign-in` | `src/app/sign-in/page.tsx` | Outside the shell. |
 | — | `src/app/not-found.tsx` | Not-found outside the shell (e.g. the fake login when disabled). |
+
+The Notifications page (`src/app/(app)/notifications/`) lists the user's @mentions from `src/server/notifications.ts`;
+opening one marks it read and goes to the record, and a button marks all read. Both actions call `requireUser()`.
+Data movement is in [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Sign-in page states
 
