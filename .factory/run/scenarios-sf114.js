@@ -1,4 +1,4 @@
-// SF-114 AI-review scenarios (US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases 1–12), against :3000/crm_dev on
+// SF-114 AI-review scenarios (US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases 1–13), against :3000/crm_dev on
 // fresh fake data: `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
 // (`ONLY="US1 scenario 1,Edge case 4"` for a subset). Setup by SQL ("SF114 …" records); actions through the UI.
 const { execSync } = require("child_process");
@@ -634,6 +634,25 @@ async function run(name, fn) {
     const t = await text(ada);
     const ok = bold1 === 0 && bold2 === 0 && row.includes("<b>Fake</b> Amb") && t.includes("<b>Fake</b> Amb") && t.includes("<b>Fake</b> Ref") && t.includes("<b>Fake</b> deal");
     check("Edge case 12", ok, `Ambassadors page <b> elements: ${bold1}, literal text shown: ${row.includes("<b>Fake</b> Amb")}; ambassador page <b>Fake</b> elements: ${bold2}, literal name/person/deal: ${t.includes("<b>Fake</b> Amb")}/${t.includes("<b>Fake</b> Ref")}/${t.includes("<b>Fake</b> deal")}`);
+  });
+
+  await run("Edge case 13", async () => {
+    // Ada: Dora is private to Linus. A ref naming her (or a non-referrer like Ben) must be ignored on both lists.
+    const out = [];
+    let ok = true;
+    for (const path of ["/people", "/deals/list"]) {
+      for (const ref of [dora, ben]) {
+        await go(ada, path); const base = await ada.$$eval("main table tbody tr td:first-child a.nm", (as) => as.map((a) => a.textContent.trim())); const baseCount = await text(ada, ".head-r").catch(() => "");
+        await go(ada, `${path}?ref=${ref}`); const got = await ada.$$eval("main table tbody tr td:first-child a.nm", (as) => as.map((a) => a.textContent.trim())); const gotCount = await text(ada, ".head-r").catch(() => "");
+        const sel = await ada.locator("select[name=ref]").evaluate((s) => s.options[s.selectedIndex].textContent);
+        const body = await ada.locator("main").innerText();
+        const leak = /Dora Privatefake/.test(body); // Pat Privatefake is Ada's own, so match only Dora
+        const same = JSON.stringify(base) === JSON.stringify(got) && baseCount === gotCount;
+        ok = ok && same && sel === "Any referrer" && !leak;
+        out.push(`${path}?ref=${ref === dora ? "Dora" : "Ben"}: same list ${same} (${got.length} rows, count "${gotCount}"), filter shows "${sel}", Dora named: ${leak}`);
+      }
+    }
+    check("Edge case 13", ok, out.join("; "));
   });
 
   await browser.close();

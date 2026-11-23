@@ -118,8 +118,8 @@
     £4,000), "… · app" (lost £1,500, "Fake: chose another supplier"), "… · audit" (open £2,000, private, Linus Fake's); notes by
     Ada Fake on "… · website" and on Dee. So Sales has 4 more deals and there are 44 fake people. For Ada, Cara's page shows
     People 3 · Deals 3 · Open £4,500 · Won £4,000 · Lost 1; for Linus, Deals 4 · Open £6,500.
-  - SF-114 AI-review scenario script `scenarios-sf114.js` (all 37: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
-    1–12, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
+  - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
+    1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
     (`ONLY="US2 scenario 4,Edge case 9"` for a subset; US2-5 needs US2-2's "SF114 Bob Sample"). Selectors: the picker is the
     `combobox` "Referred by" with `listbox` "Ambassadors" (options read "<name> <organisation> · <first email>"), its chip
@@ -128,7 +128,9 @@
     referred" / "Deals referred" (`a.nm`), `section[aria-label='Latest updates'] li.ent` (`.kd` tag, `.on-deal a` record link).
     Direct requests: rewrite the hidden `referredBy` (or add `ambassador=on`) in the form holding `firstName`/`title` — not the
     first form of the page (that is the sidebar's sign-out). Wait for `waitForURL` after link clicks (client navigation).
-    Timeline lines read with the tag first ("CHANGEReferred by set to …").
+    Timeline lines read with the tag first ("CHANGEReferred by set to …"). Edge 13 (unknown `ref` on /people and
+    /deals/list for Ada: Dora and Ben) checks for the text "Dora Privatefake" only: Pat Privatefake is Ada's own, and US2's
+    deals are titled "SF114 Dora deal …". The script is not re-runnable without `reset-db.sh` (names are reused).
   - CSV import scenarios (SF-103) are covered by `tests/e2e/{import-people,import-organisations}.spec.ts`, with the fake
     files in `tests/fixtures/csv/` (people-20.csv: rows 4 and 15 use `dup.one@`/`DUP.TWO@fakeco.example`, which the test puts
     in the CRM first, row 9 has an invalid address; organisations-10.csv: "FAKECO LTD" matches the seeded Fakeco Ltd, size
