@@ -27,7 +27,6 @@ data stand in for them.
 
 ```bash
 npm install
-npx playwright install chromium     # browser for the browser tests
 cp .env.example .env.local          # APP_ENV=development, DATABASE_URL=…/crm_dev, FIRST_ADMIN_EMAIL=ada@barnacle.ai
 npm run db:migrate                  # update the database structure
 npm run db:seed                     # load fake data (fake users, people, organisations, pipelines, deals, notes and ambassadors)
@@ -79,12 +78,11 @@ Event and Ambassador, and no labels.
 
 ## Tests
 
-Both test commands need a local test database and `APP_ENV=test`. They refuse to run otherwise.
+The tests need a local test database and `APP_ENV=test`. They refuse to run otherwise.
 
 ```bash
 export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test
 npm test             # Vitest: unit tests + integration tests against the test database (migrates it first)
-npm run test:e2e     # Playwright: builds and starts the app, migrates and seeds, then runs the browser tests
 npm run typecheck    # TypeScript
 ```
 
@@ -92,8 +90,7 @@ The test database is emptied and reloaded by the tests: never point `DATABASE_UR
 
 The first `npm test` downloads the Google userinfo schema the fake Google sign-in is checked against
 (`npm run test:schemas`, a pinned file from GitHub, into the git-ignored `.factory/schemas/`): it needs
-network access once. The test commands ignore `.env.local`: the browser tests start the app from a
-temporary folder without any `.env*` file, so it sees only the settings the tests give it.
+network access once.
 
 ## Commands
 
@@ -106,7 +103,6 @@ temporary folder without any `.env*` file, so it sees only the settings the test
 | `npm run db:seed` | Load fake data. Only when `APP_ENV` is exactly `development` or `test` and `VERCEL_ENV` is not `production`/`preview`; otherwise prints "Fake data can only be loaded when APP_ENV is development or test." and exits 1. Safe to run again. |
 | `npm test` | Unit and integration tests (runs `test:schemas` first). |
 | `npm run test:schemas` | Download the pinned Google schema into `.factory/schemas/` when it is missing; does nothing otherwise. |
-| `npm run test:e2e` | Browser tests. |
 | `npm run typecheck` | `tsc --noEmit`. |
 
 ## Settings
