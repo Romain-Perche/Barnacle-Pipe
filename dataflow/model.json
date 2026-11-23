@@ -243,6 +243,18 @@
         "src/server/deals/pipelines.ts"
       ],
       "zone": "app"
+    },
+    {
+      "id": "csv-import",
+      "label": "CSV import",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/app/(app)/records/import",
+        "src/app/(app)/people/import",
+        "src/app/(app)/organisations/import",
+        "src/server/imports/imports.ts"
+      ]
     }
   ],
   "stores": [
@@ -405,6 +417,15 @@
       "zone": "postgres",
       "sources": [
         "migrations/0005_deal_page.sql"
+      ]
+    },
+    {
+      "id": "csv-imports-table",
+      "label": "Postgres csv_imports",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0006_csv_imports.sql"
       ]
     }
   ],
@@ -1316,6 +1337,112 @@
       "data": "table definitions",
       "sources": [
         "migrations/0005_deal_page.sql"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "csv-import",
+      "data": "signed-in user check",
+      "sources": [
+        "src/app/(app)/records/import/actions.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "csv-import",
+      "data": "CSV file in parts, column mapping, consent choice",
+      "sources": [
+        "src/app/(app)/records/import/FileStep.tsx",
+        "src/app/(app)/records/import/actions.ts"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "staff",
+      "data": "columns, preview, report, example file",
+      "sources": [
+        "src/app/(app)/records/import/ImportPages.tsx",
+        "src/app/(app)/records/import/example.ts"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "csv-imports-table",
+      "data": "uploaded file, mapping, report",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "csv-imports-table",
+      "to": "csv-import",
+      "data": "stored file, mapping, report",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "persons-table",
+      "data": "imported people, emails, phones",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "csv-import",
+      "data": "visible people (duplicate check)",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "organisations-table",
+      "data": "imported organisations",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "organisations-table",
+      "to": "csv-import",
+      "data": "existing organisations (duplicate check)",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "choices-table",
+      "to": "csv-import",
+      "data": "lead sources and labels to match",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "users-table",
+      "to": "csv-import",
+      "data": "active users (owner match)",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "csv-import",
+      "to": "timeline-table",
+      "data": "imported events",
+      "sources": [
+        "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "csv-imports-table",
+      "data": "table definitions",
+      "sources": [
+        "scripts/migrate.ts"
       ]
     }
   ]

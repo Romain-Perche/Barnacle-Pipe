@@ -30,25 +30,25 @@
       "completedRunId": "a8c4062f-b1c1-42b9-95be-3db046a6ad9b"
     },
     "/openwiki/data/database-schema.md": {
-      "pageVersion": "sha256:8ca38848f37780f0b9ad9df5522c4916bbba36355c835df4a22dc2e544f6e9d0",
+      "pageVersion": "sha256:19eb22d17101e2da0317572e2bf338ad1ec138d134a05d608638e22b70a53510",
       "completedBy": "claude-code",
-      "completedRunId": "0f73d786-d1d0-4a5c-9a94-dcda279621e9",
-      "gitHead": "bf3e8e2d6638375c07e2801aa57990d14c4b494c",
-      "sourceFingerprint": "sha256:ed71c9cfca2736f59ba0a317f6750c26e5d4b82b46dfb5a134371697e7cab364"
+      "completedRunId": "39b98050-e53f-4ee1-ac86-2efd94d0303c",
+      "gitHead": "fd6660307359b2b1a3f263b077ff122ee747ecce",
+      "sourceFingerprint": "sha256:9ca638846d23896da9abc70590611dd6c6c9503519b1c3477f789a3398212d59"
     },
     "/openwiki/features/people-and-organisations.md": {
-      "gitHead": "218712cc5db05f748a669479763da433faf3939e",
-      "sourceFingerprint": "sha256:4f7063edce17c503dd11fa2c7e8e555482d541143cff687bd7f212d5ee344162",
-      "pageVersion": "sha256:46fd7d7a671a240aec2b7e6ed1883dfd40698dbb442abc8800b9febde4de7882",
+      "pageVersion": "sha256:2edae2492714079386854d446e18714aedbfd96f3d79efa133076e9b26d77cae",
       "completedBy": "claude-code",
-      "completedRunId": "afd66979-454b-44c3-a482-e0a85169bd35"
+      "completedRunId": "39b98050-e53f-4ee1-ac86-2efd94d0303c",
+      "gitHead": "fd6660307359b2b1a3f263b077ff122ee747ecce",
+      "sourceFingerprint": "sha256:9ca638846d23896da9abc70590611dd6c6c9503519b1c3477f789a3398212d59"
     },
     "/openwiki/features/pipelines-and-deals.md": {
+      "gitHead": "bf3e8e2d6638375c07e2801aa57990d14c4b494c",
+      "sourceFingerprint": "sha256:ed71c9cfca2736f59ba0a317f6750c26e5d4b82b46dfb5a134371697e7cab364",
       "pageVersion": "sha256:76d3d0addf07d82da0ccd70da529709a52e82fa0ade7ecb34db1b8e0f615f108",
       "completedBy": "claude-code",
-      "completedRunId": "0f73d786-d1d0-4a5c-9a94-dcda279621e9",
-      "gitHead": "bf3e8e2d6638375c07e2801aa57990d14c4b494c",
-      "sourceFingerprint": "sha256:ed71c9cfca2736f59ba0a317f6750c26e5d4b82b46dfb5a134371697e7cab364"
+      "completedRunId": "0f73d786-d1d0-4a5c-9a94-dcda279621e9"
     },
     "/openwiki/features/signed-in-layout-and-pages.md": {
       "gitHead": "7a6c36f33bb37d284684d6e0dba3a8c22f806b7f",

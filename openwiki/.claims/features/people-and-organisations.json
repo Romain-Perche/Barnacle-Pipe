@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:46fd7d7a671a240aec2b7e6ed1883dfd40698dbb442abc8800b9febde4de7882",
+  "pageVersion": "sha256:2edae2492714079386854d446e18714aedbfd96f3d79efa133076e9b26d77cae",
   "claims": [
     {
       "id": "claim_073174519ebe44d7a116c47962b22649",
@@ -45,10 +45,24 @@
           "version": "repo-file-v1:sha256:23b56dfc7926acf923fa61cf815a2759cef0f0add443d3c557b4c5688092865b"
         }
       ]
+    },
+    {
+      "id": "claim_8e7a11565c5c4c769ab4835be64e1af2",
+      "statement": "The CSV import sends the file in 512 KiB parts (5 MiB at most) and keeps it in the csv_imports table until runImport does the whole import in one transaction.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/imports/csv.ts#L5-L8",
+          "version": "repo-lines-v1:sha256:2adfb32475307892d34841e2ffff42df278324ef33855647935766cac1f2465e:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2IyZjMzOGJjNjM0NTYyNTkxYjExMjExZWRlMjBmOGFkZDE4ZGI2OTI5MTIxNTlkNGRhNjY3YmMxZTZkMmNhNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTJiMjI3NmY4YmI2MDIwODA4MzMzMmE4YTM3NGE3NzVkM2Q1ODVhMDIyYTI0Y2YxNDRlOTM2MDZmNDI4OGUwMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQ4YTMxYjA5NDEzMGMzMjQzNzhiNTU2YjVlNmJjMTNmOGE1MDc0NDgyNzE4OTg0ZWJlNGRkOTk1YTM0ODU0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTY5NzAzZDJmZWRmOTUxYjhkN2YxNWY0YjQ1OTRhOTg3MTY1NjM0NWM5OWMyZmQzNDgwYWQ0MjBjMTJiMzMxNyJ9"
+        },
+        {
+          "resource": "repo://src/server/imports/imports.ts#L363-L370",
+          "version": "repo-lines-v1:sha256:ae95de47775b0f06299f32bccaf0f24e8df29aea730eb711346b61fc80d6b83f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGY4YzYwNmE1YjUxNzZjYThkOTIzMzc5MjE0NzVmNjg3OTEzYzUyMTI5YWQxZTU3ZDhiNTdiODM4NmU0ZjcyNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGRkMWUyOGJmYzYxZjA1Mzg0MjczZjVkYzNhZjI0YTk1OWI5MjY5ZTY3ZmI3MDJjNzQyNDRhNGZmN2JkNzA4MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJjZGY1ZDM5ZWRiNWY0ODJkMDRhZDdlNTM5YTE5NTJkNTAzZjJjMTdjOWYzOTgwZGIzMDNmZTQ2ZTExZmUwZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2ZmNDM1YWJkOTBmODgxYjM2MTRkYTUwYzcyN2MxNTBlZTgyNmFmOTRlYmVlMDZhZGI2ZjQ2ZDc3MmZmZDI0YyJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T11:20:44.617Z"
+    "at": "2026-11-23T12:49:35.741Z"
   }
 }

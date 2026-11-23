@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8ca38848f37780f0b9ad9df5522c4916bbba36355c835df4a22dc2e544f6e9d0",
+  "pageVersion": "sha256:19eb22d17101e2da0317572e2bf338ad1ec138d134a05d608638e22b70a53510",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L26",
-          "version": "repo-lines-v1:sha256:c5008eb9d4d0bc89e753a8c6d0bc55a151c860ce47a44996825e0919ff8a49fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L27",
+          "version": "repo-lines-v1:sha256:40a1fc5aa2e1533f4cf790cfb7de7f28a46f9912755b405790a61ce35d48d449:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -101,10 +101,20 @@
           "version": "repo-lines-v1:sha256:d31f97effc9679b9b432bb1700567d2c9ecfadc29cb5c4702e84f6b5f09b2bee:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5Y2Q2ZDUyMTgyMWI4MTNjMTQ2ZGQwNTMxZDdiMzNjMjYwMTEzNjJlN2I0MWY3OTY4ZGQ1ZDYwZTE0ZmFkNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0Zjg5ZmMwM2I3OGQ0MDgwNjAwNzlmNWU5YjIzNTRlZThjNDdlOTQwNDIyYTQ5ZTU3MjFhYzM5N2IyMTc0NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkNTgyMGUxNWU5NzRlMGMyZGM5YTEyOTgxNTM1MzU4MGQ2Y2MxNDRhYTIyOTczMmRjMzkzMjZkOTVjYzE3OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg2ODdlM2NiY2Y5NzcyY2M0ZTYxNTBiY2ZiMDQwMjhiOGZiMjlhOGU4ZjM0ZmVlMjEyYjFhMmJhM2Q0M2ZiOWMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_e28d44c1538b492eb6fabb6519241e5d",
+      "statement": "Migration 0006 creates csv_imports (kind people or organisations, status uploading/ready/done, content at most 5 MiB) with row level security, and allows the timeline kinds imported and note.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0006_csv_imports.sql#L3-L28",
+          "version": "repo-lines-v1:sha256:78826721d92c73de85f598890c31b27dc86ec2bfe55dc0ba7c2908ecc76cdfd5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwNjIyOGQyMWVjNTE4NDFjYTcyNDdhYTUxMzkyMWNlNzVjNDQ2OTRlMjUzZTExZjY4NGZiNDA0NjE2ZGYxOGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhZjQyM2U4YmM0NTA5Njg1N2U2OGQ2YWRmMWQyMGQyODBjNTQwZGVjZWU5YTVlNzNmZjUwNDg4YjBjMGVhZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkMzhkYmU0Y2IxMTE4MmIzOWMxZGJhZjY4MzQ2OTc5Y2FjZjA4NTdiMGRkOGNhYThkMjcwNjFjZTNiZTRhMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T12:30:18.141Z"
+    "at": "2026-11-23T12:49:35.741Z"
   }
 }
