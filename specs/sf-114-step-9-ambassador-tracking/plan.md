@@ -175,3 +175,28 @@ No other outside service: ambassadors, referrals and their pages run in the app 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
 None.
+
+## Fix round 1
+
+**Problem** (AI review): the People list filters on any `ref` in the address. As Ada Fake, `/people?ref=37` (Dora, a
+person private to Linus Fake) listed Hal Referredfake, so Ada learns that a person hidden from her referred Hal, while
+every page shows only "Referred by a private person". This breaks FR-013. The review also found a 116 KB Python package
+(`markdown-3.11.3-py3-none-any.whl`) committed in this folder by the Plan commit; this fix round removed it.
+
+**Cause**: the Deal list passes the parsed query through `knownDealsQuery`, which keeps `ref` only when it is one of
+`dealFilterOptions().referrers`. The People page (`src/app/(app)/people/page.tsx`) passes `parsePeopleQuery()` straight
+to `listPeople`, and `listPeople` adds `p.referred_by_id = ${query.ref}` with no check on the referrer.
+
+**Fix**: do as the Deal list does. Add `knownPeopleQuery(query, { referrers })` to `src/server/records/list-query.ts`
+(pure; keeps `ref` only when it is in the list, else `null`; every other field unchanged). The People page first reads
+`peopleFilterOptions`, then `listPeople(user.id, knownPeopleQuery(parsed, options))`, and links and the filter row use
+the known query, so an unknown `ref` is never listed on, counted or shown back. Owner, label, source, organisation and
+consent are not private, so they stay as today. Small clean-up from the same review: `referrerOptions` returns the query
+result without the one-element array spread (`[...rows]` once, as `dealFilterOptions` does for its lists).
+
+Not changed: `readAmbassadorUpdates` keeps leaving out deals only linked to a referred person (spec Clarifications,
+question 4, answer A; research.md §10).
+
+**Files**: `src/server/records/list-query.ts`, `src/app/(app)/people/page.tsx`, `src/server/records/ambassadors.ts`,
+`tests/unit/list-query.test.ts`, `tests/integration/referral-filters.test.ts`.
+No new dependency, no migration, no new outside service.

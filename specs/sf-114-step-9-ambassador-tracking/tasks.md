@@ -234,3 +234,12 @@ Task: "Performance test tests/integration/ambassador-performance.test.ts"
 
 - Choices made here without asking: the Supabase Postgres task (T012) sits in US1, the first story whose code writes the new columns; the privacy story US4 comes after US3 because it checks the pages US1–US3 build; the delete clean-up (FR-014) sits in US4 because its rule is the SF-92 privacy rule; the seed is in the Polish phase because it needs every story's code; the test recipe (T055) is the last task.
 - No outside-service fake is added or extended: the only outside service is the database, tested for real.
+
+---
+
+## Fix round 1: People list "Referred by" privacy (FR-013)
+
+- [ ] T056 Write the tests first; they fail now. (a) Unit test, beside the `knownDealsQuery` tests: `knownPeopleQuery(parsePeopleQuery({ ref: "37", owner: "2", q: "x" }), { referrers: [] })` gives `ref: null` and keeps `owner` and `q`; with `referrers: [{ id: 37, name: "Dora Fake" }]` it keeps `ref: 37`. (b) In `tests/integration/referral-filters.test.ts`: Linus Fake makes a private ambassador Dora and refers a person Hal (visible to Ada Fake) to her; for Ada, `peopleFilterOptions(ada.id, null).referrers` has no Dora, and `listPeople(ada.id, knownPeopleQuery(parsePeopleQuery({ ref: String(dora) }), options))` lists the same rows and total as with no `ref`. Name it `// covers SF-114 FR-013, edge case "address names a hidden referrer"`
+- [ ] T057 Add `knownPeopleQuery` to `src/server/records/list-query.ts` (keeps `ref` only when it is in `referrers`, as `knownDealsQuery` does); in `src/app/(app)/people/page.tsx` read `peopleFilterOptions` first, then call `listPeople` and build every link and the filter row from the known query
+- [ ] T058 [P] In `src/server/records/ambassadors.ts`, `referrerOptions`: return the rows without the needless array spread around one query
+- [ ] T059 Run `npm run typecheck`, `npm test` (with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`) and `npm run test:e2e`; fix every failure and keep the full failure output when reporting

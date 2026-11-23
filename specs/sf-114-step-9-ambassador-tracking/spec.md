@@ -129,6 +129,7 @@ On the People list and the Deals list, a team member filters by "Referred by" to
 - A person with lead source "Ambassador" and no "Ambassador" tick: they are not on the Ambassadors page and not offered in the "Referred by" picker; choosing a referrer leaves the person's lead source as it was.
 - An ambassador page with more than 50 people or 50 deals referred: each list shows the newest 50 (deals: open first) with `[ SHOW MORE ]`, which adds the next 50 without repeating or skipping any.
 - A referred deal or person whose name contains markup such as "<b>Fake</b>": it is shown as plain text everywhere on the Ambassadors page and the ambassador page.
+- A People list or Deals list address names, as "Referred by", a person the user cannot see or who is not in the "Referred by" filter options (for example Ada Fake opens `/people?ref=<id of Dora, private to Linus Fake>`): the filter is ignored, the list is the same as with "Any referrer", and the filter shows "Any referrer"; nothing tells the user whom the hidden person referred (FR-013).
 
 ## Requirements *(mandatory)*
 
