@@ -26,3 +26,14 @@ describe("docs/DECISIONS.md (SF-103)", () => {
     expect(sf103.some((l) => l.includes("consent the importing user chooses, with nothing chosen in advance"))).toBe(true);
   });
 });
+
+// covers SF-114 spec.md § Clarifications (Session 2026-11-23): the two choices people made are recorded, not the factory's
+describe("docs/DECISIONS.md (SF-114)", () => {
+  const sf114 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-114)"));
+  it("records the Ambassador tick and the design B ambassador page, nothing else", () => {
+    expect(sf114).toEqual([
+      "- An ambassador is a person with the Ambassador tick on their form; only ticked people can be chosen as Referred by (SF-114)",
+      "- The ambassador page uses design B: its own one-column page with [ PERSON PAGE ], a summary strip, people referred, deals referred, then latest updates grouped by day (SF-114)",
+    ]);
+  });
+});

@@ -87,6 +87,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
         )}
         <Select name="owner" label="Owner" value={query.owner} options={[{ value: "", label: "Any owner" }, ...options.owners.map((o) => ({ value: o.id, label: o.name }))]} />
         <Select name="label" label="Label" value={query.label} options={[{ value: "", label: "Any label" }, ...options.labels.map((o) => ({ value: o.id, label: o.name }))]} />
+        <Select name="ref" label="Referred by" value={query.ref} options={[{ value: "", label: "Any referrer" }, ...options.referrers.map((o) => ({ value: o.id, label: o.name }))]} />
         {(query.closed || query.archived) && (
           <Select
             name="status"

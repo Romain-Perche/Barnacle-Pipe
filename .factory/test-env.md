@@ -50,6 +50,15 @@
   no fake, the real local PostgreSQL, no public schema on GitHub, same pooler limits (no session state, no new
   connection). Covered by `tests/e2e/notification-count.spec.ts` (two-step checks with a `window` marker proving no
   full reload; mentions inserted by SQL).
+  The ambassador code (SF-114: `src/server/records/ambassadors.ts`, `referral-rules.ts`, the referral and delete changes in
+  `people.ts` and `deals.ts`) keeps to the same pooler limits: no fake, the real local PostgreSQL 17, no public schema on
+  GitHub, follows https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session
+  advisory lock, scanned by `tests/integration/migrate.test.ts`), each save one `sql.begin()` that re-checks the referrer
+  (`isOfferedAmbassador`) and writes the referral event. Its columns and kinds come from `migrations/0008_ambassadors.sql`
+  (`persons.is_ambassador`, `persons/deals.referred_by_id` + `referred_at`, `timeline_events.from_person_id`, kinds
+  `ambassador_added`/`ambassador_removed`/`referrer_set`/`referrer_changed`/`referrer_cleared`, cause `person_deleted`;
+  no new table), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514 refusals (a
+  person referred by themselves, a `from_person_id` on another kind, an unknown cause). No new outside service.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -102,6 +111,13 @@
     shared person mentioning Ada Fake (read), Margaret Fake on the second shared person, Ada Fake on Fakeco Ltd, on the
     private deal "Fake secret project" and on the private person Pat Privatefake. The seed already has a "Fakeco website" deal: scenario
     scripts that add their own should delete it first (the browser tests do).
+    SF-114 adds (seeder "ambassadors", after notes) 9 people with `@example.com` addresses: ambassadors Cara Example (shared,
+    owner Ada Fake, Sample Studios Fake, "Partnerships lead"), Dora Privatefake (private, Linus Fake's), the former ambassador
+    Ezra Formerfake (unticked); Ben, Dee, Eli Referredfake (referred by Cara), Fay, Gus Referredfake (by Ezra), Hal Referredfake
+    (shared, by Dora); 4 Sales deals referred by Cara: "Fake referral · website" (open £4,500, person Ben), "… · pilot" (won
+    £4,000), "… · app" (lost £1,500, "Fake: chose another supplier"), "… · audit" (open £2,000, private, Linus Fake's); notes by
+    Ada Fake on "… · website" and on Dee. So Sales has 4 more deals and there are 44 fake people. For Ada, Cara's page shows
+    People 3 · Deals 3 · Open £4,500 · Won £4,000 · Lost 1; for Linus, Deals 4 · Open £6,500.
   - CSV import scenarios (SF-103) are covered by `tests/e2e/{import-people,import-organisations}.spec.ts`, with the fake
     files in `tests/fixtures/csv/` (people-20.csv: rows 4 and 15 use `dup.one@`/`DUP.TWO@fakeco.example`, which the test puts
     in the CRM first, row 9 has an invalid address; organisations-10.csv: "FAKECO LTD" matches the seeded Fakeco Ltd, size

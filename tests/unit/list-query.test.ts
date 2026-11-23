@@ -1,13 +1,13 @@
 // covers FR-012, FR-013, FR-014, contracts/list-query.md (both lists), edge cases "page beyond the last" and
 // "search text is never echoed as a message"
 import { describe, expect, it } from "vitest";
-import { hasDealFilters, knownDealsQuery, knownSector, parseDealsQuery, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
+import { hasDealFilters, hasFilters, knownDealsQuery, knownSector, parseDealsQuery, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
 
 describe("parsePeopleQuery", () => {
   it("has the defaults: sort by name A–Z, page 1, no filter", () => {
     expect(parsePeopleQuery({})).toEqual({
       q: "", owner: null, label: null, source: null, org: null, consent: null,
-      sort: "name", dir: "asc", page: 1, archived: false, open: null,
+      sort: "name", dir: "asc", page: 1, archived: false, open: null, ref: null,
     });
   });
   it("reads every parameter", () => {
@@ -18,7 +18,7 @@ describe("parsePeopleQuery", () => {
       }),
     ).toEqual({
       q: "ada", owner: 2, label: 3, source: 4, org: 5, consent: "unsubscribed",
-      sort: "contacted", dir: "desc", page: 3, archived: true, open: 7,
+      sort: "contacted", dir: "desc", page: 3, archived: true, open: 7, ref: null,
     });
     for (const sort of ["name", "organisation", "added", "contacted"]) expect(parsePeopleQuery({ sort }).sort).toBe(sort);
   });
@@ -100,7 +100,7 @@ describe("parseDealsQuery", () => {
   it("has the defaults: newest first, page 1, open deals only", () => {
     expect(parseDealsQuery({})).toEqual({
       q: "", pipeline: null, stage: null, owner: null, label: null, status: null,
-      sort: "added", dir: "desc", page: 1, closed: false, archived: false, open: null,
+      sort: "added", dir: "desc", page: 1, closed: false, archived: false, open: null, ref: null,
     });
   });
   it("reads every parameter and the seven sorts", () => {
@@ -111,7 +111,7 @@ describe("parseDealsQuery", () => {
       }),
     ).toEqual({
       q: "fake", pipeline: 1, stage: 2, owner: 3, label: 4, status: "won", sort: "value", dir: "asc", page: 2,
-      closed: true, archived: true, open: 8,
+      closed: true, archived: true, open: 8, ref: null,
     });
     for (const sort of ["title", "value", "organisation", "stage", "owner", "close", "added"]) expect(parseDealsQuery({ sort }).sort).toBe(sort);
     for (const status of ["open", "won", "lost"]) expect(parseDealsQuery({ status }).status).toBe(status);
@@ -158,6 +158,7 @@ describe("knownDealsQuery", () => {
     stages: [{ id: 2, name: "Lead" }],
     owners: [{ id: 3, name: "Linus Fake" }],
     labels: [{ id: 4, name: "Hot" }],
+    referrers: [{ id: 5, name: "Cara Example" }],
   };
   it("drops an owner or label that is not an option", () => {
     const q = knownDealsQuery(parseDealsQuery({ owner: "99999", label: "99999" }), options);
@@ -178,5 +179,29 @@ describe("knownDealsQuery", () => {
     expect(knownDealsQuery(parseDealsQuery({ status: "lost", archived: "1" }), options).status).toBe("lost");
     const rest = parseDealsQuery({ q: "fake", sort: "value", dir: "asc", page: "2", open: "8" });
     expect(knownDealsQuery(rest, options)).toEqual(rest);
+  });
+});
+
+// covers SF-114 FR-011, US5 scenarios 1–2: the "Referred by" filter (`ref`) on the People list and the Deal list
+describe("the Referred by filter", () => {
+  it("is parsed on both lists and invalid values are dropped", () => {
+    expect(parsePeopleQuery({ ref: "5" }).ref).toBe(5);
+    expect(parseDealsQuery({ ref: "5" }).ref).toBe(5);
+    expect(parsePeopleQuery({ ref: "<b>" }).ref).toBeNull();
+    expect(parseDealsQuery({ ref: "0" }).ref).toBeNull();
+  });
+  it("is kept in the address with the other filters, and changing it goes back to page 1", () => {
+    expect(withParams("/people", parsePeopleQuery({ ref: "5", owner: "2" }), {})).toBe("/people?owner=2&ref=5");
+    expect(withParams("/deals/list", parseDealsQuery({ ref: "5", closed: "1" }), {})).toBe("/deals/list?closed=1&ref=5");
+    expect(withParams("/people", parsePeopleQuery({ page: "3" }), { ref: 5 })).toBe("/people?ref=5");
+  });
+  it("counts as a filter", () => {
+    expect(hasFilters(parsePeopleQuery({ ref: "5" }))).toBe(true);
+    expect(hasDealFilters(parseDealsQuery({ ref: "5" }))).toBe(true);
+  });
+  it("is dropped from the deal list when the referrer is not an option", () => {
+    const options = { pipelines: [], stages: [], owners: [], labels: [], referrers: [{ id: 5, name: "Cara Example" }] };
+    expect(knownDealsQuery(parseDealsQuery({ ref: "5" }), options).ref).toBe(5);
+    expect(knownDealsQuery(parseDealsQuery({ ref: "6" }), options).ref).toBeNull();
   });
 });

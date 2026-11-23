@@ -3,6 +3,7 @@
 // visiblePerson(), so a private deal or person is never listed, named or counted for anyone the rules hide it from.
 import { sql } from "@/server/db";
 import type { DealStatus } from "@/server/deals/deals";
+import { referrerOptions } from "@/server/records/ambassadors";
 import { direction, ownerOptions, type Option, type UserRef } from "@/server/records/common";
 import { PAGE_SIZE, type DealsQuery } from "@/server/records/list-query";
 import { escapeLike } from "@/server/records/rules";
@@ -48,7 +49,8 @@ export async function listDeals(viewerId: number, query: DealsQuery): Promise<De
     ${stage !== null ? sql`and d.stage_id = ${stage}` : sql``}
     ${query.owner !== null ? sql`and d.owner_id = ${query.owner}` : sql``}
     ${query.label !== null ? sql`and exists (select 1 from deal_label_links dl where dl.deal_id = d.id and dl.label_id = ${query.label})` : sql``}
-    ${query.q ? sql`and d.title ilike ${pattern}` : sql``}`;
+    ${query.q ? sql`and d.title ilike ${pattern}` : sql``}
+    ${query.ref !== null ? sql`and d.referred_by_id = ${query.ref}` : sql``}`;
   const [{ total, total_pence }] = await sql<{ total: number; total_pence: string }[]>`
     select count(*)::int as total, coalesce(sum(d.value_pence), 0)::bigint as total_pence
     from deals d join stages s on s.id = d.stage_id where ${where}`;
@@ -114,13 +116,14 @@ export async function listDeals(viewerId: number, query: DealsQuery): Promise<De
 }
 
 // Filter options: every pipeline; the chosen pipeline's stages; active users plus owners of deals the viewer sees;
-// deal labels not removed plus removed ones a deal the viewer sees has (as people labels, SF-90).
+// deal labels not removed plus removed ones a deal the viewer sees has (as people labels, SF-90); SF-114: the
+// "Referred by" options (research.md §13).
 export async function dealFilterOptions(
   viewerId: number,
   pipelineId: number | null,
-): Promise<{ pipelines: Option[]; stages: Option[]; owners: Option[]; labels: Option[] }> {
+): Promise<{ pipelines: Option[]; stages: Option[]; owners: Option[]; labels: Option[]; referrers: Option[] }> {
   const visible = visibleDeal(sql, viewerId);
-  const [pipelines, stages, owners, labels] = await Promise.all([
+  const [pipelines, stages, owners, labels, referrers] = await Promise.all([
     sql<Option[]>`select id::int as id, name from pipelines order by position, id`,
     pipelineId === null
       ? Promise.resolve([] as Option[])
@@ -131,6 +134,7 @@ export async function dealFilterOptions(
       where l.removed_at is null
          or exists (select 1 from deal_label_links dl join deals d on d.id = dl.deal_id where dl.label_id = l.id and ${visible})
       order by lower(l.name), l.id`,
+    referrerOptions(viewerId),
   ]);
-  return { pipelines: [...pipelines], stages: [...stages], owners, labels: [...labels] };
+  return { pipelines: [...pipelines], stages: [...stages], owners, labels: [...labels], referrers };
 }

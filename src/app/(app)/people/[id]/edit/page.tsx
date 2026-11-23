@@ -26,6 +26,8 @@ export default async function EditPersonPage({ params }: { params: Promise<{ id:
         action={updatePerson}
         choices={choices}
         canSetPrivate={person.createdBy === user.id || person.owner.id === user.id}
+        currentReferrer={person.referredBy}
+        archived={person.archived}
         initial={personToForm(person)}
         id={id}
         version={person.version}

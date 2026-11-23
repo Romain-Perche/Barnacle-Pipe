@@ -30,7 +30,7 @@ npm install
 npx playwright install chromium     # browser for the browser tests
 cp .env.example .env.local          # APP_ENV=development, DATABASE_URL=…/crm_dev, FIRST_ADMIN_EMAIL=ada@barnacle.ai
 npm run db:migrate                  # update the database structure
-npm run db:seed                     # load fake data (fake users, people, organisations, pipelines and deals)
+npm run db:seed                     # load fake data (fake users, people, organisations, pipelines, deals, notes and ambassadors)
 npm run dev                         # http://localhost:3000
 ```
 
@@ -65,6 +65,8 @@ Event and Ambassador, and no labels.
 | `/deals` | everyone | The board of one pipeline (`?pipeline=<id>`, first pipeline by default): a column per stage with "<n> deals · £total", drag a card to move it; the deal drawer (`?open=<id>`) shows details, "Move to", edit, archive, delete (admins) and its newest 50 timeline entries, read-only. A private deal is seen only by its creator and its owner |
 | `/deals/list` | everyone | Every deal you can see across pipelines: search, Pipeline, Stage, Owner, Label, sort by any column, "<n> deals · £total" of every match, "Show closed deals" (won and lost, with a Status filter), "Show archived deals", `[ CLEAR ]`, the deal drawer (`?open=<id>`); all in the address. `[ BOARD ]` / `[ LIST ]` switch between the two views |
 | `/deals/<id>` | everyone (a private deal: its creator and owner) | The deal page: `[ WON ]`, `[ LOST ]` (asks why), `[ REOPEN ]`; the stage bar with whole days per stage (press a stage to move an open deal); edit, archive, delete (admins), `[ RESTORE ]` for an archived deal; other linked people, labels, follow/unfollow and the // TIMELINE with notes (as on people). Won and lost deals leave the board |
+| `/ambassadors` | everyone | Every ambassador you can see (people with the "Ambassador" tick on their form), A–Z: organisation, people and deals they referred, open and won totals (£), latest referral; archived ones marked "Archived". "Referred by" is set on the person and deal forms (only active ambassadors you can see are offered; the add deal form fills it from the main person) and filters the People list and the deal list (`?ref=<id>`) |
+| `/ambassadors/<id>` | everyone (a private ambassador: their creator and owner) | The ambassador page: `[ PERSON PAGE ]`, contact details, a summary strip (people referred, deals referred, Open £, Won £, Lost), the people and deals they referred (50 at a time, `?people=` / `?deals=`) and the latest updates on them and what they referred (20 at a time, `?updates=`). Private records are never listed or counted for anyone they are hidden from |
 | `/notifications` | everyone | Your @mentions in notes, newest first, 50 at a time (`?shown=100`): "<name> mentioned you in a note on <record>", the date and the start of the note; pressing one opens the record and marks it read; `[ MARK ALL AS READ ]`. The sidebar shows "Notifications" with the unread count, up to date on every page you open (links, forms, back and forward). In the app only, no email; a mention on a record you can no longer see is hidden |
 | `/deals/new`, `/deals/<id>/edit` | everyone (a private deal: its creator and owner) | Add a deal (`?pipeline=<id>&stage=<id>` pre-selects them), edit a deal and its deal labels (`?back=page` returns to the deal page) |
 | `/admin/pipelines`, `/admin/pipelines/<id>` | admins | Add, rename, reorder (↑/↓) and delete pipelines and their stages; deleting one that holds deals moves them to a stage you choose |

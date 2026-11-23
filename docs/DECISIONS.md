@@ -62,3 +62,5 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - The CSV import uses design B: one screen per step (file, columns, preview, report) with a step bar and [ BACK ] (SF-103)
 - A CSV row whose email address a person in the CRM already has is not imported; the existing person is left as it is and the report lists the row (SF-103)
 - People imported from CSV with no consent in the file get the consent the importing user chooses, with nothing chosen in advance (SF-103)
+- An ambassador is a person with the Ambassador tick on their form; only ticked people can be chosen as Referred by (SF-114)
+- The ambassador page uses design B: its own one-column page with [ PERSON PAGE ], a summary strip, people referred, deals referred, then latest updates grouped by day (SF-114)

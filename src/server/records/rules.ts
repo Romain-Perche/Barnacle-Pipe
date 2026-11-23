@@ -32,6 +32,9 @@ export type PersonForm = {
   labelIds: string[];
   consent: string;
   private: boolean;
+  // SF-114: the Ambassador tick, and "Referred by": "", "<id>" or "keep" (parsed by referral-rules.ts).
+  ambassador: boolean;
+  referredBy: string;
 };
 
 // A person's fields once validated and normalised (and as compared for the timeline).
@@ -49,6 +52,9 @@ export type PersonFields = {
   labelIds: number[];
   consent: Consent;
   private: boolean;
+  // SF-114: not in PERSON_FIELDS (their own timeline lines). referredById: the stored referrer once decided.
+  ambassador: boolean;
+  referredById: number | null;
 };
 
 export type OrganisationForm = { name: string; website: string; sector: string; size: string; location: string; ownerId: string };
@@ -195,6 +201,9 @@ export function validatePerson(form: PersonForm): Validated<PersonFields> {
       labelIds: [...new Set(form.labelIds.map(toId).filter((id): id is number => id !== null))].sort((a, b) => a - b),
       consent: form.consent === "unsubscribed" ? "unsubscribed" : "subscribed",
       private: form.private === true,
+      ambassador: form.ambassador === true,
+      // Decided by the save (referral-rules.ts + the database check), not here.
+      referredById: null,
     },
   };
 }

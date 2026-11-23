@@ -8,6 +8,8 @@ type Props = {
   sub?: React.ReactNode;
   archived: boolean;
   isPrivate?: boolean;
+  // SF-114: a person who is an ambassador: the "Ambassador" badge and [ AMBASSADOR PAGE ].
+  ambassadorId?: number | null;
   editHref: string;
   deleteHref: string | null;
   id: number;
@@ -15,7 +17,7 @@ type Props = {
   restore: (fd: FormData) => Promise<void>;
 };
 
-export function RecordHeader({ kind, name, sub, archived, isPrivate, editHref, deleteHref, id, archive, restore }: Props) {
+export function RecordHeader({ kind, name, sub, archived, isPrivate, ambassadorId = null, editHref, deleteHref, id, archive, restore }: Props) {
   return (
     <div className="page-head">
       <div>
@@ -24,12 +26,18 @@ export function RecordHeader({ kind, name, sub, archived, isPrivate, editHref, d
         </div>
         <h1>
           {name}
+          {ambassadorId !== null && <span className="badge amb tag">Ambassador</span>}
           {archived && <span className="badge off tag">Archived</span>}
           {isPrivate && <span className="badge tag">Private</span>}
         </h1>
         {sub && <div className="sub">{sub}</div>}
       </div>
       <div className="head-acts">
+        {ambassadorId !== null && (
+          <Link className="btn" href={`/ambassadors/${ambassadorId}`}>
+            [ AMBASSADOR PAGE ]
+          </Link>
+        )}
         <Link className="btn" href={editHref}>
           [ EDIT ]
         </Link>

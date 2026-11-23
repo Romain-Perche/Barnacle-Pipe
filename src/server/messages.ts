@@ -100,6 +100,16 @@ export const messages = {
   note_record_archived: "Restore this record before changing its notes.",
   note_delete_confirm: "Delete this note? This can't be undone.",
   no_notifications: "No notifications yet.",
+  // SF-114: ambassadors and "Referred by"
+  ambassadors_empty: "No ambassadors yet. Tick Ambassador on a person to add one.",
+  ambassador_not_found: "This ambassador doesn't exist or you can't see them.",
+  referrer_self: "A person can't be their own referrer.",
+  referrer_invalid: "Choose an ambassador from the list.",
+  no_people_referred: "No people referred yet.",
+  no_deals_referred: "No deals referred yet.",
+  no_longer_ambassador: "No longer an ambassador",
+  referred_by_private: "Referred by a private person",
+  referrer_cleared_deleted: "Referred by cleared (a deleted person)",
 } as const;
 
 const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} private people`);
@@ -163,6 +173,10 @@ export const templates = {
   import_needs_consent: (n: number) => `${counted(n, "person has", "people have")} no consent in the file.`,
   import_rows: (n: number) => counted(n, "row", "rows"),
   imported_event: (name: string) => `Imported from CSV by ${name}`,
+  // SF-114: names read from the database
+  referred_by: (name: string) => `Referred by ${name}`,
+  referrer_set_event: (name: string) => `Referred by set to ${name}`,
+  referrer_changed_event: (from: string, to: string) => `Referred by changed from ${from} to ${to}`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

@@ -1,14 +1,15 @@
 "use client";
 // Main person picker for a deal (SF-93 research.md §8), built like OrganisationPicker: filters the visible,
 // non-archived people the page embedded. Only a picked person (or an exact name) is saved; no "add new".
-// Posts personId; the server re-checks the person is visible to the user.
-import { useId, useState } from "react";
+// Posts personId; the server re-checks the person is visible to the user. SF-114: `onChange` hears when the linked
+// person changes (picked, typed exactly, or cleared): the add deal form pre-fills "Referred by" from it.
+import { useId, useRef, useState } from "react";
 
 type Person = { id: number; name: string; archived: boolean };
 
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
-export function PersonPicker({ people, initialId }: { people: Person[]; initialId: string }) {
+export function PersonPicker({ people, initialId, onChange }: { people: Person[]; initialId: string; onChange?: (personId: number | null) => void }) {
   const start = people.find((p) => String(p.id) === initialId);
   const [text, setText] = useState(start?.name ?? "");
   const [chosenId, setChosenId] = useState<number | null>(start?.id ?? null);
@@ -20,11 +21,18 @@ export function PersonPicker({ people, initialId }: { people: Person[]; initialI
   const matches = typed === "" ? [] : people.filter((p) => !p.archived && p.name.toLowerCase().includes(typed.toLowerCase())).slice(0, 8);
   const chosen = chosenId === null ? undefined : people.find((p) => p.id === chosenId);
   const linked = chosen ?? exact;
+  const reported = useRef<number | null>(linked?.id ?? null);
+  const report = (id: number | null) => {
+    if (id === reported.current) return;
+    reported.current = id;
+    onChange?.(id);
+  };
 
   function pick(person: Person | null) {
     setChosenId(person?.id ?? null);
     setText(person?.name ?? "");
     setOpen(false);
+    report(person?.id ?? null);
   }
 
   return (
@@ -44,6 +52,8 @@ export function PersonPicker({ people, initialId }: { people: Person[]; initialI
             setText(e.target.value);
             setChosenId(null);
             setOpen(true);
+            const t = e.target.value.trim();
+            report(t === "" ? null : (people.find((p) => same(p.name, t) && !p.archived)?.id ?? null));
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => {

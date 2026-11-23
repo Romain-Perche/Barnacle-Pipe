@@ -89,3 +89,20 @@ describe("parseShown", () => {
     expect(parseShown(["150", "200"])).toBe(150);
   });
 });
+
+// covers SF-114 FR-009, FR-010: the ambassador page's `?updates=` (20 at a time) and `?people=` / `?deals=` (50)
+import { parseShownBy } from "@/server/records/notes-rules";
+describe("parseShownBy", () => {
+  it("takes multiples of the step from the step to 5,000, else the step", () => {
+    expect(parseShownBy("40", 20)).toBe(40);
+    expect(parseShownBy("20", 20)).toBe(20);
+    expect(parseShownBy("5000", 20)).toBe(5000);
+    for (const v of ["30", "0", "abc", "5020", "", undefined, "-20"]) expect(parseShownBy(v, 20)).toBe(20);
+    expect(parseShownBy(["60", "80"], 20)).toBe(60);
+  });
+  it("leaves parseShown as it was (step 50)", () => {
+    for (const v of ["50", "100", "5000", "75", "0", "x", undefined]) expect(parseShown(v)).toBe(parseShownBy(v, 50));
+    expect(parseShown("100")).toBe(100);
+    expect(parseShown("75")).toBe(50);
+  });
+});

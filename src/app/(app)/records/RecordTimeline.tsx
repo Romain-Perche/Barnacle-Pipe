@@ -28,7 +28,7 @@ type Props = {
   query?: Query;
 };
 
-function NoteText({ entry }: { entry: TimelineEntry }) {
+export function NoteText({ entry }: { entry: TimelineEntry }) {
   // Text nodes only (FR-016): no link, markup or formatting; mentions highlighted.
   return (
     <div className="notebody">

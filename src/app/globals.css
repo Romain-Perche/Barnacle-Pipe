@@ -338,6 +338,8 @@ table.import-table .sel { width: auto; max-width: 280px; font-size: 12px; paddin
 .kd { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 0.5px solid var(--line); padding: 2px 4px; text-align: center; color: var(--muted); }
 .kd.note { background: var(--orange); color: #fff; border-color: var(--orange); }
 .kd.deal { color: var(--blue); border-color: var(--blue); }
+/* SF-114: an entry of a referred person on the ambassador page, coloured like a deal's. */
+.kd.person { color: var(--blue); border-color: var(--blue); }
 .ent-body { min-width: 0; }
 .ent-body .author { font-weight: 600; }
 .notebody { border-left: 3px solid var(--orange); background: var(--note); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; }
@@ -372,3 +374,15 @@ mark.mention { color: var(--blue); background: var(--wash); font-weight: 600; pa
 .notif .when { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
 .notif-preview { display: block; color: var(--muted); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }
 .badge.new { color: var(--orange); border-color: var(--orange); }
+
+/* SF-114: ambassadors (design-options.html option B). */
+.badge.amb { background: var(--orange); border-color: var(--orange); color: #fff; }
+.strip dd.won { color: #16a34a; }
+.strip dd.lost { color: var(--danger); }
+table.users th.num, table.users td.num { text-align: right; white-space: nowrap; }
+table.users td.result.won { color: #16a34a; }
+table.users td.result.lost { color: var(--danger); }
+.ambassador-page .strip { margin-top: 20px; }
+.picker .chosen { font-size: 14px; }
+.picker .chosen .hint, .picker-list .hint { color: var(--muted); font-size: 12px; }
+.check.ambassador { align-self: end; padding-bottom: 8px; }

@@ -2,10 +2,17 @@
 // event kinds here.
 import Link from "next/link";
 import { messages, templates } from "@/server/messages";
-import type { TimelineEvent } from "@/server/records/timeline";
+import type { EventPerson, TimelineEvent } from "@/server/records/timeline";
 
 function by(actor: string | null) {
   return actor ? ` by ${actor}` : "";
+}
+
+// SF-114: a referrer's name (a text node) linking to their ambassador page, or their person page when they have none
+// for the viewer; "a deleted person" once deleted.
+function Referrer({ p }: { p: EventPerson | null }) {
+  if (!p) return <>a deleted person</>;
+  return <Link href={p.ambassadorPage ? `/ambassadors/${p.id}` : `/people/${p.id}`}>{p.name}</Link>;
 }
 
 export function Line({ e, onDeal }: { e: TimelineEvent; onDeal: boolean }) {
@@ -75,6 +82,45 @@ export function Line({ e, onDeal }: { e: TimelineEvent; onDeal: boolean }) {
       );
     case "note":
       return null;
+    case "ambassador_added":
+      return <>Made an ambassador{by(e.actorName)}</>;
+    case "ambassador_removed":
+      return (
+        <>
+          {messages.no_longer_ambassador}
+          {by(e.actorName)}
+        </>
+      );
+    case "referrer_set": {
+      // The template's text around the name: "Referred by set to <name>".
+      const [before] = templates.referrer_set_event("\u0000").split("\u0000");
+      return (
+        <>
+          {before}
+          <Referrer p={e.relatedPerson} />
+          {by(e.actorName)}
+        </>
+      );
+    }
+    case "referrer_changed": {
+      const [start, middle] = templates.referrer_changed_event("\u0000", "\u0000").split("\u0000");
+      return (
+        <>
+          {start}
+          <Referrer p={e.fromPerson} />
+          {middle}
+          <Referrer p={e.relatedPerson} />
+          {by(e.actorName)}
+        </>
+      );
+    }
+    case "referrer_cleared":
+      return (
+        <>
+          {e.cause === "person_deleted" ? messages.referrer_cleared_deleted : "Referred by cleared"}
+          {by(e.actorName)}
+        </>
+      );
     case "handed_over":
       return (
         <>

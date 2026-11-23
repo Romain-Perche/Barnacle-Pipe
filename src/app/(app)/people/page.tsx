@@ -60,6 +60,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
         <Select name="label" label="Label" value={query.label} options={[{ value: "", label: "Any label" }, ...options.labels.map((o) => ({ value: o.id, label: o.name }))]} />
         <Select name="source" label="Lead source" value={query.source} options={[{ value: "", label: "Any lead source" }, ...options.sources.map((o) => ({ value: o.id, label: o.name }))]} />
         <Select name="org" label="Organisation" value={query.org} options={[{ value: "", label: "Any organisation" }, ...options.organisations.map((o) => ({ value: o.id, label: o.name }))]} />
+        <Select name="ref" label="Referred by" value={query.ref} options={[{ value: "", label: "Any referrer" }, ...options.referrers.map((o) => ({ value: o.id, label: o.name }))]} />
         <Select name="consent" label="Consent" value={query.consent} options={[{ value: "", label: "Any consent" }, { value: "subscribed", label: "Subscribed" }, { value: "unsubscribed", label: "Unsubscribed" }]} />
         <Select
           name="sort"

@@ -10,6 +10,7 @@ import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { RecordHeader } from "../../records/RecordHeader";
 import { NoteNotices } from "../../records/NoteNotices";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { ReferredBy } from "../../records/ReferredBy";
 import { archivePerson, deletePerson, restorePerson } from "../actions";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Params> };
@@ -46,6 +47,7 @@ export default async function PersonPage({ params, searchParams }: Props) {
         }
         archived={person.archived}
         isPrivate={person.private}
+        ambassadorId={person.ambassador ? id : null}
         editHref={`${href}/edit`}
         deleteHref={isAdmin ? `${href}?confirm=delete` : null}
         id={id}
@@ -104,6 +106,12 @@ export default async function PersonPage({ params, searchParams }: Props) {
           <div>
             <dt>Lead source</dt>
             <dd>{person.leadSource?.name ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Referred by</dt>
+            <dd>
+              <ReferredBy referrer={person.referredBy} />
+            </dd>
           </div>
           <div>
             <dt>LinkedIn</dt>

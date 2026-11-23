@@ -35,6 +35,8 @@ export default async function NewPersonPage() {
           labelIds: [],
           consent: "subscribed",
           private: false,
+          ambassador: false,
+          referredBy: "",
         }}
       />
     </>

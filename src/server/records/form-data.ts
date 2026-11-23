@@ -37,6 +37,8 @@ export function personFormFromData(fd: FormData): PersonForm {
     labelIds: fd.getAll("labelIds").filter((v): v is string => typeof v === "string").slice(0, 200),
     consent: text(fd, "consent"),
     private: text(fd, "private") === "on",
+    ambassador: text(fd, "ambassador") === "on",
+    referredBy: text(fd, "referredBy"),
   };
 }
 
@@ -64,6 +66,7 @@ export function dealFormFromData(fd: FormData): DealForm {
     expectedClose: text(fd, "expectedClose"),
     private: text(fd, "private") === "on",
     labelIds: fd.getAll("labelIds").filter((v): v is string => typeof v === "string").slice(0, 200),
+    referredBy: text(fd, "referredBy"),
   };
 }
 

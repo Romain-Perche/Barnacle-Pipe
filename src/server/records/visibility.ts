@@ -15,3 +15,13 @@ export function visiblePerson(db: Sql, viewer: Viewer, alias = "p") {
 export function visibleDeal(db: Sql, viewer: Viewer, alias = "d") {
   return db`(not ${db(alias)}.private or ${db(alias)}.created_by = ${viewer} or ${db(alias)}.owner_id = ${viewer})`;
 }
+
+// SF-114 research.md §7: a visible person has an ambassador page for the viewer when they are an ambassador or
+// referred a person or deal the viewer can see (so a page never reveals that hidden records exist). The caller
+// checks visiblePerson on `alias` itself.
+export function hasAmbassadorPage(db: Sql, viewer: Viewer, alias = "p") {
+  const a = db(alias);
+  return db`(${a}.is_ambassador
+    or exists (select 1 from persons rr where rr.referred_by_id = ${a}.id and ${visiblePerson(db, viewer, "rr")})
+    or exists (select 1 from deals rd where rd.referred_by_id = ${a}.id and ${visibleDeal(db, viewer, "rd")}))`;
+}

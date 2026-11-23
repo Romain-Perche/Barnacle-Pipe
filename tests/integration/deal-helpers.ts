@@ -45,6 +45,7 @@ export function dealForm(over: Partial<DealForm> = {}): DealForm {
     expectedClose: "",
     private: false,
     labelIds: [],
+    referredBy: "",
     ...over,
   };
 }

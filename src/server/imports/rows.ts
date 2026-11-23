@@ -114,6 +114,9 @@ export function personFormFromRow(values: string[], mapping: ColumnMapping): Fro
     labelIds: [],
     consent: consent ?? "subscribed",
     private: false,
+    // SF-114: not set by the CSV import (spec Assumptions).
+    ambassador: false,
+    referredBy: "",
   });
   if (!v.ok) return refuse(firstError(v.errors));
   return {
