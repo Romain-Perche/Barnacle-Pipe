@@ -132,6 +132,13 @@
     exactly 10,000 characters with 99 line breaks; Edge 18 picks "@Linus Fake" then types "@Linus Fakeson". Direct requests are made by rewriting the edit/delete
     forms' hidden `noteId`/`target`/`targetId` (or adding a hidden `mention` input) in the page before submitting.
     Archive/restore, making a deal private/shared, changing a deal's organisation and deactivation are done by SQL.
+  - SF-108 AI-review scenario script `scenarios-sf108.js` (US1 1–5, US2 1–3, US3 1, edge cases 1–6; ~1 min, :3000/crm_dev):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf108.js`
+    (`ONLY="US1 scenario 5"` for a subset). Bob = Linus Fake; each scenario first empties `note_mentions`; US1-1's mention
+    is typed by Ada in her own browser context, the others are inserted by SQL. The count is read from the sidebar link's
+    accessible name and `.cnt`, waiting up to 5 s: since SF-108 the page shows first with the old count and `UnreadLink`
+    updates it after its `currentUnread` POST, so the notes print the first and the final value. A `window.__noReload`
+    marker proves no full reload. Read `.cnt` with `allTextContents()` (the link remounts on each layout render).
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
     (real drag with `locator.dragTo`; a failed drag by aborting the server action POST with `page.route`). Board
     selectors: each column is a `region` named after its stage (`h2` name, `.tot` "<n> deals · £total"), cards are
