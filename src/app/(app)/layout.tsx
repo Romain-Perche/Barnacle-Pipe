@@ -4,7 +4,9 @@ import { requireUser } from "@/server/auth/session";
 import { unreadCount } from "@/server/notifications";
 import { signOut } from "./actions";
 import { adminNav, mainNav } from "./nav";
+import { RefreshOnHistory } from "./RefreshOnHistory";
 import { SidebarLink } from "./SidebarLink";
+import { UnreadLink } from "./UnreadLink";
 
 // Every signed-in page is rendered per request, whatever the build's settings (previews included).
 export const dynamic = "force-dynamic";
@@ -14,12 +16,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const unread = await unreadCount(user.id);
   return (
     <div className="shell">
+      <RefreshOnHistory />
       <aside className="side" aria-label="Sidebar">
         <Wordmark />
         <nav aria-label="Main">
-          {mainNav.map((item) => (
-            <SidebarLink key={item.href} {...item} count={item.href === "/notifications" ? unread : 0} />
-          ))}
+          {mainNav.map((item) =>
+            item.href === "/notifications" ? (
+              // SF-108: kept up to date on client navigation; a new key on each render of the layout.
+              <UnreadLink key={`${item.href}#${crypto.randomUUID()}`} {...item} initial={unread} />
+            ) : (
+              <SidebarLink key={item.href} {...item} />
+            ),
+          )}
         </nav>
         {user.role === "admin" && (
           <>

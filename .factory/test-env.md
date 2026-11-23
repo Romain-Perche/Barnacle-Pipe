@@ -38,6 +38,11 @@
   which also checks Postgres's own 23514/23505 refusals (a note without body or author, a body or editor on another
   kind, a second mention of the same user) and the cascade of mentions with their note. Notifications are in-app only:
   no email service, so no new fake.
+  The sidebar count (SF-108: `src/app/(app)/UnreadLink.tsx` and the server action `currentUnread` in
+  `src/app/(app)/notifications/actions.ts`) runs the same read-only `unreadCount` query after every client navigation:
+  no fake, the real local PostgreSQL, no public schema on GitHub, same pooler limits (no session state, no new
+  connection). Covered by `tests/e2e/notification-count.spec.ts` (two-step checks with a `window` marker proving no
+  full reload; mentions inserted by SQL).
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json

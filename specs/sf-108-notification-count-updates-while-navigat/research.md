@@ -39,6 +39,18 @@ Sources: the Next.js 16.4.6 docs shipped in `node_modules/next/dist/docs/` (glos
     re-rendered by the server. Rejected.
   - Polling or push (live updates): out of scope (FR-003).
 
+**Changed during Build (SF-108):** the slot was built and dropped. Two findings in Next.js 16.4.6: (a) the slot's
+catch-all must be named `[...missing]` like the `(app)/[...missing]` page, else the build fails with "Ambiguous app
+routes"; (b) with it, the e2e test showed stale counts: the server did send the new slot (its response held the new
+count) but the client router kept the slot it had (its state tree still named the catch-all value of an earlier URL,
+e.g. `organisations/1` while on `/organisations/6`), on sequences such as `/organisations/1` → `/organisations` →
+`/organisations/6` → `/people`, more often without a pause between clicks. Built instead: the alternative above, as a
+client `UnreadLink.tsx` that keeps the layout's count as start value (new `key` on each layout render, so a full load,
+`router.refresh()` or `revalidatePath` always wins) and calls the read-only server action `currentUnread()`
+(`requireUser()` first) when the address (path or query) changes and on a click on a link to the page already open;
+an older reply arriving after a newer request is dropped. Cost: one small POST per navigation, after the page shows
+(the old count can show for that moment).
+
 ## 3. Back and forward
 
 - Decision: a client component `RefreshOnHistory` in the layout calls `router.refresh()` on `popstate`.
