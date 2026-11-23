@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:52c602ece832eb96b1d2d029e7078716edc3c3ff771b4d8917b27261575b2a3f",
+  "pageVersion": "sha256:724efc39f60c0f2e4ac1fcecff4f3e01973fcf6db4615161e84745950368b388",
   "claims": [
     {
       "id": "claim_073174519ebe44d7a116c47962b22649",
       "statement": "Deleting a person is admin only and re-checked inside the transaction.",
       "evidence": [
         {
-          "resource": "repo://src/server/records/people.ts#L305-L321",
-          "version": "repo-lines-v1:sha256:8ea02e5bae4f88c87f98cd38deaf1ca84e66daec85d67f41bddc3257bbc7dc62:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
+          "resource": "repo://src/server/records/people.ts#L355-L385",
+          "version": "repo-lines-v1:sha256:2339c62f8964002dd8735ff6a9e4a75f237d359b929146e45d9130e231a98c5c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
         }
       ]
     },
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/records/visibility.ts",
-          "version": "repo-file-v1:sha256:2ddab4608fcda895f2109843beef6eca8516f1ed8bd15e198b3abba12fa96c74"
+          "version": "repo-file-v1:sha256:eeb469146c7c41f8480b2ffaddea04ea2ed1738ab6b7d485c19a0ea5fb0461cb"
         }
       ]
     },
@@ -32,7 +32,7 @@
         },
         {
           "resource": "repo://src/server/records/flash.ts",
-          "version": "repo-file-v1:sha256:df269bf707e172c9de1713c440b0b2d1cefd792040959baadd0584667c97dffc"
+          "version": "repo-file-v1:sha256:9537e78f9787dbfe84dee8028b9169712a133e224c5df1dec66d7c1003098609"
         }
       ]
     },
@@ -52,7 +52,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/notifications.ts",
-          "version": "repo-file-v1:sha256:12adea890a53a27369dea96b10a48197f809345651c97fcd5319e520c5f98aca"
+          "version": "repo-file-v1:sha256:3dd4fc387b665f00c0b88e2147e9ad4319bbec621335ef02df90f606f5f264f5"
         },
         {
           "resource": "repo://src/server/records/notes.ts",
@@ -69,10 +69,24 @@
           "version": "repo-lines-v1:sha256:64d0aa2a99809646124532104d97f55a28f021b68266b4aaf1ca50a025537f82:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxYjczMWQzNjI4OGE0MDBiNjRjNTUwODYyZjY5NDFmYjc0YmU1YWQ4YmNkNzdhODAyZTk1MjkzNTYyOGJiM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2YjhmMTc1MmY0MzVjNDBkNzYxY2M2ZTU0N2UyNDNjODFjMTFhMDY1YWJmM2NkZmNmMDM2YzlkNDU5ODRiY2QifQ"
         }
       ]
+    },
+    {
+      "id": "claim_cc620f13698a4dbcbb7c2073b87ec7a6",
+      "statement": "Ambassadors and referred records are read through visiblePerson() and visibleDeal(), so private ones are never listed, counted or offered to others.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/records/ambassadors.ts",
+          "version": "repo-file-v1:sha256:6b081b97ecaa69722a961b93a13ea1e8341e8e52fc250400605496ca760f0ec0"
+        },
+        {
+          "resource": "repo://src/server/records/visibility.ts",
+          "version": "repo-file-v1:sha256:eeb469146c7c41f8480b2ffaddea04ea2ed1738ab6b7d485c19a0ea5fb0461cb"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T13:22:05.502Z"
+    "at": "2026-11-23T18:05:22.701Z"
   }
 }

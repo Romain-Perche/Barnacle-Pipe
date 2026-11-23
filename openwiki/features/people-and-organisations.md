@@ -20,14 +20,16 @@ sources:
     resource: repo://src/server/imports/imports.ts
   - id: openwiki-source-9ebb64fab176b6e210f7c3a3
     resource: repo://src/server/notifications.ts
+  - id: openwiki-source-ef4a42d348ae43b9d1f60b79
+    resource: repo://src/server/records/ambassadors.ts
   - id: openwiki-source-16c334cbe6c5a2c7ad77a065
     resource: repo://src/server/records/handover.ts
   - id: openwiki-source-615b00ed02d4d38087bb7a47
     resource: repo://src/server/records/notes.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T13:22:05.502Z
-generated: { by: "claude-code", at: "2026-11-23T13:22:05.502Z" }
+    at: 2026-11-23T18:05:22.701Z
+generated: { by: "claude-code", at: "2026-11-23T18:05:22.701Z" }
 ---
 
 # People and organisations
@@ -84,6 +86,16 @@ the user first (see [Sessions and access control](../auth/sessions-and-access-co
   user's mentions appear on the Notifications page (`src/server/notifications.ts`) only while the record is
   visible to them. `RecordTimeline.tsx` draws the timeline of every record page. See
   [Database schema](../data/database-schema.md) and [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
+
+## Ambassadors and referrals
+
+A person with `is_ambassador` is an ambassador. The **Ambassadors** page (`/ambassadors`) lists them and the
+ambassador page (`/ambassadors/[id]`) shows the people and deals they referred and their latest updates. Person
+and deal forms have a "Referred by" picker (`ReferrerPicker.tsx`), and record pages and the deal drawer show it
+(`ReferredBy.tsx`). Reads and counts are in `src/server/records/ambassadors.ts`, the pure rules in
+`referral-rules.ts`. Every read goes through `visiblePerson()` and `visibleDeal()`, so a private ambassador or
+referred record is never listed, counted or offered to someone who cannot see it. Referral changes are written as
+timeline events (`ambassador_added`, `referrer_set` and so on).
 
 ## CSV import
 
