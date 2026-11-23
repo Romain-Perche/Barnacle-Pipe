@@ -163,6 +163,57 @@ describe("deal page and list messages (SF-95)", () => {
   });
 });
 
+// covers FR-018, FR-021, contracts/routes.md § Messages (SF-103 CSV import)
+describe("CSV import messages (SF-103)", () => {
+  it("has the fixed texts", () => {
+    const expected: Record<string, string> = {
+      import_note: "A CSV file saved as UTF-8, with column headings on the first row, up to 5,000 rows.",
+      import_not_csv: "Save the file as CSV (UTF-8) and try again.",
+      import_not_utf8: "Save the file as CSV (UTF-8) and try again.",
+      import_no_rows: "The file has no rows to import.",
+      import_too_large: "The file is larger than 5 MB.",
+      import_too_many_rows: "The file has more than 5,000 rows. Split it into smaller files.",
+      import_upload_failed: "The file could not be uploaded. Try again.",
+      import_person_name_column: "Choose the column with each person's name.",
+      import_organisation_name_column: "Choose the column with each organisation's name.",
+      import_consent_required: "Choose Subscribed or Unsubscribed for the people with no consent in the file.",
+      import_failed: "The import failed. Nothing was imported. Try again.",
+      import_too_many_values: "This row has more values than the file has headings.",
+      import_skip: "Don't import",
+      import_full_name_ignored: "Full name is used only when no first or last name column is set.",
+    };
+    for (const [code, text] of Object.entries(expected)) expect(messageFor(code), code).toBe(text);
+  });
+  it("builds the templates, singular and plural, with file values only inside quotes", () => {
+    expect(templates.import_one_column("Lead source")).toBe("Only one column can be set to Lead source.");
+    expect(templates.import_too_long("role", 200)).toBe("Keep the role under 200 characters.");
+    expect(templates.import_consent_unknown("maybe")).toBe("Consent not recognised: 'maybe'. Use Subscribed or Unsubscribed.");
+    expect(templates.import_duplicate_in_file(4)).toBe("Row 4 has the same email address.");
+    expect(templates.import_duplicate_in_file_org(4)).toBe("Row 4 has the same name.");
+    expect(templates.import_lead_source_unknown("Webinar", [4, 9])).toBe("Lead source not on the list: 'Webinar' (rows 4, 9)");
+    expect(templates.import_lead_source_unknown("Your account is locked", [2])).toBe("Lead source not on the list: 'Your account is locked' (row 2)");
+    expect(templates.import_label_unknown("Cold", [7])).toBe("Label not on the list: 'Cold' (row 7)");
+    expect(templates.import_owner_unknown("Nobody", [3, 5])).toBe("Owner not found: 'Nobody' (rows 3, 5). You are the owner.");
+    expect(templates.import_size_unknown("medium", [5])).toBe("Size not recognised: 'medium' (row 5)");
+    expect(templates.import_organisation_archived("Fakeco Ltd", [3])).toBe("Fakeco Ltd is archived. (row 3)");
+    expect(templates.import_summary_people(17, 2, 3)).toBe("17 people imported. 2 organisations added. 3 rows not imported.");
+    expect(templates.import_summary_people(1, 1, 1)).toBe("1 person imported. 1 organisation added. 1 row not imported.");
+    expect(templates.import_summary_organisations(9, 1)).toBe("9 organisations imported. 1 row not imported.");
+    expect(templates.import_summary_organisations(1, 0)).toBe("1 organisation imported. 0 rows not imported.");
+    expect(templates.import_without_email(12)).toBe("12 people have no email address and cannot be checked for duplicates.");
+    expect(templates.import_without_email(1)).toBe("1 person has no email address and cannot be checked for duplicates.");
+    expect(templates.import_needs_consent(4)).toBe("4 people have no consent in the file.");
+    expect(templates.import_needs_consent(1)).toBe("1 person has no consent in the file.");
+    expect(templates.import_rows(20)).toBe("20 rows");
+    expect(templates.import_rows(1)).toBe("1 row");
+    expect(templates.imported_event("Ada Fake")).toBe("Imported from CSV by Ada Fake");
+  });
+  it("never answers a template code from messageFor", () => {
+    for (const code of Object.keys(templates).filter((c) => c.startsWith("import"))) expect(messageFor(code), code).toBeUndefined();
+    expect(messageFor("import_one_column")).toBeUndefined();
+  });
+});
+
 // covers SF-102 FR-016, contracts/routes.md § Messages (T006)
 describe("timeline and notes messages", () => {
   it("has the fixed texts", () => {

@@ -1,0 +1,21 @@
+First name	Last name	Email	Phone	Organisation	Job title	Lead source	Labels
+Ada	Importfake	ada.importfake@fakeco.example	+44 20 7946 0001	fakeco ltd	COO	referral	Hot
+Brian	Importfake	brian.importfake@fakeco.example	+44 20 7946 0002	Fakeco Ltd	Head of Ops	Exec dinner	Hot, Investor
+Cleo	Dupefake	dup.one@fakeco.example	+44 20 7946 0003	Imaginary Rowing Fake	CTO	Event	
+Dan	Importfake	dan.importfake@fakeco.example		Imaginary Rowing Fake	CEO	Event	
+Eve	Importfake	eve.importfake@fakeco.example	+44 20 7946 0005	Notreal Pilates Fake	Founder		Investor
+Finn	Importfake	finn.importfake@fakeco.example		imaginary rowing fake 	Coach	Inbound	
+Gina	Importfake	gina.importfake@fakeco.example	+44 20 7946 0007		Consultant	Referral	Hot
+Ivy	Badmailfake	ivy.importfake@		Notreal Pilates Fake	Manager		
+Jack	Importfake	jack.importfake@fakeco.example		Fakeco Ltd	Analyst		
+Kara	Importfake	kara.importfake@fakeco.example	+44 20 7946 0011	Notreal Pilates Fake	Instructor	Event	
+Liam	Importfake	liam.importfake@fakeco.example					
+Mia	Importfake	mia.importfake@fakeco.example	+44 20 7946 0013	Fakeco Ltd	Sales lead	Exec dinner	Investor
+Noah	Importfake	noah.importfake@fakeco.example			Designer		
+Olga	Dupefake	DUP.TWO@fakeco.example			Engineer		
+Pia	Importfake	pia.importfake@fakeco.example		Imaginary Rowing Fake	Rower		
+Quinn	Importfake	quinn.importfake@fakeco.example	+44 20 7946 0017			Inbound	
+Rosa	Importfake	rosa.importfake@fakeco.example		Notreal Pilates Fake	Teacher		
+Sam	Importfake	sam.importfake@fakeco.example				Referral	Hot
+Tara	Importfake	tara.importfake@fakeco.example	+44 20 7946 0020	Fakeco Ltd	Director		
+Uma	Importfake	uma.importfake@fakeco.example			Partner		Investor

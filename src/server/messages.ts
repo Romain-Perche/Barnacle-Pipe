@@ -76,6 +76,21 @@ export const messages = {
   deal_label_exists: "This name is already used.",
   no_deals_match: "No deals match these filters.",
   no_deals_yet: "No deals yet.",
+  // CSV import (SF-103)
+  import_note: "A CSV file saved as UTF-8, with column headings on the first row, up to 5,000 rows.",
+  import_not_csv: "Save the file as CSV (UTF-8) and try again.",
+  import_not_utf8: "Save the file as CSV (UTF-8) and try again.",
+  import_no_rows: "The file has no rows to import.",
+  import_too_large: "The file is larger than 5 MB.",
+  import_too_many_rows: "The file has more than 5,000 rows. Split it into smaller files.",
+  import_upload_failed: "The file could not be uploaded. Try again.",
+  import_person_name_column: "Choose the column with each person's name.",
+  import_organisation_name_column: "Choose the column with each organisation's name.",
+  import_consent_required: "Choose Subscribed or Unsubscribed for the people with no consent in the file.",
+  import_failed: "The import failed. Nothing was imported. Try again.",
+  import_too_many_values: "This row has more values than the file has headings.",
+  import_skip: "Don't import",
+  import_full_name_ignored: "Full name is used only when no first or last name column is set.",
   // Timeline and notes (SF-102)
   note_required: "Write something before adding the note.",
   note_too_long: "Keep the note under 10,000 characters.",
@@ -91,6 +106,9 @@ const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} priva
 const privateDeals = (n: number) => (n === 1 ? "1 private deal" : `${n} private deals`);
 // The non-zero kinds only, e.g. ["2 private people", "1 private deal"] (SF-97).
 const recordLabels = (people: number, deals: number) => [people > 0 ? privatePeople(people) : "", deals > 0 ? privateDeals(deals) : ""].filter(Boolean);
+// SF-103: "(row 7)" / "(rows 4, 9)"
+const rowsNote = (rows: number[]) => (rows.length === 1 ? `(row ${rows[0]})` : `(rows ${rows.join(", ")})`);
+const counted = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const recordsPhrase = (people: number, deals: number) => recordLabels(people, deals).join(" and ");
 
 // Messages built from a record's name, always read from the database. Kept apart from `messages` so a
@@ -125,6 +143,26 @@ export const templates = {
   note_not_found: (_name: string) => messages.note_not_found,
   // SF-95: "<n> deals · £<total>" above the deal list, for every matching deal.
   deal_list_count: (n: number, totalPence: number) => `${n} ${n === 1 ? "deal" : "deals"} · ${formatMoney(totalPence)}`,
+  // SF-103 CSV import: values from the file appear only inside quotes; field labels and names come from the app or the database.
+  import_one_column: (field: string) => `Only one column can be set to ${field}.`,
+  import_too_long: (field: string, max: number) => `Keep the ${field} under ${max} characters.`,
+  import_consent_unknown: (value: string) => `Consent not recognised: '${value}'. Use Subscribed or Unsubscribed.`,
+  import_duplicate_in_file: (row: number) => `Row ${row} has the same email address.`,
+  import_duplicate_in_file_org: (row: number) => `Row ${row} has the same name.`,
+  import_lead_source_unknown: (value: string, rows: number[]) => `Lead source not on the list: '${value}' ${rowsNote(rows)}`,
+  import_label_unknown: (value: string, rows: number[]) => `Label not on the list: '${value}' ${rowsNote(rows)}`,
+  import_owner_unknown: (value: string, rows: number[]) => `Owner not found: '${value}' ${rowsNote(rows)}. You are the owner.`,
+  import_size_unknown: (value: string, rows: number[]) => `Size not recognised: '${value}' ${rowsNote(rows)}`,
+  import_organisation_archived: (name: string, rows: number[]) => `${name} is archived. ${rowsNote(rows)}`,
+  import_summary_people: (n: number, orgs: number, skipped: number) =>
+    `${counted(n, "person", "people")} imported. ${counted(orgs, "organisation", "organisations")} added. ${counted(skipped, "row", "rows")} not imported.`,
+  import_summary_organisations: (n: number, skipped: number) =>
+    `${counted(n, "organisation", "organisations")} imported. ${counted(skipped, "row", "rows")} not imported.`,
+  import_without_email: (n: number) =>
+    `${counted(n, "person has", "people have")} no email address and cannot be checked for duplicates.`,
+  import_needs_consent: (n: number) => `${counted(n, "person has", "people have")} no consent in the file.`,
+  import_rows: (n: number) => counted(n, "row", "rows"),
+  imported_event: (name: string) => `Imported from CSV by ${name}`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

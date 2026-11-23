@@ -59,3 +59,6 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - The timeline uses design B: entries grouped by day with a NOTE, DEAL or CHANGE tag and the time, notes in a box with an orange left edge, the note box above the timeline (SF-102)
 - A teammate mentioned in a note is told in the app only: Notifications in the sidebar and a Notifications page, no email (SF-102)
 - Anyone who can see a note can edit or delete it (SF-102)
+- The CSV import uses design B: one screen per step (file, columns, preview, report) with a step bar and [ BACK ] (SF-103)
+- A CSV row whose email address a person in the CRM already has is not imported; the existing person is left as it is and the report lists the row (SF-103)
+- People imported from CSV with no consent in the file get the consent the importing user chooses, with nothing chosen in advance (SF-103)

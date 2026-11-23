@@ -1,4 +1,4 @@
-// covers FR-032, SC-010, edge case "another database role reads any app table"; SF-90 T016 (8 new tables); SF-93 T004 (4 new tables); SF-95 T004 (4 new tables); SF-102 T004 (note_mentions)
+// covers FR-032, SC-010, edge case "another database role reads any app table"; SF-90 T016 (8 new tables); SF-93 T004 (4 new tables); SF-95 T004 (4 new tables); SF-103 T004 (csv_imports); SF-102 T004 (note_mentions)
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { makeUser, resetDb } from "./db-helpers";
@@ -21,6 +21,7 @@ describe("Row Level Security", () => {
         "organisations", "persons", "person_emails", "person_phones", "lead_sources", "labels", "person_labels", "timeline_events",
         "pipelines", "stages", "deals", "deal_stage_periods",
         "deal_labels", "deal_label_links", "deal_people", "deal_followers",
+        "csv_imports",
         "note_mentions",
       ]),
     );
