@@ -1451,6 +1451,24 @@
       "sources": [
         "migrations/0007_notes_mentions.sql"
       ]
+    },
+    {
+      "from": "app-shell",
+      "to": "notifications",
+      "data": "unread count request after navigation",
+      "sources": [
+        "src/app/(app)/UnreadLink.tsx",
+        "src/app/(app)/notifications/actions.ts"
+      ]
+    },
+    {
+      "from": "notifications",
+      "to": "app-shell",
+      "data": "current unread count",
+      "sources": [
+        "src/app/(app)/notifications/actions.ts",
+        "src/app/(app)/layout.tsx"
+      ]
     }
   ]
 }

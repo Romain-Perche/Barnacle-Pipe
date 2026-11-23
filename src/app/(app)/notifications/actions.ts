@@ -22,3 +22,10 @@ export async function markAllNotificationsRead(): Promise<void> {
   revalidatePath("/", "layout");
   redirect("/notifications");
 }
+
+// SF-108: the sidebar count right now, asked by UnreadLink after every navigation (the shared layout is not rendered
+// again on client navigation). Read only: opening a page never marks anything read (FR-004).
+export async function currentUnread(): Promise<number> {
+  const user = await requireUser();
+  return notifications.unreadCount(user.id);
+}

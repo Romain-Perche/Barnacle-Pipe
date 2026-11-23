@@ -31,6 +31,7 @@ flowchart LR
     n9 -->|"new, renamed and removed lead sources and labels"| n5
     n9 -->|"pipeline and stage changes"| n3
     n9 -->|"new user email, role and status changes"| n8
+    n8 -->|"2 flows"| n5
     n8 -->|"sidebar and signed-in pages"| n11
     n5 -->|"6 flows"| n1
     n5 -->|"label changes seen on deals"| n4
@@ -50,6 +51,7 @@ flowchart LR
     n2 -->|"schema"| n5
     n2 -->|"6 flows"| n1
     n5 -->|"4 flows"| n11
+    n5 -->|"current unread count"| n8
     n5 -->|"crm_flash cookie"| n7
     n7 -->|"2 flows"| n8
     n7 -->|"3 flows"| n5
@@ -61,7 +63,6 @@ flowchart LR
     n8 -->|"users table and error messages"| n9
     n8 -->|"private deals handed to a new owner"| n4
     n8 -->|"6 flows"| n1
-    n8 -->|"hand-over notice"| n5
     n1 -->|"user list"| n8
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -364,6 +365,7 @@ flowchart LR
     n13[["Sign-in and sessions"]]
     n14[["Signed-in app and user admin"]]
     n1 -->|"new, renamed and removed lead sources and labels"| n3
+    n14 -->|"unread count request after navigation"| n6
     n3 -->|"lead source and label changes"| n10
     n3 -->|"label changes seen on deals"| n12
     n10 -->|"2 flows"| n8
@@ -373,6 +375,7 @@ flowchart LR
     n5 -->|"note deleted notice"| n9
     n5 -->|"timeline notes"| n2
     n5 -->|"note events"| n10
+    n6 -->|"current unread count"| n14
     n6 -->|"read marks"| n4
     n6 -->|"notifications list"| n2
     n7 -->|"2 flows"| n10
@@ -531,7 +534,9 @@ flowchart LR
     n7[["People and organisations"]]
     n8[["Sign-in and sessions"]]
     n1 -->|"new user email, role and status changes"| n4
+    n3 -->|"unread count request after navigation"| n7
     n3 -->|"sidebar and signed-in pages"| n2
+    n7 -->|"current unread count"| n3
     n8 -->|"signed-in user (name, role)"| n3
     n8 -->|"signed-in user and admin check"| n4
     n4 -->|"users table and error messages"| n1
@@ -604,6 +609,7 @@ flowchart LR
 | Barnacle admin | Lead sources and labels admin | new, renamed and removed lead sources and labels | `src/app/(app)/admin/lead-sources-and-labels/actions.ts` |
 | Barnacle admin | Pipelines admin | pipeline and stage changes | `src/app/(app)/admin/pipelines/actions.ts` |
 | Barnacle admin | Users admin page and actions | new user email, role and status changes | `src/app/(app)/admin/users` |
+| Signed-in layout and sidebar | Notifications page | unread count request after navigation | `src/app/(app)/UnreadLink.tsx`, `src/app/(app)/notifications/actions.ts` |
 | Signed-in layout and sidebar | Barnacle staff user | sidebar and signed-in pages | `src/app/(app)/layout.tsx` |
 | Browser cookies (crm_session, crm_oauth) | Google sign-in routes | OAuth state and PKCE verifier | `src/app/auth/google/callback/route.ts` |
 | Browser cookies (crm_session, crm_oauth) | Request proxy (cookie gate) | crm_flash cookie to clear | `src/proxy.ts` |
@@ -660,6 +666,7 @@ flowchart LR
 | Notes and @mentions | One-shot delete notice | note deleted notice | `src/server/records/flash.ts` |
 | Notes and @mentions | Barnacle staff user | timeline notes | `src/app/(app)/records/RecordTimeline.tsx` |
 | Notes and @mentions | timeline_events table | note events | `src/server/records/notes.ts` |
+| Notifications page | Signed-in layout and sidebar | current unread count | `src/app/(app)/layout.tsx`, `src/app/(app)/notifications/actions.ts` |
 | Notifications page | Postgres note mentions | read marks | `src/server/notifications.ts` |
 | Notifications page | Barnacle staff user | notifications list | `src/app/(app)/notifications/page.tsx` |
 | Organisation pages and actions | organisations table | organisation details | `src/server/records/organisations.ts` |
