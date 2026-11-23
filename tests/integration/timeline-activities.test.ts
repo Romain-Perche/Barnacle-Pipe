@@ -41,6 +41,18 @@ describe("done activities on timelines", () => {
     }
   });
 
+  // covers SF-109 FR-013 (T065, fix round 1): the untick box is hidden when another link of the activity is archived
+  it("flags a done activity whose deal, person or organisation is archived", async () => {
+    const id = await makeActivity({ by: ada.id, dealId: deal, personId: person, doneAt: new Date() });
+    const flag = async () => (await readTimeline(ada.id, { personId: person })).entries.find((e) => e.id === id && e.kind === "activity")?.activity?.archived;
+    expect(await flag()).toBe(false);
+    await sql`update deals set archived_at = now() where id = ${deal}`;
+    expect(await flag()).toBe(true);
+    await sql`update deals set archived_at = null where id = ${deal}`;
+    await sql`update persons set archived_at = now() where id = ${person}`;
+    expect(await flag()).toBe(true);
+  });
+
   it("leaves planned activities out and removes an unticked one", async () => {
     const id = await makeActivity({ by: ada.id, dealId: deal });
     expect(await activityIds({ dealId: deal })).toEqual([]);

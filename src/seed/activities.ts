@@ -1,7 +1,8 @@
 // Fake activities (SF-109 data-model.md § Fake data, FR-017). Clearly fake subjects, for the fake users, on records of
 // src/seed/people.ts and src/seed/deals.ts. Dates are relative to the UK day the seed runs on, so there is always an
 // overdue one, two due today and later ones; three done ones show on timelines (one raises "Last contacted"); one is
-// on a private deal and one on a private person; one assignment notification is unread (Ada → Grace), one read
+// on a private deal and one on a private person; each assignee can see every record its activity is linked to (FR-012);
+// one assignment notification is unread (Ada → Grace), one read
 // (Grace → Ada). Most open deals keep no planned activity ("⚠ No next activity" on their card).
 // Idempotent: an activity is found by its exact subject; nothing is added when it is there.
 import { ukInstant, ukToday, type ActivityType } from "@/server/activities/rules";
@@ -34,7 +35,7 @@ const SEEDS: Seed[] = [
   },
   { subject: "Fake task: write up the dinner notes", type: "task", days: 5, assignee: "Ada Fake" },
   { subject: "Fake meeting: quarterly review", type: "meeting", days: 1, time: "11:00", minutes: 30, assignee: "Grace Fake", by: "Ada Fake", organisation: "Fakeco Ltd" },
-  { subject: "Fake task: check in after the trial", type: "task", days: 8, assignee: "Grace Fake", person: ["Robin", "Leftfake"] },
+  { subject: "Fake task: check in after the trial", type: "task", days: 8, assignee: "Grace Fake", person: ["Bob", "Placeholder"] },
   {
     subject: "Fake call: discovery call", type: "call", days: -6, time: "14:00", assignee: "Ada Fake", deal: "Fakeco AI pilot", linksFromDeal: true,
     doneDaysAgo: 6, note: "Fake notes: they want a pilot.\nBudget to confirm.",

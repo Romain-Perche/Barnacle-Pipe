@@ -54,7 +54,7 @@ and the private person Pat Privatefake, and (SF-109) twelve fake activities (sub
 "Fake task:"), dated from the day the seed runs: Ada Fake's call overdue on "Fakeco website", her task and meeting due today,
 later ones, a task with no link, three done ones on timelines (one sets a person's Last contacted), one on the private deal
 "Fake secret project" and one on the private person Gus Lorem, a meeting Ada Fake assigned to Grace Fake (an unread
-notification) and a call Grace Fake assigned to Ada Fake (read); most open deals keep no planned activity. A fresh
+notification), her task next week on Bob Placeholder and a call Grace Fake assigned to Ada Fake (read); most open deals keep no planned activity. A fresh
 database (no fake data) starts with the six lead sources Duncan's LinkedIn, Referral, Exec dinner, Inbound,
 Event and Ambassador, and no labels.
 

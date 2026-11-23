@@ -105,7 +105,7 @@
     seed runs: Ada Fake's call overdue 4 days on "Fakeco website" (with its person and organisation), her task today 09:00
     on "Sample Gyms CRM", meeting today 15:00–16:00 on Fakeco Ltd, call in 2 days on "Mock Labs audit" (assigned by Grace
     Fake: a read notification), task in 5 days with no link; Grace Fake's meeting tomorrow on Fakeco Ltd (assigned by Ada
-    Fake: Grace has 1 unread notification) and task next week on Robin Leftfake; three done ones ("Fakeco AI pilot",
+    Fake: Grace has 1 unread notification) and task next week on Bob Placeholder; three done ones ("Fakeco AI pilot",
     "Fakeco support contract", Fakeco Ltd; the first two set their main person's Last contacted); a call on the private
     deal "Fake secret project" and a task on the private person Gus Lorem (both Ada's). Every other open deal shows
     "⚠ No next activity" on the board.

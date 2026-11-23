@@ -72,6 +72,7 @@ export type TimelineEntry = TimelineEvent & {
 export type TimelineActivity = {
   id: number; type: "call" | "meeting" | "task"; subject: string; note: string | null; doneByName: string; doneByActive: boolean;
   dueOn: string; dueTime: string | null; durationMinutes: number | null;
+  archived: boolean; // its deal, person or organisation is archived: it cannot be unticked (FR-013)
 };
 export type TimelinePage = { entries: TimelineEntry[]; more: boolean };
 
@@ -116,10 +117,13 @@ function activityWhere(db: Sql, viewerId: number, target: Target) {
 async function doneActivities(viewerId: number, target: Target, limit: number): Promise<TimelineEntry[]> {
   const rows = await sql<
     { id: number; type: TimelineActivity["type"]; subject: string; note: string | null; done_at: Date; done_by_name: string; done_by_active: boolean;
-      due_on: string; due_time: string | null; duration_minutes: number | null }[]
+      due_on: string; due_time: string | null; duration_minutes: number | null; archived: boolean }[]
   >`
     select a.id::int as id, a.type, a.subject, a.note, a.done_at, u.name as done_by_name, u.status = 'active' as done_by_active,
-           to_char(a.due_on, 'YYYY-MM-DD') as due_on, to_char(a.due_time, 'HH24:MI') as due_time, a.duration_minutes
+           to_char(a.due_on, 'YYYY-MM-DD') as due_on, to_char(a.due_time, 'HH24:MI') as due_time, a.duration_minutes,
+           (exists (select 1 from deals xd where xd.id = a.deal_id and xd.archived_at is not null)
+            or exists (select 1 from persons xp where xp.id = a.person_id and xp.archived_at is not null)
+            or exists (select 1 from organisations xo where xo.id = a.organisation_id and xo.archived_at is not null)) as archived
     from activities a join users u on u.id = a.done_by
     where a.done_at is not null and ${activityWhere(sql, viewerId, target)} and ${visibleActivity(sql, viewerId)}
     order by a.done_at desc, a.id desc
@@ -129,7 +133,7 @@ async function doneActivities(viewerId: number, target: Target, limit: number): 
     toStage: null, cause: null, reason: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, note: null,
     activity: {
       id: r.id, type: r.type, subject: r.subject, note: r.note, doneByName: r.done_by_name, doneByActive: r.done_by_active,
-      dueOn: r.due_on, dueTime: r.due_time, durationMinutes: r.duration_minutes,
+      dueOn: r.due_on, dueTime: r.due_time, durationMinutes: r.duration_minutes, archived: r.archived,
     },
   }));
 }

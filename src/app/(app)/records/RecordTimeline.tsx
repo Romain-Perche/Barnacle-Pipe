@@ -3,7 +3,7 @@
 // with a NOTE, DEAL or CHANGE tag and its time. A person's and an organisation's timeline also hold their deals'
 // entries (DEAL: the deal's title links to it; read-only there). `?note=` / `?delete-note=` only pick which of the
 // notes shown is in edit / confirm mode; nothing from the address is shown. SF-109: a done activity is an ACTIVITY
-// entry (type, subject, note as text, "Done by <name>") with its box to untick it, except on archived records and in the drawer.
+// entry (type, subject, note as text, "Done by <name>") with its box to untick it, except on archived records (its own or a linked one) and in the drawer.
 import Link from "next/link";
 import { formatTime } from "@/server/format";
 import { templates } from "@/server/messages";
@@ -86,7 +86,7 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
                     <span className={`kd ${tag.toLowerCase()}`}>{tag}</span>
                     <div className="ent-body actentry">
                       <div className="acthead">
-                        {canChange && <DoneBox id={a.id} done back={path} />}
+                        {canChange && !a.archived && <DoneBox id={a.id} done back={path} />}
                         <TypeTag type={a.type} />
                         <b className="subj">{a.subject}</b>
                       </div>

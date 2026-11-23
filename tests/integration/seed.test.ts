@@ -346,6 +346,7 @@ import { listActivities } from "@/server/activities/list";
 import { activityState, ukToday } from "@/server/activities/rules";
 import { getBoard } from "@/server/deals/deals";
 import { listNotifications } from "@/server/notifications";
+import { visibleDeal, visiblePerson } from "@/server/records/visibility";
 
 describe("fake activities (SF-109)", () => {
   beforeEach(resetDb);
@@ -377,6 +378,20 @@ describe("fake activities (SF-109)", () => {
     await runSeeders(sql);
     const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from activities`;
     expect(n).toBe(rows.length);
+  });
+
+  // covers SF-109 FR-012, FR-017 (T063, fix round 1): every fake assignee is active and sees each linked record
+  it("assigns each fake activity to an active user who can see its links", async () => {
+    await runSeeders(sql);
+    const hidden = await sql<{ subject: string }[]>`
+      select a.subject from activities a join users u on u.id = a.assignee_id
+      where u.status <> 'active'
+         or (a.person_id is not null and not exists (select 1 from persons p where p.id = a.person_id and ${visiblePerson(sql, sql`u.id`)}))
+         or (a.deal_id is not null and not exists (select 1 from deals d where d.id = a.deal_id and ${visibleDeal(sql, sql`u.id`)}))`;
+    expect(hidden.map((r) => r.subject)).toEqual([]);
+    const [grace] = await sql<{ id: number }[]>`select id::int as id from users where name = 'Grace Fake'`;
+    const list = await listActivities(grace.id, { when: "planned", assignee: null, type: null, page: 1 }, new Date());
+    expect(list.rows.map((r) => r.subject)).toContain("Fake task: check in after the trial");
   });
 
   it("gives Ada overdue and today rows, a board card with and one without a next activity, and Grace an unread assignment", async () => {
