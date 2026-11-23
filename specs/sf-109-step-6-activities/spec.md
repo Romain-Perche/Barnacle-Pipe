@@ -19,7 +19,7 @@
 - Q: What does the "This week" quick filter show? → A: Planned activities due Monday to Sunday of the current UK week, overdue ones from earlier in the week included; done ones only under "Done" (decided by the factory, to confirm)
 - Q: Can an activity be linked to an archived record, or to a won or lost deal, when it is scheduled or edited? → A: No archived record is offered or accepted ("Restore this record before changing its activities."); only open deals are offered, and a won or lost deal already linked stays (decided by the factory, to confirm)
 - Q: After ticking an activity on the Activities list, is "Schedule a follow-up?" offered? → A: No, only on record pages and the deal drawer, as US2 says; the list stays a quick ticking screen (decided by the factory, to confirm)
-- Q: What date does a done call or meeting with no time give "Last contacted"? → A: Its due date (the start of that UK day); ticking never lowers the value (decided by the factory, to confirm)
+- Q: What date does a done call or meeting with no time give "Last contacted"? → A: When a call or meeting is marked done, "Last contacted" becomes its due date, or the moment it was marked done if the due date is later, so it never shows a date in the future (alexis@barnacle.ai)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -56,7 +56,7 @@ When a call, meeting or task is done, the team member ticks it. It leaves the re
 1. **Given** a planned activity the user can see, **When** they tick its box (on a record page, the deal drawer or the Activities list), **Then** it is marked done with who did it and when, it leaves "// NEXT ACTIVITIES", and it shows on the timeline of each linked record tagged ACTIVITY, with its type, subject, note, "Done by <name>" and the time it was marked done.
 2. **Given** the user just marked an activity done on a record page or the deal drawer, **When** the page updates, **Then** a "Schedule a follow-up?" box opens over the page with the same linked records and assignee filled in and no date; `[ SAVE ]` schedules it as in US1, `[ NOT NOW ]` closes it.
 3. **Given** a done activity, **When** the user unticks it, **Then** it is planned again: it leaves the timeline and is back in "// NEXT ACTIVITIES" with its original due date.
-4. **Given** a done call or meeting linked to a person, **When** it is marked done, **Then** the person's "Last contacted" becomes the activity's due date if that is later than the current value (tasks never change it); unticking it does not move "Last contacted" back.
+4. **Given** a call or meeting linked to a person, **When** it is marked done, **Then** the person's "Last contacted" becomes the earlier of its due date and time (the start of that UK day when it has no time) and the moment it was marked done, if that is later than the current value: a call due 20 Nov 2026 ticked on 23 Nov shows 20 Nov; a call due 30 Nov ticked on 23 Nov shows 23 Nov, never a future date. Tasks never change it; unticking does not move "Last contacted" back.
 
 ---
 
@@ -141,6 +141,7 @@ When a team member schedules an activity and assigns it to a teammate, or reassi
 - An activity assigned to a user who is later deactivated stays assigned to "<name> (deactivated)", is still shown and can be reassigned by anyone who can see it; deactivated users are never offered as new assignees.
 - Due dates and times are UK time (Europe/London), including across the clocks changing: an activity due today at 00:30 UK time shows "Today" until 00:30 and "Overdue" after; one due 29 Mar 2026 at 01:30 (a time that does not exist that night) is refused with "Pick a time that exists in UK time."
 - A due date in the past is allowed (logging a call that already happened); the activity can be ticked done straight away.
+- A call or meeting due in the future and ticked done early gives "Last contacted" the moment it was ticked, not its due date.
 - A duration is only allowed with a time; it is from 5 minutes to 24 hours, in steps of 5 minutes ("Pick a time before setting a duration.", "Pick a duration between 5 minutes and 24 hours.").
 - Two users tick the same activity at the same moment: the timeline shows one ACTIVITY entry for it, "Done by <the first user's name>".
 - The note on an activity is plain text, line breaks kept, never shown as a link or markup.
@@ -158,7 +159,7 @@ When a team member schedules an activity and assigns it to a teammate, or reassi
 - **FR-003**: Each deal, person and organisation page, and the deal drawer, MUST show "// NEXT ACTIVITIES" above the timeline: the planned activities linked to the record, earliest due first, each with its done box, type, subject, due date and time, assignee and overdue/today mark.
 - **FR-004**: Users MUST be able to mark an activity done and undo it; done records who and when. A done activity MUST appear on the timeline of each linked record (tagged ACTIVITY, at the time it was marked done) with its type, subject, note and "Done by <name>"; a planned activity MUST NOT appear on the timeline.
 - **FR-005**: After marking an activity done from a record page or the deal drawer, the app MUST offer "Schedule a follow-up?" with the same links and assignee pre-filled.
-- **FR-006**: Marking a call or meeting done MUST set the "Last contacted" of its linked person to its due date when that is later than the current value.
+- **FR-006**: Marking a call or meeting done MUST set the "Last contacted" of its linked person to the earlier of its due date (and time) and the moment it was marked done, when that is later than the current value; "Last contacted" MUST never be a future date.
 - **FR-007**: Edits and deletes MUST be refused with the "changed since loaded" or "doesn't exist any more" message when the activity changed or was deleted since the page was loaded.
 
 **Activities list**

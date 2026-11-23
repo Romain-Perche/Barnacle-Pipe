@@ -182,7 +182,7 @@ notifications in `notifications.ts`.
    card",
    "Deal cards show "⚠ No next activity" when the viewer can see no planned activity on the deal, else its next date; this
    replaces the SF-93 choice",
-   "A done call or meeting sets the linked person's Last contacted to its due date when later; a task never does",
+   "A done call or meeting sets the linked person's Last contacted to its due date, or the moment it was marked done when the due date is later, never lowering it; a task never does",
    "A teammate assigned an activity by someone else is told in the app only, on the Notifications page, like a mention".
    The factory's own choices (spec Clarifications "to confirm") are not added until a person confirms them. No blueprint
    index in this run, so no "Departs from blueprint" line. Update `AGENTS.md` § Layout with `src/server/activities/`,

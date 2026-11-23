@@ -21,7 +21,7 @@ For a manual look: `APP_ENV=development npm run dev`, sign in with the fake Goog
 | 2 | Save with an empty subject / no date / 29 Mar 2026 01:30 / duration with no time | The matching message; nothing saved | US1 4, Edge |
 | 3 | Edit in two tabs, save both | Second gets "Someone else changed this activity…" | US1 5 |
 | 4 | Tick the call on the deal page | Leaves NEXT ACTIVITIES; timeline shows ACTIVITY "Done by Ada Fake"; "Schedule a follow-up?" opens pre-filled; `[ NOT NOW ]` closes | US2 1–2 |
-| 5 | Tick a call linked to a person whose Last contacted is older | Last contacted = the call's due date; untick leaves it | US2 4 |
+| 5 | Tick a call linked to a person whose Last contacted is older | Last contacted = the call's due date; untick leaves it; a call due next week ticked today gives today | US2 4 |
 | 6 | Activities (sidebar) | Ada's planned ones, overdue first in red; tabs, Assignee "Everyone", Type "Meeting" change rows and count; the address keeps the filters | US3 |
 | 7 | Board | A deal with no planned activity ends "⚠ No next activity"; one with a task shows "Next: <d Mon> · Task"; ticking it in the drawer brings the warning back | US4 |
 | 8 | As Ada, private deal + call; as Bob (admin) open Activities "Everyone", the deal's organisation, the board, `/notifications` | The call appears nowhere and changes no count; a direct tick of its id answers "This activity doesn't exist or you can't see it." | US5 |

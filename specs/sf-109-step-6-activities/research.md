@@ -111,8 +111,9 @@ factory, to confirm").
 ## §8 "Last contacted"
 
 - **Decision**: in the tick transaction, for a `call` or `meeting` with a `person_id`:
-  `update persons set last_contacted_at = greatest(coalesce(last_contacted_at, '-infinity'), $due) where id = $person`,
-  `$due` = `ukInstant(due_on, due_time ?? 00:00)`. No `version` bump and no timeline event (not a user edit; a person
+  `update persons set last_contacted_at = greatest(coalesce(last_contacted_at, '-infinity'), least($due, $done_at)) where id = $person`,
+  `$due` = `ukInstant(due_on, due_time ?? 00:00)`, `$done_at` = the `done_at` the tick just wrote (so a call ticked
+  before its due date never shows a future "Last contacted"; clarified 2026-11-23). No `version` bump and no timeline event (not a user edit; a person
   edit open at the same time must not conflict). Unticking never moves it back (US2 scenario 4).
 
 ## §9 Deleting records

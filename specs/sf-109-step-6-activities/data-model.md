@@ -121,8 +121,8 @@ durationMinutes } | null`; `createdAt` = `done_at`. Tag ACTIVITY (`timeline-view
 
 ## Person "Last contacted"
 
-`persons.last_contacted_at` = max(current, UK instant of the due date and time, 00:00 when no time) when a call or
-meeting linked to the person is ticked; never lowered.
+`persons.last_contacted_at` = max(current, least(UK instant of the due date and time (00:00 when no time), `done_at`))
+when a call or meeting linked to the person is ticked; never lowered, never in the future (clarified 2026-11-23).
 
 ## Fake data (`src/seed/activities.ts`, FR-017)
 
