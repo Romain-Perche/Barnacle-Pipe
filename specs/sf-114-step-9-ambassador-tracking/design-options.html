@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626;
+    --wash: rgba(43,0,255,.05); --panel: #FFFFFF; --page: #EDE7DF; --note: rgba(255,66,0,.06);
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --panel: #232323; --page: #0E0E0E; --note: rgba(255,66,0,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(620px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+
+  .app { display: grid; grid-template-columns: 140px 1fr; height: 640px; border: .5px solid var(--line); overflow: hidden; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 9px; margin-bottom: 22px; }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .nav .cnt { background: var(--orange); color: #fff; padding: 0 4px; margin-left: 4px; }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 16px; overflow: hidden; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 10px; margin-bottom: 8px; gap: 8px; }
+  .ph h2 { margin: 3px 0 0; font-size: 20px; font-weight: 700; }
+  .ph .sub { font-size: 11px; color: var(--muted); }
+  .kind { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 5px 8px; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.link { border: 0; padding: 2px 0; color: var(--muted); }
+  .btn.red { color: var(--danger); }
+  .acts { display: flex; gap: 4px; }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 10px 0 6px; border-top: .5px solid var(--line); padding-top: 8px; }
+  .dl { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+  .k { font-family: var(--mono); font-size: 8px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .v { font-size: 11px; margin-bottom: 6px; border-bottom: .5px solid var(--line-list); padding-bottom: 4px; }
+  .lk { color: var(--blue); }
+  .mention { color: var(--blue); background: var(--wash); font-weight: 600; padding: 0 2px; }
+  .when { font-family: var(--mono); font-size: 8px; color: var(--muted); white-space: nowrap; }
+  .ta { border: .5px solid var(--line); background: var(--panel); padding: 7px 8px; font-size: 11px; min-height: 46px; position: relative; }
+  .ta .caret { border-left: 1px solid var(--ink); margin-left: 1px; }
+  .pick { position: absolute; left: 120px; top: 30px; width: 150px; background: var(--panel); border: .5px solid var(--line); border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,.18); padding: 3px 0; font-size: 10px; z-index: 2; }
+  .pick div { padding: 4px 8px; }
+  .pick .on { background: var(--wash); }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; }
+  .on-deal { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .on-deal a, .on-deal span.d { color: var(--blue); }
+  .ntext { font-size: 11px; line-height: 1.45; margin: 3px 0; white-space: pre-wrap; }
+  .edited { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+
+  
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { font-family: var(--mono); font-size: 8px; letter-spacing: .2em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 4px; border-bottom: .5px solid var(--line-soft); white-space: nowrap; }
+  td { padding: 4px; border-bottom: .5px solid var(--line-list); vertical-align: top; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .strip { display: flex; border: .5px solid var(--line-soft); background: var(--panel); margin: 6px 0 4px; }
+  .strip > div { flex: 1 1 0; padding: 5px 7px; border-right: .5px solid var(--line-soft); }
+  .strip > div:last-child { border-right: 0; }
+  .strip .k { font-size: 7px; }
+  .strip .n { font-size: 13px; font-weight: 600; }
+  .won { color: #16A34A; } .lost { color: var(--danger); }
+  .badge { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; border: .5px solid var(--blue); color: var(--blue); padding: 1px 4px; margin-left: 6px; vertical-align: middle; }
+  .badge.amb { background: var(--orange); border-color: var(--orange); color: #fff; }
+  .new { outline: 2px dashed var(--orange); outline-offset: 2px; }
+  .day { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 7px 0 2px; }
+  .ent { display: grid; grid-template-columns: 46px 1fr auto; gap: 7px; padding: 4px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; align-items: start; }
+  .kd { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; border: .5px solid var(--line); padding: 1px 3px; text-align: center; }
+  .kd.note { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .kd.deal { color: var(--blue); border-color: var(--blue); }
+  .notebody { border-left: 3px solid var(--orange); background: var(--note); padding: 3px 6px; border-radius: 0 6px 6px 0; }
+  .more { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; color: var(--muted); margin-top: 4px; }
+  .C .cols { display: grid; grid-template-columns: 1fr 210px; gap: 12px; }
+  .C .feed { border-left: .5px solid var(--line); padding-left: 10px; }
+  .C .item { padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; }
+  .C .item .top { display: flex; justify-content: space-between; gap: 6px; }
+  .legend { font-size: 13px; color: var(--muted); margin: 4px 32px 0; }
+  .legend span { outline: 2px dashed var(--orange); outline-offset: 2px; padding: 0 4px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-114 · AMBASSADOR TRACKING · DESIGN OPTIONS</div>
+  <h1>The page of an ambassador: what they brought in and their latest updates</h1>
+  <p>All three show the ambassador "Cara Example", who referred 3 people and 4 deals (2 open, 1 won, 1 lost), with "Ambassadors" in the sidebar.</p>
+</header>
+<p class="legend"><span>Dashed orange</span> = new in this issue.</p>
+<div class="grid">
+<figure>
+  <div class="tag"><b>A</b>On the person page, no separate page</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span><span class="new">Ambassadors</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="kind">PERSON</div>
+      <div class="ph"><div><h2>Cara Example<span class="badge amb new">Ambassador</span></h2><div class="sub">Partnerships lead at <span class="lk">Sample Partners Fake</span></div></div>
+        <div class="acts"><span class="btn">[ EDIT ]</span><span class="btn">[ ARCHIVE ]</span></div></div>
+      <div class="sect"><span class="c">//</span> DETAILS</div>
+      <div class="dl">
+        <div><div class="k">Email addresses</div><div class="v">cara@sample.fake</div></div>
+        <div><div class="k">Owner</div><div class="v">Ada Fake</div></div>
+        <div><div class="k">Lead source</div><div class="v">Referral</div></div>
+        <div class="new"><div class="k">Referred by</div><div class="v">—</div></div>
+      </div>
+      <div class="new">
+      <div class="sect"><span class="c">//</span> BROUGHT IN</div>
+      <div class="strip">
+        <div><div class="k">People referred</div><div class="n">3</div></div>
+        <div><div class="k">Deals referred</div><div class="n">4</div></div>
+        <div><div class="k">Open</div><div class="n">£6,500</div></div>
+        <div><div class="k">Won</div><div class="n won">£4,000</div></div>
+        <div><div class="k">Lost</div><div class="n lost">1</div></div>
+      </div>
+      <div class="k" style="margin-top:6px">People referred</div>
+      <table>
+        <tr><th>Name</th><th>Organisation</th><th>Owner</th><th>Added</th></tr>
+        <tr><td class="lk">Bob Sample</td><td>Example Ltd Fake</td><td>Ada Fake</td><td>18 Nov 2026</td></tr>
+        <tr><td class="lk">Dee Example</td><td>Fake Gyms Ltd</td><td>Bob Fake</td><td>04 Nov 2026</td></tr>
+        <tr><td class="lk">Eli Fakeson</td><td>—</td><td>Ada Fake</td><td>21 Oct 2026</td></tr>
+      </table>
+      <div class="k" style="margin-top:6px">Deals referred</div>
+      <table>
+        <tr><th>Deal</th><th>Pipeline · stage</th><th class="num">Value</th><th>Status</th></tr>
+        <tr><td class="lk">Example Ltd Fake · website</td><td>Sales · Proposal</td><td class="num">£4,500</td><td>Open</td></tr>
+        <tr><td class="lk">Fake Gyms Ltd · audit</td><td>Fractional CTO · Qualified</td><td class="num">£2,000</td><td>Open</td></tr>
+        <tr><td class="lk">Sample Co Fake · pilot</td><td>Sales · Won</td><td class="num">£4,000</td><td class="won">Won</td></tr>
+        <tr><td class="lk">Fake Bakery Ltd · app</td><td>Sales · Proposal</td><td class="num">£1,500</td><td class="lost">Lost</td></tr>
+      </table>
+      </div>
+      <div class="sect"><span class="c">//</span> TIMELINE <span style="letter-spacing:.1em" class="new">· WITH WHAT CARA REFERRED</span></div>
+      <div class="day">// TODAY · 23 NOV 2026</div>
+      <div class="ent"><span class="kd note">Note</span><div><b>Ada Fake</b><div class="notebody">Cara says Fake Gyms Ltd will decide after Christmas.</div></div><span class="when">09:40</span></div>
+      <div class="day">// 21 NOV 2026</div>
+      <div class="ent"><span class="kd deal">Deal</span><div><span class="on-deal"><span class="d">Example Ltd Fake · website</span></span><br>Moved from Qualified to Proposal by Bob Fake</div><span class="when">16:02</span></div>
+      <div class="ent"><span class="kd">Person</span><div><span class="on-deal"><span class="d">Bob Sample</span></span><br>Referred by set to Cara Example by Ada Fake</div><span class="when">11:15</span></div>
+    </div>
+  </div>
+  <figcaption>Good for: one place for everything about the ambassador; nothing new to learn, the timeline is the "latest updates".</figcaption>
+</figure>
+<figure>
+  <div class="tag"><b>B</b>Own page, one column</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span class="on new">Ambassadors</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="kind">AMBASSADOR</div>
+      <div class="ph"><div><h2>Cara Example</h2><div class="sub">Partnerships lead at <span class="lk">Sample Partners Fake</span></div></div>
+        <div class="acts"><span class="btn">[ PERSON PAGE ]</span></div></div>
+      <div class="strip">
+        <div><div class="k">People referred</div><div class="n">3</div></div>
+        <div><div class="k">Deals referred</div><div class="n">4</div></div>
+        <div><div class="k">Open</div><div class="n">£6,500</div></div>
+        <div><div class="k">Won</div><div class="n won">£4,000</div></div>
+        <div><div class="k">Lost</div><div class="n lost">1</div></div>
+      </div>
+      <div class="sect"><span class="c">//</span> PEOPLE REFERRED</div>
+      <table>
+        <tr><th>Name</th><th>Organisation</th><th>Owner</th><th>Added</th></tr>
+        <tr><td class="lk">Bob Sample</td><td>Example Ltd Fake</td><td>Ada Fake</td><td>18 Nov 2026</td></tr>
+        <tr><td class="lk">Dee Example</td><td>Fake Gyms Ltd</td><td>Bob Fake</td><td>04 Nov 2026</td></tr>
+        <tr><td class="lk">Eli Fakeson</td><td>—</td><td>Ada Fake</td><td>21 Oct 2026</td></tr>
+      </table>
+      <div class="sect"><span class="c">//</span> DEALS REFERRED</div>
+      <table>
+        <tr><th>Deal</th><th>Pipeline · stage</th><th class="num">Value</th><th>Status</th></tr>
+        <tr><td class="lk">Example Ltd Fake · website</td><td>Sales · Proposal</td><td class="num">£4,500</td><td>Open</td></tr>
+        <tr><td class="lk">Fake Gyms Ltd · audit</td><td>Fractional CTO · Qualified</td><td class="num">£2,000</td><td>Open</td></tr>
+        <tr><td class="lk">Sample Co Fake · pilot</td><td>Sales · Won</td><td class="num">£4,000</td><td class="won">Won</td></tr>
+        <tr><td class="lk">Fake Bakery Ltd · app</td><td>Sales · Proposal</td><td class="num">£1,500</td><td class="lost">Lost</td></tr>
+      </table>
+      <div class="sect"><span class="c">//</span> LATEST UPDATES</div>
+      <div class="day">// TODAY · 23 NOV 2026</div>
+      <div class="ent"><span class="kd note">Note</span><div><b>Ada Fake</b><div class="notebody">Cara says Fake Gyms Ltd will decide after Christmas.</div></div><span class="when">09:40</span></div>
+      <div class="day">// 21 NOV 2026</div>
+      <div class="ent"><span class="kd deal">Deal</span><div><span class="on-deal"><span class="d">Example Ltd Fake · website</span></span><br>Moved from Qualified to Proposal by Bob Fake</div><span class="when">16:02</span></div>
+      <div class="ent"><span class="kd">Person</span><div><span class="on-deal"><span class="d">Bob Sample</span></span><br>Referred by set to Cara Example by Ada Fake</div><span class="when">11:15</span></div>
+    </div>
+  </div>
+  <figcaption>Good for: a report-like page, like the deal page's summary strip; each list has its own heading, updates at the bottom.</figcaption>
+</figure>
+<figure>
+  <div class="tag"><b>C</b>Own page, updates beside the lists</div>
+  <div class="app C">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span class="on new">Ambassadors</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="kind">AMBASSADOR</div>
+      <div class="ph"><div><h2>Cara Example</h2><div class="sub">Partnerships lead at <span class="lk">Sample Partners Fake</span></div></div>
+        <div class="acts"><span class="btn">[ PERSON PAGE ]</span></div></div>
+      <div class="strip">
+        <div><div class="k">People referred</div><div class="n">3</div></div>
+        <div><div class="k">Deals referred</div><div class="n">4</div></div>
+        <div><div class="k">Open</div><div class="n">£6,500</div></div>
+        <div><div class="k">Won</div><div class="n won">£4,000</div></div>
+        <div><div class="k">Lost</div><div class="n lost">1</div></div>
+      </div>
+      <div class="cols">
+        <div>
+          <div class="sect"><span class="c">//</span> PEOPLE REFERRED</div>
+          <table>
+        <tr><th>Name</th><th>Organisation</th><th>Owner</th><th>Added</th></tr>
+        <tr><td class="lk">Bob Sample</td><td>Example Ltd Fake</td><td>Ada Fake</td><td>18 Nov 2026</td></tr>
+        <tr><td class="lk">Dee Example</td><td>Fake Gyms Ltd</td><td>Bob Fake</td><td>04 Nov 2026</td></tr>
+        <tr><td class="lk">Eli Fakeson</td><td>—</td><td>Ada Fake</td><td>21 Oct 2026</td></tr>
+      </table>
+          <div class="sect"><span class="c">//</span> DEALS REFERRED</div>
+          <table>
+        <tr><th>Deal</th><th>Pipeline · stage</th><th class="num">Value</th><th>Status</th></tr>
+        <tr><td class="lk">Example Ltd Fake · website</td><td>Sales · Proposal</td><td class="num">£4,500</td><td>Open</td></tr>
+        <tr><td class="lk">Fake Gyms Ltd · audit</td><td>Fractional CTO · Qualified</td><td class="num">£2,000</td><td>Open</td></tr>
+        <tr><td class="lk">Sample Co Fake · pilot</td><td>Sales · Won</td><td class="num">£4,000</td><td class="won">Won</td></tr>
+        <tr><td class="lk">Fake Bakery Ltd · app</td><td>Sales · Proposal</td><td class="num">£1,500</td><td class="lost">Lost</td></tr>
+      </table>
+        </div>
+        <div class="feed">
+          <div class="sect"><span class="c">//</span> LATEST UPDATES</div>
+          <div class="item note"><div class="top"><b>Ada Fake · note</b><span class="when">23 Nov, 09:40</span></div><div class="notebody">Cara says Fake Gyms Ltd will decide after Christmas.</div></div>
+          <div class="item"><div class="top"><span class="on-deal"><span class="d">Example Ltd Fake · website</span></span><span class="when">21 Nov, 16:02</span></div>Moved from Qualified to Proposal by Bob Fake</div>
+          <div class="item"><div class="top"><span class="on-deal"><span class="d">Bob Sample</span></span><span class="when">21 Nov, 11:15</span></div>Referred by set to Cara Example by Ada Fake</div>
+          <div class="more">[ SHOW MORE ]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Good for: seeing what they brought in and what is happening now at the same time, without scrolling.</figcaption>
+</figure>
+</div>
+</body>
+</html>
