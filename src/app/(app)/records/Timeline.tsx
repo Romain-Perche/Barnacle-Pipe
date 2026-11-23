@@ -12,6 +12,8 @@ export function Line({ e, onDeal }: { e: TimelineEvent; onDeal: boolean }) {
   switch (e.kind) {
     case "added":
       return <>Added{by(e.actorName)}</>;
+    case "imported":
+      return <>{templates.imported_event(e.actorName ?? "")}</>;
     case "edited":
       return (
         <>

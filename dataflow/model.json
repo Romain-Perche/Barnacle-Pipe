@@ -266,14 +266,14 @@
       ]
     },
     {
-      "id": "activities",
-      "label": "Activities (calls, meetings, tasks)",
+      "id": "csv-import",
+      "label": "CSV import",
       "zone": "app",
       "group": "records",
       "sources": [
-        "src/server/activities/activities.ts",
-        "src/app/(app)/activities/actions.ts",
-        "src/app/(app)/activities/page.tsx"
+        "src/server/imports/imports.ts",
+        "src/app/(app)/records/import/actions.ts",
+        "src/app/(app)/records/import/FileStep.tsx"
       ]
     }
   ],
@@ -449,14 +449,14 @@
       ]
     },
     {
-      "id": "activities-table",
-      "label": "Postgres activities",
+      "id": "csv-imports-table",
+      "label": "Postgres csv_imports",
+      "zone": "postgres",
       "group": "records",
       "sources": [
-        "migrations/0008_activities.sql",
-        "src/server/activities/activities.ts"
-      ],
-      "zone": "app"
+        "migrations/0006_csv_imports.sql",
+        "src/server/imports/imports.ts"
+      ]
     }
   ],
   "flows": [
@@ -1474,84 +1474,95 @@
       ]
     },
     {
-      "from": "session-guard",
-      "to": "activities",
-      "data": "signed-in user check",
+      "from": "app-shell",
+      "to": "notifications",
+      "data": "unread count request after navigation",
       "sources": [
-        "src/app/(app)/activities/actions.ts"
+        "src/app/(app)/UnreadLink.tsx",
+        "src/app/(app)/notifications/actions.ts"
+      ]
+    },
+    {
+      "from": "notifications",
+      "to": "app-shell",
+      "data": "current unread count",
+      "sources": [
+        "src/app/(app)/notifications/actions.ts",
+        "src/app/(app)/layout.tsx"
       ]
     },
     {
       "from": "staff",
-      "to": "activities",
-      "data": "activity form, tick, untick, delete",
+      "to": "csv-import",
+      "data": "CSV file in parts, column mapping, run request",
       "sources": [
-        "src/app/(app)/activities/actions.ts"
+        "src/app/(app)/records/import/actions.ts",
+        "src/app/(app)/records/import/FileStep.tsx"
       ]
     },
     {
-      "from": "activities",
+      "from": "csv-import",
       "to": "staff",
-      "data": "Activities list, next activities, follow-up box",
+      "data": "preview, report and example CSV files",
       "sources": [
-        "src/app/(app)/activities/page.tsx"
+        "src/app/(app)/records/import/ImportPages.tsx",
+        "src/app/(app)/records/import/example.ts"
       ]
     },
     {
-      "from": "activities",
-      "to": "activities-table",
-      "data": "scheduled, edited, done and deleted activities",
+      "from": "csv-import",
+      "to": "csv-imports-table",
+      "data": "uploaded file, mapping, report",
       "sources": [
-        "src/server/activities/activities.ts"
+        "src/server/imports/imports.ts"
       ]
     },
     {
-      "from": "activities-table",
-      "to": "activities",
-      "data": "visible activities (private links hidden)",
+      "from": "csv-imports-table",
+      "to": "csv-import",
+      "data": "stored file and mapping",
       "sources": [
-        "src/server/activities/activities.ts",
-        "src/server/activities/list.ts"
+        "src/server/imports/imports.ts"
       ]
     },
     {
-      "from": "activities",
+      "from": "csv-import",
       "to": "persons-table",
-      "data": "Last contacted raised by a done call or meeting",
+      "data": "imported people, emails, phones",
       "sources": [
-        "src/server/activities/activities.ts"
+        "src/server/imports/imports.ts"
       ]
     },
     {
-      "from": "activities-table",
-      "to": "notifications",
-      "data": "activities assigned by someone else",
+      "from": "csv-import",
+      "to": "organisations-table",
+      "data": "imported organisations",
       "sources": [
-        "src/server/notifications.ts"
+        "src/server/imports/imports.ts"
       ]
     },
     {
-      "from": "activities-table",
-      "to": "people-pages",
-      "data": "done activities read into the timeline",
+      "from": "csv-import",
+      "to": "timeline-table",
+      "data": "created-by-import timeline events",
       "sources": [
-        "src/server/records/timeline.ts"
+        "src/server/imports/imports.ts"
       ]
     },
     {
-      "from": "migrate",
-      "to": "activities-table",
-      "data": "table definition",
+      "from": "choices-table",
+      "to": "csv-import",
+      "data": "lead sources and labels to match",
       "sources": [
-        "migrations/0008_activities.sql"
+        "src/server/imports/imports.ts"
       ]
     },
     {
-      "from": "seed",
-      "to": "activities-table",
-      "data": "fake activities",
+      "from": "users-table",
+      "to": "csv-import",
+      "data": "active users matched as owners",
       "sources": [
-        "src/seed/activities.ts"
+        "src/server/imports/imports.ts"
       ]
     }
   ]

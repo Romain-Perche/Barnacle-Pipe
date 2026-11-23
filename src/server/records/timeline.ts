@@ -11,6 +11,8 @@ export type EventKind =
   | "won" | "lost" | "reopened"
   // SF-102: a note written on the record
   | "note"
+  // SF-103: added by a CSV import (in place of "added")
+  | "imported"
   // SF-109: a done activity, read from `activities` (never a timeline_events row)
   | "activity";
 // Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)").

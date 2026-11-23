@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6f1f1be2326ee1c41949ce9b75a2bedc4e4682d9cec9b80e8410c1c975ff5c1d",
+  "pageVersion": "sha256:42a33e0347c58390c02aaec24fe6f2085e70c0faa2d87388f4a436ffb69ccac1",
   "claims": [
     {
       "id": "claim_a6e28665edd74e5a8d730754a3b01eab",
@@ -27,8 +27,8 @@
       "statement": "Seeders are registered in an ordered list in src/seed/index.ts and run in order by runSeeders.",
       "evidence": [
         {
-          "resource": "repo://src/seed/index.ts#L1-L24",
-          "version": "repo-lines-v1:sha256:e9ad85a229437133f264dbfa26f5e31b0286f064a3d093ab636510463bda9a87:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MGNhMzAwNTcyODE5MzZiMTQ5NmJkNjliMTM4MzAwYWRlMDM5M2ZkZWIxYzcwOTcwMGU1NjM3MTJiOTIyZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src/seed/index.ts#L1-L21",
+          "version": "repo-lines-v1:sha256:ab7da1f007b37e6a5fef919af968168dad89a22e34531d4450a9c68bf7b746d2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MGNhMzAwNTcyODE5MzZiMTQ5NmJkNjliMTM4MzAwYWRlMDM5M2ZkZWIxYzcwOTcwMGU1NjM3MTJiOTIyZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -53,18 +53,22 @@
       ]
     },
     {
-      "id": "claim_4c1eb8d2c7c048e28354c9e869a6d525",
-      "statement": "src/seed/deals.ts seeds fake pipelines and deals re-runnably; src/seed/notes.ts is registered after it and src/seed/activities.ts last.",
+      "id": "claim_e9f5a6c86f2f403a9f3c75f1cdeb498f",
+      "statement": "src/seed/deals.ts seeds fake pipelines and deals re-runnably; src/seed/notes.ts is registered after it, last.",
       "evidence": [
         {
           "resource": "repo://src/seed/index.ts",
-          "version": "repo-file-v1:sha256:e9ad85a229437133f264dbfa26f5e31b0286f064a3d093ab636510463bda9a87"
+          "version": "repo-file-v1:sha256:ab7da1f007b37e6a5fef919af968168dad89a22e34531d4450a9c68bf7b746d2"
+        },
+        {
+          "resource": "repo://src/seed/notes.ts",
+          "version": "repo-file-v1:sha256:c35bd3af19bc38ab0a00ae985053d6eddbaf9ffb3932399c90ccd55a41deaa49"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T16:23:05.629Z"
+    "at": "2026-11-20T16:18:56.075Z"
   }
 }

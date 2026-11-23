@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SF-103 · CSV import · design options</title>
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626; --ok: #16A34A;
+    --wash: rgba(43,0,255,.05); --warnwash: rgba(255,66,0,.07); --panel: #FFFFFF; --page: #EDE7DF;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --warnwash: rgba(255,66,0,.12); --panel: #232323; --page: #0E0E0E;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(660px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+
+  .app { display: grid; grid-template-columns: 130px 1fr; height: 640px; border: .5px solid var(--line); overflow: hidden; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 8px; margin-bottom: 22px; display: flex; gap: 6px; align-items: center; }
+  .wm i { display: inline-block; width: 10px; height: 10px; background: #FF4201; transform: rotate(45deg); }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .grp b { color: var(--orange); }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 16px; overflow: hidden; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 10px; margin-bottom: 12px; gap: 8px; }
+  .ph .lb { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+  .ph h2 { margin: 3px 0 0; font-size: 20px; font-weight: 700; }
+  .back { font-family: var(--mono); font-size: 9px; color: var(--blue); letter-spacing: .05em; }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 5px 8px; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.off { opacity: .35; }
+  .sel { border: .5px solid var(--line); background: var(--panel); padding: 3px 5px; font-family: var(--mono); font-size: 9px; color: var(--ink); white-space: nowrap; display: inline-block; min-width: 120px; }
+  .sel.none { color: var(--muted); }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 12px 0 6px; border-top: .5px solid var(--line); padding-top: 8px; display: flex; justify-content: space-between; }
+  .sect .c { color: var(--orange); }
+  .sect.done { color: var(--muted); }
+  .ok { color: var(--ok); }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { font-family: var(--mono); font-size: 7.5px; letter-spacing: .2em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 4px; border-bottom: .5px solid var(--line-soft); }
+  td { padding: 4px; border-bottom: .5px solid var(--line-list); vertical-align: middle; }
+  td .m { color: var(--muted); display: block; font-size: 9px; }
+  .file { border: .5px dashed var(--line); padding: 8px; font-family: var(--mono); font-size: 9px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .hint { color: var(--muted); font-size: 10px; margin: 4px 0; }
+  .notice { border-left: 3px solid var(--blue); background: var(--wash); border-radius: 0 6px 6px 0; padding: 6px 9px; font-size: 10px; margin: 6px 0; }
+  .err { border-left: 3px solid var(--orange); background: var(--warnwash); border-radius: 0 6px 6px 0; padding: 6px 9px; font-size: 10px; margin: 6px 0; }
+  .radio { font-size: 10px; display: flex; gap: 12px; align-items: center; margin: 4px 0; }
+  .radio i { display: inline-block; width: 9px; height: 9px; border: .5px solid var(--line); border-radius: 50%; margin-right: 4px; vertical-align: -1px; background: var(--panel); }
+  .count { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .1em; }
+  .acts { display: flex; gap: 6px; margin-top: 10px; }
+  .steps { display: flex; gap: 0; margin-bottom: 12px; font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .15em; }
+  .steps span { flex: 1; border: .5px solid var(--line); padding: 6px 7px; color: var(--muted); margin-right: -0.5px; }
+  .steps span.done { color: var(--ink); }
+  .steps span.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .two { display: grid; grid-template-columns: 1fr 210px; gap: 12px; align-items: start; }
+  .panel { background: var(--panel); border-left: .5px solid var(--line); padding: 10px; }
+  .big { font-size: 22px; font-weight: 700; line-height: 1; }
+  .k { font-family: var(--mono); font-size: 7.5px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-top: 8px; }
+  .v { font-size: 10px; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  .o { color: var(--orange); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-103 · CSV IMPORT</div>
+  <h1>Import people from a CSV file: three designs</h1>
+  <p>Each mock shows the People import with the example file "exec-dinner-guests.csv" (20 rows). The Organisations import works the same way with organisation fields. Every design opens from [ IMPORT CSV ] beside [ ADD PERSON ] on the People list.</p>
+</header>
+
+<div class="grid">
+
+<!-- ===================== A ===================== -->
+<figure>
+  <div class="tag"><b>A</b> One page, steps stacked</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm"><i></i>BARNACLE_LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span></div>
+      <div class="grp"><b>//</b> ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="back">← People</div>
+      <div class="ph"><div><div class="lb"><span class="c">//</span> CONTACTS</div><h2>Import people</h2></div><span class="btn">[ DOWNLOAD EXAMPLE FILE ]</span></div>
+
+      <div class="sect done"><span><span class="c">//</span> 1 FILE</span><span class="ok">✓</span></div>
+      <div class="file"><span>exec-dinner-guests.csv · 20 rows · 8 columns</span><span class="btn">[ CHOOSE ANOTHER FILE ]</span></div>
+
+      <div class="sect"><span><span class="c">//</span> 2 COLUMNS</span></div>
+      <table>
+        <thead><tr><th>Column in the file</th><th>First values</th><th>Person field</th></tr></thead>
+        <tbody>
+          <tr><td>First name</td><td>Ada<span class="m">Brian</span></td><td><span class="sel">First name ▾</span></td></tr>
+          <tr><td>Email</td><td>ada@example.com<span class="m">brian@example.net</span></td><td><span class="sel">Email address (Work) ▾</span></td></tr>
+          <tr><td>Company</td><td>Fakeco Ltd<span class="m">Sample Studios Fake</span></td><td><span class="sel">Organisation ▾</span></td></tr>
+          <tr><td>Job title</td><td>COO<span class="m">Head of Ops</span></td><td><span class="sel">Role or job title ▾</span></td></tr>
+          <tr><td>Notes</td><td>Met at dinner<span class="m">—</span></td><td><span class="sel none">Don't import ▾</span></td></tr>
+        </tbody>
+      </table>
+      <div class="acts"><span class="btn">[ PREVIEW ]</span></div>
+
+      <div class="sect"><span><span class="c">//</span> 3 PREVIEW</span></div>
+      <div class="notice">17 people will be added. 2 organisations will be added: Fakeco Ltd, New Org Fake. 3 rows will not be imported.</div>
+      <div class="hint">Consent for people whose row gives none (12 people):</div>
+      <div class="radio"><span><i></i>Subscribed</span><span><i></i>Unsubscribed</span></div>
+      <div class="acts"><span class="btn solid off">[ IMPORT ]</span></div>
+    </div>
+  </div>
+  <figcaption>Good for seeing the whole import at once: each step stays on screen as you go, so you can fix a column and preview again without going back.</figcaption>
+</figure>
+
+<!-- ===================== B ===================== -->
+<figure>
+  <div class="tag"><b>B</b> Step by step</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm"><i></i>BARNACLE_LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span></div>
+      <div class="grp"><b>//</b> ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="back">← People</div>
+      <div class="ph"><div><div class="lb"><span class="c">//</span> CONTACTS</div><h2>Import people</h2></div><span class="count">exec-dinner-guests.csv · 20 ROWS</span></div>
+      <div class="steps"><span class="done">1 FILE ✓</span><span class="done">2 COLUMNS ✓</span><span class="on">3 PREVIEW</span><span>4 REPORT</span></div>
+
+      <div class="row">
+        <div><div class="big">17</div><div class="k">People will be added</div></div>
+        <div><div class="big">2</div><div class="k">New organisations</div><div class="v">Fakeco Ltd, New Org Fake</div></div>
+        <div><div class="big o">3</div><div class="k">Rows not imported</div></div>
+      </div>
+
+      <div class="sect"><span><span class="c">//</span> ROWS NOT IMPORTED</span></div>
+      <table>
+        <thead><tr><th>Row</th><th>From the row</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td>4</td><td>brian@example.net</td><td>Brian Fake already has this email address.</td></tr>
+          <tr><td>9</td><td>Cleo Fake</td><td>Enter a valid email address.</td></tr>
+          <tr><td>15</td><td>dan@example.com</td><td>Row 6 has the same email address.</td></tr>
+        </tbody>
+      </table>
+      <div class="err">Label not on the list: 'Cold' (row 7)</div>
+
+      <div class="sect"><span><span class="c">//</span> CONSENT</span></div>
+      <div class="hint">12 people have no consent in the file. Choose theirs:</div>
+      <div class="radio"><span><i></i>Subscribed</span><span><i></i>Unsubscribed</span></div>
+
+      <div class="acts"><span class="btn">[ BACK ]</span><span class="btn solid off">[ IMPORT ]</span></div>
+    </div>
+  </div>
+  <figcaption>Good for a first-time user: one question per screen with a step bar, so each screen stays short; going back is one press of [ BACK ].</figcaption>
+</figure>
+
+<!-- ===================== C ===================== -->
+<figure>
+  <div class="tag"><b>C</b> Columns with a live summary</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm"><i></i>BARNACLE_LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span></div>
+      <div class="grp"><b>//</b> ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="back">← People</div>
+      <div class="ph"><div><div class="lb"><span class="c">//</span> CONTACTS</div><h2>Import people</h2></div><span class="btn">[ CHOOSE ANOTHER FILE ]</span></div>
+      <div class="two">
+        <div>
+          <table>
+            <thead><tr><th>Column in the file</th><th>First values</th><th>Person field</th></tr></thead>
+            <tbody>
+              <tr><td>First name</td><td>Ada<span class="m">Brian</span></td><td><span class="sel">First name ▾</span></td></tr>
+              <tr><td>Last name</td><td>Example<span class="m">Fake</span></td><td><span class="sel">Last name ▾</span></td></tr>
+              <tr><td>Email</td><td>ada@example.com<span class="m">brian@example.net</span></td><td><span class="sel">Email address (Work) ▾</span></td></tr>
+              <tr><td>Phone</td><td>+44 20 7946 0000<span class="m">—</span></td><td><span class="sel">Phone number (Work) ▾</span></td></tr>
+              <tr><td>Company</td><td>Fakeco Ltd<span class="m">Sample Studios Fake</span></td><td><span class="sel">Organisation ▾</span></td></tr>
+              <tr><td>Job title</td><td>COO<span class="m">Head of Ops</span></td><td><span class="sel">Role or job title ▾</span></td></tr>
+              <tr><td>Source</td><td>Exec dinner<span class="m">Exec dinner</span></td><td><span class="sel">Lead source ▾</span></td></tr>
+              <tr><td>Notes</td><td>Met at dinner<span class="m">—</span></td><td><span class="sel none">Don't import ▾</span></td></tr>
+            </tbody>
+          </table>
+          <div class="acts"><span class="btn">[ PREVIEW ]</span></div>
+        </div>
+        <div class="panel">
+          <div class="lb label" style="font-size:8px"><span class="c">//</span> PREVIEW</div>
+          <div class="k">People will be added</div><div class="big">17</div>
+          <div class="k">New organisations</div><div class="v">2 · Fakeco Ltd, New Org Fake</div>
+          <div class="k">Rows not imported</div><div class="v o">3 · rows 4, 9, 15</div>
+          <div class="k">Warnings</div><div class="v">Label not on the list: 'Cold' (row 7)</div>
+          <div class="k">Consent when the row gives none</div>
+          <div class="radio"><span><i></i>Subscribed</span><span><i></i>Unsubscribed</span></div>
+          <div class="acts"><span class="btn solid off">[ IMPORT ]</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Good for big files with many columns: the column list fills the page and the summary sits on the right like the list drawer, updated on each [ PREVIEW ].</figcaption>
+</figure>
+
+</div>
+</body>
+</html>

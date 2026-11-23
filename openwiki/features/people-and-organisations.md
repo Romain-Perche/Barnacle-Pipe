@@ -14,22 +14,20 @@ sources:
     resource: repo://src/server/records/flash.ts
   - id: sf90-src-nav
     resource: repo://src/app/(app)/nav.ts
-  - id: sf109-src-activities
-    resource: repo://src/server/activities/activities.ts
   - id: openwiki-source-f34ac1e549d94dc3ac475ae4
     resource: repo://src/proxy.ts
+  - id: openwiki-source-7a68905e9fd3093f14ae72f5
+    resource: repo://src/server/imports/imports.ts
   - id: openwiki-source-9ebb64fab176b6e210f7c3a3
     resource: repo://src/server/notifications.ts
   - id: openwiki-source-16c334cbe6c5a2c7ad77a065
     resource: repo://src/server/records/handover.ts
   - id: openwiki-source-615b00ed02d4d38087bb7a47
     resource: repo://src/server/records/notes.ts
-  - id: openwiki-source-d2b5dae24de1a143fd5b3a21
-    resource: repo://src/server/records/timeline.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T16:23:05.629Z
-generated: { by: "claude-code", at: "2026-11-23T16:23:05.629Z" }
+    at: 2026-11-23T13:22:05.502Z
+generated: { by: "claude-code", at: "2026-11-23T13:22:05.502Z" }
 ---
 
 # People and organisations
@@ -87,12 +85,17 @@ the user first (see [Sessions and access control](../auth/sessions-and-access-co
   visible to them. `RecordTimeline.tsx` draws the timeline of every record page. See
   [Database schema](../data/database-schema.md) and [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
-- **Activities** (calls, meetings, tasks): scheduled in `src/server/activities/activities.ts` through
-  `src/app/(app)/activities/actions.ts` and listed on the Activities page. A record page and the deal drawer show their
-  planned ones as "// NEXT ACTIVITIES"; a done activity is read into `readTimeline` and never copied, and a done call or
-  meeting raises the person's Last contacted. An activity is visible only to those who can see every record it links to
-  (`visibleActivity()` in `visibility.ts`), and an activity assigned by someone else is also a notification. Table in
-  [Database schema](../data/database-schema.md); data movement in [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
+## CSV import
+
+`/people/import` and `/organisations/import` share the screens in `src/app/(app)/records/import/`
+(`ImportPages.tsx`: file, columns, preview and report; `FileStep.tsx` sends the file in 512 KiB parts;
+`actions.ts`). Each import is a `csv_imports` row that only its starter can read (`src/server/imports/imports.ts`);
+unfinished imports and any import older than 24 hours are purged. The pure code in `src/server/imports/`
+reads the file (`csv.ts`), suggests and checks the column mapping (`columns.ts`), validates rows with the normal
+person and organisation rules (`rows.ts`) and plans the result: duplicates, organisations, lists, owners and
+consent (`plan.ts`, texts in `text.ts`). `runImport` does the whole import in one transaction and writes an
+`imported` timeline event. Example files come from `example/route.ts` on each import route. See
+[Database schema](../data/database-schema.md) and [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Fake data
 
