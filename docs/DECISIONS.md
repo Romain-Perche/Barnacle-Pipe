@@ -62,3 +62,7 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - The CSV import uses design B: one screen per step (file, columns, preview, report) with a step bar and [ BACK ] (SF-103)
 - A CSV row whose email address a person in the CRM already has is not imported; the existing person is left as it is and the report lists the row (SF-103)
 - People imported from CSV with no consent in the file get the consent the importing user chooses, with nothing chosen in advance (SF-103)
+- The Activities list uses design A: a table like the People list with quick filters Overdue / Today / This week / Planned / Done, the activity form and "Schedule a follow-up?" in a box over the page, and a last line on each board card (SF-109)
+- Deal cards show "⚠ No next activity" when the viewer can see no planned activity on the deal, else its next date; this replaces the SF-93 choice (SF-109)
+- A done call or meeting sets the linked person's Last contacted to its due date, or the moment it was marked done when the due date is later, never lowering it; a task never does (SF-109)
+- A teammate assigned an activity by someone else is told in the app only, on the Notifications page, like a mention (SF-109)

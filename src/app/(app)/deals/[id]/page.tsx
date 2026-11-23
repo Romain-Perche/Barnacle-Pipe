@@ -2,7 +2,8 @@
 // (or [ REOPEN ]), the arrow-shaped stage bar with days per stage, a strip (value, owner, expected close, status),
 // the actions, // DETAILS (people, labels, followers) and // TIMELINE (SF-102: notes, day groups). ?confirm=lost opens the Lost box over the page;
 // ?confirm=delete (admins) the delete confirmation; ?error= only from the allow-list. A deal the user cannot see
-// answers "This deal doesn't exist or you can't see it." (not-found.tsx).
+// answers "This deal doesn't exist or you can't see it." (not-found.tsx). SF-109: // NEXT ACTIVITIES above the timeline;
+// ?activity= / ?followup= / ?delete-activity= open the activity box (ActivityOverlays).
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
@@ -20,6 +21,9 @@ import { RecordTimeline } from "../../records/RecordTimeline";
 import { archiveDeal, deleteDeal, followDeal, linkPerson, markWon, reopenDeal, restoreDeal, unfollowDeal, unlinkPerson } from "../actions";
 import { day, resultText } from "../DealBits";
 import { LostBox } from "./LostBox";
+import { ActivityNotices } from "../../activities/ActivityNotices";
+import { ActivityOverlays } from "../../activities/ActivityOverlays";
+import { NextActivities } from "../../activities/NextActivities";
 import { StageBar } from "./StageBar";
 
 const PAGE_ERRORS = ["deal_edit_conflict", "deal_person_already_linked", "note_not_found", "note_record_archived"] as const;
@@ -112,6 +116,7 @@ export default async function DealPage({ params, searchParams }: { params: Promi
           {messages[pageError]}
         </p>
       )}
+      <ActivityNotices error={error} />
       {confirmDelete && <DeleteConfirm name={deal.title} id={deal.id} action={deleteDeal} cancelHref={here} back="list" />}
 
       <StageBar items={stageBar(seconds, deal.stage.id)} dealId={deal.id} version={deal.version} stageId={deal.stage.id} canMove={open} />
@@ -260,6 +265,8 @@ export default async function DealPage({ params, searchParams }: { params: Promi
         </dl>
       </section>
 
+      <NextActivities viewerId={user.id} target={{ dealId: deal.id }} archived={deal.archived} back={here} />
+
       <RecordTimeline
         viewerId={user.id}
         target={{ dealId: deal.id }}
@@ -267,6 +274,13 @@ export default async function DealPage({ params, searchParams }: { params: Promi
         query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
       />
 
+      <ActivityOverlays
+        viewerId={user.id}
+        target={{ dealId: deal.id }}
+        archived={deal.archived}
+        back={here}
+        query={{ activity: first(query, "activity"), followup: first(query, "followup"), deleteActivity: first(query, "delete-activity") }}
+      />
       {confirmLost && <LostBox dealId={deal.id} version={deal.version} error={boxError} />}
     </div>
   );

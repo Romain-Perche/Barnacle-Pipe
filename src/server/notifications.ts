@@ -1,13 +1,27 @@
 // In-app notifications of @mentions (SF-102 research.md §4, §12; contracts/routes.md). A notification is a
 // `note_mentions` row of the user, not saved by themselves, shown and counted only while the note's record is visible
 // to them (the one rule in visibility.ts): a deal made private hides it, sharing it again brings it back.
+// SF-109 (research.md §7): an activity assigned to the user by someone else is a notification too, kept on the
+// activity row (assigned_by / assigned_at / assignment_read_at), shown only while visibleActivity() holds for them.
+import type { ActivityType } from "@/server/activities/rules";
 import { sql, type Sql } from "@/server/db";
 import { notificationPreview } from "@/server/records/notes-rules";
-import { visibleDeal, visiblePerson } from "@/server/records/visibility";
+import { visibleActivity, visibleDeal, visiblePerson } from "@/server/records/visibility";
 
-export type NotificationView = {
-  eventId: number; byName: string; recordName: string; href: string; preview: string; createdAt: Date; read: boolean;
+export type MentionView = {
+  kind: "mention"; eventId: number; byName: string; recordName: string; href: string; preview: string; createdAt: Date; read: boolean;
 };
+export type AssignmentView = {
+  kind: "assignment"; id: number; byName: string; type: ActivityType; subject: string; dueOn: string; dueTime: string | null;
+  durationMinutes: number | null; href: string; createdAt: Date; read: boolean;
+};
+export type NotificationView = MentionView | AssignmentView;
+export type NotificationRef = { kind: "mention" | "assignment"; id: number };
+
+// The user's own live assignment notifications they can see now. Needs `a` (activities).
+function myAssignments(db: Sql, userId: number) {
+  return db`a.assignee_id = ${userId} and a.assigned_by <> ${userId} and ${visibleActivity(db, userId)}`;
+}
 
 // The user's own notifications whose record they can see now. Needs `m` (note_mentions), `e`, `p`, `d`, `o` joined.
 function mine(db: Sql, userId: number) {
@@ -23,10 +37,30 @@ const FROM = (db: Sql) => db`
   left join deals d on d.id = e.deal_id
   left join organisations o on o.id = e.organisation_id`;
 
+// The deal, else the person, else the organisation; an activity linked to nothing: the Activities list.
 function href(r: { deal_id: number | null; person_id: number | null; organisation_id: number | null }): string {
   if (r.deal_id !== null) return `/deals/${r.deal_id}`;
   if (r.person_id !== null) return `/people/${r.person_id}`;
-  return `/organisations/${r.organisation_id}`;
+  if (r.organisation_id !== null) return `/organisations/${r.organisation_id}`;
+  return "/activities";
+}
+
+async function listAssignments(userId: number, limit: number): Promise<AssignmentView[]> {
+  const rows = await sql<
+    { id: number; by_name: string; type: ActivityType; subject: string; due_on: string; due_time: string | null; duration_minutes: number | null;
+      deal_id: number | null; person_id: number | null; organisation_id: number | null; assigned_at: Date; read: boolean }[]
+  >`
+    select a.id::int as id, bu.name as by_name, a.type, a.subject, to_char(a.due_on, 'YYYY-MM-DD') as due_on,
+           to_char(a.due_time, 'HH24:MI') as due_time, a.duration_minutes, a.deal_id::int as deal_id, a.person_id::int as person_id,
+           a.organisation_id::int as organisation_id, a.assigned_at, a.assignment_read_at is not null as read
+    from activities a join users bu on bu.id = a.assigned_by
+    where ${myAssignments(sql, userId)}
+    order by a.assigned_at desc, a.id desc
+    limit ${limit}`;
+  return rows.map((r) => ({
+    kind: "assignment" as const, id: r.id, byName: r.by_name, type: r.type, subject: r.subject, dueOn: r.due_on, dueTime: r.due_time,
+    durationMinutes: r.duration_minutes, href: href(r), createdAt: r.assigned_at, read: r.read,
+  }));
 }
 
 export async function listNotifications(userId: number, limit = 50): Promise<{ items: NotificationView[]; more: boolean }> {
@@ -42,7 +76,7 @@ export async function listNotifications(userId: number, limit = 50): Promise<{ i
     where ${mine(sql, userId)}
     order by m.created_at desc, m.event_id desc
     limit ${limit + 1}`;
-  const shown = rows.slice(0, limit);
+  const shown = rows;
   const names = new Map<number, Map<number, string>>();
   if (shown.length > 0) {
     const mentions = await sql<{ event_id: number; user_id: number; name: string }[]>`
@@ -53,28 +87,33 @@ export async function listNotifications(userId: number, limit = 50): Promise<{ i
       names.get(m.event_id)!.set(m.user_id, m.name);
     }
   }
-  return {
-    more: rows.length > limit,
-    items: shown.map((r) => ({
-      eventId: r.event_id,
-      byName: r.by_name,
-      recordName: r.record_name,
-      href: href(r),
-      preview: notificationPreview(r.body, names.get(r.event_id) ?? new Map()),
-      createdAt: r.created_at,
-      read: r.read,
-    })),
-  };
+  const mentions: NotificationView[] = shown.map((r) => ({
+    kind: "mention" as const,
+    eventId: r.event_id,
+    byName: r.by_name,
+    recordName: r.record_name,
+    href: href(r),
+    preview: notificationPreview(r.body, names.get(r.event_id) ?? new Map()),
+    createdAt: r.created_at,
+    read: r.read,
+  }));
+  // Mentions and assignments together, newest first: the top `limit + 1` of each hold the page.
+  const all = [...mentions, ...(await listAssignments(userId, limit + 1))].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return { more: all.length > limit, items: all.slice(0, limit) };
 }
 
 export async function unreadCount(userId: number): Promise<number> {
   const [row] = await sql<{ n: number }[]>`
-    select count(*)::int as n from ${FROM(sql)} where m.read_at is null and ${mine(sql, userId)}`;
+    select (select count(*) from ${FROM(sql)} where m.read_at is null and ${mine(sql, userId)})::int
+         + (select count(*) from activities a where a.assignment_read_at is null and ${myAssignments(sql, userId)})::int as n`;
   return row.n;
 }
 
 // Marks the user's own notification read (only while its record is visible) and answers where it leads; else null.
-export async function openNotification(userId: number, eventId: number): Promise<{ href: string } | null> {
+// `ref`: { kind, id } (a bare number is a mention's event id, as before SF-109).
+export async function openNotification(userId: number, ref: number | NotificationRef): Promise<{ href: string } | null> {
+  const { kind, id: eventId } = typeof ref === "number" ? { kind: "mention", id: ref } : ref;
+  if (kind === "assignment") return openAssignment(userId, eventId);
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     const [row] = await db<{ deal_id: number | null; person_id: number | null; organisation_id: number | null }[]>`
@@ -86,7 +125,19 @@ export async function openNotification(userId: number, eventId: number): Promise
   });
 }
 
+async function openAssignment(userId: number, id: number): Promise<{ href: string } | null> {
+  const [row] = await sql<{ deal_id: number | null; person_id: number | null; organisation_id: number | null }[]>`
+    update activities a set assignment_read_at = coalesce(a.assignment_read_at, now())
+    where a.id = ${id} and ${myAssignments(sql, userId)}
+    returning a.deal_id::int as deal_id, a.person_id::int as person_id, a.organisation_id::int as organisation_id`;
+  return row ? { href: href(row) } : null;
+}
+
 // Every unread row of the user, visible or not (harmless: hidden ones are neither shown nor counted).
 export async function markAllRead(userId: number): Promise<void> {
-  await sql`update note_mentions set read_at = now() where user_id = ${userId} and read_at is null`;
+  await sql.begin(async (tx) => {
+    await tx`update note_mentions set read_at = now() where user_id = ${userId} and read_at is null`;
+    await tx`update activities set assignment_read_at = now()
+             where assignee_id = ${userId} and assigned_by <> ${userId} and assignment_read_at is null`;
+  });
 }

@@ -275,6 +275,18 @@
         "src/app/(app)/records/import/actions.ts",
         "src/app/(app)/records/import/FileStep.tsx"
       ]
+    },
+    {
+      "id": "activities",
+      "label": "Activities (calls, meetings, tasks)",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/app/(app)/activities",
+        "src/server/activities/activities.ts",
+        "src/server/activities/list.ts",
+        "src/server/activities/rules.ts"
+      ]
     }
   ],
   "stores": [
@@ -456,6 +468,15 @@
       "sources": [
         "migrations/0006_csv_imports.sql",
         "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "id": "activities-table",
+      "label": "Postgres activities",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0008_activities.sql"
       ]
     }
   ],
@@ -1563,6 +1584,103 @@
       "data": "active users matched as owners",
       "sources": [
         "src/server/imports/imports.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "activities",
+      "data": "signed-in user check",
+      "sources": [
+        "src/app/(app)/activities/actions.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "activities",
+      "data": "activity form, tick, delete",
+      "sources": [
+        "src/app/(app)/activities/actions.ts"
+      ]
+    },
+    {
+      "from": "activities",
+      "to": "staff",
+      "data": "activities list and next activities",
+      "sources": [
+        "src/app/(app)/activities/page.tsx",
+        "src/app/(app)/activities/NextActivities.tsx"
+      ]
+    },
+    {
+      "from": "activities",
+      "to": "activities-table",
+      "data": "scheduled, edited, done activities",
+      "sources": [
+        "src/server/activities/activities.ts"
+      ]
+    },
+    {
+      "from": "activities-table",
+      "to": "activities",
+      "data": "activity rows",
+      "sources": [
+        "src/server/activities/list.ts"
+      ]
+    },
+    {
+      "from": "activities-table",
+      "to": "timeline-table",
+      "data": "done activities read into timelines",
+      "sources": [
+        "src/server/records/timeline.ts"
+      ]
+    },
+    {
+      "from": "activities-table",
+      "to": "notifications",
+      "data": "assignments by others",
+      "sources": [
+        "src/server/notifications.ts"
+      ]
+    },
+    {
+      "from": "notifications",
+      "to": "activities-table",
+      "data": "assignment read marks",
+      "sources": [
+        "src/server/notifications.ts"
+      ]
+    },
+    {
+      "from": "activities",
+      "to": "persons-table",
+      "data": "last contacted after done call or meeting",
+      "sources": [
+        "src/server/activities/activities.ts"
+      ]
+    },
+    {
+      "from": "activities-table",
+      "to": "deals-board",
+      "data": "next activity per deal",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "activities-table",
+      "data": "schema",
+      "sources": [
+        "migrations/0008_activities.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "activities-table",
+      "data": "fake activities",
+      "sources": [
+        "src/seed/activities.ts"
       ]
     }
   ]

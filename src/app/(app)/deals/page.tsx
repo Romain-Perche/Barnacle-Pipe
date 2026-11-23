@@ -11,10 +11,18 @@ import { AutoSubmit } from "../records/AutoSubmit";
 import { Board } from "./Board";
 import { DealDrawer } from "./DealDrawer";
 import { ViewSwitch } from "./ViewSwitch";
+import { ActivityNotices } from "../activities/ActivityNotices";
+import { ActivityOverlays } from "../activities/ActivityOverlays";
+
+function first(params: BoardParams, key: string): string | undefined {
+  const v = params[key];
+  return Array.isArray(v) ? v[0] : v;
+}
 
 export default async function DealsPage({ searchParams }: { searchParams: Promise<BoardParams> }) {
   const user = await requireUser();
-  const query = parseBoardQuery(await searchParams);
+  const params = await searchParams;
+  const query = parseBoardQuery(params);
   const [board, flash] = await Promise.all([
     getBoard(user.id, query.pipeline),
     readFlash(["deal_deleted", "deal_no_longer_visible", "note_not_found"]),
@@ -85,6 +93,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
           {messages[query.error]}
         </p>
       )}
+      <ActivityNotices error={first(params, "error")} />
       {board.columns.length === 0 ? (
         <div className="empty">
           <p>{messages.no_stages_yet}</p>
@@ -97,7 +106,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       ) : (
         <div className={open ? "boardwrap open" : "boardwrap"}>
           <div className="boardmain">
-            <Board key={board.pipeline.id} pipelineId={board.pipeline.id} columns={board.columns} openId={open?.id ?? null} />
+            <Board key={board.pipeline.id} pipelineId={board.pipeline.id} columns={board.columns} openId={open?.id ?? null} now={Date.now()} />
           </div>
           {open && (
             <DealDrawer
@@ -109,6 +118,15 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
               hereHref={boardHref(open.pipeline.id, { open: open.id })}
               closeHref={boardHref(open.pipeline.id)}
               deleteHref={boardHref(open.pipeline.id, { open: open.id, confirm: "delete" })}
+            />
+          )}
+          {open && (
+            <ActivityOverlays
+              viewerId={user.id}
+              target={{ dealId: open.id }}
+              archived={open.archived}
+              back={boardHref(open.pipeline.id, { open: open.id })}
+              query={{ activity: first(params, "activity"), followup: first(params, "followup"), deleteActivity: first(params, "delete-activity") }}
             />
           )}
         </div>

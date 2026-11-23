@@ -1,4 +1,4 @@
-// covers SC-003 (a board with 10 stages and 500 open deals shows in under 2 seconds), edge case "a stage holds 200
+// covers SF-109 SC-003 (cards with their next activity), SC-003 (a board with 10 stages and 500 open deals shows in under 2 seconds), edge case "a stage holds 200
 // deals: its header shows 200 deals and the total of all 200"
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
@@ -20,7 +20,14 @@ beforeAll(async () => {
            case when g <= 200 then ${pipeline.stages[0]}::bigint else (${pipeline.stages.slice(1)}::bigint[])[1 + (g % 9)] end,
            ${ada.id}, ${ada.id}, now() - make_interval(mins => g)
     from generate_series(1, 500) g`;
+  // SF-109 T043: two planned activities on most deals, one done, so each card reads its next activity (SC-003).
+  await sql`
+    insert into activities (type, subject, due_on, deal_id, assignee_id, created_by, assigned_by, done_at, done_by)
+    select 'call', 'Fake call ' || d.id || '-' || k, date '2026-11-01' + k, d.id, ${ada.id}, ${ada.id}, ${ada.id},
+           case when k = 0 then now() end, case when k = 0 then ${ada.id}::bigint end
+    from deals d cross join generate_series(0, 2) k where d.id % 10 <> 0`;
   await sql`analyze deals`;
+  await sql`analyze activities`;
 });
 afterAll(closeDb);
 
@@ -37,5 +44,8 @@ describe("board performance", () => {
     expect(first.count).toBe(200);
     expect(first.cards.length).toBe(200);
     expect(first.totalPence).toBe(((200 * 201) / 2) * 100);
+    const cards = board.columns.flatMap((c) => c.cards);
+    expect(cards.filter((c) => c.next === null)).toHaveLength(50);
+    expect(cards.find((c) => c.next !== null)?.next).toEqual({ dueOn: "2026-11-02", dueTime: null, durationMinutes: null, type: "call" });
   });
 });

@@ -99,7 +99,8 @@ test("the sidebar has a Notifications link after Organisations", async ({ page }
   await db()`delete from note_mentions`;
   await signInAs(page, "Margaret Fake");
   const links = await sidebar(page).getByRole("navigation", { name: "Main" }).getByRole("link").allTextContents();
-  expect(links).toEqual(["Home", "Deals", "People", "Organisations", "Notifications"]);
+  // SF-109: "Activities" between Organisations and Notifications.
+  expect(links).toEqual(["Home", "Deals", "People", "Organisations", "Activities", "Notifications"]);
   await sidebar(page).getByRole("link", { name: "Notifications", exact: true }).click();
   await expect(page).toHaveURL(/\/notifications$/);
   await expect(sidebar(page).getByRole("link", { name: "Notifications", exact: true })).toHaveAttribute("aria-current", "page");

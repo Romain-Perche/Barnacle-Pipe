@@ -8,7 +8,8 @@ import { isActiveAdmin, isUniqueViolation, ownerOptions, refuse, Refused, resolv
 import { organisationExistsAfterRace, resolveOrganisation } from "@/server/records/organisations";
 import type { FieldErrors } from "@/server/records/rules";
 import { recordEvent, type MoveCause } from "@/server/records/timeline";
-import { visibleDeal, visiblePerson } from "@/server/records/visibility";
+import { visibleActivity, visibleDeal, visiblePerson } from "@/server/records/visibility";
+import type { ActivityType } from "@/server/activities/rules";
 
 export type BoardCard = {
   id: number;
@@ -19,6 +20,8 @@ export type BoardCard = {
   private: boolean;
   version: number;
   stageId: number;
+  // SF-109 (research.md §11): the earliest planned activity the viewer can see; null shows "⚠ No next activity".
+  next: { dueOn: string; dueTime: string | null; durationMinutes: number | null; type: ActivityType } | null;
 };
 export type BoardColumn = { id: number; name: string; count: number; totalPence: number; cards: BoardCard[] };
 export type Board = { pipelines: Option[]; pipeline: Option; columns: BoardColumn[] };
@@ -88,14 +91,23 @@ export async function getBoard(viewerId: number, pipelineId: number | null): Pro
       select id::int as id, name from stages where pipeline_id = ${pipeline.id} order by position, id`,
     sql<
       { id: number; title: string; value_pence: string | null; org_id: number | null; org_name: string | null; person_id: number | null;
-        person_name: string | null; private: boolean; version: number; stage_id: number }[]
+        person_name: string | null; private: boolean; version: number; stage_id: number; next_due_on: string | null;
+        next_due_time: string | null; next_duration: number | null; next_type: ActivityType | null }[]
     >`
       select d.id::int as id, d.title, d.value_pence, o.id::int as org_id, o.name as org_name, p.id::int as person_id,
-             ${PERSON_NAME()} as person_name, d.private, d.version, d.stage_id::int as stage_id
+             ${PERSON_NAME()} as person_name, d.private, d.version, d.stage_id::int as stage_id,
+             nx.due_on as next_due_on, nx.due_time as next_due_time, nx.duration_minutes as next_duration, nx.type as next_type
       from deals d
       join stages s on s.id = d.stage_id
       left join organisations o on o.id = d.organisation_id
       left join persons p on p.id = d.person_id and ${visiblePerson(sql, viewerId)}
+      left join lateral (
+        select to_char(a.due_on, 'YYYY-MM-DD') as due_on, to_char(a.due_time, 'HH24:MI') as due_time, a.duration_minutes, a.type
+        from activities a
+        where a.deal_id = d.id and a.done_at is null and ${visibleActivity(sql, viewerId)}
+        order by a.due_on, a.due_time nulls last, a.id
+        limit 1
+      ) nx on true
       where s.pipeline_id = ${pipeline.id} and d.archived_at is null and d.status = 'open' and ${visibleDeal(sql, viewerId)}
       order by d.stage_entered_at desc, d.id desc`,
   ]);
@@ -113,6 +125,7 @@ export async function getBoard(viewerId: number, pipelineId: number | null): Pro
       private: r.private,
       version: r.version,
       stageId: r.stage_id,
+      next: r.next_due_on === null ? null : { dueOn: r.next_due_on, dueTime: r.next_due_time, durationMinutes: r.next_duration, type: r.next_type! },
     };
     col.cards.push(card);
     col.count++;
@@ -546,6 +559,10 @@ export async function deleteDeal(
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     if (!(await isActiveAdmin(db, actorId))) return { status: "forbidden" as const };
+    // SF-109 FR-014: its activities linked to nothing else go with it; the others lose the deal (on delete set null).
+    await db`
+      delete from activities a using deals d
+      where a.deal_id = ${id} and a.person_id is null and a.organisation_id is null and d.id = a.deal_id and ${visibleDeal(db, actorId)}`;
     const [row] = await db<{ title: string; pipeline_id: number }[]>`
       delete from deals d using stages s
       where d.id = ${id} and s.id = d.stage_id and ${visibleDeal(db, actorId)}

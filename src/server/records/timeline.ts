@@ -3,7 +3,7 @@
 // organisation's timeline also read the entries of their currently linked deals (research.md §6).
 import { sql, type Sql } from "@/server/db";
 import { noteSegments, type NoteSegment } from "@/server/records/notes-rules";
-import { visibleDeal, visiblePerson } from "@/server/records/visibility";
+import { visibleActivity, visibleDeal, visiblePerson } from "@/server/records/visibility";
 
 export type EventKind =
   | "added" | "edited" | "archived" | "restored" | "person_linked" | "person_unlinked" | "handed_over" | "moved"
@@ -12,7 +12,9 @@ export type EventKind =
   // SF-102: a note written on the record
   | "note"
   // SF-103: added by a CSV import (in place of "added")
-  | "imported";
+  | "imported"
+  // SF-109: a done activity, read from `activities` (never a timeline_events row)
+  | "activity";
 // Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)").
 export type MoveCause = "stage_deleted" | "pipeline_deleted";
 
@@ -66,6 +68,13 @@ export type TimelineEntry = TimelineEvent & {
   note: { segments: NoteSegment[]; editedByName: string | null; version: number } | null;
   // false: "(deactivated)" after the author's name.
   authorActive: boolean;
+  // SF-109: a done activity (kind "activity"); `id` is then the activity's id and `createdAt` when it was marked done.
+  activity: TimelineActivity | null;
+};
+export type TimelineActivity = {
+  id: number; type: "call" | "meeting" | "task"; subject: string; note: string | null; doneByName: string; doneByActive: boolean;
+  dueOn: string; dueTime: string | null; durationMinutes: number | null;
+  archived: boolean; // its deal, person or organisation is archived: it cannot be unticked (FR-013)
 };
 export type TimelinePage = { entries: TimelineEntry[]; more: boolean };
 
@@ -89,6 +98,46 @@ function targetWhere(db: Sql, viewerId: number, target: Target) {
   const o = target.organisationId;
   return db`(e.organisation_id = ${o}
              or e.deal_id in (select d.id from deals d where d.organisation_id = ${o} and ${visibleDeal(db, viewerId)}))`;
+}
+
+// SF-109 (research.md §3): the done activities a timeline holds, for a viewer: those linked to the deal; on a person
+// or an organisation, those linked to it or to one of its deals the viewer can see (each once). Always visibleActivity().
+function activityWhere(db: Sql, viewerId: number, target: Target) {
+  if ("dealId" in target) return db`a.deal_id = ${target.dealId}`;
+  if ("personId" in target) {
+    const p = target.personId;
+    return db`exists (select 1 from persons p where p.id = ${p} and ${visiblePerson(db, viewerId)})
+      and (a.person_id = ${p}
+           or a.deal_id in (select d.id from deals d
+                            where (d.person_id = ${p} or exists (select 1 from deal_people dp where dp.deal_id = d.id and dp.person_id = ${p}))
+                              and ${visibleDeal(db, viewerId)}))`;
+  }
+  const o = target.organisationId;
+  return db`(a.organisation_id = ${o} or a.deal_id in (select d.id from deals d where d.organisation_id = ${o} and ${visibleDeal(db, viewerId)}))`;
+}
+
+async function doneActivities(viewerId: number, target: Target, limit: number): Promise<TimelineEntry[]> {
+  const rows = await sql<
+    { id: number; type: TimelineActivity["type"]; subject: string; note: string | null; done_at: Date; done_by_name: string; done_by_active: boolean;
+      due_on: string; due_time: string | null; duration_minutes: number | null; archived: boolean }[]
+  >`
+    select a.id::int as id, a.type, a.subject, a.note, a.done_at, u.name as done_by_name, u.status = 'active' as done_by_active,
+           to_char(a.due_on, 'YYYY-MM-DD') as due_on, to_char(a.due_time, 'HH24:MI') as due_time, a.duration_minutes,
+           (exists (select 1 from deals xd where xd.id = a.deal_id and xd.archived_at is not null)
+            or exists (select 1 from persons xp where xp.id = a.person_id and xp.archived_at is not null)
+            or exists (select 1 from organisations xo where xo.id = a.organisation_id and xo.archived_at is not null)) as archived
+    from activities a join users u on u.id = a.done_by
+    where a.done_at is not null and ${activityWhere(sql, viewerId, target)} and ${visibleActivity(sql, viewerId)}
+    order by a.done_at desc, a.id desc
+    limit ${limit}`;
+  return rows.map((r) => ({
+    id: r.id, kind: "activity" as const, actorName: r.done_by_name, fields: null, relatedPerson: null, relatedUserName: null, fromStage: null,
+    toStage: null, cause: null, reason: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, note: null,
+    activity: {
+      id: r.id, type: r.type, subject: r.subject, note: r.note, doneByName: r.done_by_name, doneByActive: r.done_by_active,
+      dueOn: r.due_on, dueTime: r.due_time, durationMinutes: r.duration_minutes, archived: r.archived,
+    },
+  }));
 }
 
 // Newest first, `limit` entries (`more` when there are older ones). Events about a person the viewer cannot see are left
@@ -117,7 +166,9 @@ export async function readTimeline(viewerId: number, target: Target, limit = 50)
       and (e.related_person_id is null or ${visiblePerson(sql, viewerId, "rp")})
     order by e.created_at desc, e.id desc
     limit ${limit + 1}`;
-  const shown = rows.slice(0, limit);
+  const activities = await doneActivities(viewerId, target, limit + 1);
+  // Up to `limit + 1` of each: merged below, newest first, the page is the first `limit` (SF-109).
+  const shown = rows;
   const noteIds = shown.filter((r) => r.kind === "note").map((r) => r.id);
   const names = new Map<number, Map<number, string>>();
   if (noteIds.length > 0) {
@@ -129,9 +180,7 @@ export async function readTimeline(viewerId: number, target: Target, limit = 50)
       names.get(m.event_id)!.set(m.user_id, m.name);
     }
   }
-  return {
-    more: rows.length > limit,
-    entries: shown.map((r) => ({
+  const events: TimelineEntry[] = shown.map((r) => ({
       id: r.id,
       kind: r.kind,
       actorName: r.actor_name,
@@ -153,6 +202,8 @@ export async function readTimeline(viewerId: number, target: Target, limit = 50)
               version: r.version,
             }
           : null,
-    })),
-  };
+      activity: null,
+    }));
+  const merged = [...events, ...activities].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return { more: merged.length > limit, entries: merged.slice(0, limit) };
 }

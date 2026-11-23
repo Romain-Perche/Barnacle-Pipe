@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T13:22:05.502Z
+    at: 2026-11-23T16:50:25.265Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -21,13 +21,15 @@ sources:
     resource: repo://migrations/0004_pipelines_deals.sql
   - id: openwiki-source-1e4c3d22c042c7ae4a0fd1a6
     resource: repo://migrations/0006_csv_imports.sql
+  - id: openwiki-source-65366545ec8eba3034352214
+    resource: repo://migrations/0008_activities.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-23T13:22:05.502Z" }
+generated: { by: "claude-code", at: "2026-11-23T16:50:25.265Z" }
 ---
 
 # Database schema and access
@@ -132,12 +134,23 @@ uploaded `content` as `bytea`, a `status` (`uploading`, `ready`, `done`), `row_c
 the final `report` as `jsonb`. A `done` import must have a report and `imported_at`, and its `content` is cleared.
 The same migration adds the kind `imported` to the `timeline_events` kind check.
 
+### `activities` (migration 0008)
+
+Added by `0008_activities.sql` (see [Activities](../features/activities.md)). One row per call, meeting or task:
+`type`, `subject` (at most 200 characters), `due_on` and optional `due_time` (UK wall-clock values), optional
+`duration_minutes` (5 to 1440 in steps of 5, only with a time), optional `note`, optional links to a deal, person and
+organisation (`on delete set null`), `assignee_id`, `created_by`, an optimistic `version`, and `done_at`/`done_by`
+(both set or both null). `assigned_by`, `assigned_at` and `assignment_read_at` carry the assignment notification:
+it is live while the assignee differs from the assigner. Partial indexes serve the assignee's open and done lists,
+a deal's next activity and the unread assignment count. No other table changes: done activities are read into the
+timeline, never copied.
+
 ## Row level security
 
 Every `create table` is followed by `alter table … enable row level security`, with no policies. On
 Supabase this means the Data API roles (`anon`, `authenticated`) can neither read nor write app data,
 while the app's own database user, which owns the tables, is not affected. `tests/integration/rls.test.ts`
-fails if any table in the public schema lacks it (it also checks that the app's tables, including the tables from migrations 0004, 0005, `csv_imports` from 0006 and `note_mentions` from 0007, exist). Migration files may only contain statements allowed inside a transaction.
+fails if any table in the public schema lacks it (it also checks that the app's tables, including the tables from migrations 0004, 0005, `csv_imports` from 0006 and `note_mentions` from 0007 and `activities` from 0008, exist). Migration files may only contain statements allowed inside a transaction.
 
 ## Connecting
 

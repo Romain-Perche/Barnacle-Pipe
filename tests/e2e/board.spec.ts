@@ -30,7 +30,8 @@ test("the board shows the first pipeline's stages with counts, totals and cards;
   await expect(c).toContainText("Fakeco Ltd");
   await expect(c).toContainText("Abe Example");
   await expect(c.locator(".val")).toHaveText("£4,000");
-  await expect(page.getByText("No next activity")).toHaveCount(0);
+  // SF-109 replaces the SF-93 choice: a card ends with "⚠ No next activity" or its next activity's date.
+  await expect(c.locator(".warnline, .nextline")).toHaveCount(1);
   // Cards are rounded (the one rounded surface).
   expect(await c.evaluate((el) => getComputedStyle(el).borderTopLeftRadius)).toBe("8px");
 

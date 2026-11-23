@@ -315,6 +315,9 @@ export async function deletePerson(actorId: number, id: number): Promise<DeleteR
       select p.private from persons p where p.id = ${id} and ${visiblePerson(db, actorId)} for update`;
     if (!cur) return { status: "not_found" as const };
     if (cur.private) await db`delete from timeline_events where related_person_id = ${id}`;
+    // SF-109 FR-014: a private person's activities go with them; else those linked to nothing else.
+    if (cur.private) await db`delete from activities where person_id = ${id}`;
+    else await db`delete from activities where person_id = ${id} and deal_id is null and organisation_id is null`;
     const [row] = await db<{ name: string }[]>`delete from persons p where p.id = ${id} returning ${NAME()} as name`;
     return { status: "deleted" as const, name: row.name };
   });

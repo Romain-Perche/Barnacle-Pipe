@@ -1,6 +1,6 @@
 // The deal drawer (design A, contracts/routes.md § Pages), on the board and on the deal list (SF-95): details,
 // "Move to" (works with a keyboard and without JavaScript), [ EDIT ], [ ARCHIVE ], [ DELETE ] for admins,
-// [ OPEN DEAL PAGE ], [ CLOSE ] and // TIMELINE (SF-102: the newest 50 entries, read-only, no note box). A won or lost deal shows its status and no "Move to"; an archived one
+// [ OPEN DEAL PAGE ], [ CLOSE ], // NEXT ACTIVITIES (SF-109: done boxes and [ SCHEDULE ACTIVITY ], the box opens over the page) and // TIMELINE (SF-102: the newest 50 entries, read-only, no note box). A won or lost deal shows its status and no "Move to"; an archived one
 // (only reachable from the list) shows "Archived" and only [ OPEN DEAL PAGE ] and [ CLOSE ].
 import Link from "next/link";
 import type { DealView, PipelineStages } from "@/server/deals/deals";
@@ -11,6 +11,7 @@ import { DeleteConfirm } from "../records/DeleteConfirm";
 import { RecordTimeline } from "../records/RecordTimeline";
 import { archiveDeal, deleteDeal, moveDeal } from "./actions";
 import { day, StatusBadge } from "./DealBits";
+import { NextActivities } from "../activities/NextActivities";
 
 type Props = {
   deal: DealView;
@@ -118,6 +119,7 @@ export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, 
           [ CLOSE ]
         </Link>
       </div>
+      <NextActivities viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} back={hereHref} />
       <RecordTimeline viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} readOnly />
     </aside>
   );
