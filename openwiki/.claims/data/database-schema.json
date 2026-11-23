@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:24047b4b805394227723d0e268dca810dec1c444044b6df9850bb95a0a464e2a",
+  "pageVersion": "sha256:2f68d9212d92a69b08de36ebfd925e2df379df62bd41e8ce23e1f224303b3cd4",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L27",
-          "version": "repo-lines-v1:sha256:68531f0bd56f5b3a35f20e23011e82124bdd9aa8c91f7145653eb5d3bf484231:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L28",
+          "version": "repo-lines-v1:sha256:2a68b3f6fb8e8170bf3833f142d08df388f23e29f284ef2e0ad1908b05b0745b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -111,10 +111,20 @@
           "version": "repo-file-v1:sha256:3f18275d948316a6e3c215fe9b09fef85bc36d6980217e6615dae51bc4c9c2a7"
         }
       ]
+    },
+    {
+      "id": "claim_20c9643004ad4fbaa626846a8ec7dce5",
+      "statement": "csv_imports stores one row per CSV import with owner, kind, status (uploading, ready, done), content, mapping and report.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0006_csv_imports.sql#L3-L19",
+          "version": "repo-lines-v1:sha256:457da7ae86ba02a83621a503e2abf1f705d0c1dd71e2d53ddf116e9ee05d9731:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwNjIyOGQyMWVjNTE4NDFjYTcyNDdhYTUxMzkyMWNlNzVjNDQ2OTRlMjUzZTExZjY4NGZiNDA0NjE2ZGYxOGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkMzhkYmU0Y2IxMTE4MmIzOWMxZGJhZjY4MzQ2OTc5Y2FjZjA4NTdiMGRkOGNhYThkMjcwNjFjZTNiZTRhMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVkYTI0OWU5NTMxMWQ3NmI2ZTRmYmU0YjkzNzY4MTIyYzNhY2Q1NzU2MzZhY2Y0M2E3MWZmYjZlMTliNDg0MGQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T16:18:56.075Z"
+    "at": "2026-11-23T13:22:05.502Z"
   }
 }

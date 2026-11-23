@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T16:18:56.075Z
+    at: 2026-11-23T13:22:05.502Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -19,19 +19,21 @@ sources:
     resource: repo://migrations/0003_private_owner_handover.sql
   - id: openwiki-source-abc8a772ef516a80f8a1e53a
     resource: repo://migrations/0004_pipelines_deals.sql
+  - id: openwiki-source-1e4c3d22c042c7ae4a0fd1a6
+    resource: repo://migrations/0006_csv_imports.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-20T16:18:56.075Z" }
+generated: { by: "claude-code", at: "2026-11-23T13:22:05.502Z" }
 ---
 
 # Database schema and access
 
 The schema is defined by numbered SQL files in `migrations/` (`0001_users_sessions.sql` and
-`0002_people_organisations.sql`, `0003_private_owner_handover.sql`, `0004_pipelines_deals.sql`, `0005_deal_page.sql`, `0007_notes_mentions.sql`) plus the `schema_migrations` table created by the migrate command. How each
+`0002_people_organisations.sql`, `0003_private_owner_handover.sql`, `0004_pipelines_deals.sql`, `0005_deal_page.sql`, `0006_csv_imports.sql`, `0007_notes_mentions.sql`) plus the `schema_migrations` table created by the migrate command. How each
 part reads and writes these tables is drawn in [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Tables
@@ -121,12 +123,21 @@ Added by `0007_notes_mentions.sql` (see [People and organisations](../features/p
   `read_at`), primary key `(event_id, user_id)`, deleted with the note. A mention of someone other than the author is
   a notification; two indexes serve the user's list and the unread count.
 
+### `csv_imports` (migration 0006)
+
+Added by `0006_csv_imports.sql` for the CSV import of people and organisations (see
+[People and organisations](../features/people-and-organisations.md)). One row per import: the owner
+`user_id`, `kind` (`people` or `organisations`), file name and size (at most 5 MiB), `parts_received`, the
+uploaded `content` as `bytea`, a `status` (`uploading`, `ready`, `done`), `row_count`, the column `mapping` and
+the final `report` as `jsonb`. A `done` import must have a report and `imported_at`, and its `content` is cleared.
+The same migration adds the kind `imported` to the `timeline_events` kind check.
+
 ## Row level security
 
 Every `create table` is followed by `alter table … enable row level security`, with no policies. On
 Supabase this means the Data API roles (`anon`, `authenticated`) can neither read nor write app data,
 while the app's own database user, which owns the tables, is not affected. `tests/integration/rls.test.ts`
-fails if any table in the public schema lacks it (it also checks that the app's tables, including the tables from migrations 0004, 0005 and `note_mentions` from 0007, exist). Migration files may only contain statements allowed inside a transaction.
+fails if any table in the public schema lacks it (it also checks that the app's tables, including the tables from migrations 0004, 0005, `csv_imports` from 0006 and `note_mentions` from 0007, exist). Migration files may only contain statements allowed inside a transaction.
 
 ## Connecting
 
