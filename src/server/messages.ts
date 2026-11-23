@@ -85,6 +85,28 @@ export const messages = {
   note_record_archived: "Restore this record before changing its notes.",
   note_delete_confirm: "Delete this note? This can't be undone.",
   no_notifications: "No notifications yet.",
+  // SF-109: activities
+  activity_subject_required: "Give the activity a subject.",
+  activity_subject_too_long: "Keep the subject under 200 characters.",
+  activity_due_required: "Pick a due date.",
+  activity_time_not_in_uk: "Pick a time that exists in UK time.",
+  activity_duration_needs_time: "Pick a time before setting a duration.",
+  activity_duration_invalid: "Pick a duration between 5 minutes and 24 hours.",
+  activity_note_too_long: "Keep the note under 10,000 characters.",
+  activity_type_invalid: "Pick Call, Meeting or Task.",
+  activity_assignee_invalid: "Choose an active user.",
+  activity_conflict: "Someone else changed this activity while you were editing. Reload to see their changes.",
+  activity_gone: "This activity doesn't exist any more.",
+  activity_not_found: "This activity doesn't exist or you can't see it.",
+  activity_record_archived: "Restore this record before changing its activities.",
+  activity_link_not_found: "This record doesn't exist or you can't see it.",
+  activity_delete_confirm: "Delete this activity? This can't be undone.",
+  activities_empty: "No activities here.",
+  activities_none_planned: "No next activity.",
+  no_next_activity: "⚠ No next activity",
+  followup_question: "Schedule a follow-up?",
+  overdue: "Overdue",
+  today: "Today",
 } as const;
 
 const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} private people`);
@@ -125,13 +147,20 @@ export const templates = {
   note_not_found: (_name: string) => messages.note_not_found,
   // SF-95: "<n> deals · £<total>" above the deal list, for every matching deal.
   deal_list_count: (n: number, totalPence: number) => `${n} ${n === 1 ? "deal" : "deals"} · ${formatMoney(totalPence)}`,
+  // SF-109: activities
+  assignee_cannot_see: (name: string) => `${name} can't see this record, so the activity can't be assigned to them.`,
+  assigned_you: (by: string, type: string, subject: string) => `${by} assigned you a ${type}: ${subject}`,
+  activity_due: (text: string) => `Due ${text}`,
+  done_by: (name: string) => `Done by ${name}`,
+  next_activity: (day: string, type: string) => `Next: ${day} · ${type}`,
+  activity_deleted: (_name: string) => "Activity deleted.",
 } as const;
 
 export type TemplateCode = keyof typeof templates;
 
 // A form field's message: a template when the server gave a name, else a fixed text.
 export function fieldMessage(error: { code: string; name?: string }): string | undefined {
-  if (error.name !== undefined && (error.code === "duplicate_email" || error.code === "organisation_exists" || error.code === "mention_cannot_see")) {
+  if (error.name !== undefined && (error.code === "duplicate_email" || error.code === "organisation_exists" || error.code === "mention_cannot_see" || error.code === "assignee_cannot_see")) {
     return templates[error.code](error.name);
   }
   return messageFor(error.code);

@@ -54,6 +54,16 @@ export type DealsQuery = {
   open: number | null;
 };
 
+// The Activities list (SF-109 contracts/routes.md § /activities): `assignee` null is the viewer, "all" everyone.
+export const ACTIVITY_WHEN = ["overdue", "today", "week", "planned", "done"] as const;
+export const ACTIVITY_TYPE_FILTERS = ["call", "meeting", "task"] as const;
+export type ActivitiesQuery = {
+  when: (typeof ACTIVITY_WHEN)[number];
+  assignee: number | "all" | null;
+  type: (typeof ACTIVITY_TYPE_FILTERS)[number] | null;
+  page: number;
+};
+
 function first(params: Params, key: string): string {
   const v = params[key];
   return (Array.isArray(v) ? v[0] : v) ?? "";
@@ -130,6 +140,17 @@ export function parseDealsQuery(params: Params): DealsQuery {
   };
 }
 
+export function parseActivitiesQuery(params: Params): ActivitiesQuery {
+  const page = Number(first(params, "page"));
+  const assignee = first(params, "assignee");
+  return {
+    when: oneOf(first(params, "when"), ACTIVITY_WHEN) ?? "planned",
+    assignee: assignee === "all" ? "all" : parseId(assignee),
+    type: oneOf(first(params, "type"), ACTIVITY_TYPE_FILTERS),
+    page: Number.isSafeInteger(page) && page >= 1 ? page : 1,
+  };
+}
+
 export function hasDealFilters(query: DealsQuery): boolean {
   return (
     query.q !== "" || query.pipeline !== null || query.stage !== null || query.owner !== null || query.label !== null ||
@@ -163,13 +184,14 @@ export function knownSector(sector: string | null, inUse: readonly string[]): st
   return inUse.find((s) => s.toLowerCase() === sector.toLowerCase()) ?? null;
 }
 
-type AnyQuery = PeopleQuery | OrganisationsQuery | DealsQuery;
+type AnyQuery = PeopleQuery | OrganisationsQuery | DealsQuery | ActivitiesQuery;
 const ORDER = [
-  "q", "pipeline", "stage", "owner", "label", "source", "org", "consent", "sector", "size", "status", "sort", "dir", "page", "closed", "archived", "open",
+  "when", "assignee", "type", "q", "pipeline", "stage", "owner", "label", "source", "org", "consent", "sector", "size", "status", "sort", "dir", "page", "closed", "archived", "open",
 ];
 const DEFAULTS: Record<string, unknown> = { q: "", sort: "name", dir: "asc", page: 1, closed: false, archived: false };
 // The deal list's own defaults (newest first); people and organisations keep the ones above.
 const DEAL_DEFAULTS: Record<string, unknown> = { ...DEFAULTS, sort: "added", dir: "desc" };
+const ACTIVITY_DEFAULTS: Record<string, unknown> = { when: "planned", page: 1 };
 
 // A link to `path` with `changes` applied. Changing anything but the page or the drawer goes back to page 1;
 // changing anything but the drawer closes the drawer.
@@ -178,7 +200,7 @@ export function withParams<Q extends AnyQuery>(path: string, current: Q, changes
   const keys = Object.keys(changes);
   if (keys.some((k) => k !== "page" && k !== "open") && !("page" in changes)) next.page = 1;
   if (keys.some((k) => k !== "open") && !("open" in changes)) next.open = null;
-  const defaults = "closed" in current ? DEAL_DEFAULTS : DEFAULTS;
+  const defaults = "when" in current ? ACTIVITY_DEFAULTS : "closed" in current ? DEAL_DEFAULTS : DEFAULTS;
   const search = new URLSearchParams();
   for (const key of ORDER) {
     if (!(key in next)) continue;

@@ -27,14 +27,24 @@ OAuth code flow and database sessions.
   reason, `back`), `deals.ts` (board of open deals, deal, add/edit/move/archive/restore/delete, Won/Lost/Reopen, stage
   seconds; `transferDeal` records every stage move), `list.ts` (the deal list: rows, count and total, filter options),
   `links.ts` (other linked people, followers), `pipelines.ts` (admin changes).
+  `activities/` (SF-109): `rules.ts` (pure: validation, UK time `ukInstant`/`existsInUk`, `activityState` Overdue/Today,
+  `formatDue`, week bounds, the board card line `cardLine`, `afterTickPath`), `activities.ts` (schedule/edit/tick/untick/delete,
+  `nextActivities`, `pageActivity` for the address ids, `prefillLinks`, `activityFormChoices`; a done call or meeting raises
+  the person's Last contacted), `list.ts` (the Activities list, `now` as a parameter). `visibleActivity()` in
+  `records/visibility.ts`: every `activities` read uses it. Done activities are read into `readTimeline` (never copied);
+  `notifications.ts` also lists activities assigned by someone else (columns on the activity row).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
   SF-102: `RecordTimeline.tsx` (the // TIMELINE of every record page and the deal drawer, design B), `NoteBox.tsx`
   (client: the note box and the @ picker), `NoteDeleteConfirm.tsx`, `note-actions.ts`, `note-target.ts` (the record a note form posts to, its page and its kind's list), `NoteNotices.tsx` (the note notices of a record page); `Timeline.tsx` keeps the change
   lines. `src/app/(app)/notifications/` — the Notifications page and its actions (sidebar count in `layout.tsx`).
+  `src/app/(app)/activities/` (SF-109) — the Activities list (`page.tsx`), `actions.ts`, `ActivityBox.tsx` (client: the form
+  and "Schedule a follow-up?" in a box over the page), `ActivityOverlays.tsx` (opens the box or the delete confirmation from
+  `?activity=` / `?followup=` / `?delete-activity=`), `NextActivities.tsx` ("// NEXT ACTIVITIES" of record pages and the
+  drawer), `DoneBox.tsx`, `ActivityBits.tsx`, `ActivityDeleteConfirm.tsx`, `ActivityNotices.tsx`.
 - `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms, `list/` (the deal
   list), `[id]/` (the deal page: `StageBar.tsx`, `LostBox.tsx`, `not-found.tsx`), `ViewSwitch.tsx` (Board / List);
   `src/app/(app)/admin/pipelines/` — the Pipelines admin pages.
-- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals).
+- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities).
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google schema) and
   `scripts/start-isolated.mjs` (browser tests start the app without the developer's `.env*` files).

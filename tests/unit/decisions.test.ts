@@ -16,3 +16,16 @@ describe("docs/DECISIONS.md (SF-92)", () => {
     ).toBe(true);
   });
 });
+
+// covers SF-109 T054: the choices people made in the spec are recorded
+const sf109 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-109)"));
+
+describe("docs/DECISIONS.md (SF-109)", () => {
+  it("records design A for the Activities list, the card warning, Last contacted and in-app assignment notifications", () => {
+    expect(sf109.some((l) => l.includes("Activities list uses design A") && l.includes("box over the page"))).toBe(true);
+    expect(sf109.some((l) => l.includes("No next activity") && l.includes("replaces the SF-93 choice"))).toBe(true);
+    expect(sf109.some((l) => l.includes("Last contacted") && l.includes("marked done") && l.includes("a task never does"))).toBe(true);
+    expect(sf109.some((l) => l.includes("assigned an activity") && l.includes("in the app only"))).toBe(true);
+    expect(sf109).toHaveLength(4);
+  });
+});

@@ -1,7 +1,9 @@
 // The Notifications page (SF-102 contracts/routes.md § /notifications): the user's own mentions, newest first,
 // 50 at a time; each opens the record and is marked read. Only notifications whose record the user can see now.
+// SF-109: activities assigned to the user by someone else are listed with them ("Ada Fake assigned you a call: …").
 import Link from "next/link";
 import { requireUser } from "@/server/auth/session";
+import { formatDue } from "@/server/activities/rules";
 import { formatDateTime } from "@/server/format";
 import { messages, templates } from "@/server/messages";
 import { listNotifications } from "@/server/notifications";
@@ -36,26 +38,32 @@ export default async function NotificationsPage({ searchParams }: { searchParams
         <p className="empty">{messages.no_notifications}</p>
       ) : (
         <ul className="notifs" aria-label="Notifications">
-          {items.map((n) => (
-            <li key={n.eventId} id={`n-${n.eventId}`} className={n.read ? "notif" : "notif unread"}>
-              <form action={openNotification}>
-                <input type="hidden" name="eventId" value={n.eventId} />
-                <button type="submit" className="notif-open">
-                  <span className="notif-top">
-                    <span className="notif-title">{templates.mentioned_you(n.byName, n.recordName)}</span>
-                    {!n.read && <span className="badge new">Unread</span>}
-                    <span className="when">{formatDateTime(n.createdAt)}</span>
-                  </span>
-                  <span className="notif-preview">{n.preview}</span>
-                </button>
-              </form>
-            </li>
-          ))}
+          {items.map((n) => {
+            const key = n.kind === "mention" ? `n-${n.eventId}` : `a-${n.id}`;
+            return (
+              <li key={key} id={key} className={n.read ? "notif" : "notif unread"}>
+                <form action={openNotification}>
+                  <input type="hidden" name="kind" value={n.kind} />
+                  <input type="hidden" name="id" value={n.kind === "mention" ? n.eventId : n.id} />
+                  <button type="submit" className="notif-open">
+                    <span className="notif-top">
+                      <span className="notif-title">
+                        {n.kind === "mention" ? templates.mentioned_you(n.byName, n.recordName) : templates.assigned_you(n.byName, n.type, n.subject)}
+                      </span>
+                      {!n.read && <span className="badge new">Unread</span>}
+                      <span className="when">{formatDateTime(n.createdAt)}</span>
+                    </span>
+                    <span className="notif-preview">{n.kind === "mention" ? n.preview : templates.activity_due(formatDue(n))}</span>
+                  </button>
+                </form>
+              </li>
+            );
+          })}
         </ul>
       )}
       {more && last && (
         <div className="more">
-          <Link className="btn" href={`/notifications?shown=${shown + 50}#n-${last.eventId}`} scroll={false}>
+          <Link className="btn" href={`/notifications?shown=${shown + 50}#${last.kind === "mention" ? `n-${last.eventId}` : `a-${last.id}`}`} scroll={false}>
             [ SHOW MORE ]
           </Link>
         </div>

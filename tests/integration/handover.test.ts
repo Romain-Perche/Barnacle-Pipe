@@ -11,6 +11,8 @@ import { getBoard, getDeal, updateDeal } from "@/server/deals/deals";
 import { makeOrganisation, makePerson, makeUser, resetDb, type TestUser } from "./db-helpers";
 import { dealForm, dealRow, makeDeal, makePipeline } from "./deal-helpers";
 import { emails, personForm } from "./record-helpers";
+import { getActivity, nextActivities } from "@/server/activities/activities";
+import { makeActivity } from "./activity-helpers";
 
 let ada: TestUser; // admin
 let grace: TestUser; // admin
@@ -316,5 +318,19 @@ describe("handOverPrivateRecords with private deals (SF-97)", () => {
       errors: { form: { code: "deal_edit_conflict" } },
     });
     expect((await dealRow(fromLinus))!).toMatchObject({ title: "Linus fake deal", owner_id: margaret.id });
+  });
+
+  // covers SF-109 US5 scenario 4 (T015): the new owner sees the handed-over records' activities; each keeps its assignee
+  it("lets the new owner see the activities of the private deal and person handed over, assignee kept", async () => {
+    const onDeal = await makeActivity({ by: alan.id, dealId: open, personId: sam, subject: "Fake leaver call" });
+    const onPerson = await makeActivity({ by: alan.id, personId: sam, type: "task", subject: "Fake leaver task" });
+    expect(await nextActivities(margaret.id, { dealId: open })).toEqual([]);
+    expect(await getActivity(margaret.id, onPerson)).toBeNull();
+    await handOverPrivateRecords(ada.id, alan.id, margaret.id);
+    expect((await nextActivities(margaret.id, { dealId: open })).map((a) => a.id)).toEqual([onDeal]);
+    expect((await nextActivities(margaret.id, { personId: sam })).map((a) => a.id)).toEqual([onDeal, onPerson]);
+    const seen = (await getActivity(margaret.id, onPerson))!;
+    expect(seen.assignee).toEqual({ id: alan.id, name: alan.name, active: false });
+    expect((await getActivity(linus.id, onDeal))).toBeNull();
   });
 });

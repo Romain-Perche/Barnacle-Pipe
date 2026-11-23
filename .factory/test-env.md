@@ -38,6 +38,16 @@
   which also checks Postgres's own 23514/23505 refusals (a note without body or author, a body or editor on another
   kind, a second mention of the same user) and the cascade of mentions with their note. Notifications are in-app only:
   no email service, so no new fake.
+  The activities code (SF-109: `src/server/activities/activities.ts`, `src/server/activities/list.ts`, and the changes to
+  `src/server/records/timeline.ts`, `src/server/notifications.ts`, `src/server/deals/deals.ts`) keeps to the same pooler
+  limits (no `set`/`listen`/session advisory lock, scanned by `tests/integration/migrate.test.ts`; every change one
+  `sql.begin()` locking the activity and its linked rows `for update`; the clock is passed as a `now` parameter, never a
+  session time zone). Its table comes from `migrations/0008_activities.sql` (`activities`; it does not touch
+  `timeline_events`), applied on a fresh database by the same test, which also checks Postgres's own 23514 refusals (a
+  type other than call/meeting/task, a subject with spaces around it, empty or over 200 characters, a duration without a
+  time or not 5–1440 in steps of 5, done_at without done_by, an empty note) and that deleting a deal, person or
+  organisation sets the activity's link to null. Assignment notifications are in-app only and Google Calendar sync comes
+  later: no new outside service, so no new fake.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -67,8 +77,9 @@
     `DATABASE_URL` (crm_dev), `FIRST_ADMIN_EMAIL` (ada@barnacle.ai; `FIRST_ADMIN_EMAIL=` for none), `VERCEL_ENV`,
     `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
   - `bash .factory/run/reset-db.sh [db]` — empties every app table (users, sessions, people, organisations,
-    labels, timeline, pipelines, stages, deals, stage periods…), puts back the six starting lead sources, and seeds
-    again (`NO_SEED=1`: empty).
+    labels, timeline, pipelines, stages, deals, stage periods, activities…), puts back the six starting lead sources, and seeds
+    again (`NO_SEED=1`: empty). Run `npm run db:migrate` first on a database created before a new migration (the
+    truncate lists every table).
     The seed adds 5 fake users, 35 fake people (Gus Lorem is private, created by Ada Fake; Fay Mockup is
     archived; SF-92: Pat Privatefake private, created by Ada Fake and owned by Linus Fake; Robin Leftfake (linked
     to Fakeco Ltd) and Sam Leftfake private, owned by deactivated Alan Fake) and 9 fake organisations ("Old Fakeco
@@ -90,6 +101,14 @@
     shared person mentioning Ada Fake (read), Margaret Fake on the second shared person, Ada Fake on Fakeco Ltd, on the
     private deal "Fake secret project" and on the private person Pat Privatefake. The seed already has a "Fakeco website" deal: scenario
     scripts that add their own should delete it first (the browser tests do).
+    SF-109 adds 12 fake activities (subjects "Fake call: …", "Fake meeting: …", "Fake task: …"), dated from the UK day the
+    seed runs: Ada Fake's call overdue 4 days on "Fakeco website" (with its person and organisation), her task today 09:00
+    on "Sample Gyms CRM", meeting today 15:00–16:00 on Fakeco Ltd, call in 2 days on "Mock Labs audit" (assigned by Grace
+    Fake: a read notification), task in 5 days with no link; Grace Fake's meeting tomorrow on Fakeco Ltd (assigned by Ada
+    Fake: Grace has 1 unread notification) and task next week on Robin Leftfake; three done ones ("Fakeco AI pilot",
+    "Fakeco support contract", Fakeco Ltd; the first two set their main person's Last contacted); a call on the private
+    deal "Fake secret project" and a task on the private person Gus Lorem (both Ada's). Every other open deal shows
+    "⚠ No next activity" on the board.
   - Deal list and deal page scenarios (SF-95) are covered by `tests/e2e/{deal-page,deal-won-lost,deal-list,deal-restore,deal-labels}.spec.ts`.
     Selectors: the deal page's stage bar is the `list` named "Stages" (current stage `aria-current="step"`, other stages of
     an open deal are buttons "Move to <stage>"), the strip is `dl.strip`, the Lost box is the `dialog` named "Why was this
@@ -127,6 +146,15 @@
     exactly 10,000 characters with 99 line breaks; Edge 18 picks "@Linus Fake" then types "@Linus Fakeson". Direct requests are made by rewriting the edit/delete
     forms' hidden `noteId`/`target`/`targetId` (or adding a hidden `mention` input) in the page before submitting.
     Archive/restore, making a deal private/shared, changing a deal's organisation and deactivation are done by SQL.
+  - Activities (SF-109): no browser test (plan). Selectors for the AI review: "// NEXT ACTIVITIES" is the `region` "Next
+    activities" (rows `li.arow`, links "Edit <subject>" / "Delete <subject>"), done boxes are buttons "Mark done" / "Mark not
+    done"; the activity box is the `dialog` "Schedule activity" / "Edit activity" / "Schedule a follow-up?" (fields labelled
+    Subject, Date, Time, Duration, Assigned to; type radios Call/Meeting/Task; pickers are comboboxes "Deal", "Person",
+    "Organisation"; buttons "[ SAVE ]", links "[ CANCEL ]" / "[ NOT NOW ]"); the delete confirmation is the `alertdialog`
+    "Delete this activity? This can't be undone."; the list's quick filters are links in the `navigation` "Show" (current
+    one `aria-current="page"`), selects "Assignee" and "Type"; overdue rows `tr.over`, marks `.od` / `.td`; card lines
+    `.card .warnline` / `.card .nextline`. A quick way to sign in from a script: insert a `sessions` row whose
+    `token_hash` is the SHA-256 of a token and send it as the `crm_session` cookie.
   - Pipelines, deals and the board scenarios (SF-93) are covered by `tests/e2e/{board,deals,pipelines,deals-private}.spec.ts`
     (real drag with `locator.dragTo`; a failed drag by aborting the server action POST with `page.route`). Board
     selectors: each column is a `region` named after its stage (`h2` name, `.tot` "<n> deals · £total"), cards are

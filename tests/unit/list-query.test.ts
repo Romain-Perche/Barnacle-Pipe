@@ -1,7 +1,9 @@
 // covers FR-012, FR-013, FR-014, contracts/list-query.md (both lists), edge cases "page beyond the last" and
 // "search text is never echoed as a message"
 import { describe, expect, it } from "vitest";
-import { hasDealFilters, knownDealsQuery, knownSector, parseDealsQuery, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
+import {
+  hasDealFilters, knownDealsQuery, knownSector, parseActivitiesQuery, parseDealsQuery, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams,
+} from "@/server/records/list-query";
 
 describe("parsePeopleQuery", () => {
   it("has the defaults: sort by name A–Z, page 1, no filter", () => {
@@ -178,5 +180,31 @@ describe("knownDealsQuery", () => {
     expect(knownDealsQuery(parseDealsQuery({ status: "lost", archived: "1" }), options).status).toBe("lost");
     const rest = parseDealsQuery({ q: "fake", sort: "value", dir: "asc", page: "2", open: "8" });
     expect(knownDealsQuery(rest, options)).toEqual(rest);
+  });
+});
+
+// covers SF-109 FR-008, US3 scenarios 3–4, contracts/routes.md § /activities (T006, T036)
+describe("parseActivitiesQuery", () => {
+  it("defaults to planned, the viewer, every type, page 1", () => {
+    expect(parseActivitiesQuery({})).toEqual({ when: "planned", assignee: null, type: null, page: 1 });
+    expect(parseActivitiesQuery({ when: "soon", assignee: "x", type: "email", page: "0" })).toEqual({ when: "planned", assignee: null, type: null, page: 1 });
+  });
+  it("reads each value", () => {
+    for (const when of ["overdue", "today", "week", "planned", "done"]) expect(parseActivitiesQuery({ when }).when).toBe(when);
+    expect(parseActivitiesQuery({ assignee: "all" }).assignee).toBe("all");
+    expect(parseActivitiesQuery({ assignee: "7" }).assignee).toBe(7);
+    expect(parseActivitiesQuery({ assignee: "-7" }).assignee).toBeNull();
+    for (const type of ["call", "meeting", "task"]) expect(parseActivitiesQuery({ type }).type).toBe(type);
+    expect(parseActivitiesQuery({ page: "3" }).page).toBe(3);
+  });
+  it("builds links that keep the other filters, drop the page, and read back the same", () => {
+    const q = parseActivitiesQuery({ when: "today", assignee: "all", type: "meeting", page: "2" });
+    const done = withParams("/activities", q, { when: "done" });
+    expect(done).toBe("/activities?when=done&assignee=all&type=meeting");
+    expect(parseActivitiesQuery(Object.fromEntries(new URL(done, "http://x").searchParams))).toEqual({ ...q, when: "done", page: 1 });
+    expect(withParams("/activities", q, { page: 3 })).toBe("/activities?when=today&assignee=all&type=meeting&page=3");
+    expect(withParams("/activities", parseActivitiesQuery({}), { when: "planned" })).toBe("/activities");
+    const mine = withParams("/activities", q, { assignee: 5, type: null });
+    expect(parseActivitiesQuery(Object.fromEntries(new URL(mine, "http://x").searchParams))).toEqual({ when: "today", assignee: 5, type: null, page: 1 });
   });
 });

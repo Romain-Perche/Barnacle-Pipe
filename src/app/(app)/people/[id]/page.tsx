@@ -10,6 +10,9 @@ import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { RecordHeader } from "../../records/RecordHeader";
 import { NoteNotices } from "../../records/NoteNotices";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { ActivityNotices } from "../../activities/ActivityNotices";
+import { ActivityOverlays } from "../../activities/ActivityOverlays";
+import { NextActivities } from "../../activities/NextActivities";
 import { archivePerson, deletePerson, restorePerson } from "../actions";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Params> };
@@ -54,6 +57,7 @@ export default async function PersonPage({ params, searchParams }: Props) {
       />
       {confirming && <DeleteConfirm name={person.name} id={id} action={deletePerson} cancelHref={href} />}
       <NoteNotices error={first(query, "error")} />
+      <ActivityNotices error={first(query, "error")} />
 
       <section aria-label="Details">
         <div className="label sect">
@@ -140,11 +144,20 @@ export default async function PersonPage({ params, searchParams }: Props) {
         </dl>
       </section>
 
+      <NextActivities viewerId={user.id} target={{ personId: id }} archived={person.archived} back={href} />
+
       <RecordTimeline
         viewerId={user.id}
         target={{ personId: id }}
         archived={person.archived}
         query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+      />
+      <ActivityOverlays
+        viewerId={user.id}
+        target={{ personId: id }}
+        archived={person.archived}
+        back={href}
+        query={{ activity: first(query, "activity"), followup: first(query, "followup"), deleteActivity: first(query, "delete-activity") }}
       />
     </>
   );

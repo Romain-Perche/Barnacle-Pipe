@@ -59,3 +59,7 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - The timeline uses design B: entries grouped by day with a NOTE, DEAL or CHANGE tag and the time, notes in a box with an orange left edge, the note box above the timeline (SF-102)
 - A teammate mentioned in a note is told in the app only: Notifications in the sidebar and a Notifications page, no email (SF-102)
 - Anyone who can see a note can edit or delete it (SF-102)
+- The Activities list uses design A: a table like the People list with quick filters Overdue / Today / This week / Planned / Done, the activity form and "Schedule a follow-up?" in a box over the page, and a last line on each board card (SF-109)
+- Deal cards show "⚠ No next activity" when the viewer can see no planned activity on the deal, else its next date; this replaces the SF-93 choice (SF-109)
+- A done call or meeting sets the linked person's Last contacted to its due date, or the moment it was marked done when the due date is later, never lowering it; a task never does (SF-109)
+- A teammate assigned an activity by someone else is told in the app only, on the Notifications page, like a mention (SF-109)

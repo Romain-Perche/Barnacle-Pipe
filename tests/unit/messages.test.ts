@@ -189,3 +189,45 @@ describe("timeline and notes messages", () => {
     expect(fieldMessage({ code: "mention_cannot_see" })).toBeUndefined();
   });
 });
+
+// covers SF-109 FR-015, contracts/routes.md § Messages (T006)
+describe("activity messages", () => {
+  it("has the fixed texts", () => {
+    const expected: Record<string, string> = {
+      activity_subject_required: "Give the activity a subject.",
+      activity_subject_too_long: "Keep the subject under 200 characters.",
+      activity_due_required: "Pick a due date.",
+      activity_time_not_in_uk: "Pick a time that exists in UK time.",
+      activity_duration_needs_time: "Pick a time before setting a duration.",
+      activity_duration_invalid: "Pick a duration between 5 minutes and 24 hours.",
+      activity_note_too_long: "Keep the note under 10,000 characters.",
+      activity_conflict: "Someone else changed this activity while you were editing. Reload to see their changes.",
+      activity_gone: "This activity doesn't exist any more.",
+      activity_not_found: "This activity doesn't exist or you can't see it.",
+      activity_record_archived: "Restore this record before changing its activities.",
+      activity_link_not_found: "This record doesn't exist or you can't see it.",
+      activity_delete_confirm: "Delete this activity? This can't be undone.",
+      activities_empty: "No activities here.",
+      activities_none_planned: "No next activity.",
+      no_next_activity: "⚠ No next activity",
+      followup_question: "Schedule a follow-up?",
+      overdue: "Overdue",
+      today: "Today",
+    };
+    for (const [code, text] of Object.entries(expected)) expect(messageFor(code), code).toBe(text);
+  });
+  it("has the templates, never reachable from a URL code", () => {
+    expect(templates.assignee_cannot_see("Bob Fake")).toBe("Bob Fake can't see this record, so the activity can't be assigned to them.");
+    expect(templates.assigned_you("Ada Fake", "call", "Call Ada about the proposal")).toBe("Ada Fake assigned you a call: Call Ada about the proposal");
+    expect(templates.activity_due("25 Nov 2026 10:00")).toBe("Due 25 Nov 2026 10:00");
+    expect(templates.done_by("Ada Fake")).toBe("Done by Ada Fake");
+    expect(templates.next_activity("25 Nov", "Call")).toBe("Next: 25 Nov · Call");
+    expect(templates.activity_deleted("")).toBe("Activity deleted.");
+    expect(messageFor("assignee_cannot_see")).toBeUndefined();
+    expect(messageFor("assigned_you")).toBeUndefined();
+  });
+  it("fieldMessage renders the assignee refusal with the server's name", () => {
+    expect(fieldMessage({ code: "assignee_cannot_see", name: "Bob Fake" })).toBe("Bob Fake can't see this record, so the activity can't be assigned to them.");
+    expect(fieldMessage({ code: "assignee_cannot_see" })).toBeUndefined();
+  });
+});

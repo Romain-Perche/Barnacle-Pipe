@@ -15,10 +15,12 @@ export function groupByDay<T extends { createdAt: Date }>(entries: T[], now: Dat
   return groups;
 }
 
-export type EntryTag = "NOTE" | "CHANGE" | "DEAL";
+export type EntryTag = "NOTE" | "CHANGE" | "DEAL" | "ACTIVITY";
 
-// DEAL: an entry of a linked deal on a person's or organisation's timeline; NOTE: a note of the page's record.
+// DEAL: an entry of a linked deal on a person's or organisation's timeline; NOTE: a note of the page's record;
+// ACTIVITY: a done call, meeting or task (SF-109), wherever it is linked.
 export function entryTag(e: { kind: string; deal: unknown }): EntryTag {
+  if (e.kind === "activity") return "ACTIVITY";
   if (e.deal) return "DEAL";
   return e.kind === "note" ? "NOTE" : "CHANGE";
 }

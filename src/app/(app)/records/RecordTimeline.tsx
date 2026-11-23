@@ -2,7 +2,8 @@
 // (not on archived records, not in the drawer), then the entries newest first under one heading per UK day, each
 // with a NOTE, DEAL or CHANGE tag and its time. A person's and an organisation's timeline also hold their deals'
 // entries (DEAL: the deal's title links to it; read-only there). `?note=` / `?delete-note=` only pick which of the
-// notes shown is in edit / confirm mode; nothing from the address is shown.
+// notes shown is in edit / confirm mode; nothing from the address is shown. SF-109: a done activity is an ACTIVITY
+// entry (type, subject, note as text, "Done by <name>") with its box to untick it, except on archived records and in the drawer.
 import Link from "next/link";
 import { formatTime } from "@/server/format";
 import { templates } from "@/server/messages";
@@ -16,6 +17,8 @@ import { NoteBox } from "./NoteBox";
 import { NoteDeleteConfirm } from "./NoteDeleteConfirm";
 import { targetId as idOf, targetKind, targetPath } from "./note-target";
 import { Line } from "./Timeline";
+import { TypeTag } from "../activities/ActivityBits";
+import { DoneBox } from "../activities/DoneBox";
 
 type Query = { timeline?: string; note?: string; deleteNote?: string };
 
@@ -76,6 +79,24 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
             {group.entries.map((e) => {
               const tag = entryTag(e);
               const author = e.actorName ? (e.authorActive ? e.actorName : `${e.actorName} (deactivated)`) : "";
+              if (e.activity) {
+                const a = e.activity;
+                return (
+                  <li key={`activity-${a.id}`} id={`activity-${a.id}`} className="ent">
+                    <span className={`kd ${tag.toLowerCase()}`}>{tag}</span>
+                    <div className="ent-body actentry">
+                      <div className="acthead">
+                        {canChange && <DoneBox id={a.id} done back={path} />}
+                        <TypeTag type={a.type} />
+                        <b className="subj">{a.subject}</b>
+                      </div>
+                      {a.note && <div className="actnote">{a.note}</div>}
+                      <div className="edited">{templates.done_by(a.doneByActive ? a.doneByName : `${a.doneByName} (deactivated)`)}</div>
+                    </div>
+                    <span className="when">{formatTime(e.createdAt)}</span>
+                  </li>
+                );
+              }
               return (
                 <li key={e.id} id={`entry-${e.id}`} className="ent">
                   <span className={`kd ${tag.toLowerCase()}`}>{tag}</span>
@@ -128,7 +149,7 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
       ))}
       {page.more && last && (
         <div className="more">
-          <Link className="btn" href={readOnly ? `${path}?timeline=100` : `${path}?timeline=${limit + 50}#entry-${last.id}`} scroll={false}>
+          <Link className="btn" href={readOnly ? `${path}?timeline=100` : `${path}?timeline=${limit + 50}#${last.kind === "activity" ? "activity" : "entry"}-${last.id}`} scroll={false}>
             [ SHOW MORE ]
           </Link>
         </div>

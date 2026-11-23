@@ -7,10 +7,12 @@ import { requireUser } from "@/server/auth/session";
 import * as notifications from "@/server/notifications";
 import { idFrom } from "@/server/records/form-data";
 
+// Posts `kind` (mention when absent; SF-109: assignment) and `id` (`eventId` before SF-109).
 export async function openNotification(form: FormData): Promise<void> {
   const user = await requireUser();
-  const eventId = idFrom(form, "eventId");
-  const opened = eventId === null ? null : await notifications.openNotification(user.id, eventId);
+  const kind = form.get("kind") === "assignment" ? "assignment" : "mention";
+  const id = idFrom(form, "id") ?? idFrom(form, "eventId");
+  const opened = id === null ? null : await notifications.openNotification(user.id, { kind, id });
   // The sidebar count lives in the shared layout: refresh it.
   revalidatePath("/", "layout");
   redirect(opened ? opened.href : "/notifications");

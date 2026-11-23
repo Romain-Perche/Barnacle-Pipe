@@ -15,6 +15,9 @@
   /* SF-102: mention highlight and note background (design B) */
   --wash: rgba(43, 0, 255, 0.05);
   --note: rgba(255, 66, 0, 0.06);
+  /* SF-109: the "No next activity" warning and a done box */
+  --warn: #b45309;
+  --ok: #16a34a;
   --sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -343,3 +346,65 @@ mark.mention { color: var(--blue); background: var(--wash); font-weight: 600; pa
 .notif .when { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
 .notif-preview { display: block; color: var(--muted); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }
 .badge.new { color: var(--orange); border-color: var(--orange); }
+
+/* SF-109 activities, design A: list rows like the People list, Overdue / Today marks, done boxes, card last line,
+   the activity form in a box over the page. */
+.ty { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.od, .td { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 4px; white-space: nowrap; }
+.od { color: var(--danger); border: 0.5px solid var(--danger); }
+.td { color: var(--blue); border: 0.5px solid var(--blue); }
+.red { color: var(--danger); }
+.doneform { display: inline; margin: 0; }
+.box { display: inline-block; width: 16px; height: 16px; padding: 0; border: 1px solid var(--line); background: var(--panel); vertical-align: middle; cursor: pointer; }
+.box:hover { border-color: var(--ok); }
+.box:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.box.done { background: var(--ok); border-color: var(--ok); }
+.box.off { cursor: default; border-style: dashed; }
+.subj { overflow-wrap: anywhere; }
+.aacts { display: inline-flex; gap: 12px; margin-left: 10px; }
+table.activities-list td { vertical-align: top; }
+table.activities-list tr.over td:first-child { box-shadow: inset 2px 0 0 var(--danger); }
+table.activities-list .subj-cell .subj { font-weight: 600; }
+table.activities-list .ln { display: block; }
+table.activities-list .due-cell { white-space: nowrap; }
+.tabs { display: inline-flex; }
+.tabs a { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 0.5px solid var(--line); padding: 8px 10px; margin-right: -0.5px; text-decoration: none; color: var(--ink); }
+.tabs a:hover { background: var(--wash); }
+.tabs a.on { background: var(--orange); color: #fff; border-color: var(--orange); }
+.count-line { margin: 4px 0 8px; }
+/* // NEXT ACTIVITIES */
+.nextacts { max-width: 900px; }
+.sect-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.arows { list-style: none; margin: 0; padding: 0; }
+.arow { display: grid; grid-template-columns: 20px 70px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 8px 0; border-bottom: 0.5px solid var(--line-list); font-size: 14px; }
+.arow .asubj { min-width: 0; }
+.arow .ameta { display: block; color: var(--muted); font-size: 13px; }
+.deal-drawer .arow { grid-template-columns: 20px 60px minmax(0, 1fr); font-size: 13px; }
+.deal-drawer .arow .aacts { grid-column: 3; margin-left: 0; }
+/* The ACTIVITY timeline entry */
+.kd.activity { color: var(--ok); border-color: var(--ok); }
+.actentry .acthead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.actentry .actnote { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0; }
+/* Board card last line */
+.card .warnline, .card .nextline { display: block; margin-top: 6px; padding-top: 4px; border-top: 0.5px solid var(--line-list); font-family: var(--mono); font-size: 10px; }
+.card .warnline { color: var(--warn); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.card .nextline { color: var(--muted); letter-spacing: 0.05em; }
+.card .nextline .od { margin-left: 6px; }
+/* The activity box over the page */
+.actbox { max-width: 560px; max-height: calc(100vh - 32px); overflow-y: auto; }
+.actbox h2 { font-size: 18px; margin: 0; }
+.actbox .field > span { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); }
+.actbox textarea { white-space: pre-wrap; }
+.actbox .form-acts { justify-content: flex-end; }
+.boxrow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.typetabs { border: 0; margin: 0; padding: 0; display: flex; }
+.typetabs label { cursor: pointer; }
+.typetabs input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.typetabs span { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 0.5px solid var(--line); padding: 8px 12px; margin-right: -0.5px; }
+.typetabs input:checked + span { background: var(--orange); color: #fff; border-color: var(--orange); }
+.typetabs input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 1px; }
+.confirmbox p { margin: 0; }
+.confirmbox .form-acts form { display: inline; margin: 0; }
+@media (max-width: 720px) {
+  .boxrow { grid-template-columns: 1fr; }
+}

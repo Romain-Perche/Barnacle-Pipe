@@ -10,6 +10,9 @@ import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { RecordHeader } from "../../records/RecordHeader";
 import { NoteNotices } from "../../records/NoteNotices";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { ActivityNotices } from "../../activities/ActivityNotices";
+import { ActivityOverlays } from "../../activities/ActivityOverlays";
+import { NextActivities } from "../../activities/NextActivities";
 import { archiveOrganisation, deleteOrganisation, restoreOrganisation } from "../actions";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Params> };
@@ -62,6 +65,7 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
       />
       {confirming && <DeleteConfirm name={org.name} id={id} action={deleteOrganisation} cancelHref={href} />}
       <NoteNotices error={first(query, "error")} />
+      <ActivityNotices error={first(query, "error")} />
 
       <section aria-label="Details">
         <div className="label sect">
@@ -107,11 +111,20 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
         )}
       </section>
 
+      <NextActivities viewerId={user.id} target={{ organisationId: id }} archived={org.archived} back={href} />
+
       <RecordTimeline
         viewerId={user.id}
         target={{ organisationId: id }}
         archived={org.archived}
         query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+      />
+      <ActivityOverlays
+        viewerId={user.id}
+        target={{ organisationId: id }}
+        archived={org.archived}
+        back={href}
+        query={{ activity: first(query, "activity"), followup: first(query, "followup"), deleteActivity: first(query, "delete-activity") }}
       />
     </>
   );

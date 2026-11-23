@@ -202,6 +202,8 @@ export async function deleteOrganisation(actorId: number, id: number): Promise<D
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     if (!(await isActiveAdmin(db, actorId))) return { status: "forbidden" as const };
+    // SF-109 FR-014: its activities linked to nothing else go with it; the others lose the organisation.
+    await db`delete from activities where organisation_id = ${id} and deal_id is null and person_id is null`;
     const [row] = await db<{ name: string }[]>`delete from organisations where id = ${id} returning name`;
     return row ? { status: "deleted" as const, name: row.name } : { status: "not_found" as const };
   });
