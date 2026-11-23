@@ -8,12 +8,15 @@ Setup and commands are in `README.md`; the factory's test recipe is `.factory/te
 export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test
 npm run db:migrate          # applies 0008_activities.sql
 npm run db:seed             # fake users, people, deals, notes, activities
-npm test && npm run test:e2e && npm run typecheck
+npm test && npm run typecheck
 ```
 
 For a manual look: `APP_ENV=development npm run dev`, sign in with the fake Google login as Ada Fake.
 
-## Scenarios (each maps to an automated test)
+## Scenarios
+
+The repo has no browser tests (`docs/DECISIONS.md`). Unit and integration tests cover the rules and data behind each
+row; the AI review performs each row in the running app.
 
 | # | Do | Expect | Spec |
 |---|---|---|---|
@@ -30,5 +33,5 @@ For a manual look: `APP_ENV=development npm run dev`, sign in with the fake Goog
 | 11 | Delete (admin) a deal whose only link is the deal / a person with a deal-linked activity | The first activity is gone; the second stays on the person | FR-014 |
 
 Clock-dependent checks (Overdue / Today around midnight and the clocks changing, SC-006) are unit tests on
-`activityState` and integration tests passing a fixed `now` to `listActivities`; browser tests use dates relative to
+`activityState` and integration tests passing a fixed `now` to `listActivities`; the AI review uses dates relative to
 today.

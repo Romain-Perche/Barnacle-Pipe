@@ -101,7 +101,11 @@ page the actor can no longer see, they land on its not-found page as today.
 
 `src/server/activities/rules.ts` (pure): `ACTIVITY_TYPES`, `validateActivity(form)`, `existsInUk(dueOn, time)`,
 `ukInstant(dueOn, time)`, `activityState(a, now)`, `formatDue(a)` ("25 Nov 2026", "25 Nov 2026 10:00",
-"25 Nov 2026 10:00–10:30"), `formatCardDue(dueOn)` ("25 Nov"), `durationOptions()`, `weekBounds(now)`.
+"25 Nov 2026 10:00–10:30"), `formatCardDue(dueOn)` ("25 Nov"), `durationOptions()`, `weekBounds(now)`,
+`cardLine(next, now)` (the board card's last line: `{ kind: "warn", text: "⚠ No next activity" }` or
+`{ kind: "next", text: "Next: 25 Nov · Call", overdue }`), `afterTickPath(back, id, followup)` (the address after a tick:
+`back` plus `followup=<id>` only when `followup` was posted). Board.tsx and the actions use them, so unit tests cover
+what the screens show.
 
 `src/server/activities/activities.ts`:
 
@@ -115,6 +119,9 @@ page the actor can no longer see, they land on its not-found page as today.
 - `activityFormChoices(viewerId, links)` → `{ assignees, deals, people, organisations }` (assignees: active users who can
   see the links; deals: open, non-archived, visible; people: `linkablePeople`; organisations: non-archived)
 - `prefillLinks(viewerId, target)` → the US1 pre-fill.
+- `pageActivity(viewerId, id, target)` → `ActivityView | null`: the activity named by `activity`, `followup` or
+  `delete-activity` in a page address, only when the viewer can see it and it is linked to that record (else the page
+  ignores the parameter); `followupPrefill(activity)` → its links and assignee, type kept, no date.
 
 `src/server/activities/list.ts`: `listActivities(viewerId, query, now)` → `{ rows, count }`; `activityFilterOptions()`.
 

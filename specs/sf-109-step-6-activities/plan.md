@@ -29,8 +29,11 @@ already in the repo; nothing added (research.md §1).
 **Testing**: Vitest unit (validation, UK time existence, `activityState` around midnight and both clock changes,
 `formatDue`, `parseActivitiesQuery`, messages), Vitest integration on real Postgres (schedule/edit/tick/untick/delete,
 concurrency of ticks, conflicts, privacy everywhere, archived, record deletes, hand-over, Last contacted, list filters
-with a fixed `now`, board `next`, notifications, timeline union, performance, seed, RLS, migrate), Playwright (US1–US6
-through the fake Google login).
+with a fixed `now`, board `next`, notifications, timeline union, address parameters, follow-up pre-fill, performance,
+seed, RLS, migrate). No browser tests: `docs/DECISIONS.md` says the repo has none (this replaces AGENTS.md § Tests on
+this point). What a browser test would check is moved into unit and integration tests where it can be (card line,
+address after a tick, sidebar order, which address ids a page accepts, plain-text subject and note); the AI review
+checks the screens (layout, box opening and closing, focus, colours) in the running app.
 
 **Target Platform**: Vercel serverless functions (Node runtime); desktop browsers.
 
@@ -138,9 +141,7 @@ src/
 tests/
 ├── unit/          # activities-rules, list-query (+activities), timeline-view, messages
 ├── integration/   # activities, activities-private, activities-list (+performance), board-next, activity-notifications,
-│                  #   timeline-activities, last-contacted, + archive-delete, handover, seed, rls, migrate
-└── e2e/           # activities.spec.ts, activities-list.spec.ts, activities-board.spec.ts, activities-private.spec.ts,
-                   #   activity-notifications.spec.ts
+│                  #   timeline-activities, activity-page, last-contacted, + archive-delete, handover, seed, rls, migrate
 tests/support/reset.ts, .factory/run/reset-db.sh   # + activities in the truncate
 ```
 
@@ -154,14 +155,16 @@ notifications in `notifications.ts`.
    `.factory/run/reset-db.sh`: add `activities` to the `truncate`. `rls.test.ts`: + `activities`.
 2. **Pure rules** `src/server/activities/rules.ts` (research.md §4, data-model.md § Entity): `validateActivity` (CRLF →
    LF, trim, codes in field order), `existsInUk`, `ukInstant`, `activityState(a, now)`, `formatDue`, `formatCardDue`,
-   `durationOptions` (5 min … 24 h step 5), `weekBounds(now)` (UK Monday–Sunday). `parseActivitiesQuery` in
+   `durationOptions` (5 min … 24 h step 5), `weekBounds(now)` (UK Monday–Sunday), `cardLine(next, now)`,
+   `afterTickPath(back, id, followup)` (contracts/routes.md). `parseActivitiesQuery` in
    `list-query.ts` (defaults: `when=planned`, assignee = viewer). Messages and templates as contracts/routes.md.
 3. **Visibility**: `visibleActivity(db, viewer, alias = "a")` in `visibility.ts` (research.md §5); update its header
    comment and AGENTS.md ("every `activities` read uses it").
 4. **Domain** `src/server/activities/activities.ts` per data-model.md § State changes: one `sql.begin` each; lock the
    activity and every current and newly picked linked row `for update` through the visibility rules; archived → refuse;
    assignee: `select … from users u where u.id = $a and u.status = 'active' and <visibleActivity for the new links with
-   viewer u.id>`; tick with `where done_at is null` + Last contacted (research.md §8); untick; delete with version.
+   viewer u.id>`; tick with `where done_at is null` + Last contacted (research.md §8); untick; delete with version; `pageActivity` and
+   `followupPrefill` for the address parameters.
 5. **Record deletes**: `deleteDeal`, `deletePerson` (private: all its activities), `deleteOrganisation` delete the
    activities left with no link, before the record row (research.md §9).
 6. **Reads**: `nextActivities`, `listActivities` + count (research.md §10, `now` parameter), `getBoard` lateral `next`

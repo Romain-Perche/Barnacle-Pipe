@@ -20,6 +20,7 @@
 - Q: Can an activity be linked to an archived record, or to a won or lost deal, when it is scheduled or edited? → A: No archived record is offered or accepted ("Restore this record before changing its activities."); only open deals are offered, and a won or lost deal already linked stays (decided by the factory, to confirm)
 - Q: After ticking an activity on the Activities list, is "Schedule a follow-up?" offered? → A: No, only on record pages and the deal drawer, as US2 says; the list stays a quick ticking screen (decided by the factory, to confirm)
 - Q: What date does a done call or meeting with no time give "Last contacted"? → A: When a call or meeting is marked done, "Last contacted" becomes its due date, or the moment it was marked done if the due date is later, so it never shows a date in the future (alexis@barnacle.ai)
+- Q: Which automated tests check this feature? → A: No browser tests: `docs/DECISIONS.md` now says the repo has none, which replaces AGENTS.md § Tests on this point. Build writes unit and integration tests that cover what browser tests would have covered where they can; the AI review checks the screens in the running app (alexis@barnacle.ai)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -202,7 +203,7 @@ When a team member schedules an activity and assigns it to a teammate, or reassi
 - **SC-001**: A user can schedule an activity from a deal, person or organisation page in under 30 seconds.
 - **SC-002**: A user can mark an activity done and schedule its follow-up in under 30 seconds, without leaving the page.
 - **SC-003**: The Activities list with 2,000 activities shows its first page, with any filter, in under 2 seconds; the board with 500 open deals shows every card's warning or next date in under 2 seconds.
-- **SC-004**: In automated tests, every open deal card shows "No next activity" exactly when the viewer can see no planned activity linked to the deal.
+- **SC-004**: In automated tests (unit and integration; no browser tests), every open deal card shows "No next activity" exactly when the viewer can see no planned activity linked to the deal.
 - **SC-005**: In automated tests, an activity linked to a private deal or private person never appears or counts for anyone the privacy rules hide it from, on any page, list, card or by direct request.
 - **SC-006**: In automated tests, "Overdue" and "Today" are correct for activities with and without a time on either side of midnight and of the clocks changing, in UK time.
 
