@@ -30,32 +30,32 @@
       "completedRunId": "a8c4062f-b1c1-42b9-95be-3db046a6ad9b"
     },
     "/openwiki/data/database-schema.md": {
-      "pageVersion": "sha256:24047b4b805394227723d0e268dca810dec1c444044b6df9850bb95a0a464e2a",
+      "pageVersion": "sha256:e0de8cf496bfb17744dae36df693d36671ca4ce44a858dfb94791553159659d3",
       "completedBy": "claude-code",
-      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
-      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
-      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
+      "completedRunId": "32d62b06-7118-439f-aaf7-05a86c193861",
+      "gitHead": "f04295146c690c69e5463405ba66ad365e142cae",
+      "sourceFingerprint": "sha256:308c8a2313e03f7853948d73316dffa2063974a381bea5f498c062bc4c378da6"
     },
     "/openwiki/features/people-and-organisations.md": {
-      "pageVersion": "sha256:31417fbe1729df23707a72ac02687a2bf4a4f172bd8073b8e5df7430e232fbb1",
+      "pageVersion": "sha256:30a022b1321672df577f1f442d4d1dd41df46055bee663f66bea1872eb6aef81",
       "completedBy": "claude-code",
-      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
-      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
-      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
+      "completedRunId": "32d62b06-7118-439f-aaf7-05a86c193861",
+      "gitHead": "f04295146c690c69e5463405ba66ad365e142cae",
+      "sourceFingerprint": "sha256:308c8a2313e03f7853948d73316dffa2063974a381bea5f498c062bc4c378da6"
     },
     "/openwiki/features/pipelines-and-deals.md": {
+      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
+      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023",
       "pageVersion": "sha256:cc37d92d92a1d7471faa23230e3adfdcee07990706ce464f786a6713039fa959",
       "completedBy": "claude-code",
-      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
-      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
-      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
+      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6"
     },
     "/openwiki/features/signed-in-layout-and-pages.md": {
-      "pageVersion": "sha256:1764bfb9fe230c4b56aee729c23d9a8ce1bcd56466b4fbe6b1ffcbbfdadfe4d9",
+      "pageVersion": "sha256:e03e46a2e82e93ae0ce6fbb1e1b2fe1fd3f2221f85b28f28bb40c7e39186b078",
       "completedBy": "claude-code",
-      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
-      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
-      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
+      "completedRunId": "32d62b06-7118-439f-aaf7-05a86c193861",
+      "gitHead": "f04295146c690c69e5463405ba66ad365e142cae",
+      "sourceFingerprint": "sha256:308c8a2313e03f7853948d73316dffa2063974a381bea5f498c062bc4c378da6"
     },
     "/openwiki/features/user-management.md": {
       "gitHead": "218712cc5db05f748a669479763da433faf3939e",
@@ -72,11 +72,11 @@
       "completedRunId": "a8c4062f-b1c1-42b9-95be-3db046a6ad9b"
     },
     "/openwiki/operations/migrations-and-seeding.md": {
-      "pageVersion": "sha256:42a33e0347c58390c02aaec24fe6f2085e70c0faa2d87388f4a436ffb69ccac1",
+      "pageVersion": "sha256:6f1f1be2326ee1c41949ce9b75a2bedc4e4682d9cec9b80e8410c1c975ff5c1d",
       "completedBy": "claude-code",
-      "completedRunId": "f95c4628-4478-484a-9c7c-189e9dcfd0d6",
-      "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",
-      "sourceFingerprint": "sha256:db38ae44b49f733484a85c69b7ed8a73f95e315ad444ba0f0cd6d7d7cb29a023"
+      "completedRunId": "32d62b06-7118-439f-aaf7-05a86c193861",
+      "gitHead": "f04295146c690c69e5463405ba66ad365e142cae",
+      "sourceFingerprint": "sha256:308c8a2313e03f7853948d73316dffa2063974a381bea5f498c062bc4c378da6"
     },
     "/openwiki/quickstart.md": {
       "gitHead": "e9e8ca8f5a4ce5db041edc1299c87c1a5f2eac56",

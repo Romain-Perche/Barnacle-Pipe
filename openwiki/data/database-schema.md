@@ -5,10 +5,12 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-20T16:18:56.075Z
+    at: 2026-11-23T16:23:05.629Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
+  - id: sf109-src-migration
+    resource: repo://migrations/0008_activities.sql
   - id: sf102-src-migration
     resource: repo://migrations/0007_notes_mentions.sql
   - id: openwiki-source-b1b8983f5dc78551445443a8
@@ -25,13 +27,13 @@ sources:
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-20T16:18:56.075Z" }
+generated: { by: "claude-code", at: "2026-11-23T16:23:05.629Z" }
 ---
 
 # Database schema and access
 
 The schema is defined by numbered SQL files in `migrations/` (`0001_users_sessions.sql` and
-`0002_people_organisations.sql`, `0003_private_owner_handover.sql`, `0004_pipelines_deals.sql`, `0005_deal_page.sql`, `0007_notes_mentions.sql`) plus the `schema_migrations` table created by the migrate command. How each
+`0002_people_organisations.sql`, `0003_private_owner_handover.sql`, `0004_pipelines_deals.sql`, `0005_deal_page.sql`, `0007_notes_mentions.sql`, `0008_activities.sql`) plus the `schema_migrations` table created by the migrate command. How each
 part reads and writes these tables is drawn in [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
 
 ## Tables
@@ -121,12 +123,24 @@ Added by `0007_notes_mentions.sql` (see [People and organisations](../features/p
   `read_at`), primary key `(event_id, user_id)`, deleted with the note. A mention of someone other than the author is
   a notification; two indexes serve the user's list and the unread count.
 
+### Activities table (migration 0008)
+
+Added by `0008_activities.sql`; it changes no other table, because done activities are read into the timeline and never copied.
+Behaviour is described in [People and organisations](../features/people-and-organisations.md).
+
+- `activities`: `type` (`call`, `meeting` or `task`), `subject` (trimmed, at most 200 characters), `due_on` with optional
+  `due_time` and `duration_minutes` (5 to 1440, a multiple of 5, only with a time), optional `note`, and optional links to a
+  deal, person and organisation (each set null on delete).
+- `assignee_id`, `created_by`, `done_at`/`done_by` (set together or both null) and an optimistic `version`.
+- `assigned_by`, `assigned_at` and `assignment_read_at` hold the assignment notification: it is live while the assignee is
+  not the assigner. Partial indexes serve a user's open, done and assigned lists and a deal's next activity.
+
 ## Row level security
 
 Every `create table` is followed by `alter table … enable row level security`, with no policies. On
 Supabase this means the Data API roles (`anon`, `authenticated`) can neither read nor write app data,
 while the app's own database user, which owns the tables, is not affected. `tests/integration/rls.test.ts`
-fails if any table in the public schema lacks it (it also checks that the app's tables, including the tables from migrations 0004, 0005 and `note_mentions` from 0007, exist). Migration files may only contain statements allowed inside a transaction.
+fails if any table in the public schema lacks it (it also checks that the app's tables, including the tables from migrations 0004, 0005, `note_mentions` from 0007 and `activities` from 0008, exist). Migration files may only contain statements allowed inside a transaction.
 
 ## Connecting
 

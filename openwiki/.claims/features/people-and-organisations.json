@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:31417fbe1729df23707a72ac02687a2bf4a4f172bd8073b8e5df7430e232fbb1",
+  "pageVersion": "sha256:30a022b1321672df577f1f442d4d1dd41df46055bee663f66bea1872eb6aef81",
   "claims": [
     {
       "id": "claim_073174519ebe44d7a116c47962b22649",
       "statement": "Deleting a person is admin only and re-checked inside the transaction.",
       "evidence": [
         {
-          "resource": "repo://src/server/records/people.ts#L305-L321",
-          "version": "repo-lines-v1:sha256:8ea02e5bae4f88c87f98cd38deaf1ca84e66daec85d67f41bddc3257bbc7dc62:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
+          "resource": "repo://src/server/records/people.ts#L305-L324",
+          "version": "repo-lines-v1:sha256:ad678fcda9e7fbe3c5a02eea3f7c5b50b87f5f6277e64dc59e7329e6f5721d89:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
         }
       ]
     },
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/records/visibility.ts",
-          "version": "repo-file-v1:sha256:2ddab4608fcda895f2109843beef6eca8516f1ed8bd15e198b3abba12fa96c74"
+          "version": "repo-file-v1:sha256:37aee39da7fd15d38d48090d825ee2ecbd25468030d90ee30747ebc42a015536"
         }
       ]
     },
@@ -32,7 +32,7 @@
         },
         {
           "resource": "repo://src/server/records/flash.ts",
-          "version": "repo-file-v1:sha256:df269bf707e172c9de1713c440b0b2d1cefd792040959baadd0584667c97dffc"
+          "version": "repo-file-v1:sha256:9537e78f9787dbfe84dee8028b9169712a133e224c5df1dec66d7c1003098609"
         }
       ]
     },
@@ -52,17 +52,41 @@
       "evidence": [
         {
           "resource": "repo://src/server/notifications.ts",
-          "version": "repo-file-v1:sha256:12adea890a53a27369dea96b10a48197f809345651c97fcd5319e520c5f98aca"
+          "version": "repo-file-v1:sha256:3dd4fc387b665f00c0b88e2147e9ad4319bbec621335ef02df90f606f5f264f5"
         },
         {
           "resource": "repo://src/server/records/notes.ts",
           "version": "repo-file-v1:sha256:273d1fb7d35f5c991de8aa9ca55fc2fb59ab36bcd3b7ec4bdae391870940d94f"
         }
       ]
+    },
+    {
+      "id": "claim_563c95c514fc47bd840c3d883964b018",
+      "statement": "An activity is visible only to users who can see every record it is linked to; every activities read uses visibleActivity().",
+      "evidence": [
+        {
+          "resource": "repo://src/server/records/visibility.ts",
+          "version": "repo-file-v1:sha256:37aee39da7fd15d38d48090d825ee2ecbd25468030d90ee30747ebc42a015536"
+        }
+      ]
+    },
+    {
+      "id": "claim_2558e9be38c54cd89bcd5d54ba38dc72",
+      "statement": "Done activities are read into the record timeline, never copied, and a done call or meeting raises the person's Last contacted.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/activities/activities.ts",
+          "version": "repo-file-v1:sha256:e2cf436a52c75647fcd97e8c0975cb88abe435b2aa28df8f1df24b6b9fb41ddf"
+        },
+        {
+          "resource": "repo://src/server/records/timeline.ts",
+          "version": "repo-file-v1:sha256:970b889f2bc5a5a25d63d5b4b3dd0b59245a6fc0917d948618d0699a20fed14f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-20T16:18:56.075Z"
+    "at": "2026-11-23T16:23:05.629Z"
   }
 }

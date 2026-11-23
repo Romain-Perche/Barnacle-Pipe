@@ -264,6 +264,17 @@
         "src/app/(app)/notifications",
         "src/server/notifications.ts"
       ]
+    },
+    {
+      "id": "activities",
+      "label": "Activities (calls, meetings, tasks)",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/server/activities/activities.ts",
+        "src/app/(app)/activities/actions.ts",
+        "src/app/(app)/activities/page.tsx"
+      ]
     }
   ],
   "stores": [
@@ -436,6 +447,16 @@
       "sources": [
         "migrations/0007_notes_mentions.sql"
       ]
+    },
+    {
+      "id": "activities-table",
+      "label": "Postgres activities",
+      "group": "records",
+      "sources": [
+        "migrations/0008_activities.sql",
+        "src/server/activities/activities.ts"
+      ],
+      "zone": "app"
     }
   ],
   "flows": [
@@ -1450,6 +1471,87 @@
       "data": "schema",
       "sources": [
         "migrations/0007_notes_mentions.sql"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "activities",
+      "data": "signed-in user check",
+      "sources": [
+        "src/app/(app)/activities/actions.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "activities",
+      "data": "activity form, tick, untick, delete",
+      "sources": [
+        "src/app/(app)/activities/actions.ts"
+      ]
+    },
+    {
+      "from": "activities",
+      "to": "staff",
+      "data": "Activities list, next activities, follow-up box",
+      "sources": [
+        "src/app/(app)/activities/page.tsx"
+      ]
+    },
+    {
+      "from": "activities",
+      "to": "activities-table",
+      "data": "scheduled, edited, done and deleted activities",
+      "sources": [
+        "src/server/activities/activities.ts"
+      ]
+    },
+    {
+      "from": "activities-table",
+      "to": "activities",
+      "data": "visible activities (private links hidden)",
+      "sources": [
+        "src/server/activities/activities.ts",
+        "src/server/activities/list.ts"
+      ]
+    },
+    {
+      "from": "activities",
+      "to": "persons-table",
+      "data": "Last contacted raised by a done call or meeting",
+      "sources": [
+        "src/server/activities/activities.ts"
+      ]
+    },
+    {
+      "from": "activities-table",
+      "to": "notifications",
+      "data": "activities assigned by someone else",
+      "sources": [
+        "src/server/notifications.ts"
+      ]
+    },
+    {
+      "from": "activities-table",
+      "to": "people-pages",
+      "data": "done activities read into the timeline",
+      "sources": [
+        "src/server/records/timeline.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "activities-table",
+      "data": "table definition",
+      "sources": [
+        "migrations/0008_activities.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "activities-table",
+      "data": "fake activities",
+      "sources": [
+        "src/seed/activities.ts"
       ]
     }
   ]
