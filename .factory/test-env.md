@@ -45,6 +45,16 @@
   which also checks Postgres's own 23514/23505 refusals (a note without body or author, a body or editor on another
   kind, a second mention of the same user) and the cascade of mentions with their note. Notifications are in-app only:
   no email service, so no new fake.
+  The activities code (SF-109: `src/server/activities/activities.ts`, `src/server/activities/list.ts`, and the changes to
+  `src/server/records/timeline.ts`, `src/server/notifications.ts`, `src/server/deals/deals.ts`) keeps to the same pooler
+  limits (no `set`/`listen`/session advisory lock, scanned by `tests/integration/migrate.test.ts`; every change one
+  `sql.begin()` locking the activity and its linked rows `for update`; the clock is passed as a `now` parameter, never a
+  session time zone). Its table comes from `migrations/0008_activities.sql` (`activities`; it does not touch
+  `timeline_events`), applied on a fresh database by the same test, which also checks Postgres's own 23514 refusals (a
+  type other than call/meeting/task, a subject with spaces around it, empty or over 200 characters, a duration without a
+  time or not 5–1440 in steps of 5, done_at without done_by, an empty note) and that deleting a deal, person or
+  organisation sets the activity's link to null. Assignment notifications are in-app only and Google Calendar sync comes
+  later: no new outside service, so no new fake.
   The sidebar count (SF-108: `src/app/(app)/UnreadLink.tsx` and the server action `currentUnread` in
   `src/app/(app)/notifications/actions.ts`) runs the same read-only `unreadCount` query after every client navigation:
   no fake, the real local PostgreSQL, no public schema on GitHub, same pooler limits (no session state, no new
@@ -54,7 +64,7 @@
   `people.ts` and `deals.ts`) keeps to the same pooler limits: no fake, the real local PostgreSQL 17, no public schema on
   GitHub, follows https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session
   advisory lock, scanned by `tests/integration/migrate.test.ts`), each save one `sql.begin()` that re-checks the referrer
-  (`isOfferedAmbassador`) and writes the referral event. Its columns and kinds come from `migrations/0008_ambassadors.sql`
+  (`isOfferedAmbassador`) and writes the referral event. Its columns and kinds come from `migrations/0009_ambassadors.sql`
   (`persons.is_ambassador`, `persons/deals.referred_by_id` + `referred_at`, `timeline_events.from_person_id`, kinds
   `ambassador_added`/`ambassador_removed`/`referrer_set`/`referrer_changed`/`referrer_cleared`, cause `person_deleted`;
   no new table), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514 refusals (a
@@ -88,8 +98,9 @@
     `DATABASE_URL` (crm_dev), `FIRST_ADMIN_EMAIL` (ada@barnacle.ai; `FIRST_ADMIN_EMAIL=` for none), `VERCEL_ENV`,
     `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
   - `bash .factory/run/reset-db.sh [db]` — empties every app table (users, sessions, people, organisations,
-    labels, timeline, pipelines, stages, deals, stage periods…), puts back the six starting lead sources, and seeds
-    again (`NO_SEED=1`: empty).
+    labels, timeline, pipelines, stages, deals, stage periods, activities…), puts back the six starting lead sources, and seeds
+    again (`NO_SEED=1`: empty). Run `npm run db:migrate` first on a database created before a new migration (the
+    truncate lists every table).
     The seed adds 5 fake users, 35 fake people (Gus Lorem is private, created by Ada Fake; Fay Mockup is
     archived; SF-92: Pat Privatefake private, created by Ada Fake and owned by Linus Fake; Robin Leftfake (linked
     to Fakeco Ltd) and Sam Leftfake private, owned by deactivated Alan Fake) and 9 fake organisations ("Old Fakeco
@@ -111,6 +122,14 @@
     shared person mentioning Ada Fake (read), Margaret Fake on the second shared person, Ada Fake on Fakeco Ltd, on the
     private deal "Fake secret project" and on the private person Pat Privatefake. The seed already has a "Fakeco website" deal: scenario
     scripts that add their own should delete it first (the browser tests do).
+    SF-109 adds 12 fake activities (subjects "Fake call: …", "Fake meeting: …", "Fake task: …"), dated from the UK day the
+    seed runs: Ada Fake's call overdue 4 days on "Fakeco website" (with its person and organisation), her task today 09:00
+    on "Sample Gyms CRM", meeting today 15:00–16:00 on Fakeco Ltd, call in 2 days on "Mock Labs audit" (assigned by Grace
+    Fake: a read notification), task in 5 days with no link; Grace Fake's meeting tomorrow on Fakeco Ltd (assigned by Ada
+    Fake: Grace has 1 unread notification) and task next week on Bob Placeholder; three done ones ("Fakeco AI pilot",
+    "Fakeco support contract", Fakeco Ltd; the first two set their main person's Last contacted); a call on the private
+    deal "Fake secret project" and a task on the private person Gus Lorem (both Ada's). Every other open deal shows
+    "⚠ No next activity" on the board.
     SF-114 adds (seeder "ambassadors", after notes) 9 people with `@example.com` addresses: ambassadors Cara Example (shared,
     owner Ada Fake, Sample Studios Fake, "Partnerships lead"), Dora Privatefake (private, Linus Fake's), the former ambassador
     Ezra Formerfake (unticked); Ben, Dee, Eli Referredfake (referred by Cara), Fay, Gus Referredfake (by Ezra), Hal Referredfake
@@ -188,6 +207,24 @@
     exactly 10,000 characters with 99 line breaks; Edge 18 picks "@Linus Fake" then types "@Linus Fakeson". Direct requests are made by rewriting the edit/delete
     forms' hidden `noteId`/`target`/`targetId` (or adding a hidden `mention` input) in the page before submitting.
     Archive/restore, making a deal private/shared, changing a deal's organisation and deactivation are done by SQL.
+  - Activities (SF-109): no browser test (plan). Selectors for the AI review: "// NEXT ACTIVITIES" is the `region` "Next
+    activities" (rows `li.arow`, links "Edit <subject>" / "Delete <subject>"), done boxes are buttons "Mark done" / "Mark not
+    done"; the activity box is the `dialog` "Schedule activity" / "Edit activity" / "Schedule a follow-up?" (fields labelled
+    Subject, Date, Time, Duration, Assigned to; type radios Call/Meeting/Task; pickers are comboboxes "Deal", "Person",
+    "Organisation"; buttons "[ SAVE ]", links "[ CANCEL ]" / "[ NOT NOW ]"); the delete confirmation is the `alertdialog`
+    "Delete this activity? This can't be undone."; the list's quick filters are links in the `navigation` "Show" (current
+    one `aria-current="page"`), selects "Assignee" and "Type"; overdue rows `tr.over`, marks `.od` / `.td`; card lines
+    `.card .warnline` / `.card .nextline`. A quick way to sign in from a script: insert a `sessions` row whose
+    `token_hash` is the SHA-256 of a token and send it as the `crm_session` cookie.
+  - SF-109 AI-review scenario script `scenarios-sf109.js` (all 44 US1–US6 scenarios and edge cases 1–14, ~6 min, against
+    :3000/crm_dev on fresh fake data; makes its own "SF109 …" records and activities by SQL, signs in through a `sessions`
+    row; it needs the repo's `postgres` package on NODE_PATH):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules:$PWD/node_modules node .factory/run/scenarios-sf109.js`
+    (`ONLY="US6 scenario 1,Edge case 4"` runs a subset). Notes: the sidebar link's text is "Notifications" + the count in its
+    own element (read the digits, not "(n)"); the hand-over panel opens at `/admin/users?handover=5`; record deletes use
+    `?confirm=delete` then `button.danger-solid`; uppercase CSS: compare `innerText` case-insensitively. Start the app ONCE:
+    two `start-app.sh` running at the same time rebuild `.next` under the running server and every server action then
+    fails with "Failed to find Server Action" (stop the server by pid, run `start-app.sh` again).
   - SF-108 AI-review scenario script `scenarios-sf108.js` (US1 1–5, US2 1–3, US3 1, edge cases 1–6; ~1 min, :3000/crm_dev):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf108.js`
     (`ONLY="US1 scenario 5"` for a subset). Bob = Linus Fake; each scenario first empties `note_mentions`; US1-1's mention

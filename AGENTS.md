@@ -27,6 +27,12 @@ OAuth code flow and database sessions.
   reason, `back`), `deals.ts` (board of open deals, deal, add/edit/move/archive/restore/delete, Won/Lost/Reopen, stage
   seconds; `transferDeal` records every stage move), `list.ts` (the deal list: rows, count and total, filter options),
   `links.ts` (other linked people, followers), `pipelines.ts` (admin changes).
+  `activities/` (SF-109): `rules.ts` (pure: validation, UK time `ukInstant`/`existsInUk`, `activityState` Overdue/Today,
+  `formatDue`, week bounds, the board card line `cardLine`, `afterTickPath`), `activities.ts` (schedule/edit/tick/untick/delete,
+  `nextActivities`, `pageActivity` for the address ids, `prefillLinks`, `activityFormChoices`; a done call or meeting raises
+  the person's Last contacted), `list.ts` (the Activities list, `now` as a parameter). `visibleActivity()` in
+  `records/visibility.ts`: every `activities` read uses it. Done activities are read into `readTimeline` (never copied);
+  `notifications.ts` also lists activities assigned by someone else (columns on the activity row).
   SF-114 ambassadors: `records/ambassadors.ts` (the Ambassadors page `listAmbassadors`, the ambassador page
   `getAmbassadorPage` and its updates `readAmbassadorUpdates`, the "Referred by" options `ambassadorOptions` /
   `referrerOptions`, the check `isOfferedAmbassador`, `referrerOf`; counts through one shared summary fragment) and
@@ -38,6 +44,10 @@ OAuth code flow and database sessions.
   SF-102: `RecordTimeline.tsx` (the // TIMELINE of every record page and the deal drawer, design B), `NoteBox.tsx`
   (client: the note box and the @ picker), `NoteDeleteConfirm.tsx`, `note-actions.ts`, `note-target.ts` (the record a note form posts to, its page and its kind's list), `NoteNotices.tsx` (the note notices of a record page); `Timeline.tsx` keeps the change
   lines. `src/app/(app)/notifications/` — the Notifications page and its actions. SF-108: the sidebar count starts from `layout.tsx` and `UnreadLink.tsx` (client) asks it again (`currentUnread`) after every client navigation; `RefreshOnHistory.tsx` refreshes the page on back/forward.
+  `src/app/(app)/activities/` (SF-109) — the Activities list (`page.tsx`), `actions.ts`, `ActivityBox.tsx` (client: the form
+  and "Schedule a follow-up?" in a box over the page), `ActivityOverlays.tsx` (opens the box or the delete confirmation from
+  `?activity=` / `?followup=` / `?delete-activity=`), `NextActivities.tsx` ("// NEXT ACTIVITIES" of record pages and the
+  drawer), `DoneBox.tsx`, `ActivityBits.tsx`, `ActivityDeleteConfirm.tsx`, `ActivityNotices.tsx`.
 - `src/app/(app)/ambassadors/` — the Ambassadors page and `[id]/` the ambassador page (design B, `LatestUpdates.tsx`,
   `not-found.tsx`). `records/ReferrerPicker.tsx` (client: the "Referred by" picker of the person and deal forms) and
   `records/ReferredBy.tsx` (the "Referred by" line of the person page, deal page and drawer).
@@ -49,7 +59,7 @@ OAuth code flow and database sessions.
   will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
   (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
   `person_emails`, bulk inserts).
-- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, ambassadors).
+- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors).
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google schema) and
   `scripts/start-isolated.mjs` (browser tests start the app without the developer's `.env*` files).

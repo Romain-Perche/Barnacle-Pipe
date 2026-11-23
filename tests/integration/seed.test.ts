@@ -370,3 +370,73 @@ describe("fake private deals of Alan Fake (SF-97)", () => {
     expect(await snapshot()).toEqual(first);
   });
 });
+
+// covers SF-109 FR-017 (T052, T053; replaces the browser test of the fake data)
+import { listActivities } from "@/server/activities/list";
+import { activityState, ukToday } from "@/server/activities/rules";
+import { getBoard } from "@/server/deals/deals";
+import { listNotifications } from "@/server/notifications";
+import { visibleDeal, visiblePerson } from "@/server/records/visibility";
+
+describe("fake activities (SF-109)", () => {
+  beforeEach(resetDb);
+
+  it("adds every kind of activity and assignment notification, once", async () => {
+    const before = new Date();
+    await runSeeders(sql);
+    const rows = await sql<{ subject: string; type: string; due_on: string; due_time: string | null; duration_minutes: number | null; done: boolean;
+      deal_private: boolean | null; person_private: boolean | null; assigned: boolean; read: boolean; linked: boolean }[]>`
+      select a.subject, a.type, to_char(a.due_on, 'YYYY-MM-DD') as due_on, to_char(a.due_time, 'HH24:MI') as due_time, a.duration_minutes,
+             a.done_at is not null as done, d.private as deal_private, p.private as person_private, a.assigned_by <> a.assignee_id as assigned,
+             a.assignment_read_at is not null as read, (a.deal_id is not null or a.person_id is not null or a.organisation_id is not null) as linked
+      from activities a left join deals d on d.id = a.deal_id left join persons p on p.id = a.person_id order by a.id`;
+    const states = rows.map((r) => activityState({ dueOn: r.due_on, dueTime: r.due_time, durationMinutes: r.duration_minutes, done: r.done }, before));
+    expect(new Set(rows.map((r) => r.type))).toEqual(new Set(["call", "meeting", "task"]));
+    expect(states).toContain("overdue");
+    expect(states).toContain("later");
+    // Due today (UK): "Today", or "Overdue" once their time has passed.
+    expect(rows.filter((r) => !r.done && r.due_on === ukToday(before)).length).toBeGreaterThanOrEqual(2);
+    expect(rows.some((r) => r.due_time !== null) && rows.some((r) => r.due_time === null)).toBe(true);
+    expect(rows.filter((r) => r.done).length).toBeGreaterThanOrEqual(3);
+    expect(rows.some((r) => r.deal_private)).toBe(true);
+    expect(rows.some((r) => r.person_private)).toBe(true);
+    expect(rows.some((r) => !r.linked)).toBe(true);
+    expect(rows.filter((r) => r.assigned).map((r) => r.read).sort()).toEqual([false, true]);
+    expect(rows.every((r) => /fake/i.test(r.subject))).toBe(true);
+    const [{ contacted }] = await sql<{ contacted: number }[]>`select count(*)::int as contacted from persons where last_contacted_at is not null`;
+    expect(contacted).toBeGreaterThanOrEqual(1);
+    await runSeeders(sql);
+    const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from activities`;
+    expect(n).toBe(rows.length);
+  });
+
+  // covers SF-109 FR-012, FR-017 (T063, fix round 1): every fake assignee is active and sees each linked record
+  it("assigns each fake activity to an active user who can see its links", async () => {
+    await runSeeders(sql);
+    const hidden = await sql<{ subject: string }[]>`
+      select a.subject from activities a join users u on u.id = a.assignee_id
+      where u.status <> 'active'
+         or (a.person_id is not null and not exists (select 1 from persons p where p.id = a.person_id and ${visiblePerson(sql, sql`u.id`)}))
+         or (a.deal_id is not null and not exists (select 1 from deals d where d.id = a.deal_id and ${visibleDeal(sql, sql`u.id`)}))`;
+    expect(hidden.map((r) => r.subject)).toEqual([]);
+    const [grace] = await sql<{ id: number }[]>`select id::int as id from users where name = 'Grace Fake'`;
+    const list = await listActivities(grace.id, { when: "planned", assignee: null, type: null, page: 1 }, new Date());
+    expect(list.rows.map((r) => r.subject)).toContain("Fake task: check in after the trial");
+  });
+
+  it("gives Ada overdue and today rows, a board card with and one without a next activity, and Grace an unread assignment", async () => {
+    await runSeeders(sql);
+    const now = new Date();
+    const [ada] = await sql<{ id: number }[]>`select id::int as id from users where name = 'Ada Fake'`;
+    const [grace] = await sql<{ id: number }[]>`select id::int as id from users where name = 'Grace Fake'`;
+    expect((await listActivities(ada.id, { when: "overdue", assignee: null, type: null, page: 1 }, now)).count).toBeGreaterThanOrEqual(1);
+    expect((await listActivities(ada.id, { when: "today", assignee: null, type: null, page: 1 }, now)).count).toBeGreaterThanOrEqual(1);
+    const board = (await getBoard(ada.id, null))!;
+    expect(board.pipeline.name).toBe("Sales");
+    const cards = board.columns.flatMap((c) => c.cards);
+    expect(cards.some((c) => c.next === null)).toBe(true);
+    expect(cards.some((c) => c.next !== null)).toBe(true);
+    const assignments = (await listNotifications(grace.id)).items.filter((i) => i.kind === "assignment");
+    expect(assignments.map((a) => a.read)).toEqual([false]);
+  });
+});

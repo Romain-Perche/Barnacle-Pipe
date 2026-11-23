@@ -12,7 +12,7 @@ deals get an optional `referred_by_id` (a person) and `referred_at`, chosen with
 referrer changes. A sidebar "Ambassadors" page lists the ambassadors the user can see with counts and totals, and
 `/ambassadors/<personId>` (design B) shows the summary strip, people and deals referred, and "// LATEST UPDATES" (the
 timeline entries of the ambassador and of what they referred, 20 at a time). Every count, list, picker and filter goes
-through the existing `visiblePerson` / `visibleDeal` rules. One migration (`0008_ambassadors.sql`), one new domain file
+through the existing `visiblePerson` / `visibleDeal` rules. One migration (`0009_ambassadors.sql`), one new domain file
 (`src/server/records/ambassadors.ts`) plus pure rules, no new dependency, no new outside service.
 
 ## Technical Context
@@ -23,7 +23,7 @@ through the existing `visiblePerson` / `visibleDeal` rules. One migration (`0008
 repo. Nothing added (research.md §1).
 
 **Storage**: PostgreSQL (local for dev/tests, Supabase through its pooler in production). Migration
-`migrations/0008_ambassadors.sql`: columns on `persons`, `deals`, `timeline_events`; new kinds and checks; no new table
+`migrations/0009_ambassadors.sql`: columns on `persons`, `deals`, `timeline_events`; new kinds and checks; no new table
 (data-model.md).
 
 **Testing**: Vitest only (unit: referral rules, `parseShownBy`, tags, list query, messages; integration on the real
@@ -93,7 +93,7 @@ specs/sf-114-step-9-ambassador-tracking/
 
 ```text
 migrations/
-└── 0008_ambassadors.sql                 # data-model.md § Migration
+└── 0009_ambassadors.sql                 # data-model.md § Migration
 
 src/
 ├── app/(app)/
@@ -131,7 +131,7 @@ because an ambassador is a person and a referral is a field of people and deals;
 
 ## Build steps (in order)
 
-1. **Migration** `migrations/0008_ambassadors.sql` exactly as data-model.md (check the two constraint names first).
+1. **Migration** `migrations/0009_ambassadors.sql` exactly as data-model.md (check the two constraint names first).
    No new table, so `tests/support/reset.ts` and `rls.test.ts` need nothing; `migrate.test.ts` covers 0008.
 2. **Pure rules**: `referral-rules.ts` (`parseReferredBy`, `decideReferrer`, `referralEvent`), `parseShownBy` in
    `notes-rules.ts` (`parseShown` = `parseShownBy(v, 50)`), `EntryTag` + `"PERSON"` in `timeline-view.ts` (`entryTag`:

@@ -8,6 +8,9 @@ import { archivePerson, createPerson, deletePerson, getPerson, restorePerson, up
 import { readTimeline } from "@/server/records/timeline";
 import { count, makeLabel, makeOrganisation, makeUser, resetDb, type TestUser } from "./db-helpers";
 import { emails, personForm, saved } from "./record-helpers";
+import { deleteDeal } from "@/server/deals/deals";
+import { activityRow, makeActivity } from "./activity-helpers";
+import { makeDeal, makePipeline } from "./deal-helpers";
 
 let ada: TestUser;
 let linus: TestUser;
@@ -135,7 +138,6 @@ describe("deleting a person keeps the history on other records", () => {
 import * as dealsModule from "@/server/deals/deals";
 import { getAmbassadorPage } from "@/server/records/ambassadors";
 import { events, makeAmbassador, refer, referral } from "./ambassador-helpers";
-import { makeDeal, makePipeline } from "./deal-helpers";
 describe("deleting an ambassador clears Referred by on what they referred", () => {
   async function setup(privateAmbassador: boolean) {
     const stage = (await makePipeline("Sales", ["Lead in"])).stages[0];
@@ -179,5 +181,45 @@ describe("deleting an ambassador clears Referred by on what they referred", () =
     expect((await referral("person", person)).referred_by_id).toBe(dora);
     expect((await referral("deal", deal)).referred_by_id).toBeNull();
     expect(await getAmbassadorPage(ada.id, cara, { people: 50, deals: 50 })).toBeNull();
+  });
+});
+
+// covers SF-109 FR-014, spec Edge Cases "deleting a deal, person or organisation" (T014)
+describe("deleting a record with activities", () => {
+  let deal: number;
+  beforeEach(async () => {
+    const stage = (await makePipeline("Sales", ["Lead in"])).stages[0];
+    deal = await makeDeal({ title: "Fakeco website", stageId: stage, createdBy: ada.id, personId: person, organisationId: org });
+  });
+
+  it("deleting a deal deletes its activities linked to nothing else and keeps the others without the deal", async () => {
+    const only = await makeActivity({ by: ada.id, dealId: deal });
+    const withPerson = await makeActivity({ by: ada.id, dealId: deal, personId: person });
+    const none = await makeActivity({ by: ada.id });
+    expect((await deleteDeal(ada.id, deal)).status).toBe("deleted");
+    expect(await activityRow(only)).toBeUndefined();
+    expect(await activityRow(withPerson)).toMatchObject({ deal_id: null, person_id: person });
+    expect(await activityRow(none)).toMatchObject({ deal_id: null, person_id: null, organisation_id: null });
+  });
+
+  it("deleting a shared person or an organisation does the same", async () => {
+    const onlyPerson = await makeActivity({ by: ada.id, personId: person });
+    const personAndOrg = await makeActivity({ by: ada.id, personId: person, organisationId: org });
+    const onlyOrg = await makeActivity({ by: ada.id, organisationId: org });
+    expect((await deletePerson(ada.id, person)).status).toBe("deleted");
+    expect(await activityRow(onlyPerson)).toBeUndefined();
+    expect(await activityRow(personAndOrg)).toMatchObject({ person_id: null, organisation_id: org });
+    expect((await deleteOrganisation(ada.id, org)).status).toBe("deleted");
+    expect(await activityRow(personAndOrg)).toBeUndefined();
+    expect(await activityRow(onlyOrg)).toBeUndefined();
+  });
+
+  it("deleting a person who is private deletes every activity linked to them", async () => {
+    await sql`update persons set private = true, created_by = ${ada.id} where id = ${person}`;
+    const withDeal = await makeActivity({ by: ada.id, personId: person, dealId: deal, organisationId: org });
+    const other = await makeActivity({ by: ada.id, dealId: deal });
+    expect((await deletePerson(ada.id, person)).status).toBe("deleted");
+    expect(await activityRow(withDeal)).toBeUndefined();
+    expect(await activityRow(other)).toMatchObject({ deal_id: deal });
   });
 });

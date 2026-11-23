@@ -1,9 +1,9 @@
 # Data model: Ambassador tracking (SF-114)
 
-No new table. One migration, `migrations/0008_ambassadors.sql` (only statements allowed in a transaction; no
+No new table. One migration, `migrations/0009_ambassadors.sql` (only statements allowed in a transaction; no
 `create table`, so no new RLS line). Existing tables `persons`, `deals`, `timeline_events` change.
 
-## Migration `0008_ambassadors.sql`
+## Migration `0009_ambassadors.sql`
 
 ```sql
 -- SF-114: ambassadors and who referred each person or deal (specs/sf-114-step-9-ambassador-tracking/data-model.md).

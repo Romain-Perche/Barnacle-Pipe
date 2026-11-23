@@ -184,12 +184,12 @@ describe("npm run db:migrate", () => {
     }
   });
 
-  // covers SF-114 T001, T012: 0008_ambassadors.sql on a fresh database: the referrer and referral event checks
-  it("applies 0008_ambassadors.sql: no self referrer, from_person only on referrer_changed, person_deleted cause, old kinds kept", async () => {
+  // covers SF-114 T001, T012: 0009_ambassadors.sql on a fresh database: the referrer and referral event checks
+  it("applies 0009_ambassadors.sql: no self referrer, from_person only on referrer_changed, person_deleted cause, old kinds kept", async () => {
     const db = await scratchDb();
     const run = await runMigrate(db);
     expect(run.code, run.out).toBe(0);
-    expect(run.out).toContain("Applied 0008_ambassadors.sql");
+    expect(run.out).toContain("Applied 0009_ambassadors.sql");
     const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
     try {
       const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
@@ -220,13 +220,13 @@ describe("npm run db:migrate", () => {
   });
 
   // covers SF-114 T012: the ambassador code keeps to the pooler's limits (no session state)
-  it("keeps the ambassador code and 0008_ambassadors.sql free of session state", () => {
+  it("keeps the ambassador code and 0009_ambassadors.sql free of session state", () => {
     for (const file of ["src/server/records/ambassadors.ts", "src/server/records/referral-rules.ts", "src/server/records/people.ts"]) {
       const text = readFileSync(file, "utf8");
       expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
       expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
     }
-    const migration = readFileSync("migrations/0008_ambassadors.sql", "utf8");
+    const migration = readFileSync("migrations/0009_ambassadors.sql", "utf8");
     expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
     expect(migration).not.toMatch(/create table/i);
     expect(migration).toMatch(/'imported'/);
@@ -243,6 +243,66 @@ describe("npm run db:migrate", () => {
     expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
     expect(migration).toMatch(/'note'/);
     expect(migration).toMatch(/'imported'/);
+  });
+
+  // covers SF-109 T004, FR-001, FR-014: 0008_activities.sql on a fresh database refuses bad rows and sets links to null
+  it("applies 0008_activities.sql: refuses bad activities, a deleted record leaves its activities without the link", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0008_activities.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [o] = await c`insert into organisations (name, owner_id, created_by) values ('Fakeco', ${u.id}, ${u.id}) returning id`;
+      const [p] = await c`insert into persons (first_name, last_name, owner_id, created_by) values ('Ada', 'Example', ${u.id}, ${u.id}) returning id`;
+      const [pl] = await c`insert into pipelines (name, position) values ('Sales', 1) returning id`;
+      const [s] = await c`insert into stages (pipeline_id, name, position) values (${pl.id}, 'Lead in', 1) returning id`;
+      const [d] = await c`insert into deals (title, stage_id, owner_id, created_by) values ('Fakeco website', ${s.id}, ${u.id}, ${u.id}) returning id`;
+      const add = (over: Record<string, unknown>) => {
+        const row = { type: "call", subject: "Call", due_on: "2026-11-25", due_time: null, duration_minutes: null, note: null,
+          done_at: null, done_by: null, deal_id: null, person_id: null, organisation_id: null, ...over };
+        return c`insert into activities (type, subject, due_on, due_time, duration_minutes, note, done_at, done_by, deal_id, person_id,
+                                          organisation_id, assignee_id, created_by, assigned_by)
+                 values (${row.type as string}, ${row.subject as string}, ${row.due_on as string}, ${row.due_time as string | null},
+                         ${row.duration_minutes as number | null}, ${row.note as string | null}, ${row.done_at as Date | null},
+                         ${row.done_by as number | null}, ${row.deal_id as number | null}, ${row.person_id as number | null},
+                         ${row.organisation_id as number | null}, ${u.id}, ${u.id}, ${u.id}) returning id`;
+      };
+      expect(await code(add({ type: "email" }))).toBe("23514");
+      for (const subject of [" x", "", "x".repeat(201)]) expect(await code(add({ subject })), subject).toBe("23514");
+      expect(await code(add({ duration_minutes: 30 }))).toBe("23514");
+      for (const m of [3, 7, 1445]) expect(await code(add({ due_time: "10:00", duration_minutes: m })), String(m)).toBe("23514");
+      expect(await code(add({ done_at: new Date() }))).toBe("23514");
+      expect(await code(add({ note: "" }))).toBe("23514");
+      expect(await code(add({ due_time: "10:00", duration_minutes: 1440, note: "x" }))).toBe("ok");
+      const [a] = await add({ deal_id: d.id, person_id: p.id, organisation_id: o.id });
+      await c`delete from deals where id = ${d.id}`;
+      await c`delete from persons where id = ${p.id}`;
+      await c`delete from organisations where id = ${o.id}`;
+      const [row] = await c`select deal_id, person_id, organisation_id from activities where id = ${a.id}`;
+      expect(row).toEqual({ deal_id: null, person_id: null, organisation_id: null });
+      const [kind] = await c`select pg_get_constraintdef(oid) as def from pg_constraint where conname = 'timeline_events_kind_check'`;
+      expect(kind.def).not.toMatch(/activity/);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-109 T016: the activities code keeps to the Supabase pooler's limits (no session state)
+  it("keeps the activities, timeline, notifications and deals code free of session state", () => {
+    for (const file of [
+      "src/server/activities/activities.ts", "src/server/activities/list.ts", "src/server/records/timeline.ts",
+      "src/server/notifications.ts", "src/server/deals/deals.ts",
+    ]) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0008_activities.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration).not.toMatch(/timeline_events/);
   });
 
   // covers SF-93 T013: the deals code keeps to the Supabase transaction-mode pooler's limits (no session state)

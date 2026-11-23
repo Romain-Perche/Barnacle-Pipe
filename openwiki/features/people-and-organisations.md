@@ -26,8 +26,8 @@ sources:
     resource: repo://src/server/records/notes.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T16:36:16.962Z
-generated: { by: "claude-code", at: "2026-11-23T16:36:16.962Z" }
+    at: 2026-11-23T13:22:05.502Z
+generated: { by: "claude-code", at: "2026-11-23T13:22:05.502Z" }
 ---
 
 # People and organisations
@@ -61,9 +61,6 @@ the user first (see [Sessions and access control](../auth/sessions-and-access-co
 
 - **Private people**: a private person is visible only to their creator and their current owner, admins
   included. Every read of `persons` goes through `visiblePerson()` in `visibility.ts`.
-- **Ambassadors and referrals**: a person can be ticked as an ambassador and carry a "Referred by" person; the People
-  list has a referrer filter that keeps only referrers the viewer can see. See
-  [Ambassadors and referrals](ambassadors.md).
 - **Duplicate emails** are refused; names of organisations are unique ignoring case. Typing a new organisation
   name in a person form creates or matches it.
 - **Archive and restore** are available to staff; **delete is admin only** and is re-checked inside the

@@ -15,6 +15,8 @@ import { Pager } from "../../records/Pager";
 import { DealDrawer } from "../DealDrawer";
 import { day } from "../DealBits";
 import { ViewSwitch } from "../ViewSwitch";
+import { ActivityNotices } from "../../activities/ActivityNotices";
+import { ActivityOverlays } from "../../activities/ActivityOverlays";
 
 const PATH = "/deals/list";
 
@@ -68,6 +70,8 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
           {flash.text}
         </p>
       )}
+
+      <ActivityNotices error={first(params, "error")} />
 
       <FilterRow
         id="deal-filters"
@@ -200,6 +204,15 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
             closeHref={link({ open: null })}
             deleteHref={withConfirm(preview(found.id))}
             back="list"
+          />
+        )}
+        {found && (
+          <ActivityOverlays
+            viewerId={user.id}
+            target={{ dealId: found.id }}
+            archived={found.archived}
+            back={preview(found.id)}
+            query={{ activity: first(params, "activity"), followup: first(params, "followup"), deleteActivity: first(params, "delete-activity") }}
           />
         )}
       </div>

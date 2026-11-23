@@ -1,15 +1,28 @@
 "use client";
 // Main person picker for a deal (SF-93 research.md §8), built like OrganisationPicker: filters the visible,
 // non-archived people the page embedded. Only a picked person (or an exact name) is saved; no "add new".
-// Posts personId; the server re-checks the person is visible to the user. SF-114: `onChange` hears when the linked
-// person changes (picked, typed exactly, or cleared): the add deal form pre-fills "Referred by" from it.
+// Posts personId; the server re-checks the person is visible to the user. SF-109: `name` and `label` let the activity
+// box use it for its deal, person and organisation (defaults: personId, "Person"). SF-114: `onChange` hears when the
+// linked person changes (picked, typed exactly, or cleared): the add deal form pre-fills "Referred by" from it.
 import { useId, useRef, useState } from "react";
 
 type Person = { id: number; name: string; archived: boolean };
 
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
-export function PersonPicker({ people, initialId, onChange }: { people: Person[]; initialId: string; onChange?: (personId: number | null) => void }) {
+export function PersonPicker({
+  people,
+  initialId,
+  name = "personId",
+  label = "Person",
+  onChange,
+}: {
+  people: Person[];
+  initialId: string;
+  name?: string;
+  label?: string;
+  onChange?: (personId: number | null) => void;
+}) {
   const start = people.find((p) => String(p.id) === initialId);
   const [text, setText] = useState(start?.name ?? "");
   const [chosenId, setChosenId] = useState<number | null>(start?.id ?? null);
@@ -42,11 +55,11 @@ export function PersonPicker({ people, initialId, onChange }: { people: Person[]
           className="input"
           type="text"
           role="combobox"
-          aria-label="Person"
+          aria-label={label}
           aria-expanded={open && typed !== ""}
           aria-controls={listId}
           autoComplete="off"
-          placeholder="Type to find a person"
+          placeholder={`Type to find a ${label.toLowerCase()}`}
           value={text}
           onChange={(e) => {
             setText(e.target.value);
@@ -73,7 +86,7 @@ export function PersonPicker({ people, initialId, onChange }: { people: Person[]
       </div>
       {chosen?.archived && <span className="badge off tag">Archived</span>}
       {open && typed !== "" && matches.length > 0 && (
-        <ul className="picker-list" id={listId} role="listbox" aria-label="People">
+        <ul className="picker-list" id={listId} role="listbox" aria-label={label === "Person" ? "People" : `${label}s`}>
           {matches.map((p) => (
             <li key={p.id} role="option" aria-selected={linked?.id === p.id}>
               <button type="button" onClick={() => pick(p)}>
@@ -83,7 +96,7 @@ export function PersonPicker({ people, initialId, onChange }: { people: Person[]
           ))}
         </ul>
       )}
-      <input type="hidden" name="personId" value={linked ? String(linked.id) : ""} />
+      <input type="hidden" name={name} value={linked ? String(linked.id) : ""} />
     </div>
   );
 }

@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626; --warn: #B45309; --ok: #16A34A;
+    --wash: rgba(43,0,255,.05); --panel: #FFFFFF; --page: #EDE7DF; --redwash: rgba(220,38,38,.06); --warnwash: rgba(245,158,11,.10);
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --panel: #232323; --page: #0E0E0E; --danger: #F87171; --warn: #FBBF24;
+      --redwash: rgba(248,113,113,.12); --warnwash: rgba(251,191,36,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(620px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+  .cap { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+
+  .app { display: grid; grid-template-columns: 140px 1fr; height: 470px; border: .5px solid var(--line); overflow: hidden; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 9px; margin-bottom: 22px; }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .nav .cnt { background: var(--orange); color: #fff; padding: 0 4px; margin-left: 4px; }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 16px; overflow: hidden; position: relative; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 10px; margin-bottom: 10px; gap: 8px; }
+  .ph h2 { margin: 0; font-size: 20px; font-weight: 700; }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 5px 8px; color: var(--ink); white-space: nowrap; display: inline-block; background: transparent; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.link { border: 0; padding: 2px 0; color: var(--muted); }
+  .sel { border: .5px solid var(--line); background: var(--panel); font-size: 10px; padding: 4px 6px; white-space: nowrap; }
+  .filters { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs { display: flex; }
+  .tabs span { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; border: .5px solid var(--line); padding: 4px 6px; margin-right: -0.5px; }
+  .tabs span.on { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .count { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { font-family: var(--mono); font-size: 8px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); text-align: left; font-weight: 700; padding: 4px 4px; border-bottom: .5px solid var(--line); }
+  td { padding: 6px 4px; border-bottom: .5px solid var(--line-list); vertical-align: top; }
+  .box { display: inline-block; width: 11px; height: 11px; border: 1px solid var(--line); background: var(--panel); vertical-align: middle; }
+  .box.done { background: var(--ok); border-color: var(--ok); }
+  .ty { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .lk { color: var(--blue); }
+  .sub { color: var(--muted); font-size: 9px; }
+  .od { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; color: var(--danger); border: .5px solid var(--danger); padding: 0 3px; }
+  .td { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; color: var(--blue); border: .5px solid var(--blue); padding: 0 3px; }
+  .red { color: var(--danger); }
+  .mini { display: grid; grid-template-columns: 180px 1fr; gap: 12px; border: .5px solid var(--line); background: var(--paper); padding: 12px; }
+  .col h3 { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 6px; }
+  .card { background: var(--panel); border: .5px solid var(--line-soft); border-radius: 8px; padding: 7px 9px; margin-bottom: 6px; font-size: 10px; line-height: 1.4; position: relative; }
+  .card .t { font-weight: 600; font-size: 11px; display: block; }
+  .card .val { font-family: var(--mono); font-size: 9px; display: block; margin-top: 3px; }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 0 0 6px; border-top: .5px solid var(--line); padding-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .arow { display: grid; grid-template-columns: 16px 46px 1fr auto; gap: 6px; padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; align-items: start; }
+  .form { border: .5px solid var(--line); background: var(--panel); padding: 8px; font-size: 10px; margin-top: 6px; }
+  .form .r { display: flex; gap: 5px; margin-bottom: 5px; flex-wrap: wrap; align-items: center; }
+  .k { font-family: var(--mono); font-size: 7px; letter-spacing: .2em; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; }
+  .in { border: .5px solid var(--line); background: var(--panel); padding: 3px 5px; font-size: 10px; display: inline-block; }
+
+  /* A */
+  .A .warnline { display: block; margin-top: 4px; font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--warn); border-top: .5px solid var(--line-list); padding-top: 3px; }
+  .A .nextline { display: block; margin-top: 4px; font-family: var(--mono); font-size: 8px; letter-spacing: .05em; color: var(--muted); border-top: .5px solid var(--line-list); padding-top: 3px; }
+  .A tr.over td:first-child { box-shadow: inset 2px 0 0 var(--danger); }
+  .A .overlay { position: absolute; inset: 0; background: rgba(0,0,0,.25); display: flex; align-items: flex-start; justify-content: center; padding-top: 40px; }
+  .A .overlay .form { width: 330px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+
+  /* B */
+  .B .grp2 { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; margin: 10px 0 2px; color: var(--muted); }
+  .B .grp2.red { color: var(--danger); }
+  .B .item { display: grid; grid-template-columns: 16px 46px 1fr 70px; gap: 6px; padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; align-items: start; }
+  .B .card.nonext { border-left: 3px solid var(--warn); border-radius: 0 8px 8px 0; background: linear-gradient(var(--warnwash), var(--warnwash)), var(--panel); }
+  .B .card .w { display: block; color: var(--warn); font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-top: 3px; }
+
+  /* C */
+  .C .split { display: grid; grid-template-columns: 1fr 170px; gap: 10px; }
+  .C tr.on td { background: var(--wash); }
+  .C .pane { border-left: .5px solid var(--line); padding-left: 10px; font-size: 10px; }
+  .C .pane h4 { margin: 2px 0 6px; font-size: 13px; }
+  .C .dot { position: absolute; top: 7px; right: 8px; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 9px; font-weight: 700; color: #fff; }
+  .C .dot.none { background: var(--warn); }
+  .C .dot.late { background: var(--danger); }
+  .C .dot.ok { background: var(--ok); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-109 · ACTIVITIES · DESIGN OPTIONS</div>
+  <h1>The Activities list, a deal's next activities and the board cards</h1>
+  <p>Each design shows Ada Fake's Activities list (Planned, assignee "Ada Fake"), then the same deal "Fakeco website" on the board and on its page, with "Schedule a follow-up?" open after ticking a call.</p>
+</header>
+
+<div class="grid">
+
+<!-- ===================== A ===================== -->
+<figure>
+  <div class="tag"><b>A</b>Table like the People list, form in a box over the page</div>
+  <div class="app A">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span class="on">Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="ph"><h2>Activities</h2><span class="btn solid">[ SCHEDULE ACTIVITY ]</span></div>
+      <div class="filters">
+        <div class="tabs"><span>Overdue</span><span>Today</span><span>This week</span><span class="on">Planned</span><span>Done</span></div>
+        <span class="sel">Assignee: Ada Fake ▾</span><span class="sel">Type: All ▾</span>
+      </div>
+      <div class="count">// 5 ACTIVITIES</div>
+      <table>
+        <tr><th></th><th>Type</th><th>Subject</th><th>Due</th><th>Deal</th><th>Person · Organisation</th></tr>
+        <tr class="over"><td><span class="box"></span></td><td class="ty">Call</td><td>Chase signed proposal</td><td class="red">19 Nov 2026<br><span class="od">OVERDUE</span></td><td class="lk">Fakeco website</td><td><span class="lk">Ada Example</span><br><span class="sub">Fakeco Ltd</span></td></tr>
+        <tr class="over"><td><span class="box"></span></td><td class="ty">Task</td><td>Send pricing sheet</td><td class="red">23 Nov 2026 09:00<br><span class="od">OVERDUE</span></td><td class="lk">Example Ltd Fake · CRM</td><td><span class="lk">Bo Sample</span><br><span class="sub">Example Ltd Fake</span></td></tr>
+        <tr><td><span class="box"></span></td><td class="ty">Meeting</td><td>Kick-off with Cy</td><td>23 Nov 2026 15:00–16:00<br><span class="td">TODAY</span></td><td class="sub">—</td><td><span class="lk">Cy Placeholder</span></td></tr>
+        <tr><td><span class="box"></span></td><td class="ty">Call</td><td>Intro call</td><td>25 Nov 2026 10:00</td><td class="lk">Demo Co · audit</td><td><span class="lk">Dee Test</span><br><span class="sub">Demo Co Fake</span></td></tr>
+        <tr><td><span class="box"></span></td><td class="ty">Task</td><td>Write up exec dinner notes</td><td>28 Nov 2026</td><td class="sub">—</td><td class="sub">—</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="cap">// ON THE BOARD AND THE DEAL PAGE</div>
+  <div class="mini A">
+    <div class="col">
+      <h3>Proposal · 2 · £9,000</h3>
+      <div class="card"><span class="t">Fakeco website</span><span>Fakeco Ltd</span><span>Ada Example</span><span class="val">£4,000</span><span class="warnline">⚠ No next activity</span></div>
+      <div class="card"><span class="t">Demo Co · audit</span><span>Demo Co Fake</span><span>Dee Test</span><span class="val">£5,000</span><span class="nextline">Next: 25 Nov · Call</span></div>
+    </div>
+    <div style="position:relative">
+      <div class="sect"><span><span class="c">//</span> NEXT ACTIVITIES</span><span class="btn">[ SCHEDULE ACTIVITY ]</span></div>
+      <div class="arow"><span class="box done"></span><span class="ty">Call</span><span style="text-decoration:line-through;color:var(--muted)">Chase signed proposal</span><span class="sub">19 Nov</span></div>
+      <div class="form" style="border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.25)">
+        <b>Schedule a follow-up?</b>
+        <div class="r" style="margin-top:5px"><span class="tabs"><span class="on">Call</span><span>Meeting</span><span>Task</span></span></div>
+        <div class="r"><span class="in" style="flex:1">Subject</span></div>
+        <div class="r"><span class="in">Date</span><span class="in">Time</span><span class="in">Duration</span><span class="in">Ada Fake ▾</span></div>
+        <div class="r sub">Fakeco website · Ada Example · Fakeco Ltd</div>
+        <div style="text-align:right"><span class="btn">[ NOT NOW ]</span> <span class="btn solid">[ SAVE ]</span></div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Good for: one look with the People and Deals lists; the form opens in a box over the page, like the lost reason box.</figcaption>
+</figure>
+
+<!-- ===================== B ===================== -->
+<figure>
+  <div class="tag"><b>B</b>Grouped by when it is due, form inline</div>
+  <div class="app B">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span class="on">Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="ph"><h2>Activities</h2><span class="btn solid">[ SCHEDULE ACTIVITY ]</span></div>
+      <div class="filters">
+        <div class="tabs"><span>Overdue</span><span>Today</span><span>This week</span><span class="on">Planned</span><span>Done</span></div>
+        <span class="sel">Assignee: Ada Fake ▾</span><span class="sel">Type: All ▾</span>
+      </div>
+      <div class="grp2 red">// OVERDUE · 2</div>
+      <div class="item"><span class="box"></span><span class="ty">Call</span><div>Chase signed proposal<br><span class="lk">Fakeco website</span> <span class="sub">· Ada Example · Fakeco Ltd</span></div><span class="red" style="font-family:var(--mono);font-size:8px">19 NOV</span></div>
+      <div class="item"><span class="box"></span><span class="ty">Task</span><div>Send pricing sheet<br><span class="lk">Example Ltd Fake · CRM</span> <span class="sub">· Bo Sample</span></div><span class="red" style="font-family:var(--mono);font-size:8px">TODAY 09:00</span></div>
+      <div class="grp2">// TODAY · 23 NOV 2026 · 1</div>
+      <div class="item"><span class="box"></span><span class="ty">Meeting</span><div>Kick-off with Cy<br><span class="lk">Cy Placeholder</span></div><span style="font-family:var(--mono);font-size:8px">15:00–16:00</span></div>
+      <div class="grp2">// LATER · 2</div>
+      <div class="item"><span class="box"></span><span class="ty">Call</span><div>Intro call<br><span class="lk">Demo Co · audit</span> <span class="sub">· Dee Test</span></div><span style="font-family:var(--mono);font-size:8px">25 NOV 10:00</span></div>
+      <div class="item"><span class="box"></span><span class="ty">Task</span><div>Write up exec dinner notes</div><span style="font-family:var(--mono);font-size:8px">28 NOV</span></div>
+    </div>
+  </div>
+  <div class="cap">// ON THE BOARD AND THE DEAL PAGE</div>
+  <div class="mini B">
+    <div class="col">
+      <h3>Proposal · 2 · £9,000</h3>
+      <div class="card nonext"><span class="t">Fakeco website</span><span>Fakeco Ltd</span><span>Ada Example</span><span class="val">£4,000</span><span class="w">No next activity</span></div>
+      <div class="card"><span class="t">Demo Co · audit</span><span>Demo Co Fake</span><span>Dee Test</span><span class="val">£5,000 · <span class="sub">Next 25 Nov</span></span></div>
+    </div>
+    <div>
+      <div class="sect"><span><span class="c">//</span> NEXT ACTIVITIES</span><span class="btn">[ SCHEDULE ACTIVITY ]</span></div>
+      <div class="arow"><span class="box done"></span><span class="ty">Call</span><span style="text-decoration:line-through;color:var(--muted)">Chase signed proposal</span><span class="sub">19 Nov</span></div>
+      <div class="form">
+        <b>Schedule a follow-up?</b>
+        <div class="r" style="margin-top:5px"><span class="tabs"><span class="on">Call</span><span>Meeting</span><span>Task</span></span><span class="in" style="flex:1">Subject</span></div>
+        <div class="r"><span class="in">Date</span><span class="in">Time</span><span class="in">Duration</span><span class="in">Ada Fake ▾</span></div>
+        <div class="r sub">Fakeco website · Ada Example · Fakeco Ltd</div>
+        <div style="text-align:right"><span class="btn">[ NOT NOW ]</span> <span class="btn solid">[ SAVE ]</span></div>
+      </div>
+      <div class="sect" style="margin-top:8px"><span><span class="c">//</span> TIMELINE</span></div>
+    </div>
+  </div>
+  <figcaption>Good for: seeing at once what is late, what is today and what comes later; the form opens in place under "// NEXT ACTIVITIES", like the note box.</figcaption>
+</figure>
+
+<!-- ===================== C ===================== -->
+<figure>
+  <div class="tag"><b>C</b>List with a preview pane, coloured dot on cards</div>
+  <div class="app C">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span class="on">Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="ph"><h2>Activities</h2><span class="btn solid">[ SCHEDULE ACTIVITY ]</span></div>
+      <div class="filters">
+        <div class="tabs"><span>Overdue</span><span>Today</span><span>This week</span><span class="on">Planned</span><span>Done</span></div>
+        <span class="sel">Ada Fake ▾</span><span class="sel">All types ▾</span>
+      </div>
+      <div class="split">
+        <table>
+          <tr><th></th><th>Subject</th><th>Due</th></tr>
+          <tr class="on"><td><span class="box"></span></td><td><span class="ty">Call</span> Chase signed proposal<br><span class="sub">Fakeco website</span></td><td class="red">19 Nov<br><span class="od">OVERDUE</span></td></tr>
+          <tr><td><span class="box"></span></td><td><span class="ty">Task</span> Send pricing sheet<br><span class="sub">Example Ltd Fake · CRM</span></td><td class="red">09:00<br><span class="od">OVERDUE</span></td></tr>
+          <tr><td><span class="box"></span></td><td><span class="ty">Meeting</span> Kick-off with Cy<br><span class="sub">Cy Placeholder</span></td><td>15:00<br><span class="td">TODAY</span></td></tr>
+          <tr><td><span class="box"></span></td><td><span class="ty">Call</span> Intro call<br><span class="sub">Demo Co · audit</span></td><td>25 Nov</td></tr>
+          <tr><td><span class="box"></span></td><td><span class="ty">Task</span> Write up exec dinner notes</td><td>28 Nov</td></tr>
+        </table>
+        <div class="pane">
+          <span class="ty">Call</span> <span class="od">OVERDUE</span>
+          <h4>Chase signed proposal</h4>
+          <span class="k">Due</span>19 Nov 2026<br>
+          <span class="k" style="margin-top:4px">Assignee</span>Ada Fake<br>
+          <span class="k" style="margin-top:4px">Deal</span><span class="lk">Fakeco website</span><br>
+          <span class="k" style="margin-top:4px">Person</span><span class="lk">Ada Example</span><br>
+          <span class="k" style="margin-top:4px">Organisation</span><span class="lk">Fakeco Ltd</span><br>
+          <span class="k" style="margin-top:4px">Note</span>Ask for the signed copy.<br>
+          <div style="margin-top:8px"><span class="btn solid">[ MARK DONE ]</span> <span class="btn">[ EDIT ]</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">// ON THE BOARD AND THE DEAL PAGE</div>
+  <div class="mini C">
+    <div class="col">
+      <h3>Proposal · 2 · £9,000</h3>
+      <div class="card"><span class="dot none">!</span><span class="t">Fakeco website</span><span>Fakeco Ltd</span><span>Ada Example</span><span class="val">£4,000</span></div>
+      <div class="card"><span class="dot ok">›</span><span class="t">Demo Co · audit</span><span>Demo Co Fake</span><span>Dee Test</span><span class="val">£5,000</span></div>
+      <div class="sub" style="font-size:8px">Dot: orange = no next activity, red = overdue, green = planned; with the words beside it in the drawer.</div>
+    </div>
+    <div>
+      <div class="sect"><span><span class="c">//</span> NEXT ACTIVITIES</span><span class="btn">[ SCHEDULE ACTIVITY ]</span></div>
+      <div class="arow"><span class="box done"></span><span class="ty">Call</span><span style="text-decoration:line-through;color:var(--muted)">Chase signed proposal</span><span class="sub">19 Nov</span></div>
+      <div class="form">
+        <b>Schedule a follow-up?</b>
+        <div class="r" style="margin-top:5px"><span class="k" style="width:100%">Type</span><span class="in">Call ▾</span><span class="in" style="flex:1">Subject</span></div>
+        <div class="r"><span class="in">Date</span><span class="in">Time</span><span class="in">Duration</span><span class="in">Ada Fake ▾</span></div>
+        <div class="r sub">Fakeco website · Ada Example · Fakeco Ltd</div>
+        <div style="text-align:right"><span class="btn">[ NOT NOW ]</span> <span class="btn solid">[ SAVE ]</span></div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Good for: reading an activity's note and links without leaving the list, like the People list's preview drawer; the board stays compact with one dot per card.</figcaption>
+</figure>
+
+</div>
+</body>
+</html>

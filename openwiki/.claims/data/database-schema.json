@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d70388148d386a2409e043cc1acce0ef3919854e33edd3b54b52841eb93ed0aa",
+  "pageVersion": "sha256:04adef475b37978c3b48e9425cfa272d765ab7084ccbc01f2a2eb298bf09a325",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L28",
-          "version": "repo-lines-v1:sha256:2a68b3f6fb8e8170bf3833f142d08df388f23e29f284ef2e0ad1908b05b0745b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L29",
+          "version": "repo-lines-v1:sha256:6830b03c6073d90e9bd99ae2bb57f771705698941597c53d3ae3479ddb5c316b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -123,18 +123,18 @@
       ]
     },
     {
-      "id": "claim_3236ec99d42d40c28dfde916a0c7ccff",
-      "statement": "Migration 0008 adds persons.is_ambassador, referred_by_id and referred_at, deals.referred_by_id and referred_at, timeline_events.from_person_id and five referral event kinds.",
+      "id": "claim_3c281caf51884529a610378fb361b8e3",
+      "statement": "Migration 0008 adds the activities table (calls, meetings, tasks) with assignment notification columns assigned_by, assigned_at and assignment_read_at, and changes no other table.",
       "evidence": [
         {
-          "resource": "repo://migrations/0008_ambassadors.sql",
-          "version": "repo-file-v1:sha256:cecc816defeddf88f5a99100d085dd3c5703acfc78616b6ddc5276c629b4c368"
+          "resource": "repo://migrations/0008_activities.sql",
+          "version": "repo-file-v1:sha256:23d0153a535793f9c93ec54318686224c3d38ffefbc4a56513387fbd9f3dc322"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T16:36:16.962Z"
+    "at": "2026-11-23T16:50:25.265Z"
   }
 }

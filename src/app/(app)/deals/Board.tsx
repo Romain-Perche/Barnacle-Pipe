@@ -3,10 +3,13 @@
 // Drag a card onto another column: it moves at once (optimistic), then the server confirms. A deal changed since
 // the board was loaded → the fresh board and the deal_changed message; a failed call → the card goes back and the
 // deal_move_failed message. Keyboard and touch users move deals with the drawer's "Move to" form instead.
+// SF-109: each card ends with "⚠ No next activity" (amber) or "Next: 25 Nov · Call" (+ "Overdue"), as of `now`
+// (the server's clock, so the page and the browser agree).
 import Link from "next/link";
 import { startTransition, useOptimistic, useRef, useState } from "react";
 import type { BoardColumn } from "@/server/deals/deals";
 import { boardHref } from "@/server/deals/rules";
+import { cardLine } from "@/server/activities/rules";
 import { formatMoney } from "@/server/format";
 import { messages, templates } from "@/server/messages";
 import { moveDealFromBoard } from "./actions";
@@ -24,7 +27,7 @@ function applyMove(columns: BoardColumn[], m: Move): BoardColumn[] {
   });
 }
 
-export function Board({ pipelineId, columns, openId }: { pipelineId: number; columns: BoardColumn[]; openId: number | null }) {
+export function Board({ pipelineId, columns, openId, now }: { pipelineId: number; columns: BoardColumn[]; openId: number | null; now: number }) {
   const [shown, move] = useOptimistic(columns, applyMove);
   const [message, setMessage] = useState<string | null>(null);
   const [over, setOver] = useState<number | null>(null);
@@ -111,6 +114,7 @@ export function Board({ pipelineId, columns, openId }: { pipelineId: number; col
                   {card.organisation && <span className="ln">{card.organisation.name}</span>}
                   {card.person && <span className="ln">{card.person.name}</span>}
                   <span className="val">{formatMoney(card.valuePence)}</span>
+                  <CardLast next={card.next} now={now} />
                 </Link>
               ))}
             </div>
@@ -118,5 +122,16 @@ export function Board({ pipelineId, columns, openId }: { pipelineId: number; col
         ))}
       </div>
     </>
+  );
+}
+
+function CardLast({ next, now }: { next: BoardColumn["cards"][number]["next"]; now: number }) {
+  const line = cardLine(next, new Date(now));
+  if (line.kind === "warn") return <span className="warnline">{line.text}</span>;
+  return (
+    <span className="nextline">
+      {line.text}
+      {line.overdue && <span className="od">{messages.overdue}</span>}
+    </span>
   );
 }

@@ -1,6 +1,7 @@
 // REGISTRY of fake data, run in this order by `npm run db:seed` and by the browser tests.
 // Later features append their seeder here (pipelines, deals, contacts…). Each one must be re-runnable.
 import type { Sql } from "@/server/db";
+import { seedActivities } from "@/seed/activities";
 import { seedAmbassadors } from "@/seed/ambassadors";
 import { seedDeals } from "@/seed/deals";
 import { seedNotes } from "@/seed/notes";
@@ -13,6 +14,8 @@ export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] =
   { name: "deals", run: seedDeals },
   // SF-102: notes, mentions and notifications (after the records they are on).
   { name: "notes", run: seedNotes },
+  // SF-109: calls, meetings and tasks, with assignment notifications (after the records they are on).
+  { name: "activities", run: seedActivities },
   // SF-114: ambassadors, referred people and deals (after the users, organisations and pipelines they use).
   { name: "ambassadors", run: seedAmbassadors },
 ];

@@ -376,6 +376,9 @@ export async function deletePerson(actorId: number, id: number): Promise<DeleteR
     }
     await db`update persons set referred_by_id = null, referred_at = null where referred_by_id = ${id}`;
     await db`update deals set referred_by_id = null, referred_at = null where referred_by_id = ${id}`;
+    // SF-109 FR-014: a private person's activities go with them; else those linked to nothing else.
+    if (cur.private) await db`delete from activities where person_id = ${id}`;
+    else await db`delete from activities where person_id = ${id} and deal_id is null and organisation_id is null`;
     const [row] = await db<{ name: string }[]>`delete from persons p where p.id = ${id} returning ${NAME()} as name`;
     return { status: "deleted" as const, name: row.name };
   });

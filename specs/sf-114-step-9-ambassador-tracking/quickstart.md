@@ -6,7 +6,7 @@ Local Postgres as in `README.md`; no outside account.
 
 ```bash
 export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test
-npm run db:migrate          # applies 0008_ambassadors.sql
+npm run db:migrate          # applies 0009_ambassadors.sql
 npm test && npm run typecheck
 ```
 

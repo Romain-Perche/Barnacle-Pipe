@@ -84,3 +84,12 @@ describe("note deleted notice", () => {
     expect(await readFlash(["note_deleted"])).toEqual({ text: "Note deleted." });
   });
 });
+
+// covers SF-109 US1 scenario 6 (T006)
+describe("activity deleted notice", () => {
+  it("shows Activity deleted. only where allowed", async () => {
+    await setFlash({ code: "activity_deleted", name: "" });
+    expect(await readFlash(["note_deleted"])).toBeUndefined();
+    expect(await readFlash(["activity_deleted"])).toEqual({ text: "Activity deleted." });
+  });
+});

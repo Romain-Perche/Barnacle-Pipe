@@ -3,11 +3,17 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { deleteDeal } from "@/server/deals/deals";
-import { listNotifications, markAllRead, openNotification, unreadCount } from "@/server/notifications";
+import { listNotifications as listAll, markAllRead, openNotification, unreadCount, type MentionView } from "@/server/notifications";
 import { addNote, deleteNote, editNote, mentionCandidates, noteForEdit } from "@/server/records/notes";
 import { readTimeline } from "@/server/records/timeline";
 import { makeDeal, makePipeline } from "./deal-helpers";
 import { makeOrganisation, makePerson, makeUser, resetDb, type TestUser } from "./db-helpers";
+
+// SF-109: notifications are mentions or assignments; these tests only make mentions.
+async function listNotifications(userId: number, limit?: number) {
+  const r = await listAll(userId, limit);
+  return { more: r.more, items: r.items.filter((i): i is MentionView => i.kind === "mention") };
+}
 
 let ada: TestUser, linus: TestUser, cy: TestUser, alan: TestUser, boss: TestUser;
 let deal: number, person: number, org: number;
@@ -55,7 +61,7 @@ describe("mentions and notifications", () => {
     const list = await listNotifications(linus.id);
     expect(list.more).toBe(false);
     expect(list.items).toEqual([
-      { eventId: id, byName: "Ada Fake", recordName: "Fakeco website", href: `/deals/${deal}`, preview: "@Linus Fake can you send the pricing sheet?", createdAt: expect.any(Date), read: false },
+      { kind: "mention", eventId: id, byName: "Ada Fake", recordName: "Fakeco website", href: `/deals/${deal}`, preview: "@Linus Fake can you send the pricing sheet?", createdAt: expect.any(Date), read: false },
     ]);
   });
 

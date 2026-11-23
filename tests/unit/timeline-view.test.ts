@@ -40,3 +40,11 @@ describe("entryTag on the ambassador page", () => {
     expect(entryTag({ kind: "ambassador_added", deal: null, person: null })).toBe("CHANGE");
   });
 });
+
+// covers SF-109 FR-004 (T031): a done activity is tagged ACTIVITY, even from a deal on a person's timeline
+describe("entryTag for activities", () => {
+  it("is ACTIVITY", () => {
+    expect(entryTag({ kind: "activity", deal: null })).toBe("ACTIVITY");
+    expect(entryTag({ kind: "activity", deal: { id: 1, title: "x", archived: false } })).toBe("ACTIVITY");
+  });
+});
