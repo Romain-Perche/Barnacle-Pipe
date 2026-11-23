@@ -5,7 +5,7 @@ import { requireUser } from "@/server/auth/session";
 import { countLabel, formatDate } from "@/server/format";
 import { messages } from "@/server/messages";
 import { readFlash } from "@/server/records/flash";
-import { hasFilters, parsePeopleQuery, withParams, type Params } from "@/server/records/list-query";
+import { hasFilters, knownPeopleQuery, parsePeopleQuery, withParams, type Params } from "@/server/records/list-query";
 import { getPerson, listPeople, peopleFilterOptions } from "@/server/records/people";
 import { CONSENT_LABELS, KIND_LABELS } from "@/server/records/rules";
 import { Drawer, Field } from "../records/Drawer";
@@ -16,10 +16,11 @@ const PATH = "/people";
 
 export default async function PeoplePage({ searchParams }: { searchParams: Promise<Params> }) {
   const user = await requireUser();
-  const query = parsePeopleQuery(await searchParams);
-  const [list, options, flash, open] = await Promise.all([
+  const parsed = parsePeopleQuery(await searchParams);
+  const options = await peopleFilterOptions(user.id, parsed.org);
+  const query = knownPeopleQuery(parsed, options);
+  const [list, flash, open] = await Promise.all([
     listPeople(user.id, query),
-    peopleFilterOptions(user.id, query.org),
     readFlash(["person_deleted", "person_no_longer_visible", "note_not_found"]),
     query.open ? getPerson(user.id, query.open) : null,
   ]);

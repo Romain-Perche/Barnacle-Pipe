@@ -163,6 +163,12 @@ export function knownDealsQuery(
   };
 }
 
+// The People list keeps a referrer only when it is one of its options (FR-013): a person hidden from the viewer
+// never filters, counts or shows back. Owner, label, source, organisation and consent are not private: unchanged.
+export function knownPeopleQuery(query: PeopleQuery, options: { referrers: readonly Known[] }): PeopleQuery {
+  return { ...query, ref: query.ref !== null && options.referrers.some((o) => o.id === query.ref) ? query.ref : null };
+}
+
 // The sector filter only keeps a value that is one of the sectors in use (matched ignoring case), so text
 // from the address is never shown back on the page (FR-025); an unknown sector filters nothing.
 export function knownSector(sector: string | null, inUse: readonly string[]): string | null {

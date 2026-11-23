@@ -1,7 +1,7 @@
 // covers FR-012, FR-013, FR-014, contracts/list-query.md (both lists), edge cases "page beyond the last" and
 // "search text is never echoed as a message"
 import { describe, expect, it } from "vitest";
-import { hasDealFilters, hasFilters, knownDealsQuery, knownSector, parseDealsQuery, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
+import { hasDealFilters, hasFilters, knownDealsQuery, knownPeopleQuery, knownSector, parseDealsQuery, parseId, parseOrganisationsQuery, parsePeopleQuery, withParams } from "@/server/records/list-query";
 
 describe("parsePeopleQuery", () => {
   it("has the defaults: sort by name A–Z, page 1, no filter", () => {
@@ -203,5 +203,19 @@ describe("the Referred by filter", () => {
     const options = { pipelines: [], stages: [], owners: [], labels: [], referrers: [{ id: 5, name: "Cara Example" }] };
     expect(knownDealsQuery(parseDealsQuery({ ref: "5" }), options).ref).toBe(5);
     expect(knownDealsQuery(parseDealsQuery({ ref: "6" }), options).ref).toBeNull();
+  });
+});
+
+// covers SF-114 FR-013, SC-005 (fix round 1): the People list keeps only a referrer that is one of its options
+describe("knownPeopleQuery", () => {
+  const options = { referrers: [{ id: 5, name: "Cara Example" }] };
+  it("drops a referrer that is not an option", () => {
+    const q = knownPeopleQuery(parsePeopleQuery({ ref: "37" }), options);
+    expect(q.ref).toBeNull();
+    expect(hasFilters(q)).toBe(false);
+  });
+  it("keeps a known referrer and every other field", () => {
+    const rest = parsePeopleQuery({ q: "fake", owner: "3", label: "4", source: "6", org: "7", consent: "subscribed", sort: "added", dir: "desc", page: "2", archived: "1", open: "8", ref: "5" });
+    expect(knownPeopleQuery(rest, options)).toEqual(rest);
   });
 });

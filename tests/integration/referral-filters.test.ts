@@ -3,7 +3,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb } from "@/server/db";
 import { dealFilterOptions, listDeals } from "@/server/deals/list";
-import { knownDealsQuery, parseDealsQuery, parsePeopleQuery } from "@/server/records/list-query";
+import { knownDealsQuery, knownPeopleQuery, parseDealsQuery, parsePeopleQuery } from "@/server/records/list-query";
 import { listPeople, peopleFilterOptions } from "@/server/records/people";
 import { makeAmbassador, refer, setDeal } from "./ambassador-helpers";
 import { makePerson, makeUser, resetDb, type TestUser } from "./db-helpers";
@@ -36,6 +36,27 @@ describe("the People list", () => {
     expect(await names({ ref: String(cara) })).toEqual(["Ben Person", "Dee Person"]);
     expect(await names({ ref: String(cara), owner: String(linus.id) })).toEqual(["Ben Person"]);
     expect((await listPeople(ada.id, parsePeopleQuery({ ref: String(cara) }))).total).toBe(2);
+  });
+});
+
+describe("the People list and a hidden referrer", () => {
+  // covers SF-114 FR-013, SC-005 (fix round 1): a referrer hidden from the viewer filters nothing
+  it("does not list the people a person hidden from the viewer referred", async () => {
+    const dora = await makeAmbassador({ firstName: "Dora", lastName: "Privatefake", createdBy: linus.id, private: true });
+    const hal = await makePerson({ firstName: "Hal", lastName: "Referredfake", createdBy: ada.id });
+    await refer("person", hal, dora);
+    const list = async (viewer: TestUser, params: Record<string, string>) => {
+      const parsed = parsePeopleQuery(params);
+      const options = await peopleFilterOptions(viewer.id, parsed.org);
+      const query = knownPeopleQuery(parsed, options);
+      return { query, names: (await listPeople(viewer.id, query)).rows.map((r) => r.name) };
+    };
+    const asAda = await list(ada, { ref: String(dora) });
+    expect(asAda.query.ref).toBeNull();
+    expect(asAda.names).toEqual(["Cara Example", "Ezra Formerfake", "Hal Referredfake"]);
+    const asLinus = await list(linus, { ref: String(dora) });
+    expect(asLinus.query.ref).toBe(dora);
+    expect(asLinus.names).toEqual(["Hal Referredfake"]);
   });
 });
 

@@ -135,12 +135,11 @@ export async function referrerOf(db: Sql, viewerId: number, referredById: number
 // The list filters' "Referred by" options (research.md §13): visible ambassadors, archived ones included, plus any
 // visible person who referred a person or deal the viewer can see (a former ambassador) — i.e. who has a page.
 export async function referrerOptions(viewerId: number): Promise<Option[]> {
-  return [
-    ...(await sql<Option[]>`
-      select a.id::int as id, ${NAME("a")} as name from persons a
-      where ${visiblePerson(sql, viewerId, "a")} and ${hasAmbassadorPage(sql, viewerId, "a")}
-      order by lower(${NAME("a")}), a.id`),
-  ];
+  const rows = await sql<Option[]>`
+    select a.id::int as id, ${NAME("a")} as name from persons a
+    where ${visiblePerson(sql, viewerId, "a")} and ${hasAmbassadorPage(sql, viewerId, "a")}
+    order by lower(${NAME("a")}), a.id`;
+  return [...rows];
 }
 
 // The ambassador page (research.md §7–§9): null unless the person is visible and an ambassador or the referrer of a
