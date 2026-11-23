@@ -8,6 +8,14 @@
 
 **Input**: User description: "Step 6 - Activities. Calls, meetings and tasks on deals, people and organisations, the Activities list showing what's due and overdue, scheduling a follow-up from a deal or contact, and the \"no next activity\" warning on deal cards (`docs/PRODUCT.md` sections 1 and 5). Activities show on the timeline. Google Calendar sync and reminders come in a later issue."
 
+## Clarifications
+
+### Session 2026-11-23
+
+- Q: Which design? → A: Design: A, the Activities list is a table like the People list (quick filters Overdue / Today / This week / Planned / Done, then assignee and type), overdue rows with a red left edge and a red OVERDUE mark; the activity form and "Schedule a follow-up?" open in a box over the page, like the lost reason box; board cards end with a line "⚠ No next activity" in amber or "Next: <date> · <type>" (see `design-options.html`).
+- Q: Should a done call or meeting update the linked person's "Last contacted" date? → A: Yes: a done call or meeting sets it to the activity's due date when that is later; a task never does.
+- Q: Should the app notify a teammate when someone else assigns them an activity? → A: Yes: an in-app notification on the Notifications page, like a mention.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Schedule an activity on a deal, person or organisation (Priority: P1)
@@ -20,7 +28,7 @@ A team member opens a deal, a person or an organisation and presses `[ SCHEDULE 
 
 **Acceptance Scenarios**:
 
-1. **Given** a deal, person or organisation the user can see and that is not archived, **When** they press `[ SCHEDULE ACTIVITY ]`, fill in type "Call", subject "Call Ada about the proposal", due date tomorrow, time 10:00 and press `[ SAVE ]`, **Then** the activity is shown in the record's "// NEXT ACTIVITIES" as "CALL · Call Ada about the proposal · <date> 10:00 · <assignee name>", and the form closes.
+1. **Given** a deal, person or organisation the user can see and that is not archived, **When** they press `[ SCHEDULE ACTIVITY ]` (the form opens in a box over the page), fill in type "Call", subject "Call Ada about the proposal", due date tomorrow, time 10:00 and press `[ SAVE ]`, **Then** the activity is shown in the record's "// NEXT ACTIVITIES" as "CALL · Call Ada about the proposal · <date> 10:00 · <assignee name>", and the form closes.
 2. **Given** the activity form is opened from a deal with main person "Ada Example" and organisation "Example Ltd Fake", **When** it is shown, **Then** the deal, Ada Example and Example Ltd Fake are already filled in as linked records; the user can remove the person or organisation, or pick another person or organisation they can see, before saving.
 3. **Given** the activity form is opened from a person who belongs to an organisation, **When** it is shown, **Then** the person and their organisation are filled in; a deal can be picked (any open deal the user can see).
 4. **Given** the subject is empty or only spaces, or no due date is given, **When** the user presses `[ SAVE ]`, **Then** "Give the activity a subject." or "Pick a due date." is shown and nothing is saved; a subject longer than 200 characters or a note longer than 10,000 characters is refused with "Keep the subject under 200 characters." or "Keep the note under 10,000 characters.".
@@ -41,7 +49,7 @@ When a call, meeting or task is done, the team member ticks it. It leaves the re
 **Acceptance Scenarios**:
 
 1. **Given** a planned activity the user can see, **When** they tick its box (on a record page, the deal drawer or the Activities list), **Then** it is marked done with who did it and when, it leaves "// NEXT ACTIVITIES", and it shows on the timeline of each linked record tagged ACTIVITY, with its type, subject, note, "Done by <name>" and the time it was marked done.
-2. **Given** the user just marked an activity done on a record page or the deal drawer, **When** the page updates, **Then** a "Schedule a follow-up?" form is shown with the same linked records and assignee filled in and no date; `[ SAVE ]` schedules it as in US1, `[ NOT NOW ]` closes it.
+2. **Given** the user just marked an activity done on a record page or the deal drawer, **When** the page updates, **Then** a "Schedule a follow-up?" box opens over the page with the same linked records and assignee filled in and no date; `[ SAVE ]` schedules it as in US1, `[ NOT NOW ]` closes it.
 3. **Given** a done activity, **When** the user unticks it, **Then** it is planned again: it leaves the timeline and is back in "// NEXT ACTIVITIES" with its original due date.
 4. **Given** a done call or meeting linked to a person, **When** it is marked done, **Then** the person's "Last contacted" becomes the activity's due date if that is later than the current value (tasks never change it); unticking it does not move "Last contacted" back.
 
@@ -76,8 +84,8 @@ On the deals board, an open deal with no planned activity shows a "No next activ
 
 **Acceptance Scenarios**:
 
-1. **Given** an open deal with no planned activity linked to it, **When** the board is shown, **Then** its card shows "No next activity" as a warning.
-2. **Given** an open deal with one or more planned activities, **When** the board is shown, **Then** its card shows the earliest one's due date ("Next: 25 Nov"), marked "Overdue" when it is overdue, and no warning.
+1. **Given** an open deal with no planned activity linked to it, **When** the board is shown, **Then** its card ends with the line "⚠ No next activity" in amber.
+2. **Given** an open deal with one or more planned activities, **When** the board is shown, **Then** its card ends with the line "Next: <earliest due date> · <its type>" (for example "Next: 25 Nov · Call"), with the mark "Overdue" in red when that activity is overdue, and no "No next activity" line.
 3. **Given** a deal on the board, **When** the user opens its drawer, **Then** the drawer shows its "// NEXT ACTIVITIES" with the done boxes and `[ SCHEDULE ACTIVITY ]`; scheduling or ticking one there updates the card when the drawer closes.
 4. **Given** a planned activity linked to a deal that only users other than the viewer can see (for example one linked to a private person hidden from the viewer), **When** the board is shown to the viewer, **Then** the card counts only activities the viewer can see; with none, it shows "No next activity".
 
@@ -97,6 +105,24 @@ Activities follow the existing private rules: an activity linked to a private pe
 2. **Given** the activity form on a private record, **When** the user picks the assignee, **Then** only active users who can see every linked record are offered; an assignee sent directly who cannot see them is refused with "<name> can't see this record, so the activity can't be assigned to them." and nothing is saved.
 3. **Given** a direct request to view, edit, tick or delete an activity the user cannot see, **When** it is sent, **Then** "This activity doesn't exist or you can't see it." is shown and nothing changes.
 4. **Given** a private deal or person is handed over with a deactivated user's private records (SF-97, SF-92), **When** the new owner opens it, **Then** they see its activities; the activities keep their assignee.
+
+---
+
+### User Story 6 - Know when a teammate assigns you an activity (Priority: P2)
+
+When a team member schedules an activity and assigns it to a teammate, or reassigns an existing one to them, the teammate is told in the app: the sidebar's "Notifications (n)" count goes up and the Notifications page lists it beside their mentions.
+
+**Why this priority**: A task given to someone else must not be missed (clarified); activities are useful without it, so it comes after the list and the card warning.
+
+**Independent Test**: As Ada Fake, schedule a call on a deal assigned to Bob Fake; sign in as Bob Fake and confirm the sidebar shows "Notifications (1)" and the page lists "Ada Fake assigned you a call: <subject>" with its due date; open it and confirm it lands on the deal page and the count goes back to 0.
+
+**Acceptance Scenarios**:
+
+1. **Given** Ada schedules an activity assigned to Bob, or edits one so that Bob becomes its assignee, **When** Bob loads any signed-in page, **Then** the sidebar shows "Notifications (<n+1>)" and the Notifications page lists, newest first among his mentions, "Ada Fake assigned you a <call|meeting|task>: <subject>" with the date it was assigned and "Due <due date and time>".
+2. **Given** a user schedules or reassigns an activity to themselves, **When** it is saved, **Then** no notification is created.
+3. **Given** an unread assignment notification, **When** Bob opens it, **Then** he lands on the page of the activity's deal (else its person, else its organisation; the Activities list when it has no link), and the notification shows as read and the count goes down by 1; `[ MARK ALL AS READ ]` marks it read too.
+4. **Given** an activity assigned to Bob is reassigned to Cy or deleted, **When** Bob opens the Notifications page, **Then** the notification about it is gone and the count no longer includes it; Cy gets one as in scenario 1. Editing other fields, ticking or unticking it changes no notification.
+5. **Given** an activity linked to a record that becomes hidden from Bob, **When** Bob opens the Notifications page, **Then** its notification is not shown or counted (as for mentions, SF-102).
 
 ---
 
@@ -146,15 +172,20 @@ Activities follow the existing private rules: an activity linked to a private pe
 - **FR-013**: Activities linked to an archived record MUST stay visible; scheduling, editing, ticking and deleting them MUST be refused until the record is restored.
 - **FR-014**: When a deal, person or organisation is deleted, its link MUST be removed from its activities, and an activity left with no link that had one MUST be deleted; activities linked to a person who was private when deleted MUST be deleted.
 - **FR-015**: Every message shown MUST be one of the app's fixed messages; text from the page address MUST never be shown; subject and note are shown as plain text only.
-- **FR-016**: The Activities list, the activity form, "// NEXT ACTIVITIES", the ACTIVITY timeline entry and the card mark MUST follow `docs/DESIGN.md` and the existing pages (design B sidebar, design C lists, design B timeline, design A board).
+- **FR-016**: The Activities list, the activity form, "// NEXT ACTIVITIES" and the card line MUST follow design A in `design-options.html` (a table like the People list, the form and "Schedule a follow-up?" in a box over the page, a last line on each board card); the ACTIVITY timeline entry MUST follow the timeline's design B (SF-102), and everything `docs/DESIGN.md`.
+
+**Notifications**
+
+- **FR-018**: Scheduling an activity assigned to someone other than the user saving it, or changing its assignee to someone else, MUST give the new assignee one unread notification on the Notifications page ("<name> assigned you a <type>: <subject>", the date, "Due <due date and time>"), counted in the sidebar; the old assignee's notification about it MUST be removed on reassignment, and every notification about it when it is deleted. Opening it MUST go to the activity's deal, else person, else organisation, else the Activities list, and mark it read. It MUST follow the mention rules of SF-102 for read/unread, `[ MARK ALL AS READ ]` and hiding while the record is hidden.
 
 **Fake data**
 
-- **FR-017**: The fake data command MUST add, without duplicates when run again, activities of each type for the fake users: overdue, due today, due later, with and without a time, done ones on timelines, at least one on a private deal and one on a private person, and at least one open deal with no planned activity.
+- **FR-017**: The fake data command MUST add, without duplicates when run again, read and unread assignment notifications and activities of each type for the fake users: overdue, due today, due later, with and without a time, done ones on timelines, at least one on a private deal and one on a private person, and at least one open deal with no planned activity.
 
 ### Key Entities
 
 - **Activity**: a call, meeting or task: type, subject, due date, optional time and duration, assignee (user), note, done or planned (with who marked it done and when), who created it and when, and optional links to one deal, one person and one organisation.
+- **Notification** (from SF-102): now also tells a user they were assigned an activity; disappears when they are no longer its assignee or it is deleted.
 - **Timeline entry** (from SF-90/SF-102): a done activity is shown on the timelines of the records it is linked to, tagged ACTIVITY.
 - **Deal, Person, Organisation, User** (existing): what activities are linked to and assigned to; a person's "Last contacted" is now filled by done calls and meetings.
 
@@ -176,8 +207,8 @@ Activities follow the existing private rules: an activity linked to a private pe
 - An activity links to at most one deal, one person and one organisation (as in Pipedrive); meeting attendees beyond the linked person, and guests from outside the team, come with Google Calendar sync.
 - The Activities list shows the user's own activities by default; anyone can switch to another user or "Everyone" (team data is shared, PRODUCT §7).
 - Only done activities appear on the timeline (planned ones are in "// NEXT ACTIVITIES"); scheduling, editing or deleting an activity is not itself a timeline entry.
-- Done calls and meetings fill a person's "Last contacted" (SF-90 left it to activities and email); tasks do not.
+- Done calls and meetings fill a person's "Last contacted" (clarified; SF-90 left it to activities and email); tasks do not.
 - The board shows the next activity's date or the warning; the deal list and person and organisation lists get no activity column in this issue.
-- Activities do not notify anyone (no notification when one is assigned to you); reminders come with the later issue.
+- Being assigned an activity by someone else is notified in the app only (clarified); no email. Reminders before an activity is due come with the later issue.
 - Pipedrive import of activities is part of the import issue, not this one.
 - Technical choices already in `docs/DECISIONS.md` and `AGENTS.md` apply and are not repeated here.
