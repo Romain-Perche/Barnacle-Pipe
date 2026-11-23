@@ -191,6 +191,33 @@ notifications in `notifications.ts`.
    index in this run, so no "Departs from blueprint" line. Update `AGENTS.md` § Layout with `src/server/activities/`,
    `visibleActivity`, `src/app/(app)/activities/`, `src/seed/activities.ts`.
 
+## Fix round 1
+
+**Problem (AI review):** the fake data assigns Grace Fake the task "Fake task: check in after the trial" on Robin
+Leftfake. Robin Leftfake is a private person, created and owned by the deactivated Alan Fake. Grace Fake cannot see the
+person, so the activity breaks FR-012 (its assignee must see every linked record), and no active user can see the task.
+README and `.factory/test-env.md` describe it as Grace's task. Minor, same round: the // TIMELINE of a record shows the
+"Mark not done" box on a done activity whose other link (for example its deal) is archived while the page's own record
+is not; the server refuses the untick ("Restore this record…"), but // NEXT ACTIVITIES already hides the box in that case.
+
+**Cause:** `src/seed/activities.ts` picks the person by name only and never checks that the assignee can see it; the
+seed test (`tests/integration/seed.test.ts`) checks that some activity is on a private person, not that every assignee
+can see its links. The done-activity entry read by `readTimeline` (`src/server/records/timeline.ts`) carries no
+"a link is archived" flag, so `RecordTimeline.tsx` only checks the page's own record.
+
+**Fix:**
+- `src/seed/activities.ts`: link Grace's task to Bob Placeholder, a public person owned by Grace Fake (organisation
+  Example Gyms Fake, not archived). The private-person case stays covered by Ada's task on Gus Lorem (FR-017).
+- `src/server/records/timeline.ts`: the activity entry gets `archived` (its deal, person or organisation is archived),
+  as `getActivity` already computes it. `src/app/(app)/records/RecordTimeline.tsx`: show the untick box only when the
+  page can change and `!a.archived`, as `NextActivities.tsx` does.
+- README (fake data paragraph) and `.factory/test-env.md` (SF-109 seed line): "task next week on Bob Placeholder"
+  instead of Robin Leftfake. Build and the AI review write the recipe, as usual.
+
+**Files:** `src/seed/activities.ts`, `src/server/records/timeline.ts`, `src/app/(app)/records/RecordTimeline.tsx`,
+`tests/integration/seed.test.ts`, the timeline integration test, `README.md`, `.factory/test-env.md`. No new dependency,
+no new outside service, no spec change (FR-012 and FR-017 already say this).
+
 ## Outside services
 
 - Supabase Postgres (through the Supavisor connection pooler): no public schema found on GitHub (looked in github.com/supabase/supavisor at commit e59909dc629230a4c07af3df16957ef22a184774, which only has an OpenAPI test for its own management API, and github.com/supabase/supabase, during SF-90 and SF-93; the app speaks the standard Postgres protocol, the new code only adds a table to the app's own database, and tests use a real local Postgres rather than a fake)
