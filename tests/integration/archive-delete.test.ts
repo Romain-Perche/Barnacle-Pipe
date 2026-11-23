@@ -134,6 +134,56 @@ describe("deleting a person keeps the history on other records", () => {
   });
 });
 
+// covers SF-114 FR-014, edge case "An admin deletes an ambassador" (research.md §6)
+import * as dealsModule from "@/server/deals/deals";
+import { getAmbassadorPage } from "@/server/records/ambassadors";
+import { events, makeAmbassador, refer, referral } from "./ambassador-helpers";
+describe("deleting an ambassador clears Referred by on what they referred", () => {
+  async function setup(privateAmbassador: boolean) {
+    const stage = (await makePipeline("Sales", ["Lead in"])).stages[0];
+    const cara = await makeAmbassador({ firstName: "Cara", lastName: "Example", createdBy: ada.id, private: privateAmbassador });
+    const deal = await makeDeal({ title: "Fake referral", stageId: stage, createdBy: ada.id });
+    // Set through the real saves, so the referrer_set events exist.
+    const p = (await getPerson(ada.id, person))!;
+    const { personToForm } = await import("@/server/records/people");
+    saved(await updatePerson(ada.id, person, p.version, { ...personToForm(p), referredBy: String(cara) }));
+    const d = (await dealsModule.getDeal(ada.id, deal))!;
+    saved(await dealsModule.updateDeal(ada.id, deal, d.version, { ...dealsModule.dealToForm(d), referredBy: String(cara) }));
+    return { cara, deal };
+  }
+
+  it("a shared ambassador: columns cleared, 'Referred by cleared (a deleted person)' on each, earlier events nameless", async () => {
+    const { cara, deal } = await setup(false);
+    expect((await deletePerson(ada.id, cara)).status).toBe("deleted");
+    expect(await referral("person", person)).toMatchObject({ referred_by_id: null, referred_at: null });
+    expect(await referral("deal", deal)).toMatchObject({ referred_by_id: null, referred_at: null });
+    for (const target of [{ personId: person }, { dealId: deal }]) {
+      const evs = await events(target);
+      expect(evs.at(-1)).toMatchObject({ kind: "referrer_cleared", actor_id: ada.id, cause: "person_deleted" });
+      const tl = await readTimeline(linus.id, target);
+      expect(tl.entries[0]).toMatchObject({ kind: "referrer_cleared", cause: "person_deleted", actorName: "Ada Fake" });
+      expect(tl.entries.find((e) => e.kind === "referrer_set")).toMatchObject({ relatedPerson: null });
+    }
+    expect((await getPerson(ada.id, person))!.referredBy).toBeNull();
+    expect((await dealsModule.getDeal(ada.id, deal))!.referredBy).toBeNull();
+  });
+
+  it("a private ambassador: no event, and their referral events are removed", async () => {
+    const { cara, deal } = await setup(true);
+    // A changed event naming them as the previous referrer goes too.
+    const dora = await makeAmbassador({ firstName: "Dora", createdBy: ada.id });
+    const p = (await getPerson(ada.id, person))!;
+    const { personToForm } = await import("@/server/records/people");
+    saved(await updatePerson(ada.id, person, p.version, { ...personToForm(p), referredBy: String(dora) }));
+    expect((await deletePerson(ada.id, cara)).status).toBe("deleted");
+    expect((await events({ personId: person })).map((e) => e.kind).filter((k) => k.startsWith("referrer"))).toEqual([]);
+    expect((await events({ dealId: deal })).some((e) => e.kind.startsWith("referrer"))).toBe(false);
+    expect((await referral("person", person)).referred_by_id).toBe(dora);
+    expect((await referral("deal", deal)).referred_by_id).toBeNull();
+    expect(await getAmbassadorPage(ada.id, cara, { people: 50, deals: 50 })).toBeNull();
+  });
+});
+
 // covers SF-109 FR-014, spec Edge Cases "deleting a deal, person or organisation" (T014)
 describe("deleting a record with activities", () => {
   let deal: number;

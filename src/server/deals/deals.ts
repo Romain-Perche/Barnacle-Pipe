@@ -5,7 +5,9 @@
 import { sql, type Sql } from "@/server/db";
 import { changedDealFields, validateDeal, validateLostReason, type DealFields, type DealForm } from "@/server/deals/rules";
 import { isActiveAdmin, isUniqueViolation, ownerOptions, refuse, Refused, resolveOwner, type Option, type UserRef } from "@/server/records/common";
+import { ambassadorOptions, referrerOf, type AmbassadorOption, type Referrer } from "@/server/records/ambassadors";
 import { organisationExistsAfterRace, resolveOrganisation } from "@/server/records/organisations";
+import { recordReferral, referredByToForm, resolveReferrer } from "@/server/records/people";
 import type { FieldErrors } from "@/server/records/rules";
 import { recordEvent, type MoveCause } from "@/server/records/timeline";
 import { visibleActivity, visibleDeal, visiblePerson } from "@/server/records/visibility";
@@ -55,6 +57,8 @@ export type DealView = {
   otherPeople: { id: number; name: string; archived: boolean }[];
   followers: UserRef[];
   followedByViewer: boolean;
+  // SF-114: "Referred by" ("hidden": a referrer the viewer cannot see).
+  referredBy: Referrer;
 };
 
 export type StatusResult =
@@ -143,7 +147,7 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
       org_id: number | null; org_name: string | null; org_archived: boolean | null; person_id: number | null; person_name: string | null;
       person_archived: boolean | null; owner_id: number; owner_name: string; owner_active: boolean; expected_close: string | null;
       private: boolean; created_by: number; created_at: Date; archived_at: Date | null; version: number; status: DealStatus;
-      closed_at: Date | null; lost_reason: string | null;
+      closed_at: Date | null; lost_reason: string | null; referred_by_id: number | null;
     }[]
   >`
     select d.id::int as id, d.title, d.value_pence, pl.id::int as pipeline_id, pl.name as pipeline_name, s.id::int as stage_id,
@@ -151,7 +155,7 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
            p.id::int as person_id, btrim(p.first_name || ' ' || p.last_name) as person_name, p.archived_at is not null as person_archived,
            u.id::int as owner_id, u.name as owner_name, u.status = 'active' as owner_active,
            to_char(d.expected_close_on, 'YYYY-MM-DD') as expected_close, d.private, d.created_by::int as created_by, d.created_at,
-           d.archived_at, d.version, d.status, d.closed_at, d.lost_reason
+           d.archived_at, d.version, d.status, d.closed_at, d.lost_reason, d.referred_by_id::int as referred_by_id
     from deals d
     join stages s on s.id = d.stage_id
     join pipelines pl on pl.id = s.pipeline_id
@@ -160,7 +164,7 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
     left join persons p on p.id = d.person_id and ${visiblePerson(db, viewerId)}
     where d.id = ${id} and ${visibleDeal(db, viewerId)}`;
   if (!r) return null;
-  const [labels, otherPeople, followers] = await Promise.all([
+  const [labels, otherPeople, followers, referredBy] = await Promise.all([
     db<Option[]>`
       select l.id::int as id, l.name from deal_label_links dl join deal_labels l on l.id = dl.label_id
       where dl.deal_id = ${id} order by lower(l.name), l.id`,
@@ -173,6 +177,7 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
       select u.id::int as id, u.name, u.status = 'active' as active
       from deal_followers f join users u on u.id = f.user_id
       where f.deal_id = ${id} order by lower(u.name), u.id`,
+    referrerOf(db, viewerId, r.referred_by_id),
   ]);
   return {
     id: r.id,
@@ -197,6 +202,7 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
     otherPeople: [...otherPeople],
     followers: [...followers],
     followedByViewer: followers.some((f) => f.id === viewerId),
+    referredBy,
   };
 }
 
@@ -228,6 +234,7 @@ export function dealToForm(d: DealView): DealForm {
     expectedClose: d.expectedClose ?? "",
     private: d.private,
     labelIds: d.labels.map((l) => String(l.id)),
+    referredBy: referredByToForm(d.referredBy),
   };
 }
 
@@ -251,22 +258,28 @@ export async function stageChoices(db: Sql = sql): Promise<PipelineStages[]> {
 export type DealChoices = {
   owners: Option[];
   organisations: { id: number; name: string; archived: boolean }[];
-  people: { id: number; name: string; archived: boolean }[];
+  // SF-114: referredById is the person's referrer only when that referrer is offered (pre-fills the add form).
+  people: { id: number; name: string; archived: boolean; referredById: number | null }[];
   pipelines: PipelineStages[];
   // Non-removed deal labels plus the ones the deal already has (SF-95, as people labels).
   labels: Option[];
+  // SF-114: the "Referred by" options (offered ambassadors).
+  ambassadors: AmbassadorOption[];
 };
 
 // What the deal form offers: active owners, non-archived organisations and visible non-archived people, plus
 // whatever the deal already has (a hidden person is never listed).
 export async function dealFormChoices(viewerId: number, deal: DealView | null): Promise<DealChoices> {
-  const [owners, organisations, people, pipelines, labels] = await Promise.all([
+  const [owners, organisations, people, pipelines, labels, ambassadors] = await Promise.all([
     ownerOptions(sql, deal ? sql`u.id = ${deal.owner.id}` : null),
     sql<{ id: number; name: string; archived: boolean }[]>`
       select id::int as id, name, archived_at is not null as archived from organisations
       where archived_at is null or id = ${deal?.organisation?.id ?? 0} order by lower(name), id`,
-    sql<{ id: number; name: string; archived: boolean }[]>`
-      select p.id::int as id, ${PERSON_NAME()} as name, p.archived_at is not null as archived from persons p
+    sql<{ id: number; name: string; archived: boolean; referredById: number | null }[]>`
+      select p.id::int as id, ${PERSON_NAME()} as name, p.archived_at is not null as archived,
+             (select a.id::int from persons a
+              where a.id = p.referred_by_id and a.is_ambassador and a.archived_at is null and ${visiblePerson(sql, viewerId, "a")}) as "referredById"
+      from persons p
       where (p.archived_at is null or p.id = ${deal?.person?.id ?? 0}) and ${visiblePerson(sql, viewerId)}
       order by lower(${PERSON_NAME()}), p.id`,
     stageChoices(),
@@ -274,8 +287,9 @@ export async function dealFormChoices(viewerId: number, deal: DealView | null): 
       select id::int as id, name from deal_labels
       where removed_at is null or id = any(${deal?.labels.map((l) => l.id) ?? []}::bigint[])
       order by lower(name), id`,
+    ambassadorOptions(sql, viewerId),
   ]);
-  return { owners, organisations: [...organisations], people: [...people], pipelines, labels: [...labels] };
+  return { owners, organisations: [...organisations], people: [...people], pipelines, labels: [...labels], ambassadors };
 }
 
 // --- Changes -------------------------------------------------------------------------------------------------
@@ -350,21 +364,24 @@ export async function createDeal(actorId: number, form: DealForm): Promise<DealS
       // FR-006: no organisation chosen → the main person's organisation.
       const organisationId = org.id ?? person?.organisationId ?? null;
       const ownerId = await resolveOwner(db, value.ownerId, actorId, null);
+      const referredById = await resolveReferrer(db, actorId, form.referredBy, null, null);
       const [row] = await db<{ id: number }[]>`
-        insert into deals (title, value_pence, stage_id, organisation_id, person_id, owner_id, expected_close_on, private, created_by)
+        insert into deals (title, value_pence, stage_id, organisation_id, person_id, owner_id, expected_close_on, private, created_by,
+                           referred_by_id, referred_at)
         values (${value.title}, ${value.valuePence}, ${stage.id}, ${organisationId}, ${person?.id ?? null}, ${ownerId},
-                ${value.expectedClose}, ${value.private}, ${actorId})
+                ${value.expectedClose}, ${value.private}, ${actorId}, ${referredById}, ${referredById === null ? null : db`now()`})
         returning id::int as id`;
       await db`
         insert into deal_stage_periods (deal_id, stage_id, stage_name, pipeline_name, moved_by)
         values (${row.id}, ${stage.id}, ${stage.name}, ${stage.pipelineName}, ${actorId})`;
       await recordEvent(db, { dealId: row.id, kind: "added", actorId });
+      await recordReferral(db, { dealId: row.id }, actorId, null, referredById);
       return { status: "saved" as const, id: row.id, pipelineId: stage.pipelineId };
     }),
   );
 }
 
-function fieldsOf(d: DealView, personId: number | null): DealFields {
+function fieldsOf(d: DealView, personId: number | null, referredById: number | null): DealFields {
   return {
     title: d.title,
     valuePence: d.valuePence,
@@ -377,6 +394,7 @@ function fieldsOf(d: DealView, personId: number | null): DealFields {
     expectedClose: d.expectedClose,
     private: d.private,
     labelIds: d.labels.map((l) => l.id).sort((a, b) => a - b),
+    referredById,
   };
 }
 
@@ -396,13 +414,15 @@ export async function updateDeal(actorId: number, id: number, version: number, f
   return withOrgRace(value.newOrganisationName, () =>
     sql.begin(async (tx) => {
       const db = tx as unknown as Sql;
-      const [locked] = await db<{ person_id: number | null; created_by: number }[]>`
-        select d.person_id::int as person_id, d.created_by::int as created_by from deals d
+      const [locked] = await db<{ person_id: number | null; created_by: number; referred_by_id: number | null }[]>`
+        select d.person_id::int as person_id, d.created_by::int as created_by, d.referred_by_id::int as referred_by_id from deals d
         where d.id = ${id} and d.archived_at is null and ${visibleDeal(db, actorId)} for update`;
       if (!locked) throw new Refused({ status: "not_found" });
       const current = (await getDeal(actorId, id, db))!;
       if (current.version !== version) refuse({ form: { code: "deal_edit_conflict" } });
-      const before = fieldsOf(current, locked.person_id);
+      const before = fieldsOf(current, locked.person_id, locked.referred_by_id);
+      // SF-114: never changed by a change of main person (US2 scenario 6), only by the field.
+      const referredById = await resolveReferrer(db, actorId, form.referredBy, before.referredById, null);
       const org = await resolveOrganisation(db, actorId, value, before.organisationId);
       if (!org.ok) refuse({ organisation: org.error });
       // A main person the actor cannot see stays when the field comes back empty (spec Clarifications).
@@ -423,11 +443,15 @@ export async function updateDeal(actorId: number, id: number, version: number, f
         ownerId: await resolveOwner(db, value.ownerId, current.owner.id, current.owner.id),
         private: canSetPrivate ? value.private : current.private,
         labelIds: await allowedDealLabels(db, value.labelIds, before.labelIds),
+        referredById,
       };
+      const referrerChanged = before.referredById !== after.referredById;
       await db`
         update deals set title = ${after.title}, value_pence = ${after.valuePence}, organisation_id = ${after.organisationId},
                person_id = ${after.personId}, owner_id = ${after.ownerId}, expected_close_on = ${after.expectedClose},
-               private = ${after.private}, version = version + 1
+               private = ${after.private}, referred_by_id = ${after.referredById},
+               referred_at = ${referrerChanged ? (after.referredById === null ? null : db`now()`) : db`referred_at`},
+               version = version + 1
         where id = ${id}`;
       await db`delete from deal_label_links where deal_id = ${id}`;
       for (const labelId of after.labelIds) await db`insert into deal_label_links (deal_id, label_id) values (${id}, ${labelId})`;
@@ -435,6 +459,7 @@ export async function updateDeal(actorId: number, id: number, version: number, f
       if (after.personId !== null) await db`delete from deal_people where deal_id = ${id} and person_id = ${after.personId}`;
       const fields = changedDealFields(before, after);
       if (fields.length > 0) await recordEvent(db, { dealId: id, kind: "edited", actorId, fields });
+      await recordReferral(db, { dealId: id }, actorId, before.referredById, after.referredById);
       if (after.private && actorId !== current.createdBy && actorId !== after.ownerId) {
         return { status: "no_longer_visible" as const, title: after.title, pipelineId: current.pipeline.id };
       }

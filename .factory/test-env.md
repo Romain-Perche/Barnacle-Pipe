@@ -60,6 +60,15 @@
   no fake, the real local PostgreSQL, no public schema on GitHub, same pooler limits (no session state, no new
   connection). Covered by `tests/e2e/notification-count.spec.ts` (two-step checks with a `window` marker proving no
   full reload; mentions inserted by SQL).
+  The ambassador code (SF-114: `src/server/records/ambassadors.ts`, `referral-rules.ts`, the referral and delete changes in
+  `people.ts` and `deals.ts`) keeps to the same pooler limits: no fake, the real local PostgreSQL 17, no public schema on
+  GitHub, follows https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session
+  advisory lock, scanned by `tests/integration/migrate.test.ts`), each save one `sql.begin()` that re-checks the referrer
+  (`isOfferedAmbassador`) and writes the referral event. Its columns and kinds come from `migrations/0009_ambassadors.sql`
+  (`persons.is_ambassador`, `persons/deals.referred_by_id` + `referred_at`, `timeline_events.from_person_id`, kinds
+  `ambassador_added`/`ambassador_removed`/`referrer_set`/`referrer_changed`/`referrer_cleared`, cause `person_deleted`;
+  no new table), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514 refusals (a
+  person referred by themselves, a `from_person_id` on another kind, an unknown cause). No new outside service.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -121,6 +130,26 @@
     "Fakeco support contract", Fakeco Ltd; the first two set their main person's Last contacted); a call on the private
     deal "Fake secret project" and a task on the private person Gus Lorem (both Ada's). Every other open deal shows
     "⚠ No next activity" on the board.
+    SF-114 adds (seeder "ambassadors", after notes) 9 people with `@example.com` addresses: ambassadors Cara Example (shared,
+    owner Ada Fake, Sample Studios Fake, "Partnerships lead"), Dora Privatefake (private, Linus Fake's), the former ambassador
+    Ezra Formerfake (unticked); Ben, Dee, Eli Referredfake (referred by Cara), Fay, Gus Referredfake (by Ezra), Hal Referredfake
+    (shared, by Dora); 4 Sales deals referred by Cara: "Fake referral · website" (open £4,500, person Ben), "… · pilot" (won
+    £4,000), "… · app" (lost £1,500, "Fake: chose another supplier"), "… · audit" (open £2,000, private, Linus Fake's); notes by
+    Ada Fake on "… · website" and on Dee. So Sales has 4 more deals and there are 44 fake people. For Ada, Cara's page shows
+    People 3 · Deals 3 · Open £4,500 · Won £4,000 · Lost 1; for Linus, Deals 4 · Open £6,500.
+  - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
+    1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
+    (`ONLY="US2 scenario 4,Edge case 9"` for a subset; US2-5 needs US2-2's "SF114 Bob Sample"). Selectors: the picker is the
+    `combobox` "Referred by" with `listbox` "Ambassadors" (options read "<name> <organisation> · <first email>"), its chip
+    has the button "Clear Referred by"; the tick is the checkbox "Ambassador"; "Referred by" is `dt` + `dd` on the person page,
+    deal page and `aside[aria-label=Deal]` drawer; the ambassador page has `dl.strip[aria-label=Summary]`, regions "People
+    referred" / "Deals referred" (`a.nm`), `section[aria-label='Latest updates'] li.ent` (`.kd` tag, `.on-deal a` record link).
+    Direct requests: rewrite the hidden `referredBy` (or add `ambassador=on`) in the form holding `firstName`/`title` — not the
+    first form of the page (that is the sidebar's sign-out). Wait for `waitForURL` after link clicks (client navigation).
+    Timeline lines read with the tag first ("CHANGEReferred by set to …"). Edge 13 (unknown `ref` on /people and
+    /deals/list for Ada: Dora and Ben) checks for the text "Dora Privatefake" only: Pat Privatefake is Ada's own, and US2's
+    deals are titled "SF114 Dora deal …". The script is not re-runnable without `reset-db.sh` (names are reused).
   - CSV import scenarios (SF-103) are covered by `tests/e2e/{import-people,import-organisations}.spec.ts`, with the fake
     files in `tests/fixtures/csv/` (people-20.csv: rows 4 and 15 use `dup.one@`/`DUP.TWO@fakeco.example`, which the test puts
     in the CRM first, row 9 has an invalid address; organisations-10.csv: "FAKECO LTD" matches the seeded Fakeco Ltd, size

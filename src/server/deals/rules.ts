@@ -15,6 +15,8 @@ export type DealForm = {
   expectedClose: string;
   private: boolean;
   labelIds: string[];
+  // SF-114: "Referred by": "", "<id>" or "keep".
+  referredBy: string;
 };
 
 // A deal's fields once validated (and as compared for the history). Pipeline and stage only on add.
@@ -31,6 +33,8 @@ export type DealFields = {
   private: boolean;
   // Sorted, no duplicates (SF-95): compared as a whole for "Edited by …: Labels".
   labelIds: number[];
+  // SF-114: not in DEAL_FIELDS (its own timeline lines); the stored referrer once decided.
+  referredById: number | null;
 };
 
 export const MAX_PENCE = 999_999_999_999;
@@ -88,6 +92,8 @@ export function validateDeal(form: DealForm): { ok: true; value: DealFields } | 
       expectedClose: close.date,
       private: form.private === true,
       labelIds: [...new Set((form.labelIds ?? []).map(toId).filter((id): id is number => id !== null))].sort((a, b) => a - b).slice(0, 200),
+      // Decided by the save (referral-rules.ts + the database check), not here.
+      referredById: null,
     },
   };
 }

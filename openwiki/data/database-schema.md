@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T16:50:25.265Z
+    at: 2026-11-23T18:05:22.701Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -23,13 +23,15 @@ sources:
     resource: repo://migrations/0006_csv_imports.sql
   - id: openwiki-source-65366545ec8eba3034352214
     resource: repo://migrations/0008_activities.sql
+  - id: openwiki-source-afe126abfd80a7bbf3246173
+    resource: repo://migrations/0009_ambassadors.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-23T16:50:25.265Z" }
+generated: { by: "claude-code", at: "2026-11-23T18:05:22.701Z" }
 ---
 
 # Database schema and access
@@ -144,6 +146,15 @@ organisation (`on delete set null`), `assignee_id`, `created_by`, an optimistic 
 it is live while the assignee differs from the assigner. Partial indexes serve the assignee's open and done lists,
 a deal's next activity and the unread assignment count. No other table changes: done activities are read into the
 timeline, never copied.
+
+### Ambassadors and referrals (migration 0009)
+
+`0009_ambassadors.sql` adds `is_ambassador`, `referred_by_id` (another person, `on delete set null`, never the
+person itself) and `referred_at` to `persons`, and `referred_by_id` and `referred_at` to `deals`. `timeline_events`
+gets `from_person_id` (the previous referrer, only on `referrer_changed` events), the event kinds
+`ambassador_added`, `ambassador_removed`, `referrer_set`, `referrer_changed` and `referrer_cleared`, and the cause
+`person_deleted`. Partial indexes serve the "referred by" lookups. See
+[People and organisations](../features/people-and-organisations.md).
 
 ## Row level security
 

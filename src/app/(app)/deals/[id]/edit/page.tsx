@@ -35,6 +35,7 @@ export default async function EditDealPage({
         choices={choices}
         canSetPrivate={deal.createdBy === user.id || deal.owner.id === user.id}
         withStage={false}
+        currentReferrer={deal.referredBy}
         initial={dealToForm(deal)}
         id={deal.id}
         version={deal.version}

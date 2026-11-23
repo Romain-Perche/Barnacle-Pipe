@@ -30,6 +30,8 @@ function form(over: Partial<PersonForm> = {}): PersonForm {
     labelIds: [],
     consent: "subscribed",
     private: false,
+    ambassador: false,
+    referredBy: "",
     ...over,
   };
 }

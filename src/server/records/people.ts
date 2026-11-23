@@ -16,6 +16,7 @@ import {
   type SaveResult,
   type UserRef,
 } from "@/server/records/common";
+import { ambassadorOptions, isOfferedAmbassador, referrerOf, referrerOptions, type AmbassadorOption, type Referrer } from "@/server/records/ambassadors";
 import { PAGE_SIZE, type PeopleQuery } from "@/server/records/list-query";
 import { organisationExistsAfterRace, resolveOrganisation } from "@/server/records/organisations";
 import {
@@ -29,7 +30,8 @@ import {
   type PersonFields,
   type PersonForm,
 } from "@/server/records/rules";
-import { recordEvent } from "@/server/records/timeline";
+import { decideReferrer, parseReferredBy, referralEvent } from "@/server/records/referral-rules";
+import { recordEvent, type Target } from "@/server/records/timeline";
 import { visiblePerson } from "@/server/records/visibility";
 
 export type PersonView = {
@@ -52,6 +54,9 @@ export type PersonView = {
   lastContactedAt: Date | null;
   archived: boolean;
   version: number;
+  // SF-114: the Ambassador tick and "Referred by" ("hidden": a referrer the viewer cannot see).
+  ambassador: boolean;
+  referredBy: Referrer;
 };
 
 export type PersonRow = {
@@ -79,11 +84,12 @@ export async function getPerson(viewerId: number, id: number, db: Sql = sql): Pr
       id: number; first_name: string; last_name: string; role: string | null; linkedin_url: string | null; consent: Consent;
       private: boolean; created_by: number; created_at: Date; last_contacted_at: Date | null; archived: boolean; version: number;
       org_id: number | null; org_name: string | null; org_archived: boolean | null; ls_id: number | null; ls_name: string | null;
-      owner_id: number; owner_name: string; owner_active: boolean;
+      owner_id: number; owner_name: string; owner_active: boolean; is_ambassador: boolean; referred_by_id: number | null;
     }[]
   >`
     select p.id::int as id, p.first_name, p.last_name, p.role, p.linkedin_url, p.consent, p.private, p.created_by::int as created_by,
            p.created_at, p.last_contacted_at, p.archived_at is not null as archived, p.version,
+           p.is_ambassador, p.referred_by_id::int as referred_by_id,
            o.id::int as org_id, o.name as org_name, o.archived_at is not null as org_archived,
            ls.id::int as ls_id, ls.name as ls_name,
            u.id::int as owner_id, u.name as owner_name, u.status = 'active' as owner_active
@@ -100,6 +106,7 @@ export async function getPerson(viewerId: number, id: number, db: Sql = sql): Pr
   const labels = await db<Option[]>`
     select l.id::int as id, l.name from person_labels pl join labels l on l.id = pl.label_id
     where pl.person_id = ${id} order by lower(l.name), l.id`;
+  const referredBy = await referrerOf(db, viewerId, r.referred_by_id);
   return {
     id: r.id,
     firstName: r.first_name,
@@ -120,10 +127,12 @@ export async function getPerson(viewerId: number, id: number, db: Sql = sql): Pr
     lastContactedAt: r.last_contacted_at,
     archived: r.archived,
     version: r.version,
+    ambassador: r.is_ambassador,
+    referredBy,
   };
 }
 
-function fieldsOf(p: PersonView): PersonFields {
+function fieldsOf(p: PersonView, referredById: number | null): PersonFields {
   return {
     firstName: p.firstName,
     lastName: p.lastName,
@@ -138,7 +147,30 @@ function fieldsOf(p: PersonView): PersonFields {
     labelIds: p.labels.map((l) => l.id).sort((a, b) => a - b),
     consent: p.consent,
     private: p.private,
+    ambassador: p.ambassador,
+    referredById,
   };
+}
+
+// SF-114 research.md §4: the referrer a save keeps (an unchanged one always, even hidden or no longer offered) or sets
+// (an offered ambassador only, never the person themselves). Refuses under `referredBy`; runs inside the save.
+export async function resolveReferrer(db: Sql, actorId: number, raw: string, currentId: number | null, selfId: number | null): Promise<number | null> {
+  const decision = decideReferrer(parseReferredBy(raw), currentId, selfId);
+  if (decision.kind === "keep") return currentId;
+  if (decision.kind === "none") return null;
+  if (decision.kind === "refuse") refuse({ referredBy: { code: decision.code } });
+  if (!(await isOfferedAmbassador(db, actorId, decision.id))) refuse({ referredBy: { code: "referrer_invalid" } });
+  return decision.id;
+}
+
+// Writes the referral event of a save on the person's or deal's own timeline, if the referrer changed.
+export async function recordReferral(db: Sql, target: Target, actorId: number, beforeId: number | null, afterId: number | null) {
+  const event = referralEvent(beforeId, afterId);
+  if (!event) return;
+  if (event.kind === "referrer_set") await recordEvent(db, { ...target, kind: event.kind, actorId, relatedPersonId: event.to });
+  else if (event.kind === "referrer_changed") {
+    await recordEvent(db, { ...target, kind: event.kind, actorId, relatedPersonId: event.to, fromPersonId: event.from });
+  } else await recordEvent(db, { ...target, kind: event.kind, actorId });
 }
 
 // The first address (in form order) that another person already has, named only if the viewer can see them.
@@ -212,13 +244,18 @@ export async function createPerson(actorId: number, form: PersonForm): Promise<S
       const ownerId = await resolveOwner(db, value.ownerId, actorId, null);
       const leadSourceId = await allowedLeadSource(db, value.leadSourceId, null);
       const labelIds = await allowedLabels(db, value.labelIds, []);
+      const referredById = await resolveReferrer(db, actorId, form.referredBy, null, null);
       const [row] = await db<{ id: number }[]>`
-        insert into persons (first_name, last_name, organisation_id, role, lead_source_id, linkedin_url, owner_id, consent, private, created_by)
+        insert into persons (first_name, last_name, organisation_id, role, lead_source_id, linkedin_url, owner_id, consent, private, created_by,
+                             is_ambassador, referred_by_id, referred_at)
         values (${value.firstName}, ${value.lastName}, ${org.id}, ${value.role}, ${leadSourceId}, ${value.linkedin}, ${ownerId},
-                ${value.consent}, ${value.private}, ${actorId})
+                ${value.consent}, ${value.private}, ${actorId}, ${value.ambassador}, ${referredById},
+                ${referredById === null ? null : db`now()`})
         returning id::int as id`;
       await writeChildren(db, row.id, { ...value, labelIds });
       await recordEvent(db, { personId: row.id, kind: "added", actorId });
+      if (value.ambassador) await recordEvent(db, { personId: row.id, kind: "ambassador_added", actorId });
+      await recordReferral(db, { personId: row.id }, actorId, null, referredById);
       if (org.id !== null) await recordEvent(db, { organisationId: org.id, kind: "person_linked", actorId, relatedPersonId: row.id });
       return { status: "saved" as const, id: row.id };
     });
@@ -237,13 +274,16 @@ export async function updatePerson(actorId: number, id: number, version: number,
   try {
     return await sql.begin(async (tx) => {
       const db = tx as unknown as Sql;
-      const locked = await db`select id from persons p where p.id = ${id} and ${visiblePerson(db, actorId)} for update`;
-      if (locked.length === 0) throw new Refused({ status: "not_found" });
+      const [locked] = await db<{ referred_by_id: number | null }[]>`
+        select p.referred_by_id::int as referred_by_id from persons p where p.id = ${id} and ${visiblePerson(db, actorId)} for update`;
+      if (!locked) throw new Refused({ status: "not_found" });
       const current = (await getPerson(actorId, id, db))!;
       if (current.version !== version) refuse({ form: { code: "edit_conflict" } });
       const duplicate = await emailConflict(db, actorId, form, id);
       if (duplicate) refuse(duplicate);
-      const before = fieldsOf(current);
+      const before = fieldsOf(current, locked.referred_by_id);
+      // An archived person's tick and referrer stay as they are (the form does not show them: spec Edge Cases).
+      const referredById = current.archived ? before.referredById : await resolveReferrer(db, actorId, form.referredBy, before.referredById, id);
       const org = await resolveOrganisation(db, actorId, value, before.organisationId);
       if (!org.ok) refuse({ organisation: org.error });
       const after: PersonFields = {
@@ -255,15 +295,25 @@ export async function updatePerson(actorId: number, id: number, version: number,
         labelIds: await allowedLabels(db, value.labelIds, before.labelIds),
         // The creator or the owner (as before the save) may change the private flag (SF-92 FR-002).
         private: current.createdBy === actorId || current.owner.id === actorId ? value.private : current.private,
+        ambassador: current.archived ? before.ambassador : value.ambassador,
+        referredById,
       };
+      const referrerChanged = before.referredById !== after.referredById;
       await db`
         update persons set first_name = ${after.firstName}, last_name = ${after.lastName}, organisation_id = ${after.organisationId},
                role = ${after.role}, lead_source_id = ${after.leadSourceId}, linkedin_url = ${after.linkedin}, owner_id = ${after.ownerId},
-               consent = ${after.consent}, private = ${after.private}, version = version + 1
+               consent = ${after.consent}, private = ${after.private}, is_ambassador = ${after.ambassador},
+               referred_by_id = ${after.referredById},
+               referred_at = ${referrerChanged ? (after.referredById === null ? null : db`now()`) : db`referred_at`},
+               version = version + 1
         where id = ${id}`;
       await writeChildren(db, id, after);
       const fields = changedPersonFields(before, after);
       if (fields.length > 0) await recordEvent(db, { personId: id, kind: "edited", actorId, fields });
+      if (before.ambassador !== after.ambassador) {
+        await recordEvent(db, { personId: id, kind: after.ambassador ? "ambassador_added" : "ambassador_removed", actorId });
+      }
+      await recordReferral(db, { personId: id }, actorId, before.referredById, after.referredById);
       if (before.organisationId !== after.organisationId) {
         if (before.organisationId !== null) {
           await recordEvent(db, { organisationId: before.organisationId, kind: "person_unlinked", actorId, relatedPersonId: id });
@@ -306,7 +356,8 @@ export const restorePerson = (actorId: number, id: number) => setArchived(actorI
 // Admins only, re-checked here (SF-92 data-model.md § Deleting a person). Emails, phones, labels and the
 // person's own events go with it (on delete cascade). Events about the person on other records stay, with
 // related_person_id set to null ("A deleted person …"), unless the person was private: then they go too
-// (FR-007). No "unlinked" event is written.
+// (FR-007). No "unlinked" event is written. SF-114 (research.md §6): what the person referred loses its "Referred by",
+// with a "Referred by cleared (a deleted person)" event each, or none (and their referral events go) when private.
 export async function deletePerson(actorId: number, id: number): Promise<DeleteResult> {
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
@@ -314,7 +365,17 @@ export async function deletePerson(actorId: number, id: number): Promise<DeleteR
     const [cur] = await db<{ private: boolean }[]>`
       select p.private from persons p where p.id = ${id} and ${visiblePerson(db, actorId)} for update`;
     if (!cur) return { status: "not_found" as const };
-    if (cur.private) await db`delete from timeline_events where related_person_id = ${id}`;
+    if (cur.private) await db`delete from timeline_events where related_person_id = ${id} or from_person_id = ${id}`;
+    else {
+      await db`
+        insert into timeline_events (person_id, kind, actor_id, cause)
+        select r.id, 'referrer_cleared', ${actorId}, 'person_deleted' from persons r where r.referred_by_id = ${id}`;
+      await db`
+        insert into timeline_events (deal_id, kind, actor_id, cause)
+        select d.id, 'referrer_cleared', ${actorId}, 'person_deleted' from deals d where d.referred_by_id = ${id}`;
+    }
+    await db`update persons set referred_by_id = null, referred_at = null where referred_by_id = ${id}`;
+    await db`update deals set referred_by_id = null, referred_at = null where referred_by_id = ${id}`;
     // SF-109 FR-014: a private person's activities go with them; else those linked to nothing else.
     if (cur.private) await db`delete from activities where person_id = ${id}`;
     else await db`delete from activities where person_id = ${id} and deal_id is null and organisation_id is null`;
@@ -341,7 +402,8 @@ export async function listPeople(
     ${query.label !== null ? sql`and exists (select 1 from person_labels pl where pl.person_id = p.id and pl.label_id = ${query.label})` : sql``}
     ${query.source !== null ? sql`and p.lead_source_id = ${query.source}` : sql``}
     ${query.org !== null ? sql`and p.organisation_id = ${query.org}` : sql``}
-    ${query.consent !== null ? sql`and p.consent = ${query.consent}` : sql``}`;
+    ${query.consent !== null ? sql`and p.consent = ${query.consent}` : sql``}
+    ${query.ref !== null ? sql`and p.referred_by_id = ${query.ref}` : sql``}`;
   const [{ total }] = await sql<{ total: number }[]>`
     select count(*)::int as total from persons p left join organisations o on o.id = p.organisation_id where ${where}`;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -398,7 +460,7 @@ export async function listPeople(
 export async function peopleFilterOptions(
   viewerId: number,
   selectedOrg: number | null,
-): Promise<{ owners: Option[]; labels: Option[]; sources: Option[]; organisations: Option[] }> {
+): Promise<{ owners: Option[]; labels: Option[]; sources: Option[]; organisations: Option[]; referrers: Option[] }> {
   const visible = visiblePerson(sql, viewerId);
   const owners = await ownerOptions(sql, sql`exists (select 1 from persons p where p.owner_id = u.id and ${visible})`);
   const labels = await sql<Option[]>`
@@ -414,15 +476,19 @@ export async function peopleFilterOptions(
     select o.id::int as id, o.name from organisations o
     where exists (select 1 from persons p where p.organisation_id = o.id and ${visible}) or o.id = ${selectedOrg ?? 0}
     order by lower(o.name), o.id`;
-  return { owners, labels: [...labels], sources: [...sources], organisations: [...organisations] };
+  const referrers = await referrerOptions(viewerId);
+  return { owners, labels: [...labels], sources: [...sources], organisations: [...organisations], referrers };
 }
 
 // What the person form offers: active owners, non-removed lead sources and labels, non-archived
-// organisations, plus whatever the person already has.
+// organisations, plus whatever the person already has. SF-114: the offered ambassadors, the person left out.
 export async function personFormChoices(
-  _viewerId: number,
+  viewerId: number,
   person: PersonView | null,
-): Promise<{ owners: Option[]; leadSources: Option[]; labels: Option[]; organisations: { id: number; name: string; archived: boolean }[] }> {
+): Promise<{
+  owners: Option[]; leadSources: Option[]; labels: Option[]; organisations: { id: number; name: string; archived: boolean }[];
+  ambassadors: AmbassadorOption[];
+}> {
   const owners = await ownerOptions(sql, person ? sql`u.id = ${person.owner.id}` : null);
   const leadSources = await sql<Option[]>`
     select id::int as id, name from lead_sources where removed_at is null or id = ${person?.leadSource?.id ?? 0} order by id`;
@@ -432,7 +498,8 @@ export async function personFormChoices(
   const organisations = await sql<{ id: number; name: string; archived: boolean }[]>`
     select id::int as id, name, archived_at is not null as archived from organisations
     where archived_at is null or id = ${person?.organisation?.id ?? 0} order by lower(name), id`;
-  return { owners, leadSources: [...leadSources], labels: [...labels], organisations: [...organisations] };
+  const ambassadors = await ambassadorOptions(sql, viewerId, person?.id);
+  return { owners, leadSources: [...leadSources], labels: [...labels], organisations: [...organisations], ambassadors };
 }
 
 export function personToForm(p: PersonView): PersonForm {
@@ -450,6 +517,13 @@ export function personToForm(p: PersonView): PersonForm {
     labelIds: p.labels.map((l) => String(l.id)),
     consent: p.consent,
     private: p.private,
+    ambassador: p.ambassador,
+    referredBy: referredByToForm(p.referredBy),
   };
+}
+
+// The form's "Referred by": the id, "keep" for a referrer the user cannot see (their id never reaches the page), or "".
+export function referredByToForm(r: Referrer): string {
+  return r === "hidden" ? "keep" : r === null ? "" : String(r.id);
 }
 

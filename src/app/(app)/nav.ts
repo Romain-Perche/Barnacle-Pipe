@@ -7,6 +7,8 @@ export const mainNav: NavItem[] = [
   { href: "/deals", label: "Deals" },
   { href: "/people", label: "People" },
   { href: "/organisations", label: "Organisations" },
+  // SF-114: the Ambassadors page.
+  { href: "/ambassadors", label: "Ambassadors" },
   // SF-109: the Activities list.
   { href: "/activities", label: "Activities" },
   // SF-102: the layout adds the unread count; SF-108: UnreadLink.tsx keeps it up to date on client navigation.

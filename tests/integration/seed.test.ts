@@ -339,6 +339,36 @@ describe("fake private deals of Alan Fake (SF-97)", () => {
     expect(await notes()).toEqual(first);
     expect(await sql`select 1 from note_mentions`).toHaveLength(mentions.length);
   });
+
+  // covers SF-114 FR-017, T046: fake ambassadors (shared, private, former), open / won / lost referred deals, a private
+  // referred deal, notes on referred records; a second run adds no row
+  it("adds fake ambassadors and their referrals, once", async () => {
+    await runSeeders(sql);
+    const snapshot = async () => {
+      const [c] = await sql<Record<string, number>[]>`
+        select (select count(*) from persons where is_ambassador and not private)::int as shared_amb,
+               (select count(*) from persons where is_ambassador and private)::int as private_amb,
+               (select count(*) from persons a where not a.is_ambassador
+                  and exists (select 1 from persons r where r.referred_by_id = a.id))::int as former,
+               (select count(*) from persons where referred_by_id is not null)::int as referred_people,
+               (select count(*) from deals where referred_by_id is not null and private)::int as private_deals,
+               (select count(distinct status) from deals where referred_by_id is not null)::int as statuses,
+               (select count(*) from timeline_events e
+                  where e.kind = 'note' and (e.person_id in (select id from persons where referred_by_id is not null)
+                                          or e.deal_id in (select id from deals where referred_by_id is not null)))::int as notes,
+               (select count(*) from persons)::int as persons, (select count(*) from deals)::int as deals,
+               (select count(*) from timeline_events)::int as events, (select count(*) from deal_stage_periods)::int as periods`;
+      return c;
+    };
+    const first = await snapshot();
+    expect(first).toMatchObject({ shared_amb: 1, private_amb: 1, former: 1, referred_people: 6, private_deals: 1, statuses: 3, notes: 2 });
+    const names = await sql<{ name: string }[]>`
+      select first_name || ' ' || last_name as name from persons where is_ambassador or referred_by_id is not null`;
+    expect(names.every((n) => /fake|example/i.test(n.name))).toBe(true);
+    const again = await runSeeders(sql);
+    expect(again.every((l) => l.startsWith("already there "))).toBe(true);
+    expect(await snapshot()).toEqual(first);
+  });
 });
 
 // covers SF-109 FR-017 (T052, T053; replaces the browser test of the fake data)

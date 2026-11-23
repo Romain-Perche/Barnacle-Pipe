@@ -184,6 +184,54 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-114 T001, T012: 0009_ambassadors.sql on a fresh database: the referrer and referral event checks
+  it("applies 0009_ambassadors.sql: no self referrer, from_person only on referrer_changed, person_deleted cause, old kinds kept", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0009_ambassadors.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [p] = await c`insert into persons (first_name, owner_id, created_by) values ('Cara', ${u.id}, ${u.id}) returning id, is_ambassador`;
+      const [q] = await c`insert into persons (first_name, owner_id, created_by) values ('Ben', ${u.id}, ${u.id}) returning id`;
+      expect(p.is_ambassador).toBe(false);
+      expect(await code(c`update persons set referred_by_id = id where id = ${p.id}`)).toBe("23514");
+      expect(await code(c`update persons set referred_by_id = ${p.id}, referred_at = now() where id = ${q.id}`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, related_person_id, from_person_id) values (${q.id}, 'referrer_set', ${u.id}, ${p.id}, ${p.id})`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, related_person_id, from_person_id) values (${q.id}, 'referrer_changed', ${u.id}, ${p.id}, ${p.id})`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, cause) values (${q.id}, 'referrer_cleared', ${u.id}, 'person_deleted')`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, cause) values (${q.id}, 'referrer_cleared', ${u.id}, 'other')`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, body) values (${q.id}, 'note', ${u.id}, 'x')`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id) values (${q.id}, 'imported', ${u.id})`)).toBe("ok");
+      for (const kind of ["ambassador_added", "ambassador_removed", "referrer_set"]) {
+        expect(await code(c`insert into timeline_events (person_id, kind, actor_id) values (${q.id}, ${kind}, ${u.id})`)).toBe("ok");
+      }
+      // Deleting the referrer clears the columns that name them (the code also clears them itself first).
+      await c`delete from persons where id = ${p.id}`;
+      const [after] = await c`select referred_by_id from persons where id = ${q.id}`;
+      expect(after.referred_by_id).toBeNull();
+      const [{ n }] = await c`select count(*)::int as n from timeline_events where from_person_id is not null`;
+      expect(n).toBe(0);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-114 T012: the ambassador code keeps to the pooler's limits (no session state)
+  it("keeps the ambassador code and 0009_ambassadors.sql free of session state", () => {
+    for (const file of ["src/server/records/ambassadors.ts", "src/server/records/referral-rules.ts", "src/server/records/people.ts"]) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0009_ambassadors.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration).not.toMatch(/create table/i);
+    expect(migration).toMatch(/'imported'/);
+  });
+
   // covers SF-102 T014: the notes, timeline and notifications code keeps to the pooler's limits (no session state)
   it("keeps the notes, timeline and notifications code free of session state", () => {
     for (const file of ["src/server/records/notes.ts", "src/server/records/timeline.ts", "src/server/notifications.ts"]) {

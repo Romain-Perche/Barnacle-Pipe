@@ -66,3 +66,5 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - Deal cards show "⚠ No next activity" when the viewer can see no planned activity on the deal, else its next date; this replaces the SF-93 choice (SF-109)
 - A done call or meeting sets the linked person's Last contacted to its due date, or the moment it was marked done when the due date is later, never lowering it; a task never does (SF-109)
 - A teammate assigned an activity by someone else is told in the app only, on the Notifications page, like a mention (SF-109)
+- An ambassador is a person with the Ambassador tick on their form; only ticked people can be chosen as Referred by (SF-114)
+- The ambassador page uses design B: its own one-column page with [ PERSON PAGE ], a summary strip, people referred, deals referred, then latest updates grouped by day (SF-114)

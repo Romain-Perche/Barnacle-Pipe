@@ -29,6 +29,18 @@ describe("entryTag", () => {
   });
 });
 
+// covers SF-114 US3 scenario 4: an entry of a referred person is tagged PERSON on the ambassador page
+describe("entryTag on the ambassador page", () => {
+  it("is PERSON for a referred person's entry, DEAL for a referred deal's, else NOTE / CHANGE", () => {
+    const person = { id: 2, name: "Ben", archived: false };
+    expect(entryTag({ kind: "note", deal: null, person })).toBe("PERSON");
+    expect(entryTag({ kind: "referrer_set", deal: null, person })).toBe("PERSON");
+    expect(entryTag({ kind: "note", deal: { id: 1, title: "x", archived: false }, person: null })).toBe("DEAL");
+    expect(entryTag({ kind: "note", deal: null, person: null })).toBe("NOTE");
+    expect(entryTag({ kind: "ambassador_added", deal: null, person: null })).toBe("CHANGE");
+  });
+});
+
 // covers SF-109 FR-004 (T031): a done activity is tagged ACTIVITY, even from a deal on a person's timeline
 describe("entryTag for activities", () => {
   it("is ACTIVITY", () => {

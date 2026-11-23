@@ -9,6 +9,7 @@ import { ownerName } from "@/server/records/common";
 import { Field } from "../records/Drawer";
 import { DeleteConfirm } from "../records/DeleteConfirm";
 import { RecordTimeline } from "../records/RecordTimeline";
+import { ReferredBy } from "../records/ReferredBy";
 import { archiveDeal, deleteDeal, moveDeal } from "./actions";
 import { day, StatusBadge } from "./DealBits";
 import { NextActivities } from "../activities/NextActivities";
@@ -61,6 +62,7 @@ export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, 
             </>
           ) : null}
         </Field>
+        <Field k="Referred by">{deal.referredBy === null ? null : <ReferredBy referrer={deal.referredBy} />}</Field>
         <Field k="Owner">{ownerName(deal.owner)}</Field>
         <Field k="Expected close">{deal.expectedClose ? day(deal.expectedClose) : null}</Field>
         <Field k="Date added">{formatDate(deal.createdAt)}</Field>

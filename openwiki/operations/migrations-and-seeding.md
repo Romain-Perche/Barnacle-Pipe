@@ -5,7 +5,7 @@ description: How npm run db:migrate applies migrations/*.sql safely through Supa
 tags: [migrations, seed, database, operations, fake-data]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T16:50:25.265Z
+    at: 2026-11-23T18:05:22.701Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -13,15 +13,13 @@ sources:
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-919c449abaee368e1ca5c9bf
     resource: repo://scripts/seed.ts
-  - id: openwiki-source-b0e3f2e362de34e970ccd94b
-    resource: repo://src/seed/activities.ts
+  - id: openwiki-source-1554a73332a66ceee3c8a725
+    resource: repo://src/seed/ambassadors.ts
   - id: openwiki-source-1c34aa4b66ba96eefc78bf08
     resource: repo://src/seed/index.ts
-  - id: openwiki-source-6751a2917bc5c39b6a606c45
-    resource: repo://src/seed/notes.ts
   - id: openwiki-source-010903950424d10f20cb451d
     resource: repo://src/seed/users.ts
-generated: { by: "claude-code", at: "2026-11-23T16:50:25.265Z" }
+generated: { by: "claude-code", at: "2026-11-23T18:05:22.701Z" }
 ---
 
 # Migrations and fake data
@@ -55,7 +53,7 @@ and otherwise prints "Fake data can only be loaded when APP_ENV is development o
 (see [Configuration and environments](./configuration-and-environments.md)).
 
 It then runs `runSeeders()` from `src/seed/index.ts`, the **seeder registry**: an ordered list of
-`{ name, run(sql) }` entries, each returning lines to print. Today it holds three seeders. The first,
+`{ name, run(sql) }` entries, each returning lines to print. Today it holds six seeders. The first,
 `src/seed/users.ts`, inserts five clearly fake `@barnacle.ai` users — Ada Fake and Grace Fake
 (admins), Linus Fake and Margaret Fake (users), Alan Fake (deactivated) — each with a `user_changes`
 `added` row, in its own transaction and with `on conflict (email) do nothing`. Seeders must be
@@ -71,10 +69,13 @@ skipped when one with the same title exists. Migration `0004_pipelines_deals.sql
 The fourth, `src/seed/notes.ts`, adds clearly fake notes on deals, people and an organisation, two
 with @mentions (one read, one unread notification), re-runnably (a note is found by its record and exact body).
 Migration `0007_notes_mentions.sql` creates the mention table.
-The fifth, `src/seed/activities.ts`, runs last: it adds clearly fake [activities](../features/activities.md) with
+The fifth, `src/seed/activities.ts`, adds clearly fake [activities](../features/activities.md) with
 dates relative to the UK day of the run (one overdue, two due today, later ones, three done), including one on a
 private deal and one on a private person and two assignment notifications (one unread, one read). It is
 re-runnable: an activity is found by its exact subject. Migration `0008_activities.sql` creates the table.
+The sixth, `src/seed/ambassadors.ts`, runs last: it adds clearly fake ambassadors (one shared, one private, one former) with
+the people and deals they referred and two notes on referred records. It is re-runnable: people are found by email,
+deals by title. Migration `0009_ambassadors.sql` creates the columns.
 
 Later features append their seeder to the registry; see [Adding a feature](../workflows/adding-a-feature.md).
 Fake data never uses the real team's names.

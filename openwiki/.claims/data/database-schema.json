@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:04adef475b37978c3b48e9425cfa272d765ab7084ccbc01f2a2eb298bf09a325",
+  "pageVersion": "sha256:596d52d0e21b370240751747bab50d7fcce24f3a964b609961824d171a5c03d1",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -131,10 +131,20 @@
           "version": "repo-file-v1:sha256:23d0153a535793f9c93ec54318686224c3d38ffefbc4a56513387fbd9f3dc322"
         }
       ]
+    },
+    {
+      "id": "claim_75648cfc66b04930bff1b3998729ccfe",
+      "statement": "Migration 0009 adds is_ambassador, referred_by_id and referred_at to persons, referral columns to deals and from_person_id to timeline_events.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0009_ambassadors.sql",
+          "version": "repo-file-v1:sha256:cecc816defeddf88f5a99100d085dd3c5703acfc78616b6ddc5276c629b4c368"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T16:50:25.265Z"
+    "at": "2026-11-23T18:05:22.701Z"
   }
 }

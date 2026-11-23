@@ -7,15 +7,23 @@ import { CONSENT_LABELS, CONSENTS, KIND_LABELS, KINDS, type FieldErrors, type Pe
 import { FieldError } from "./FieldError";
 import type { FormState } from "./form-state";
 import { OrganisationPicker } from "./OrganisationPicker";
+import { ReferrerPicker, type CurrentReferrer } from "./ReferrerPicker";
 
 type Option = { id: number; name: string };
-export type PersonChoices = { owners: Option[]; leadSources: Option[]; labels: Option[]; organisations: { id: number; name: string; archived: boolean }[] };
+export type PersonChoices = {
+  owners: Option[]; leadSources: Option[]; labels: Option[]; organisations: { id: number; name: string; archived: boolean }[];
+  // SF-114: the offered ambassadors (the person left out).
+  ambassadors: { id: number; name: string; detail: string }[];
+};
 
 type Props = {
   action: (prev: FormState<Values>, fd: FormData) => Promise<FormState<Values>>;
   initial: Values;
   choices: PersonChoices;
   canSetPrivate: boolean;
+  // SF-114: the person's current referrer; an archived person's tick and referrer are not editable (spec Edge Cases).
+  currentReferrer?: CurrentReferrer;
+  archived?: boolean;
   id?: number;
   version?: number;
   cancelHref: string;
@@ -86,7 +94,7 @@ function Text({ name, label, value, error, type = "text" }: { name: string; labe
   );
 }
 
-export function PersonForm({ action, initial, choices, canSetPrivate, id, version, cancelHref }: Props) {
+export function PersonForm({ action, initial, choices, canSetPrivate, currentReferrer = null, archived = false, id, version, cancelHref }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
   const v = state?.values ?? initial;
   const errors = state?.errors ?? {};
@@ -123,6 +131,18 @@ export function PersonForm({ action, initial, choices, canSetPrivate, id, versio
             ))}
           </select>
         </label>
+        {!archived && (
+          <div className="field">
+            <span>Referred by</span>
+            <ReferrerPicker options={choices.ambassadors} current={currentReferrer} initial={v.referredBy} />
+            <FieldError error={errors.referredBy} />
+          </div>
+        )}
+        {!archived && (
+          <label className="check ambassador">
+            <input type="checkbox" name="ambassador" defaultChecked={v.ambassador} /> Ambassador
+          </label>
+        )}
         <Text name="linkedin" label="LinkedIn profile" value={v.linkedin} error={errors.linkedin} />
         <label className="field">
           <span>Owner</span>

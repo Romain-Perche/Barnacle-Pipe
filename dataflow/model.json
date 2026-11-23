@@ -287,6 +287,17 @@
         "src/server/activities/list.ts",
         "src/server/activities/rules.ts"
       ]
+    },
+    {
+      "id": "ambassadors",
+      "label": "Ambassadors and referrals",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/app/(app)/ambassadors",
+        "src/server/records/ambassadors.ts",
+        "src/server/records/referral-rules.ts"
+      ]
     }
   ],
   "stores": [
@@ -1681,6 +1692,96 @@
       "data": "fake activities",
       "sources": [
         "src/seed/activities.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "ambassadors",
+      "data": "signed-in user check",
+      "sources": [
+        "src/app/(app)/ambassadors/page.tsx"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "ambassadors",
+      "data": "ambassador list and page requests",
+      "sources": [
+        "src/app/(app)/ambassadors/page.tsx"
+      ]
+    },
+    {
+      "from": "ambassadors",
+      "to": "staff",
+      "data": "ambassadors, referred people and deals, latest updates",
+      "sources": [
+        "src/app/(app)/ambassadors/[id]/page.tsx"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "ambassadors",
+      "data": "visible ambassadors and referred people",
+      "sources": [
+        "src/server/records/ambassadors.ts"
+      ]
+    },
+    {
+      "from": "deals-table",
+      "to": "ambassadors",
+      "data": "visible referred deals and totals",
+      "sources": [
+        "src/server/records/ambassadors.ts"
+      ]
+    },
+    {
+      "from": "timeline-table",
+      "to": "ambassadors",
+      "data": "referral events for latest updates",
+      "sources": [
+        "src/server/records/ambassadors.ts",
+        "src/server/records/timeline.ts"
+      ]
+    },
+    {
+      "from": "people-pages",
+      "to": "persons-table",
+      "data": "ambassador flag, referrer and referral time",
+      "sources": [
+        "src/server/records/people.ts"
+      ]
+    },
+    {
+      "from": "deals-board",
+      "to": "persons-table",
+      "data": "deal referrer",
+      "sources": [
+        "src/server/deals/deals.ts"
+      ]
+    },
+    {
+      "from": "people-pages",
+      "to": "timeline-table",
+      "data": "ambassador and referrer events",
+      "sources": [
+        "src/server/records/people.ts",
+        "src/server/records/referral-rules.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "persons-table",
+      "data": "ambassador and referrer columns",
+      "sources": [
+        "migrations/0009_ambassadors.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "persons-table",
+      "data": "fake ambassadors and referrals",
+      "sources": [
+        "src/seed/ambassadors.ts"
       ]
     }
   ]

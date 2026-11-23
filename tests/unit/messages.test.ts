@@ -241,6 +241,32 @@ describe("timeline and notes messages", () => {
   });
 });
 
+// covers SF-114 FR-015 (contracts/routes.md § Messages)
+describe("ambassador messages (SF-114)", () => {
+  it("has the fixed texts", () => {
+    expect(messageFor("ambassadors_empty")).toBe("No ambassadors yet. Tick Ambassador on a person to add one.");
+    expect(messageFor("ambassador_not_found")).toBe("This ambassador doesn't exist or you can't see them.");
+    expect(messageFor("referrer_self")).toBe("A person can't be their own referrer.");
+    expect(messageFor("referrer_invalid")).toBe("Choose an ambassador from the list.");
+    expect(messageFor("no_people_referred")).toBe("No people referred yet.");
+    expect(messageFor("no_deals_referred")).toBe("No deals referred yet.");
+    expect(messageFor("no_longer_ambassador")).toBe("No longer an ambassador");
+    expect(messageFor("referred_by_private")).toBe("Referred by a private person");
+    expect(messageFor("referrer_cleared_deleted")).toBe("Referred by cleared (a deleted person)");
+  });
+  it("shows the referrer refusals next to the field", () => {
+    expect(fieldMessage({ code: "referrer_self" })).toBe("A person can't be their own referrer.");
+    expect(fieldMessage({ code: "referrer_invalid" })).toBe("Choose an ambassador from the list.");
+  });
+  it("has the templates, never reachable from a URL code", () => {
+    expect(templates.referred_by("Cara Example")).toBe("Referred by Cara Example");
+    expect(templates.referrer_set_event("Cara Example")).toBe("Referred by set to Cara Example");
+    expect(templates.referrer_changed_event("Cara Example", "Dora Privatefake")).toBe("Referred by changed from Cara Example to Dora Privatefake");
+    expect(messageFor("referred_by")).toBeUndefined();
+    expect(messageFor("referrer_set_event")).toBeUndefined();
+  });
+});
+
 // covers SF-109 FR-015, contracts/routes.md § Messages (T006)
 describe("activity messages", () => {
   it("has the fixed texts", () => {

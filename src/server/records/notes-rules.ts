@@ -64,10 +64,16 @@ export function notificationPreview(body: string, names: Map<number, string>): s
   return chars.length > PREVIEW_MAX ? `${chars.slice(0, PREVIEW_MAX).join("")}…` : chars.join("");
 }
 
-// `?timeline=` / `?shown=`: how many entries to show, a multiple of 50 from 50 to 5,000; anything else 50.
-export function parseShown(value: string | string[] | undefined): number {
+// How many entries or rows to show: a multiple of `step` from `step` to 5,000; anything else `step` (SF-114: the
+// ambassador page's `?updates=` uses 20).
+export function parseShownBy(value: string | string[] | undefined, step: number): number {
   const v = Array.isArray(value) ? value[0] : value;
-  if (!v || !/^\d{1,4}$/.test(v)) return 50;
+  if (!v || !/^\d{1,4}$/.test(v)) return step;
   const n = Number(v);
-  return n >= 50 && n <= 5000 && n % 50 === 0 ? n : 50;
+  return n >= step && n <= 5000 && n % step === 0 ? n : step;
+}
+
+// `?timeline=` / `?shown=` (and the ambassador page's `?people=` / `?deals=`): a multiple of 50 from 50 to 5,000; else 50.
+export function parseShown(value: string | string[] | undefined): number {
+  return parseShownBy(value, 50);
 }

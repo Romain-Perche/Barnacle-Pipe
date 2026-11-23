@@ -23,6 +23,8 @@ export type PeopleQuery = {
   page: number;
   archived: boolean;
   open: number | null;
+  // SF-114: "Referred by" (a person id).
+  ref: number | null;
 };
 
 export type OrganisationsQuery = {
@@ -52,6 +54,8 @@ export type DealsQuery = {
   closed: boolean;
   archived: boolean;
   open: number | null;
+  // SF-114: "Referred by" (a person id).
+  ref: number | null;
 };
 
 // The Activities list (SF-109 contracts/routes.md § /activities): `assignee` null is the viewer, "all" everyone.
@@ -103,6 +107,7 @@ export function parsePeopleQuery(params: Params): PeopleQuery {
     page: c.page,
     archived: c.archived,
     open: c.open,
+    ref: parseId(first(params, "ref")),
   };
 }
 
@@ -137,6 +142,7 @@ export function parseDealsQuery(params: Params): DealsQuery {
     closed: first(params, "closed") === "1",
     archived: c.archived,
     open: c.open,
+    ref: parseId(first(params, "ref")),
   };
 }
 
@@ -154,16 +160,16 @@ export function parseActivitiesQuery(params: Params): ActivitiesQuery {
 export function hasDealFilters(query: DealsQuery): boolean {
   return (
     query.q !== "" || query.pipeline !== null || query.stage !== null || query.owner !== null || query.label !== null ||
-    query.status !== null || query.closed || query.archived
+    query.status !== null || query.closed || query.archived || query.ref !== null
   );
 }
 
 // Only known values are kept, so they are listed, counted and shown back (FR-013): a pipeline that is an option, a
-// stage of that pipeline, an owner and a label that are options, a status when closed or archived deals are shown.
+// stage of that pipeline, an owner, a label and a referrer that are options, a status when closed or archived deals are shown.
 type Known = { readonly id: number };
 export function knownDealsQuery(
   query: DealsQuery,
-  options: { pipelines: readonly Known[]; stages: readonly Known[]; owners: readonly Known[]; labels: readonly Known[] },
+  options: { pipelines: readonly Known[]; stages: readonly Known[]; owners: readonly Known[]; labels: readonly Known[]; referrers: readonly Known[] },
 ): DealsQuery {
   const known = (id: number | null, list: readonly Known[]) => (id !== null && list.some((o) => o.id === id) ? id : null);
   const pipeline = known(query.pipeline, options.pipelines);
@@ -173,8 +179,15 @@ export function knownDealsQuery(
     stage: pipeline === null ? null : known(query.stage, options.stages),
     owner: known(query.owner, options.owners),
     label: known(query.label, options.labels),
+    ref: known(query.ref, options.referrers),
     status: query.closed || query.archived ? query.status : null,
   };
+}
+
+// The People list keeps a referrer only when it is one of its options (FR-013): a person hidden from the viewer
+// never filters, counts or shows back. Owner, label, source, organisation and consent are not private: unchanged.
+export function knownPeopleQuery(query: PeopleQuery, options: { referrers: readonly Known[] }): PeopleQuery {
+  return { ...query, ref: query.ref !== null && options.referrers.some((o) => o.id === query.ref) ? query.ref : null };
 }
 
 // The sector filter only keeps a value that is one of the sectors in use (matched ignoring case), so text
@@ -186,7 +199,7 @@ export function knownSector(sector: string | null, inUse: readonly string[]): st
 
 type AnyQuery = PeopleQuery | OrganisationsQuery | DealsQuery | ActivitiesQuery;
 const ORDER = [
-  "when", "assignee", "type", "q", "pipeline", "stage", "owner", "label", "source", "org", "consent", "sector", "size", "status", "sort", "dir", "page", "closed", "archived", "open",
+  "when", "assignee", "type", "q", "pipeline", "stage", "owner", "label", "source", "org", "consent", "sector", "size", "status", "sort", "dir", "page", "closed", "archived", "ref", "open",
 ];
 const DEFAULTS: Record<string, unknown> = { q: "", sort: "name", dir: "asc", page: 1, closed: false, archived: false };
 // The deal list's own defaults (newest first); people and organisations keep the ones above.
@@ -220,7 +233,7 @@ export function hasFilters(query: PeopleQuery | OrganisationsQuery): boolean {
   const { q, owner } = query;
   const extra =
     "label" in query
-      ? query.label !== null || query.source !== null || query.org !== null || query.consent !== null
+      ? query.label !== null || query.source !== null || query.org !== null || query.consent !== null || query.ref !== null
       : query.sector !== null || query.size !== null;
   return q !== "" || owner !== null || extra;
 }

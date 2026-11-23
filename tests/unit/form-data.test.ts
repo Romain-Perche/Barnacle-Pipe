@@ -31,7 +31,7 @@ describe("personFormFromData", () => {
       ],
       phones: [{ value: "+44 1", kind: "work" }],
       organisationId: "3", newOrganisationName: "", role: "COO", leadSourceId: "2", linkedin: "linkedin.com/in/ada",
-      ownerId: "1", labelIds: ["4", "5"], consent: "unsubscribed", private: true,
+      ownerId: "1", labelIds: ["4", "5"], consent: "unsubscribed", private: true, ambassador: false, referredBy: "",
     });
   });
   it("treats missing fields as empty, an unticked Private as false, and keeps at most 50 rows", () => {
@@ -67,12 +67,24 @@ describe("dealFormFromData", () => {
     );
     expect(form).toEqual({
       title: "Fakeco website", value: "£4,000", pipelineId: "1", stageId: "3", organisationId: "", newOrganisationName: "Fakeco Ltd",
-      personId: "7", ownerId: "2", expectedClose: "2026-12-15", private: true, labelIds: [],
+      personId: "7", ownerId: "2", expectedClose: "2026-12-15", private: true, labelIds: [], referredBy: "",
     });
     expect(dealFormFromData(data([["title", "x"]]))).toMatchObject({ title: "x", value: "", stageId: "", private: false });
   });
   // covers SF-95 FR-017 (label checkboxes on the deal form)
   it("reads every ticked deal label", () => {
     expect(dealFormFromData(data([["labelIds", "3"], ["labelIds", "1"]])).labelIds).toEqual(["3", "1"]);
+  });
+});
+
+// covers SF-114 FR-001, FR-004 (contracts/routes.md § Server actions: `ambassador` and `referredBy`)
+describe("the Ambassador tick and Referred by", () => {
+  it("reads the tick ('on') and the referrer on the person form", () => {
+    expect(personFormFromData(data([["ambassador", "on"], ["referredBy", "12"]]))).toMatchObject({ ambassador: true, referredBy: "12" });
+    expect(personFormFromData(data([["referredBy", "keep"]]))).toMatchObject({ ambassador: false, referredBy: "keep" });
+  });
+  it("reads the referrer on the deal form", () => {
+    expect(dealFormFromData(data([["referredBy", "12"]])).referredBy).toBe("12");
+    expect(dealFormFromData(data([])).referredBy).toBe("");
   });
 });

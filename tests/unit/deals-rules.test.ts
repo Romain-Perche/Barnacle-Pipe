@@ -18,6 +18,7 @@ function form(over: Partial<DealForm> = {}): DealForm {
     expectedClose: "",
     private: false,
     labelIds: [],
+    referredBy: "",
     ...over,
   };
 }
@@ -82,6 +83,7 @@ describe("validateDeal", () => {
         expectedClose: null,
         private: true,
         labelIds: [],
+        referredById: null,
       },
     });
     const typed = validateDeal(form({ organisationId: "", newOrganisationName: "  New Fakeco  ", personId: "abc", stageId: "-1" }));
@@ -110,6 +112,7 @@ describe("changedDealFields", () => {
     expectedClose: null,
     private: false,
     labelIds: [],
+    referredById: null,
   };
   it("lists only the labels of changed fields, in form order", () => {
     expect(changedDealFields(before, { ...before })).toEqual([]);

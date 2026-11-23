@@ -33,6 +33,11 @@ OAuth code flow and database sessions.
   the person's Last contacted), `list.ts` (the Activities list, `now` as a parameter). `visibleActivity()` in
   `records/visibility.ts`: every `activities` read uses it. Done activities are read into `readTimeline` (never copied);
   `notifications.ts` also lists activities assigned by someone else (columns on the activity row).
+  SF-114 ambassadors: `records/ambassadors.ts` (the Ambassadors page `listAmbassadors`, the ambassador page
+  `getAmbassadorPage` and its updates `readAmbassadorUpdates`, the "Referred by" options `ambassadorOptions` /
+  `referrerOptions`, the check `isOfferedAmbassador`, `referrerOf`; counts through one shared summary fragment) and
+  `records/referral-rules.ts` (pure: `parseReferredBy`, `decideReferrer`, `referralEvent`); `people.ts` holds
+  `resolveReferrer` / `recordReferral`, shared with `deals.ts`. `hasAmbassadorPage()` sits in `visibility.ts`.
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
   `records/import/`: the CSV import screens shared by `/people/import` and `/organisations/import` (`ImportPages.tsx`:
   the four steps; `FileStep.tsx`: the only client part, sends the file in 512 KiB parts; `actions.ts`; `example.ts`).
@@ -43,6 +48,9 @@ OAuth code flow and database sessions.
   and "Schedule a follow-up?" in a box over the page), `ActivityOverlays.tsx` (opens the box or the delete confirmation from
   `?activity=` / `?followup=` / `?delete-activity=`), `NextActivities.tsx` ("// NEXT ACTIVITIES" of record pages and the
   drawer), `DoneBox.tsx`, `ActivityBits.tsx`, `ActivityDeleteConfirm.tsx`, `ActivityNotices.tsx`.
+- `src/app/(app)/ambassadors/` — the Ambassadors page and `[id]/` the ambassador page (design B, `LatestUpdates.tsx`,
+  `not-found.tsx`). `records/ReferrerPicker.tsx` (client: the "Referred by" picker of the person and deal forms) and
+  `records/ReferredBy.tsx` (the "Referred by" line of the person page, deal page and drawer).
 - `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms, `list/` (the deal
   list), `[id]/` (the deal page: `StageBar.tsx`, `LostBox.tsx`, `not-found.tsx`), `ViewSwitch.tsx` (Board / List);
   `src/app/(app)/admin/pipelines/` — the Pipelines admin pages.
@@ -51,7 +59,7 @@ OAuth code flow and database sessions.
   will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
   (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
   `person_emails`, bulk inserts).
-- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities).
+- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors).
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google schema) and
   `scripts/start-isolated.mjs` (browser tests start the app without the developer's `.env*` files).

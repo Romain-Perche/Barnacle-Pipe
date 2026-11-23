@@ -18,6 +18,7 @@ import { readFlash } from "@/server/records/flash";
 import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { PersonPicker } from "../../records/PersonPicker";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { ReferredBy } from "../../records/ReferredBy";
 import { archiveDeal, deleteDeal, followDeal, linkPerson, markWon, reopenDeal, restoreDeal, unfollowDeal, unlinkPerson } from "../actions";
 import { day, resultText } from "../DealBits";
 import { LostBox } from "./LostBox";
@@ -248,6 +249,12 @@ export default async function DealPage({ params, searchParams }: { params: Promi
                   </button>
                 </form>
               )}
+            </dd>
+          </div>
+          <div>
+            <dt>Referred by</dt>
+            <dd>
+              <ReferredBy referrer={deal.referredBy} />
             </dd>
           </div>
           <div>

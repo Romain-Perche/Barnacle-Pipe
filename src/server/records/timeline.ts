@@ -1,9 +1,9 @@
 // Timeline events on people, organisations and deals (research.md §10; SF-93 research.md §3). Later features add
 // kinds to the same table. SF-102: notes are events of kind "note" (body, editor, version); a person's and an
 // organisation's timeline also read the entries of their currently linked deals (research.md §6).
-import { sql, type Sql } from "@/server/db";
+import { sql, type Fragment, type Sql } from "@/server/db";
 import { noteSegments, type NoteSegment } from "@/server/records/notes-rules";
-import { visibleActivity, visibleDeal, visiblePerson } from "@/server/records/visibility";
+import { hasAmbassadorPage, visibleActivity, visibleDeal, visiblePerson } from "@/server/records/visibility";
 
 export type EventKind =
   | "added" | "edited" | "archived" | "restored" | "person_linked" | "person_unlinked" | "handed_over" | "moved"
@@ -13,10 +13,16 @@ export type EventKind =
   | "note"
   // SF-103: added by a CSV import (in place of "added")
   | "imported"
+  // SF-114: the Ambassador tick (on the person) and "Referred by" (on the person or deal)
+  | "ambassador_added" | "ambassador_removed" | "referrer_set" | "referrer_changed" | "referrer_cleared"
   // SF-109: a done activity, read from `activities` (never a timeline_events row)
   | "activity";
-// Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)").
-export type MoveCause = "stage_deleted" | "pipeline_deleted";
+// Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)"); SF-114:
+// "person_deleted" on a referrer_cleared written when the referrer was deleted.
+export type MoveCause = "stage_deleted" | "pipeline_deleted" | "person_deleted";
+
+// A person named by an event; `ambassadorPage`: their name links to /ambassadors/<id> (else /people/<id>).
+export type EventPerson = { id: number; name: string; ambassadorPage: boolean };
 
 export type TimelineEvent = {
   id: number;
@@ -24,7 +30,10 @@ export type TimelineEvent = {
   actorName: string | null;
   fields: string[] | null;
   // On person_linked / person_unlinked: null once the person was deleted ("A deleted person …", SF-92 FR-005).
-  relatedPerson: { id: number; name: string } | null;
+  // SF-114: on referrer_set / referrer_changed, the new referrer.
+  relatedPerson: EventPerson | null;
+  // SF-114: on referrer_changed, the previous referrer (null once deleted).
+  fromPerson: EventPerson | null;
   // On handed_over: the new owner (SF-92 FR-011).
   relatedUserName: string | null;
   fromStage: string | null;
@@ -44,6 +53,8 @@ export async function recordEvent(
     actorId: number | null;
     fields?: string[];
     relatedPersonId?: number;
+    // SF-114: the previous referrer of a referrer_changed.
+    fromPersonId?: number;
     relatedUserId?: number;
     fromStage?: string;
     toStage?: string;
@@ -56,15 +67,17 @@ export async function recordEvent(
   const dealId = "dealId" in event ? event.dealId : null;
   await db`
     insert into timeline_events (person_id, organisation_id, deal_id, kind, actor_id, fields, related_person_id, related_user_id,
-                                 from_stage, to_stage, cause, reason)
+                                 from_stage, to_stage, cause, reason, from_person_id)
     values (${personId}, ${organisationId}, ${dealId}, ${event.kind}, ${event.actorId}, ${event.fields ?? null},
             ${event.relatedPersonId ?? null}, ${event.relatedUserId ?? null}, ${event.fromStage ?? null},
-            ${event.toStage ?? null}, ${event.cause ?? null}, ${event.reason ?? null})`;
+            ${event.toStage ?? null}, ${event.cause ?? null}, ${event.reason ?? null}, ${event.fromPersonId ?? null})`;
 }
 
 export type TimelineEntry = TimelineEvent & {
   // Set on a person's or organisation's timeline for an entry of one of their deals.
   deal: { id: number; title: string; archived: boolean } | null;
+  // SF-114: set on an ambassador's latest updates for an entry of a person they referred (always null elsewhere).
+  person: { id: number; name: string; archived: boolean } | null;
   note: { segments: NoteSegment[]; editedByName: string | null; version: number } | null;
   // false: "(deactivated)" after the author's name.
   authorActive: boolean;
@@ -131,8 +144,8 @@ async function doneActivities(viewerId: number, target: Target, limit: number): 
     order by a.done_at desc, a.id desc
     limit ${limit}`;
   return rows.map((r) => ({
-    id: r.id, kind: "activity" as const, actorName: r.done_by_name, fields: null, relatedPerson: null, relatedUserName: null, fromStage: null,
-    toStage: null, cause: null, reason: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, note: null,
+    id: r.id, kind: "activity" as const, actorName: r.done_by_name, fields: null, relatedPerson: null, fromPerson: null, relatedUserName: null, fromStage: null,
+    toStage: null, cause: null, reason: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, person: null, note: null,
     activity: {
       id: r.id, type: r.type, subject: r.subject, note: r.note, doneByName: r.done_by_name, doneByActive: r.done_by_active,
       dueOn: r.due_on, dueTime: r.due_time, durationMinutes: r.duration_minutes, archived: r.archived,
@@ -143,30 +156,57 @@ async function doneActivities(viewerId: number, target: Target, limit: number): 
 // Newest first, `limit` entries (`more` when there are older ones). Events about a person the viewer cannot see are left
 // out (events about a deleted person have no related person and stay). Mentions show the users' current names.
 export async function readTimeline(viewerId: number, target: Target, limit = 50): Promise<TimelinePage> {
-  const onDeal = "dealId" in target;
+  return selectEntries(viewerId, targetWhere(sql, viewerId, target), limit, {
+    deals: !("dealId" in target),
+    personOtherThan: null,
+    activitiesOf: target,
+  });
+}
+
+// The shared read of timeline entries (SF-114 research.md §10): `where` picks the events (it must hold the visibility
+// of their records); `show.deals` names the deal of a deal's entry; `show.personOtherThan` names the person of a person's
+// entry unless it is that person (the ambassador's own entries); `show.activitiesOf` merges in the done activities of
+// that record (SF-109; the ambassador's latest updates hold notes and changes only). Each event has one target, so none
+// is read twice.
+export async function selectEntries(
+  viewerId: number,
+  where: Fragment,
+  limit: number,
+  show: { deals: boolean; personOtherThan: number | null; activitiesOf?: Target },
+): Promise<TimelinePage> {
   const rows = await sql<
     {
       id: number; kind: EventKind; actor_name: string | null; actor_active: boolean | null; fields: string[] | null; rp_id: number | null;
-      rp_name: string | null; ru_name: string | null; from_stage: string | null; to_stage: string | null; cause: MoveCause | null;
+      rp_name: string | null; rp_page: boolean | null; fp_id: number | null; fp_name: string | null; fp_page: boolean | null;
+      ru_name: string | null; from_stage: string | null; to_stage: string | null; cause: MoveCause | null;
       reason: string | null; created_at: Date; body: string | null; version: number; editor_name: string | null; editor_active: boolean | null;
       deal_id: number | null; deal_title: string | null; deal_archived: boolean | null;
+      person_id: number | null; person_name: string | null; person_archived: boolean | null;
     }[]
   >`
     select e.id::int as id, e.kind, u.name as actor_name, u.status = 'active' as actor_active, e.fields, rp.id::int as rp_id,
-           btrim(rp.first_name || ' ' || rp.last_name) as rp_name, ru.name as ru_name, e.from_stage, e.to_stage, e.cause,
+           btrim(rp.first_name || ' ' || rp.last_name) as rp_name,
+           case when e.kind in ('referrer_set', 'referrer_changed') and rp.id is not null then ${hasAmbassadorPage(sql, viewerId, "rp")} end as rp_page,
+           fp.id::int as fp_id, btrim(fp.first_name || ' ' || fp.last_name) as fp_name,
+           case when fp.id is not null then ${hasAmbassadorPage(sql, viewerId, "fp")} end as fp_page,
+           ru.name as ru_name, e.from_stage, e.to_stage, e.cause,
            e.reason, e.created_at, e.body, e.version, eu.name as editor_name, eu.status = 'active' as editor_active,
-           de.id::int as deal_id, de.title as deal_title, de.archived_at is not null as deal_archived
+           de.id::int as deal_id, de.title as deal_title, de.archived_at is not null as deal_archived,
+           pe.id::int as person_id, btrim(pe.first_name || ' ' || pe.last_name) as person_name, pe.archived_at is not null as person_archived
     from timeline_events e
     left join users u on u.id = e.actor_id
     left join persons rp on rp.id = e.related_person_id
+    left join persons fp on fp.id = e.from_person_id
     left join users ru on ru.id = e.related_user_id
     left join users eu on eu.id = e.edited_by
     left join deals de on de.id = e.deal_id
-    where ${targetWhere(sql, viewerId, target)}
+    left join persons pe on pe.id = e.person_id
+    where ${where}
       and (e.related_person_id is null or ${visiblePerson(sql, viewerId, "rp")})
+      and (e.from_person_id is null or ${visiblePerson(sql, viewerId, "fp")})
     order by e.created_at desc, e.id desc
     limit ${limit + 1}`;
-  const activities = await doneActivities(viewerId, target, limit + 1);
+  const activities = show.activitiesOf ? await doneActivities(viewerId, show.activitiesOf, limit + 1) : [];
   // Up to `limit + 1` of each: merged below, newest first, the page is the first `limit` (SF-109).
   const shown = rows;
   const noteIds = shown.filter((r) => r.kind === "note").map((r) => r.id);
@@ -185,7 +225,8 @@ export async function readTimeline(viewerId: number, target: Target, limit = 50)
       kind: r.kind,
       actorName: r.actor_name,
       fields: r.fields,
-      relatedPerson: r.rp_id === null ? null : { id: r.rp_id, name: r.rp_name ?? "" },
+      relatedPerson: r.rp_id === null ? null : { id: r.rp_id, name: r.rp_name ?? "", ambassadorPage: r.rp_page === true },
+      fromPerson: r.fp_id === null ? null : { id: r.fp_id, name: r.fp_name ?? "", ambassadorPage: r.fp_page === true },
       relatedUserName: r.ru_name,
       fromStage: r.from_stage,
       toStage: r.to_stage,
@@ -193,7 +234,11 @@ export async function readTimeline(viewerId: number, target: Target, limit = 50)
       reason: r.reason,
       createdAt: r.created_at,
       authorActive: r.actor_active ?? true,
-      deal: !onDeal && r.deal_id !== null ? { id: r.deal_id, title: r.deal_title ?? "", archived: r.deal_archived ?? false } : null,
+      deal: show.deals && r.deal_id !== null ? { id: r.deal_id, title: r.deal_title ?? "", archived: r.deal_archived ?? false } : null,
+      person:
+        show.personOtherThan !== null && r.person_id !== null && r.person_id !== show.personOtherThan
+          ? { id: r.person_id, name: r.person_name ?? "", archived: r.person_archived ?? false }
+          : null,
       note:
         r.kind === "note" && r.body !== null
           ? {
