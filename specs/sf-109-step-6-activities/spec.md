@@ -15,6 +15,11 @@
 - Q: Which design? → A: Design: A, the Activities list is a table like the People list (quick filters Overdue / Today / This week / Planned / Done, then assignee and type), overdue rows with a red left edge and a red OVERDUE mark; the activity form and "Schedule a follow-up?" open in a box over the page, like the lost reason box; board cards end with a line "⚠ No next activity" in amber or "Next: <date> · <type>" (see `design-options.html`).
 - Q: Should a done call or meeting update the linked person's "Last contacted" date? → A: Yes: a done call or meeting sets it to the activity's due date when that is later; a task never does.
 - Q: Should the app notify a teammate when someone else assigns them an activity? → A: Yes: an in-app notification on the Notifications page, like a mention.
+- Q: When a deal or person becomes private after an activity was assigned to someone who can no longer see it, what happens to the activity? → A: It stays assigned to them but is hidden from them everywhere (list, card, notification) until they can see the record again; nothing is reassigned automatically (decided by the factory, to confirm)
+- Q: What does the "This week" quick filter show? → A: Planned activities due Monday to Sunday of the current UK week, overdue ones from earlier in the week included; done ones only under "Done" (decided by the factory, to confirm)
+- Q: Can an activity be linked to an archived record, or to a won or lost deal, when it is scheduled or edited? → A: No archived record is offered or accepted ("Restore this record before changing its activities."); only open deals are offered, and a won or lost deal already linked stays (decided by the factory, to confirm)
+- Q: After ticking an activity on the Activities list, is "Schedule a follow-up?" offered? → A: No, only on record pages and the deal drawer, as US2 says; the list stays a quick ticking screen (decided by the factory, to confirm)
+- Q: What date does a done call or meeting with no time give "Last contacted"? → A: Its due date (the start of that UK day); ticking never lowers the value (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
