@@ -17,6 +17,11 @@
 - Q: What does the ambassador page show as "latest updates"? → A: The newest notes and changes on the ambassador and on every person and deal they referred, merged by date.
 - Q: Is a new deal's "Referred by" filled in from its main person? → A: Yes, pre-filled on the add deal form and changeable before saving (decided by the factory, to confirm)
 - Q: What happens when "Ambassador" is unticked on someone who has referrals? → A: Their referrals are kept, they leave the Ambassadors page and the pickers, and their page stays reachable marked "No longer an ambassador" (decided by the factory, to confirm)
+- Q: Does a timeline show a "Referred by" change that names a private person the reader can't see? → A: No, the entry is left out for them, as every other entry about a hidden person (SF-92); the record's own "Referred by" line still says "Referred by a private person" (decided by the factory, to confirm)
+- Q: Who can open a former ambassador's page? → A: Only users who can see the person and at least one person or deal they referred; for anyone else it shows "This ambassador doesn't exist or you can't see them." (decided by the factory, to confirm)
+- Q: Do "latest updates" include the entries of deals the ambassador is linked to as a contact (not referred)? → A: No: only the ambassador's own person timeline and the people and deals they referred (decided by the factory, to confirm)
+- Q: What is the "latest referral" date on the Ambassadors page? → A: The date "Referred by" was last set to that ambassador on a person or deal the user can see, not the record's date added (decided by the factory, to confirm)
+- Q: Does the Ambassadors page have filters and pages? → A: No: one table of every ambassador the user can see, by name A–Z (tens of ambassadors); filters can come later (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
