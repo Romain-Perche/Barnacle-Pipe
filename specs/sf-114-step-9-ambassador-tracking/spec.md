@@ -8,6 +8,16 @@
 
 **Input**: User description: "step 9 - Ambassador tracking. Ambassador tracking (`docs/PRODUCT.md` section 2): record which ambassador referred each person or deal, and give each ambassador a page with what they've brought in and their latest updates. Ambassadors are people in the CRM (`docs/DECISIONS.md`)."
 
+## Clarifications
+
+### Session 2026-11-23
+
+- Q: Which design for the ambassador page? → A: Design: B, its own one-column page: header with `[ PERSON PAGE ]`, summary strip (people referred, deals referred, open, won, lost), "// PEOPLE REFERRED", "// DEALS REFERRED", then "// LATEST UPDATES" grouped by day (see `design-options.html`).
+- Q: How does a person become an ambassador? → A: An "Ambassador" tick on the person's form; only ticked people can be picked as "Referred by".
+- Q: What does the ambassador page show as "latest updates"? → A: The newest notes and changes on the ambassador and on every person and deal they referred, merged by date.
+- Q: Is a new deal's "Referred by" filled in from its main person? → A: Yes, pre-filled on the add deal form and changeable before saving (decided by the factory, to confirm)
+- Q: What happens when "Ambassador" is unticked on someone who has referrals? → A: Their referrals are kept, they leave the Ambassadors page and the pickers, and their page stays reachable marked "No longer an ambassador" (decided by the factory, to confirm)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Mark a person as an ambassador (Priority: P1)
@@ -20,10 +30,10 @@ A team member opens a person who refers business to Barnacle and marks them as a
 
 **Acceptance Scenarios**:
 
-1. **Given** a person the user can see who is not archived, **When** they tick "Ambassador" on the person's form and save, **Then** the person page shows that the person is an ambassador with a link to their ambassador page, and the change is recorded on the person's timeline ("Made an ambassador" by the user).
+1. **Given** a person the user can see who is not archived, **When** they tick "Ambassador" on the person's form and save, **Then** the person page shows an "Ambassador" badge next to the name and an `[ AMBASSADOR PAGE ]` link that opens their ambassador page, and the change is recorded on the person's timeline ("Made an ambassador" by the user).
 2. **Given** the Ambassadors page, **When** it is shown, **Then** it lists every ambassador the user can see, by name, with their organisation, the number of people and of deals they referred, the total value of their open deals and of their won deals (GBP), and the date of their latest referral; each row opens the ambassador page.
 3. **Given** no ambassador the user can see, **When** the Ambassadors page is shown, **Then** it says "No ambassadors yet. Tick Ambassador on a person to add one."
-4. **Given** an ambassador, **When** a user unticks "Ambassador" and saves, **Then** the person leaves the Ambassadors page and is no longer offered as a referrer; people and deals they already referred keep them as "Referred by" and the change is recorded ("No longer an ambassador").
+4. **Given** an ambassador, **When** a user unticks "Ambassador" and saves, **Then** the person is no longer on the Ambassadors page, the "Ambassador" badge is gone from their person page, and they are not offered in any "Referred by" picker; people and deals they already referred still show "Referred by <their name>", and their timeline shows "No longer an ambassador" by the user.
 5. **Given** an archived ambassador, **When** the Ambassadors page is shown, **Then** they are still listed, marked "Archived", but they are not offered as a referrer on any form until restored.
 
 ---
@@ -58,10 +68,10 @@ Each ambassador has a page showing what they've brought in (the people and deals
 
 **Acceptance Scenarios**:
 
-1. **Given** an ambassador the user can see, **When** their ambassador page is opened (from the Ambassadors page, a "Referred by" link or their person page), **Then** it shows their name, organisation, role, email addresses and phone numbers, owner, a link to their person page, and a summary: people referred, deals referred, open deals' total value, won deals' total value, and the number of lost deals.
+1. **Given** an ambassador the user can see, **When** their ambassador page is opened (from the Ambassadors page, a "Referred by" link or their person page), **Then** it shows (design B) the kind "AMBASSADOR", their name with role and organisation, `[ PERSON PAGE ]` opening their person page, their email addresses, phone numbers and owner, and a summary strip with five boxes: "People referred" (a number), "Deals referred" (a number), "Open" (total value of open deals, £), "Won" (total value of won deals, £, in green) and "Lost" (number of lost deals, in red).
 2. **Given** the ambassador page, **When** it is shown, **Then** "// PEOPLE REFERRED" lists the people they referred (name, organisation, owner, date added), newest first, each linking to the person page.
 3. **Given** the ambassador page, **When** it is shown, **Then** "// DEALS REFERRED" lists the deals they referred (title, pipeline and stage, value, status Open, Won or Lost, owner), open deals first then by most recently changed, each linking to the deal page.
-4. **Given** the ambassador page, **When** it is shown, **Then** "// LATEST UPDATES" lists the newest 20 notes and changes on the ambassador's own timeline and on the timelines of the people and deals they referred, newest first, in the timeline look already used (day headings, tags, time); each entry from a referred record names that record with a link to it, and appears only once.
+4. **Given** the ambassador page, **When** it is shown, **Then** "// LATEST UPDATES" lists the newest 20 notes and changes on the ambassador's own timeline and on the timelines of the people and deals they referred, newest first, under one heading per day ("// TODAY · <date>", "// <date>"), each with a tag (NOTE, CHANGE, PERSON for an entry from a referred person, DEAL for an entry from a referred deal) and its time; each entry from a referred record shows that record's name as a link to its page, and no entry is listed twice.
 5. **Given** latest updates of more than 20 entries, **When** the user presses `[ SHOW MORE ]`, **Then** the next 20 are added in order without repeating or skipping any.
 6. **Given** an ambassador with no referrals and no notes, **When** the page is shown, **Then** the summary shows zeros and £0, the lists say "No people referred yet." and "No deals referred yet.", and latest updates shows only what exists on the ambassador's own timeline.
 7. **Given** a person who is not and never was an ambassador and has no referrals, **When** a user opens their ambassador page address directly, **Then** "This ambassador doesn't exist or you can't see them." is shown; a former ambassador with referrals still has their page, marked "No longer an ambassador".
@@ -78,10 +88,10 @@ The existing private rules apply everywhere ambassadors appear: a private ambass
 
 **Acceptance Scenarios**:
 
-1. **Given** a private referred person or deal, **When** someone it is hidden from opens the ambassador page or the Ambassadors page, **Then** it is not listed, not counted in any count or total, and none of its timeline entries appear in latest updates; nothing gives away that it exists.
+1. **Given** a private referred person or deal, **When** someone it is hidden from opens the ambassador page or the Ambassadors page, **Then** it is not listed, not counted in any count or total, and none of its timeline entries appear in latest updates; the summary strip and the Ambassadors page row show the same numbers and totals as if the record did not exist.
 2. **Given** a private ambassador, **When** someone they are hidden from opens the Ambassadors page or a "Referred by" picker, **Then** the ambassador is not listed or offered, and their ambassador page shows "This ambassador doesn't exist or you can't see them."
 3. **Given** a shared person or deal referred by a private ambassador, **When** someone the ambassador is hidden from opens it, **Then** "Referred by" is shown as "Referred by a private person" with no name or link; when they edit and save it without touching "Referred by", the referrer is kept.
-4. **Given** a private ambassador or private referred records handed over with a deactivated user's private records (SF-92, SF-97), **When** the new owner opens the ambassador page, **Then** they see them as any owner would.
+4. **Given** a private ambassador or private referred records handed over with a deactivated user's private records (SF-92, SF-97), **When** the new owner opens the ambassador page, **Then** the new owner can open the private ambassador's page, and sees the private referred records listed and counted in the summary strip.
 
 ---
 
@@ -102,18 +112,18 @@ On the People list and the Deals list, a team member filters by "Referred by" to
 
 ### Edge Cases
 
-- An ambassador is deleted by an admin: every person and deal they referred keeps no referrer ("Referred by" empty), and their timelines record "Referred by cleared (a deleted person)"; if the ambassador was private when deleted, nothing about them is recorded (as SF-92).
-- A referred person or deal is deleted: it leaves the ambassador's lists, counts, totals and latest updates.
-- A referred person or deal is archived: it stays on the ambassador page, marked "Archived", still counted; an archived deal's value counts in the open or won total as its status says.
-- An ambassador can themselves have been referred by another ambassador; the chain is not followed (each page shows only direct referrals).
-- An ambassador referred a deal and its main person separately: each counts once in its own list; the deal is never counted as a person or the other way round.
-- A deal with no value counts as £0 in totals; a lost deal's value is in neither total.
-- Reopening a won or lost deal moves its value back to the open total.
-- Two ambassadors with the same name are told apart in the picker by their organisation and email address.
-- Merging duplicate people is not part of the app yet; nothing here depends on it.
-- The person form's "Ambassador" tick and "Referred by" field are not shown on an archived record's page as editable (archived records cannot be edited, as today).
-- A lead source "Ambassador" already exists; choosing a referrer does not change the person's lead source, and the lead source does not require a referrer.
-- The ambassador page of someone with many referrals shows the newest 50 people and 50 deals with `[ SHOW MORE ]` for each list.
+- An admin deletes an ambassador: every person and deal they referred shows no "Referred by" line, and each one's timeline shows "Referred by cleared (a deleted person)"; if the ambassador was private when deleted, those timelines show no entry about it (as SF-92).
+- A referred person or deal is deleted: the ambassador page no longer lists it, the summary strip numbers and totals go down by it, and none of its entries are under "// LATEST UPDATES".
+- A referred person or deal is archived: the ambassador page still lists it with an "Archived" tag and still counts it; an archived open deal's value is in "Open", an archived won deal's in "Won".
+- An ambassador who was themselves referred by another ambassador: their person page shows "Referred by <the other ambassador>", and the other ambassador's page lists them under "// PEOPLE REFERRED" but none of the people or deals they referred.
+- An ambassador referred both a deal and that deal's main person: the person is listed once under "// PEOPLE REFERRED", the deal once under "// DEALS REFERRED", and "People referred" and "Deals referred" each count 1.
+- A referred deal with no value is shown with "—" as value and adds £0 to "Open" or "Won"; a lost deal's value is in neither "Open" nor "Won" and adds 1 to "Lost".
+- A referred deal marked Won then reopened: on the ambassador page its status shows "Open", its value is back in "Open" and no longer in "Won".
+- Two ambassadors with the same name: the "Referred by" picker shows each with their organisation and first email address, so the two lines differ.
+- An archived person or deal: its page shows no editable "Ambassador" tick or "Referred by" field (archived records cannot be edited, as today); a direct request to change them is refused with the existing archived-record message.
+- A person with lead source "Ambassador" and no "Ambassador" tick: they are not on the Ambassadors page and not offered in the "Referred by" picker; choosing a referrer leaves the person's lead source as it was.
+- An ambassador page with more than 50 people or 50 deals referred: each list shows the newest 50 (deals: open first) with `[ SHOW MORE ]`, which adds the next 50 without repeating or skipping any.
+- A referred deal or person whose name contains markup such as "<b>Fake</b>": it is shown as plain text everywhere on the Ambassadors page and the ambassador page.
 
 ## Requirements *(mandatory)*
 
@@ -148,7 +158,7 @@ On the People list and the Deals list, a team member filters by "Referred by" to
 - **FR-013**: The private person rule (SF-92) and private deal rule (SF-93) MUST apply to ambassadors, referrals, the Ambassadors page, the ambassador page (lists, counts, totals, latest updates), pickers and filters: nothing hidden from a user may be shown, counted or offered to them, enforced on every request.
 - **FR-014**: Deleting an ambassador MUST clear "Referred by" on what they referred, following the SF-92 rule for events about deleted (and deleted private) people.
 - **FR-015**: Every message shown MUST be one of the app's fixed messages; text from the page address MUST never be shown.
-- **FR-016**: The Ambassadors page and the ambassador page MUST follow `docs/DESIGN.md` and the existing people pages (design C list, design B timeline for latest updates); the chosen design is recorded in this spec's clarifications.
+- **FR-016**: The ambassador page MUST follow design B in `design-options.html`: one column with header and `[ PERSON PAGE ]`, a summary strip like the deal page's, "// PEOPLE REFERRED" and "// DEALS REFERRED" tables, and "// LATEST UPDATES" in the day-grouped timeline look (SF-102). The Ambassadors page MUST follow the People list (design C table) and `docs/DESIGN.md`; the "Ambassadors" link sits in the sidebar after "Organisations".
 
 **Fake data**
 
