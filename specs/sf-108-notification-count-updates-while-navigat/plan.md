@@ -145,3 +145,32 @@ No other outside service: the change is routing and rendering inside the app.
 ## Complexity Tracking
 
 No violation to justify.
+
+## Fix round 1
+
+**Problem** (AI review): the design changed during Build, but the feature documents still describe the first design.
+`research.md` §2 records the change. `plan.md` (Summary, Performance Goals, Constraints, Scale, Gates, Source Code,
+Implementation steps 1–3, 5, 8), `contracts/sidebar.md` (table rows "at that navigation's request", "Routing pieces")
+and `data-model.md` ("by the `@unread` slot") still describe the `@unread` parallel-route slot. `tasks.md` marks T002,
+T003, T015 (and the slot parts of T008, T016, T021) as done although they were not built as written.
+
+**Cause**: Build found that the slot does not work in Next.js 16.4.6 (the client router kept an old slot subpage, so
+the count was stale; research.md §2 "Changed during Build"). Build then built the rejected alternative, a client
+`UnreadLink.tsx` with the read-only server action `currentUnread()`, and updated only `research.md`.
+
+**Fix**: documents only, no app code and no test change. The documents follow what was built:
+
+- The layout still computes `unreadCount()` and gives it to the client `UnreadLink` as `initial`, with a new `key` on
+  each layout render (full load, `router.refresh()`, `revalidatePath` always win).
+- `UnreadLink` (client) calls `currentUnread()` (`src/app/(app)/notifications/actions.ts`: `requireUser()` first,
+  read only, FR-004) when the path or query changes, and on a click on a link to the page already open (an in-page
+  `#` link also asks again: harmless, one extra read). A reply older than the latest request is dropped.
+- Cost (FR-006 still met, no reload): one small POST per navigation, sent after the new page shows. For that moment
+  the old count can show. The plan's "no extra round trip" claim no longer holds.
+- `RefreshOnHistory` (back/forward) is unchanged.
+
+Files to change (all under this feature folder): `plan.md` (the sections above; keep a one-line note that the slot
+was planned and dropped, pointing to research.md §2), `contracts/sidebar.md`, `data-model.md`, `tasks.md` (reword
+T002, T003, T008, T015, T016, T021 to what was built, each with "(changed during Build: see research.md §2)"),
+`quickstart.md` (note in step 2 that the count can change a moment after the page shows). `spec.md` stays as it is:
+what the user gets does not change. `dependencies.json` stays `[]`.

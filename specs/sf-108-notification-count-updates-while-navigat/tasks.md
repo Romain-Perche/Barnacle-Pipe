@@ -111,6 +111,16 @@ description: "Tasks for SF-108 Notification count updates while navigating"
 
 ---
 
+## Fix round 1: documents follow what was built (plan.md § Fix round 1)
+
+- [ ] T022 Check first, and see it fail now: run `grep -nE "@unread|parallel route|slot|navigation's request|no extra round trip" specs/sf-108-notification-count-updates-while-navigat/{plan.md,data-model.md,quickstart.md,contracts/sidebar.md}` and `grep -nE "^- \[x\] T00(2|3)|^- \[x\] T015" specs/sf-108-notification-count-updates-while-navigat/tasks.md`. Today both print lines that describe the slot as the built design. After T023–T026, every remaining hit is only inside `## Fix round 1` or a one-line "planned and dropped, see research.md §2" note; T002, T003, T015 describe `UnreadLink.tsx` (client), `currentUnread()` and the AGENTS.md text as they are in the code. Also check that `git diff origin/main...HEAD -- src tests` is unchanged by this round (documents only)
+- [ ] T023 [P] Update `specs/sf-108-notification-count-updates-while-navigat/plan.md` (Summary, Technical Context "Primary Dependencies", "Performance Goals" — one POST per navigation after the page shows, the old count can show for that moment —, "Constraints", "Scale/Scope", Constitution Check rows, Source Code tree, Implementation steps 1–3, 5, 8) to the built design: layout keeps `unreadCount()` as `initial` of the client `UnreadLink` (new `key` per layout render); `UnreadLink` calls the server action `currentUnread()` (`requireUser()` first, read only) on a new path or query and on a click on a link to the current page (in-page `#` links too, harmless); older replies dropped. Keep one line that the `@unread` slot was planned and dropped (research.md §2)
+- [ ] T024 [P] Update `specs/sf-108-notification-count-updates-while-navigat/contracts/sidebar.md`: table rows for links, forms and not-found say "layout's count first, then `currentUnread()` right after the page shows" (forms that revalidate: the layout's fresh count); "Routing pieces" lists `layout.tsx` (count as `initial`, new `key`), `UnreadLink.tsx` (client), `currentUnread()` in `notifications/actions.ts`, `RefreshOnHistory.tsx`; no `@unread` files
+- [ ] T025 [P] Update `specs/sf-108-notification-count-updates-while-navigat/data-model.md` "Read when": full load and revalidation by the layout, client navigation by `currentUnread()` from `UnreadLink`, back/forward by `router.refresh()`; and `quickstart.md` step 2: the count can change a moment after the page shows
+- [ ] T026 Reword the done tasks T002, T003, T008, T015, T016, T021 in this file to what was built (keep them `[x]`, add "(changed during Build: see research.md §2)"); then mark T022–T026 done
+
+---
+
 ## Dependencies & Execution Order
 
 - Phase 1 (T001) and Phase 2 (T002 → T003; T004 after T003) before any story.
