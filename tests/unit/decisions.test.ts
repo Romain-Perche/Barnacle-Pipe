@@ -83,6 +83,22 @@ describe("docs/DECISIONS.md (SF-115)", () => {
   });
 });
 
+// covers SF-120 plan.md Build step 10: the people's choices recorded as theirs, the factory's marked "to confirm"
+describe("docs/DECISIONS.md (SF-120)", () => {
+  const lines = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.includes("(SF-120"));
+  it("records design C, the deal statuses, once per person and deleted references as decided", () => {
+    const decided = lines.filter((l) => l.endsWith("(SF-120)"));
+    expect(decided.length).toBe(4);
+    expect(decided.some((l) => l.includes("Segments use design C"))).toBe(true);
+    expect(decided.some((l) => l.includes("Open, Won, Lost or All deals"))).toBe(true);
+    expect(decided.some((l) => l.includes("first email address"))).toBe(true);
+    expect(decided.some((l) => l.includes("(deleted)"))).toBe(true);
+  });
+  it("marks the factory's five choices to confirm", () => {
+    expect(lines.filter((l) => l.endsWith("(SF-120, decided by the factory, to confirm)")).length).toBe(5);
+  });
+});
+
 // covers SF-117 spec.md § Clarifications (Session 2026-11-24): the three choices people made are recorded
 describe("docs/DECISIONS.md (SF-117)", () => {
   const sf117 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-117)"));

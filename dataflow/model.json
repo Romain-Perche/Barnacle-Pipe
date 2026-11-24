@@ -87,9 +87,9 @@
       "description": "Lets an email recipient withdraw consent through a token link or RFC 8058 one-click."
     },
     {
-      "id": "campaigns",
-      "label": "Campaigns",
-      "description": "Lets the team write shared email campaign drafts with merge tags and preview them for a person."
+      "id": "segments",
+      "label": "Segments",
+      "description": "Saved, team-shared people segments and the count of people each one reaches."
     }
   ],
   "actors": [
@@ -392,14 +392,13 @@
       ]
     },
     {
-      "id": "campaigns",
-      "label": "Campaigns",
+      "id": "segments",
+      "label": "Saved segments and reach count",
       "zone": "app",
-      "group": "campaigns",
+      "group": "segments",
       "sources": [
-        "src/app/(app)/campaigns",
-        "src/server/campaigns/campaigns.ts",
-        "src/server/campaigns/preview.ts"
+        "src/app/(app)/segments",
+        "src/server/segments"
       ]
     }
   ],
@@ -639,12 +638,12 @@
       ]
     },
     {
-      "id": "campaigns-table",
-      "label": "Campaigns",
+      "id": "segments-table",
+      "label": "Postgres segments",
       "zone": "postgres",
-      "group": "campaigns",
+      "group": "segments",
       "sources": [
-        "migrations/0014_campaigns.sql"
+        "migrations/0014_segments.sql"
       ]
     }
   ],
@@ -2340,59 +2339,51 @@
       ]
     },
     {
-      "from": "session-guard",
-      "to": "campaigns",
-      "data": "signed-in user",
-      "sources": [
-        "src/app/(app)/campaigns/actions.ts"
-      ]
-    },
-    {
       "from": "staff",
-      "to": "campaigns",
-      "data": "campaign drafts and preview picks",
+      "to": "segments",
+      "data": "segment forms and counts requests",
       "sources": [
-        "src/app/(app)/campaigns/actions.ts"
+        "src/app/(app)/segments/actions.ts"
       ]
     },
     {
-      "from": "campaigns",
-      "to": "campaigns-table",
-      "data": "campaign drafts",
+      "from": "segments",
+      "to": "segments-table",
+      "data": "segment definitions",
       "sources": [
-        "src/server/campaigns/campaigns.ts"
+        "src/server/segments/segments.ts"
       ]
     },
     {
-      "from": "campaigns-table",
-      "to": "campaigns",
-      "data": "campaign list and drafts",
+      "from": "segments-table",
+      "to": "segments",
+      "data": "saved segments",
       "sources": [
-        "src/server/campaigns/campaigns.ts"
-      ]
-    },
-    {
-      "from": "custom-fields-table",
-      "to": "campaigns",
-      "data": "people custom fields for merge tags",
-      "sources": [
-        "src/server/campaigns/campaigns.ts"
+        "src/server/segments/segments.ts"
       ]
     },
     {
       "from": "persons-table",
-      "to": "campaigns",
-      "data": "visible person values for preview",
+      "to": "segments",
+      "data": "visible people and deals for reach counts",
       "sources": [
-        "src/server/campaigns/preview.ts"
+        "src/server/segments/reach.ts"
+      ]
+    },
+    {
+      "from": "custom-values-table",
+      "to": "segments",
+      "data": "custom value tests for conditions",
+      "sources": [
+        "src/server/custom-fields/values.ts"
       ]
     },
     {
       "from": "migrate",
-      "to": "campaigns-table",
-      "data": "table definitions",
+      "to": "segments-table",
+      "data": "table definition",
       "sources": [
-        "migrations/0014_campaigns.sql"
+        "migrations/0014_segments.sql"
       ]
     }
   ]

@@ -8,7 +8,7 @@
 
 A new "Campaigns" page (after Activities in the sidebar) lists the team's campaign drafts; each draft opens on one edit
 page (design A): `// DETAILS` and `// CONTENT` on the left, a live `// PREVIEW FOR` a chosen person on the right. A
-draft is one row of a new `campaigns` table (migration `0014_campaigns.sql`) with a version for conflicting saves.
+draft is one row of a new `campaigns` table (migration `0015_campaigns.sql`) with a version for conflicting saves.
 Content is either layout blocks (JSON, five block types, four layouts) or pasted HTML kept as pasted. Merge tags
 `{{<field> | <if empty>}}` are parsed by one pure module shared by the server (save checks, unknown tags, links) and the
 client (live preview); custom field tags are linked by id in `merge_links` and their names rewritten on open, so they
@@ -24,7 +24,7 @@ in an `<iframe srcdoc>` sandboxed without scripts, same origin, forms or top nav
 Nothing added (research.md §1).
 
 **Storage**: PostgreSQL (local for dev/tests, Supabase through its pooler in production). Migration
-`migrations/0014_campaigns.sql`: table `campaigns` (data-model.md). No change to existing tables.
+`migrations/0015_campaigns.sql`: table `campaigns` (data-model.md). No change to existing tables.
 
 **Testing**: Vitest — unit (merge grammar, content, rules, frame document, messages, nav) and integration on the real
 local Postgres (drafts, conflicts, links after rename/delete, preview privacy, picker, actions without session, RLS,
@@ -91,7 +91,7 @@ specs/sf-119-step-14-campaigns-writing-the-content/
 
 ```text
 migrations/
-└── 0014_campaigns.sql                       # data-model.md § Migration
+└── 0015_campaigns.sql                       # data-model.md § Migration
 
 next.config.ts                               # experimental.serverActions.bodySizeLimit "4mb"
 
@@ -126,7 +126,7 @@ anything server-only, because the client editor imports them.
 
 ## Build steps (in order)
 
-1. **Migration** `migrations/0014_campaigns.sql` exactly as data-model.md. `tests/support/reset.ts` truncates
+1. **Migration** `migrations/0015_campaigns.sql` exactly as data-model.md. `tests/support/reset.ts` truncates
    `campaigns`. (Check `0011` is still the latest; renumber if another step merged first.)
 2. **Pure merge module** `src/server/campaigns/merge.ts` (research.md §3, §4, §6; contracts § Domain functions):
    regex `/\{\{([^{}]*)\}\}/g`, name/fallback split on the first `|`, trim, `toLowerCase()` matching, segments with

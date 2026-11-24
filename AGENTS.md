@@ -102,6 +102,19 @@ OAuth code flow and database sessions.
   `PreviewPersonPicker.tsx`, `CampaignPreview.tsx` (the email only inside `<iframe sandbox="allow-popups
   allow-popups-to-escape-sandbox" srcDoc>`; never `dangerouslySetInnerHTML`). `next.config.ts` raises the server action
   body limit to 4 MB for pasted HTML.
+- `src/server/segments/` (SF-120) — saved segments, shared by the whole team: `rules.ts` (pure: `Condition` / `Definition` /
+  `Reach` types, `readSegmentForm`, `validateSegmentForm` (ids kept only when among the form options), `readConditions`,
+  `describeSegment` (summary, // WHO and // CONDITIONS lines, "(deleted)", `broken`), `formToValues`), `reach.ts` (`reachWhere` on
+  `persons p` with `visiblePerson` and the deals through `visibleDeal`, archived deals never; `countReach`: one query, left out
+  archived → unsubscribed → no email; `reachedPeople`: person and first email, for the later campaign issue), `segments.ts`
+  (`listSegments`, `getSegment`, `segmentFormOptions`, `createSegment` / `updateSegment` (version check) / `deleteSegment`,
+  `countDefinition`). Table `segments` (conditions as jsonb, no foreign keys to things that can be deleted). Counts are worked
+  out at each read, never stored. `customProbe` in `custom-fields/values.ts` is the custom value test shared by the People
+  list filters and the segment reach.
+- `src/app/(app)/segments/` (SF-120) — the Segments table (`page.tsx`), `[id]/` the segment page (count strip, // WHO,
+  // CONDITIONS, `?confirm=delete` → `SegmentDeleteConfirm.tsx`), `new/` and `[id]/edit/` (the form on its own page),
+  `SegmentForm.tsx` (client: who, condition rows, [ COUNT AGAIN ]), `MultiPicker.tsx` (client: filtering multi-select with
+  chips), `ReachBlock.tsx`, `actions.ts`.
 - `src/server/imports/` — CSV import (SF-103): `csv.ts` (reading the file), `columns.ts` (fields, suggestions, mapping
   checks, example files), `rows.ts` (a row through `validatePerson`/`validateOrganisation`), `plan.ts` (what an import
   will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
@@ -129,6 +142,7 @@ OAuth code flow and database sessions.
   later or after Pipedrive's wait). `records/import/StepBar.tsx` takes a `steps` prop.
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
   files, custom fields: `custom-fields.ts`, campaigns: `campaigns.ts`). The fake Pipedrive needs no seeding.
+  files, custom fields: `custom-fields.ts`, segments: `segments.ts`). The fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage and Pipedrive
   v2 / v1 schemas).

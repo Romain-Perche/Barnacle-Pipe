@@ -1,6 +1,6 @@
 # Data model: Campaigns: writing the content (SF-119)
 
-## Migration `migrations/0014_campaigns.sql`
+## Migration `migrations/0015_campaigns.sql`
 
 Only statements allowed in a transaction; RLS on after the `create table` (no policies). No timeline change.
 

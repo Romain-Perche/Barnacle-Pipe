@@ -126,6 +126,11 @@
   on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a 61-character or
   `colour`-typed field, a second "diet" person field, a value row with two values or two targets, a second value for the
   same field and person, a `custom_set` without a field name, an `edited` event with an old value). No new outside service.
+  Saved segments (SF-120, `src/server/segments/`) keep to the same pooler limits: no `set`/`listen`/session advisory lock
+  (scanned by `tests/integration/migrate.test.ts`), each save one `sql.begin()` with an optimistic `version` check, counts
+  as one read-only query per segment; the table and index come from `migrations/0014_segments.sql` (only `create table` /
+  `create index`, RLS on), applied on a fresh database by the same test, which checks Postgres's own 23514 / 23505
+  refusals. No new outside service and no new fake.
   The Pipedrive import code (SF-117: `src/server/pipedrive/*.ts`, `deactivate()` in `users.ts`) keeps to the same pooler
   limits: no fake, the real local PostgreSQL 17, no public schema on GitHub, follows
   https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session advisory lock,
@@ -151,7 +156,7 @@
   (`List-Unsubscribe=One-Click`, urlencoded and multipart).
   SF-119 (campaign drafts) keeps to the same pooler limits in `src/server/campaigns/` (no `set`/`listen`/session advisory
   lock; each change one `sql.begin()`, the save locking its row `for update`); its table comes from
-  `migrations/0014_campaigns.sql` (`campaigns`: drafts with a `version`, `content_kind` blocks/html, `blocks` jsonb,
+  `migrations/0015_campaigns.sql` (`campaigns`: drafts with a `version`, `content_kind` blocks/html, `blocks` jsonb,
   `html`, `merge_links` jsonb), applied on a fresh database by `tests/integration/migrate.test.ts`, which also checks
   Postgres's own 23514 refusals (a 101-character or untrimmed name, status `sent`, blocks with html, html kind without
   html, html with no kind, `[]` or 51 blocks, 500,001 characters of HTML, `merge_links` `{}`, a 256-character subject)
@@ -196,6 +201,13 @@
     background (log `/tmp/app-$PORT.log`). Env: `PORT` (3000), `APP_ENV` (development; `APP_ENV=` for empty),
     `DATABASE_URL` (crm_dev), `FIRST_ADMIN_EMAIL` (ada@barnacle.ai; `FIRST_ADMIN_EMAIL=` for none), `VERCEL_ENV`,
     `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
+  - SF-120 segments: `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf120.js` (app on :3000 from
+    `start-app.sh`). It resets crm_dev itself (`reset-db.sh` + seed) and loads `.factory/run/sf120-setup.sql`: pipelines
+    RevPipe (stages RA, RB) and DelPipe (DA), 15 people "Rv …" (A1 on two deals with two addresses, A2 linked person, W1/W2
+    on a won deal, X1 on an archived deal, L1 archived+unsubscribed+no address, L2 unsubscribed+no address, L3 no address,
+    M1 only person of "Rv D9", G1 private (Grace), V1 on Grace's private deal, O1 at "Old Fakeco Archive", AL owned by
+    deactivated Alan Fake, Z1 at "Rv TempOrg" with the person Yes/No field "Rv Opted (fake)"). Expected for Ada: RA open 3,
+    all 5; RevPipe open 4 (left out 1/1/1); RB open 2, 1 after moving Rv D9 to RA. Runs all 23 SF-120 scenarios (~1 min; all pass, re-run in a second and third AI review, after the SF-121 merge).
     SF-117: `PIPEDRIVE_TOKEN_KEY` defaults to a key made once into /tmp/pipedrive-token-key (`PIPEDRIVE_TOKEN_KEY=` for
     "The Pipedrive import isn't set up yet."); `PIPEDRIVE_URL` empty → the in-process fake Pipedrive.
   - `bash .factory/run/reset-db.sh [db]` — empties every app table (users, sessions, people, organisations,
@@ -497,6 +509,6 @@
     (`node .factory/run/check-sf121-edge10.js`: 404 "Page not found."), and one on :3003 with `APP_ENV=test` and the same
     APP_URL to see https links on /dev/unsubscribe-links. ~1 min.
 ## Smoke checks
-1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml
+1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in

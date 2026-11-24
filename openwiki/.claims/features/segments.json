@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:2d3c5713da89b4451dd073577ac1e9dace6e089600405549857672817181ef22",
+  "claims": [
+    {
+      "id": "claim_b75d3ba4b3274e4c8a99bf11ab97a04f",
+      "statement": "countReach counts each person under the first applicable reason: archived, then unsubscribed, then no email address.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/segments/reach.ts#L86-L99",
+          "version": "repo-lines-v1:sha256:e78d404124df5bbff115584d2c170d0adf88926d06dad3a593859c9d318d50ec:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY5M2VkOGQ1YjZjYjg2OGNjMmJhY2Y3ZWE0YzIxNTk0NTcyOWM1OGI1OGFkNjkxYWY3YjAzNjdkNzY0ZjFmMGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiMTNmYmI2YzZmOTU3Y2ZkZjFkZDhjMzNiMDFkMDM2ZjBiYjk1NTM2MGZjNjIzNGNjY2MyZDMwZGU0NmJmNTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3e6c571050be415a847e2e4778b7c836",
+      "statement": "A segment's who is everyone, pipeline or stage, with at most 20 conditions.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/segments/rules.ts#L10-L20",
+          "version": "repo-lines-v1:sha256:442f86cba2bf1a4156b597326dded2073197057d43a60812d0c7353ec207f813:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5ODYxM2Q5NDVkMDMzYzE5ODMzMTg4Nzg1NmJmMDE5YWY5M2JkYWVkZWY2NDMzZmM1NjA2YTFlYjYzYjQwNTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5MmMyMDU1YmFkN2UwOTM3M2EyMDIwNjE1NjhlNTUyM2Y0NjI2ODg1NGI4ZjJlYTRhMzc4Zjk5NTFhYWU2NzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkMDRmODM3YmY1NjkzOGQ5MjkzMTEwNzMxZTBiMGNmNDc3MDljMjU5YjkwMzgwNWFhMGMyOTQ5YzM4YzVhYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJlMGFlOTRiMzUzOWQzMTY4YzIxNWIwYzUzMGU3MWEyYjM2YmFiNzZmN2JlMzBhOTIzOTM1ZGJiNThlZmM2NzkifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-24T17:52:29.768Z"
+  }
+}

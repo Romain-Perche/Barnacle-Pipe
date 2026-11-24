@@ -14,6 +14,8 @@ export const mainNav: NavItem[] = [
   { href: "/activities", label: "Activities" },
   // SF-119: campaign drafts.
   { href: "/campaigns", label: "Campaigns" },
+  // SF-120: saved segments, after the campaigns.
+  { href: "/segments", label: "Segments" },
   // SF-102: the layout adds the unread count; SF-108: UnreadLink.tsx keeps it up to date on client navigation.
   { href: "/notifications", label: "Notifications" },
 ];

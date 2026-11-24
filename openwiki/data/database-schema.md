@@ -5,8 +5,10 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T17:53:35.777Z
+    at: 2026-11-24T17:52:29.768Z
 sources:
+  - id: sf120-src-migration
+    resource: repo://migrations/0014_segments.sql
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
   - id: sf102-src-migration
@@ -33,15 +35,13 @@ sources:
     resource: repo://migrations/0012_pipedrive.sql
   - id: openwiki-source-7159795c4e4172d1472292a6
     resource: repo://migrations/0013_unsubscribe.sql
-  - id: openwiki-source-d347a15697a560909c854723
-    resource: repo://migrations/0014_campaigns.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T17:53:35.777Z" }
+generated: { by: "claude-code", at: "2026-11-24T17:52:29.768Z" }
 ---
 
 # Database schema and access
@@ -201,13 +201,13 @@ widens the `timeline_events` kind list with `unsubscribed_link`, `unsubscribed_m
 and `consent_changed` (old and new consent labels, with a teammate). See
 [People and organisations](../features/people-and-organisations.md).
 
-### Campaigns (migration 0014)
+### Segments (migration 0014)
 
-`0014_campaigns.sql` adds `campaigns`: shared team drafts with no visibility rule. Columns hold the details (`name`,
-`sender_name`, `reply_to`, `subject`, `preview_text`), the content (`content_kind` of `blocks` or `html`, with `blocks`
-jsonb or `html` text; a check allows only one of them) and `merge_links`, the custom field tags of the draft (field id
-and name at the last save, no foreign key, so a deleted field's tags read as unknown). `status` is only `draft`;
-`version` backs the save check. Row level security is on, with no policy. See [Campaigns](../features/campaigns.md).
+`0014_segments.sql` adds `segments` (name unique ignoring case, `who` of everyone / pipeline / stage, optional
+`pipeline_id`, `stage_id` and `deal_status`, `conditions` as a jsonb array of at most 20, `created_by`/`updated_by`,
+`version`) and the partial index `deals_stage_live_idx` on non-archived deals. Pipeline, stage and condition ids have no
+foreign keys on purpose, so a deleted target shows as "(deleted)" and matches nobody. Row level security is enabled.
+See [Segments](../features/segments.md).
 
 ## Row level security
 
