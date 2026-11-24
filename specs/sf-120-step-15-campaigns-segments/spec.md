@@ -8,6 +8,13 @@
 
 **Input**: User description: "Step 15 - Campaigns: segments. Choosing who a campaign goes to (`docs/PRODUCT.md` section 4, "Choosing recipients", and the segments line in `docs/DECISIONS.md`): everyone in the CRM, everyone on the deals of a pipeline or of one of its stages, or a filter on any person field (lead source, label, organisation, owner, role, custom fields). A choice can be saved as a named segment, shared by the whole team, and edited, renamed or deleted. It shows how many people it reaches now, with unsubscribed people, people with no email address, archived people and duplicate addresses removed, and says that recipients are worked out when the campaign is sent. Only people the user can see are counted. Not in this issue: picking a segment in a campaign and sending (a later issue)."
 
+## Clarifications
+
+### Session 2026-11-24
+
+- Q: Which design? → A: Design: C, a Segments table (Name, Who, Reaches now, Last changed) and one page per segment with a count strip (Reaches now, Archived, Unsubscribed, No email address), "// WHO" and "// CONDITIONS" sections, `[ EDIT ]` opening the form on its own page (see `design-options.html`).
+- Q: Which deals does a pipeline or stage segment count? → A: The user picks Open, Won, Lost or All deals; Open is picked first; archived deals never count.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Save a segment and see how many people it reaches (Priority: P1)
@@ -20,10 +27,10 @@ A team member opens a "Segments" page from the sidebar. They press `[ NEW SEGMEN
 
 **Acceptance Scenarios**:
 
-1. **Given** a signed-in user on the Segments page, **When** they press `[ NEW SEGMENT ]`, **Then** a form opens with a name, a "Who" choice ("Everyone in the CRM", "People on the deals of a pipeline", "People on the deals of a stage"), and, for the last two, the pipeline (and then one of its stages) and the deal status: "Open deals" (chosen first), "Won deals", "Lost deals" or "All deals".
+1. **Given** a signed-in user on the Segments page, **When** they press `[ NEW SEGMENT ]`, **Then** the new segment form opens on its own page with a name, a "Who" choice ("Everyone in the CRM", "People on the deals of a pipeline", "People on the deals of a stage"), and, for the last two, the pipeline (and then one of its stages) and the deal status: "Open deals" (chosen first), "Won deals", "Lost deals" or "All deals".
 2. **Given** a stage choice with 2 open deals (one with a main contact and one other linked person, one with a main contact only), 1 won deal and 1 archived open deal in that stage, all with subscribed people who have an email address, **When** the count is shown with "Open deals", **Then** it says "Reaches 3 people now"; with "All deals" it counts the won deal's people too; the archived deal's people are never counted through it.
 3. **Given** a filled-in form, **When** the user presses `[ COUNT AGAIN ]` (and when they save), **Then** it shows "Reaches <n> people now", the numbers left out — "<a> unsubscribed", "<b> with no email address", "<c> archived" — and the line "Recipients are worked out when the campaign is sent, so this number can change." (from the messages file).
-4. **Given** a valid form, **When** the user saves it, **Then** the segment is listed on the Segments page with its name, a plain-words summary of its choice (e.g. "People on open deals of Sales · Proposal"), its count now, and who last changed it and when.
+4. **Given** a valid form, **When** the user saves it, **Then** the segment's own page opens with its name, "Last changed by <user> · <date time>", the count strip (Reaches now, Archived, Unsubscribed, No email address), the line of scenario 3, a "// WHO" section (Deals: Open deals; Pipeline · stage: Sales · Proposal) and a "// CONDITIONS" section listing each condition; and the Segments table lists it with its name (a link to its page), a plain-words summary of its choice (e.g. "People on open deals of Sales · Proposal + 3 conditions"), its count now, and who last changed it and when.
 5. **Given** a name that is empty, longer than 100 characters, or the same as another segment's (ignoring case and spaces at either end), **When** the user saves, **Then** nothing is saved, the form keeps what was chosen, and the message says "Give the segment a name.", "A segment name can be at most 100 characters." or "There is already a segment called <name>."
 6. **Given** a pipeline or stage choice with no pipeline or no stage picked, **When** the user saves, **Then** nothing is saved and the message says "Choose a pipeline." or "Choose a stage."
 7. **Given** a person matched more than once (on several deals of the pipeline, or with several email addresses), **When** the count is worked out, **Then** they are counted once, under one address: their first email address.
@@ -57,9 +64,9 @@ Segments are shared: anyone on the team can open a segment, change its choice or
 
 **Acceptance Scenarios**:
 
-1. **Given** any user and any segment, **When** they press `[ EDIT ]` on its row, **Then** the form opens with its name, choice and conditions, and saving applies the same checks as adding.
+1. **Given** any user and any segment, **When** they press `[ EDIT ]` on the segment's page, **Then** the form opens on its own page with its name, choice and conditions, and saving applies the same checks as adding.
 2. **Given** two users editing the same segment, **When** the second saves after the first, **Then** nothing is saved for the second and the message says "Someone else changed this segment. Open it again to see their changes."
-3. **Given** a segment, **When** a user presses `[ DELETE ]`, **Then** a confirmation names the segment; confirming deletes it for everyone and shows "Segment <name> deleted."; cancelling changes nothing.
+3. **Given** a segment, **When** a user presses `[ DELETE ]` on its page, **Then** a confirmation names the segment; confirming deletes it for everyone, returns to the Segments page and shows "Segment <name> deleted."; cancelling changes nothing.
 4. **Given** a segment deleted by someone else, **When** a user opens, saves or deletes it, **Then** they see "This segment no longer exists." and nothing is changed.
 
 ---
@@ -69,7 +76,7 @@ Segments are shared: anyone on the team can open a segment, change its choice or
 - **Private people and deals**: with one private person created by Grace Fake in an "Everyone in the CRM" segment, Grace sees a count one higher than Ada; Ada's page shows no number or message about hidden people. A private deal Ada cannot see adds none of its people to Ada's count for its pipeline.
 - **Left-out reasons**: a person who is archived and unsubscribed and has no email address adds 1 to "archived" only; one who is unsubscribed with no address adds 1 to "unsubscribed" only; one subscribed with no address adds 1 to "with no email address".
 - **Nobody reached**: the count says "Reaches 0 people now"; saving still works and the segment is listed with 0.
-- **Removed things in a segment**: a pipeline, stage, organisation or people custom field that has since been deleted, or a choice that has been removed, is shown in the segment's summary and form as "(deleted)"; a deleted pipeline, stage, organisation or field matches nobody, and the segment's row says "This segment refers to something that was deleted. Edit it before using it." A removed label, lead source or custom-field choice still matches the people who have it. A deactivated user as owner still matches the people they own.
+- **Removed things in a segment**: a pipeline, stage, organisation or people custom field that has since been deleted, or a choice that has been removed, is shown in the segment's summary and form as "(deleted)"; a deleted pipeline, stage, organisation or field matches nobody, the segment's row in the Segments table and its page say "This segment refers to something that was deleted. Edit it before using it." A removed label, lead source or custom-field choice still matches the people who have it. A deactivated user as owner still matches the people they own.
 - **Stage moves**: after a deal's only person is moved with the deal to another stage, the stage segment's count shown on the next page load is 1 lower.
 - **Archived organisations**: a segment with the condition Organisation = an archived organisation still counts that organisation's subscribed, non-archived people with an address.
 - **Unsafe input**: a segment named `<b>Test</b>` is listed with those characters shown as typed, not in bold; a made-up segment id or condition value in the page address shows "This segment no longer exists." or is ignored, never shown back.
@@ -79,19 +86,19 @@ Segments are shared: anyone on the team can open a segment, change its choice or
 
 ### Functional Requirements
 
-- **FR-001**: The sidebar MUST have a "Segments" link for every signed-in user, opening a Segments page that lists every saved segment (name, summary of its choice, count now, last changed by and when), ordered by name.
+- **FR-001**: The sidebar MUST have a "Segments" link for every signed-in user, opening the Segments page: a table of every saved segment (Name linking to the segment's page, Who as a summary of its choice, Reaches now, Last changed by and when), ordered by name, with `[ NEW SEGMENT ]`. Each segment has its own page (count strip, "// WHO", "// CONDITIONS", `[ EDIT ]`, `[ DELETE ]`); adding and editing use a form on its own page (Design C).
 - **FR-002**: Users MUST be able to choose who a segment reaches: everyone in the CRM; the people on the deals of one pipeline; or the people on the deals of one stage of a pipeline. For a pipeline or stage, the user MUST choose the deal status: Open (default), Won, Lost or All; archived deals never count.
 - **FR-003**: A person MUST be reached through a deal when they are its main contact or one of its other linked people.
 - **FR-004**: Users MUST be able to add any number of conditions on person fields — lead source, label, organisation, owner, role, and every people custom field — to any "Who" choice; a person MUST match every condition. Choice-like conditions (lead source, label, organisation, owner, single and multiple choice custom fields) accept one or more values and match any of them; other custom field types use the People list filter tests (SF-115); role matches text it contains, ignoring case.
 - **FR-005**: Users MUST be able to save a choice as a named segment. Names MUST be 1 to 100 characters after trimming and unique among segments ignoring case.
 - **FR-006**: Segments MUST be shared by the whole team: every signed-in user can see, edit, rename and delete every segment. Deleting MUST ask for confirmation.
 - **FR-007**: A segment MUST store the choice and conditions, never a list of people: recipients are worked out each time.
-- **FR-008**: The segment form and the Segments page MUST show how many people the segment reaches now, worked out when shown, and the numbers left out as archived, unsubscribed and with no email address (each person under one reason, in that order).
+- **FR-008**: The segment form, the segment's page and the Segments table MUST show how many people the segment reaches now, worked out when shown, and (on the form and the segment's page) the numbers left out as archived, unsubscribed and with no email address (each person under one reason, in that order).
 - **FR-009**: Each reached person MUST be counted once and with one address (their first email address), however many deals or addresses match.
 - **FR-010**: Only people the user can see MUST be counted (the private rule: creator or owner), and only deals the user can see MUST reach people; nothing shown MUST reveal how many people or deals were hidden.
 - **FR-011**: The form and every count MUST say "Recipients are worked out when the campaign is sent, so this number can change."
 - **FR-012**: Saving over a segment that someone else changed since it was opened MUST be refused with a message, saving nothing.
-- **FR-013**: A segment that refers to a deleted pipeline, stage, organisation or custom field MUST still be listed and editable, show the deleted part as "(deleted)", match nobody through that part and say so on its row.
+- **FR-013**: A segment that refers to a deleted pipeline, stage, organisation or custom field MUST still be listed and editable, show the deleted part as "(deleted)", match nobody through that part and say so on its row and its page.
 - **FR-014**: Every segment page and action MUST check that the user is signed in and active, first; all user-facing text MUST come from the messages file.
 - **FR-015**: The fake data command MUST add a few segments with clearly fake names covering each kind of choice.
 
@@ -113,7 +120,7 @@ Segments are shared: anyone on the team can open a segment, change its choice or
 
 ## Assumptions
 
-- The page's look (layout, where the count sits, how conditions are laid out) is chosen in the clarify step among design options, following `docs/DESIGN.md`; the Segments link goes in the main sidebar group, where Campaigns will join it later.
+- The look follows Design C of `design-options.html` and `docs/DESIGN.md`; the Segments link goes in the main sidebar group after Activities, where Campaigns will join it later.
 - Email addresses are unique across the CRM, so a "duplicate address" can only come from the same person matched more than once; removing duplicates means counting each person once with one address.
 - A person's first email address (the one listed first on their record) is the one a campaign will use; the sending issue may change this.
 - Only person fields are offered as conditions; deal and organisation custom fields are not, and conditions cannot be combined with "or" between fields.
