@@ -4,10 +4,13 @@ import { requireUser } from "@/server/auth/session";
 import { countLabel } from "@/server/format";
 import { messages } from "@/server/messages";
 import { readFlash } from "@/server/records/flash";
-import { hasFilters, knownSector, parseOrganisationsQuery, withParams, type Params } from "@/server/records/list-query";
+import { listShownFields } from "@/server/custom-fields/fields";
+import { customColumns, customFilterOptions } from "@/server/custom-fields/values";
+import { hasFilters, knownCustomQuery, knownSector, parseOrganisationsQuery, withParams, type Params } from "@/server/records/list-query";
 import { getOrganisation, listOrganisations, organisationFilterOptions } from "@/server/records/organisations";
 import { SIZES, websiteHost } from "@/server/records/rules";
 import { Drawer, Field } from "../records/Drawer";
+import { CustomCells, CustomFilters, CustomHeaders, customSortOptions } from "../records/CustomFilters";
 import { Cell, FilterRow, PreviewLink, Select, SortHeader } from "../records/ListBits";
 import { Pager } from "../records/Pager";
 
@@ -25,14 +28,16 @@ function Website({ url }: { url: string | null }) {
 export default async function OrganisationsPage({ searchParams }: { searchParams: Promise<Params> }) {
   const user = await requireUser();
   const parsed = parseOrganisationsQuery(await searchParams);
-  const options = await organisationFilterOptions();
-  // An unknown sector is dropped before it is used or shown (FR-025): it filters nothing.
-  const query = { ...parsed, sector: knownSector(parsed.sector, options.sectors) };
-  const [list, flash, open] = await Promise.all([
-    listOrganisations(user.id, query),
+  const [options, fields] = await Promise.all([organisationFilterOptions(), listShownFields("organisation")]);
+  // An unknown sector is dropped before it is used or shown (FR-025): it filters nothing. SF-115: likewise custom filters.
+  const query = knownCustomQuery({ ...parsed, sector: knownSector(parsed.sector, options.sectors) }, fields);
+  const [list, flash, open, choiceOptions] = await Promise.all([
+    listOrganisations(user.id, query, fields),
     readFlash(["organisation_deleted", "note_not_found", "file_not_found"]),
     query.open ? getOrganisation(user.id, query.open) : null,
+    customFilterOptions(user.id, "organisation", fields),
   ]);
+  const cells = await customColumns("organisation", fields, list.rows.map((r) => r.id));
   const shown = { ...query, page: list.page };
   const link = (changes: Partial<typeof query>) => withParams(PATH, shown, changes);
   const preview = (id: number) => link({ open: id });
@@ -69,6 +74,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
         <Select name="owner" label="Owner" value={query.owner} options={[{ value: "", label: "Any owner" }, ...options.owners.map((o) => ({ value: o.id, label: o.name }))]} />
         <Select name="sector" label="Sector" value={query.sector} options={[{ value: "", label: "Any sector" }, ...options.sectors.map((s) => ({ value: s, label: s }))]} />
         <Select name="size" label="Size" value={query.size} options={[{ value: "", label: "Any size" }, ...SIZES.map((s) => ({ value: s, label: s }))]} />
+        <CustomFilters fields={fields} options={choiceOptions} custom={query.custom} />
         <Select
           name="sort"
           label="Sort by"
@@ -77,6 +83,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
             { value: "name", label: "Sort: name" },
             { value: "people", label: "Sort: number of people" },
             { value: "added", label: "Sort: date added" },
+            ...customSortOptions(fields),
           ]}
         />
         <Select name="dir" label="Order" value={query.dir} options={[{ value: "asc", label: "Ascending" }, { value: "desc", label: "Descending" }]} />
@@ -104,6 +111,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
                   <th>Location</th>
                   <th>Owner</th>
                   <SortHeader label="People" sort="people" query={shown} path={PATH} />
+                  <CustomHeaders fields={fields} query={shown} path={PATH} />
                 </tr>
               </thead>
               <tbody>
@@ -124,6 +132,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
                     <Cell href={preview(r.id)}>{r.location ?? "—"}</Cell>
                     <Cell href={preview(r.id)}>{r.owner.active ? r.owner.name : `${r.owner.name} (deactivated)`}</Cell>
                     <Cell href={preview(r.id)}>{r.people}</Cell>
+                    <CustomCells fields={fields} cells={cells.get(r.id)} href={preview(r.id)} />
                   </tr>
                 ))}
               </tbody>

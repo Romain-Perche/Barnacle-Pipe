@@ -148,6 +148,30 @@ export function Line({ e, onDeal, filePage }: { e: TimelineEvent & { file?: Time
           {by(e.actorName)}
         </>
       );
+    // SF-115: field names and values are the text of the time (React text nodes).
+    case "custom_set":
+      return (
+        <>
+          {templates.custom_set_event(e.fieldName ?? "", e.newValue ?? "")}
+          {by(e.actorName)}
+        </>
+      );
+    case "custom_changed":
+      return (
+        <>
+          {e.oldValue === null && e.newValue === null
+            ? templates.custom_changed_plain(e.fieldName ?? "")
+            : templates.custom_changed_event(e.fieldName ?? "", e.oldValue ?? "", e.newValue ?? "")}
+          {by(e.actorName)}
+        </>
+      );
+    case "custom_cleared":
+      return (
+        <>
+          {templates.custom_cleared_event(e.fieldName ?? "")}
+          {by(e.actorName)}
+        </>
+      );
     case "handed_over":
       return (
         <>

@@ -29,7 +29,7 @@ and fake data stand in for them.
 npm install
 cp .env.example .env.local          # APP_ENV=development, DATABASE_URL=…/crm_dev, FIRST_ADMIN_EMAIL=ada@barnacle.ai
 npm run db:migrate                  # update the database structure
-npm run db:seed                     # load fake data (fake users, people, organisations, pipelines, deals, notes and ambassadors)
+npm run db:seed                     # load fake data (fake users, people, organisations, pipelines, deals, notes, ambassadors and custom fields)
 npm run dev                         # http://localhost:3000
 ```
 
@@ -75,6 +75,7 @@ Event and Ambassador, and no labels.
 | `/notifications` | everyone | Your @mentions in notes, newest first, 50 at a time (`?shown=100`): "<name> mentioned you in a note on <record>", the date and the start of the note; pressing one opens the record and marks it read; `[ MARK ALL AS READ ]`. The sidebar shows "Notifications" with the unread count, up to date on every page you open (links, forms, back and forward). In the app only, no email; a mention on a record you can no longer see is hidden. SF-109: also "<name> assigned you a <call|meeting|task>: <subject>" with "Due <date>" when someone else assigns you an activity (it goes when you are no longer the assignee); opening one goes to its deal, else person, else organisation, else the Activities list |
 | `/deals/new`, `/deals/<id>/edit` | everyone (a private deal: its creator and owner) | Add a deal (`?pipeline=<id>&stage=<id>` pre-selects them), edit a deal and its deal labels (`?back=page` returns to the deal page) |
 | `/admin/pipelines`, `/admin/pipelines/<id>` | admins | Add, rename, reorder (↑/↓) and delete pipelines and their stages; deleting one that holds deals moves them to a stage you choose |
+| `/admin/custom-fields` | admins | Custom fields of people, organisations and deals (a tab per kind, `?kind=people\|organisations\|deals`): add (`?field=new`), rename, reorder (↑/↓), "Show in list" (at most 8 per kind), choices of choice fields, delete after a confirmation that counts the records with a value (`?delete=<id>`). Eight types: text, long text, number, money (£), date, single choice, multiple choice, yes/no; the type never changes. Values are filled in under "// MORE DETAILS" on the add and edit forms, shown on record pages and the deal drawer, logged on the timeline, shown as columns and filters of the lists (`?cf<id>=…`, `?cf<id>_from=…&cf<id>_to=…`, `?sort=cf<id>`) and can be mapped in the CSV import |
 
 ## Tests
 

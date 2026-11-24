@@ -29,6 +29,7 @@ import { ActivityNotices } from "../../activities/ActivityNotices";
 import { ActivityOverlays } from "../../activities/ActivityOverlays";
 import { NextActivities } from "../../activities/NextActivities";
 import { StageBar } from "./StageBar";
+import { MoreDetails } from "../../records/MoreDetails";
 
 const PAGE_ERRORS = ["deal_edit_conflict", "deal_person_already_linked", "note_not_found", "note_record_archived"] as const;
 const BOX_ERRORS = ["lost_reason_required", "lost_reason_too_long"] as const;
@@ -274,6 +275,7 @@ export default async function DealPage({ params, searchParams }: { params: Promi
           </div>
         </dl>
       </section>
+      <MoreDetails details={deal.custom} />
 
       <NextActivities viewerId={user.id} target={{ dealId: deal.id }} archived={deal.archived} back={here} />
 

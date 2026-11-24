@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1916f0dc8427d63fa64703acc9784b72987966f2ed34372f215e1cd935fedec8",
+  "pageVersion": "sha256:7601e404c40e6366174279aac419fd6de4ce33b29caa177f9d21f86f3faf8a25",
   "claims": [
     {
       "id": "claim_13428ba51be747709f2744c129d2c44d",
@@ -44,17 +44,17 @@
     },
     {
       "id": "claim_774570b347784264ba15d181f129dc17",
-      "statement": ".env.example lists APP_ENV, DATABASE_URL, FIRST_ADMIN_EMAIL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_URL, SUPABASE_URL, SUPABASE_SECRET_KEY and FILES_BUCKET without real secrets.",
+      "statement": ".env.example lists APP_ENV, DATABASE_URL, FIRST_ADMIN_EMAIL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and APP_URL without real secrets.",
       "evidence": [
         {
           "resource": "repo://.env.example",
-          "version": "repo-file-v1:sha256:381564e967909364261dd8f3b371a3363baf410638dddf27a52c963a321ddc41"
+          "version": "repo-file-v1:sha256:afe2a4c879ee99f21fb66bbb24401a3e5911660666ef0557ba715642d2e9147d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T11:23:52.677Z"
+    "at": "2026-11-19T12:52:49.147Z"
   }
 }

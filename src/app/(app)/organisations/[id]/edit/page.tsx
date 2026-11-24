@@ -4,6 +4,7 @@ import { parseId } from "@/server/records/list-query";
 import { getOrganisation, organisationFormChoices, organisationToForm } from "@/server/records/organisations";
 import { OrganisationForm } from "../../../records/OrganisationForm";
 import { updateOrganisation } from "../../actions";
+import { formFields } from "@/server/custom-fields/values";
 
 export default async function EditOrganisationPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -22,7 +23,7 @@ export default async function EditOrganisationPage({ params }: { params: Promise
           <h1>Edit {org.name}</h1>
         </div>
       </div>
-      <OrganisationForm action={updateOrganisation} owners={owners} initial={organisationToForm(org)} id={id} version={org.version} cancelHref={`/organisations/${id}`} />
+      <OrganisationForm action={updateOrganisation} owners={owners} initial={organisationToForm(org)} customFields={formFields(org.custom)} archived={org.archived} id={id} version={org.version} cancelHref={`/organisations/${id}`} />
     </>
   );
 }

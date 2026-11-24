@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626;
+    --wash: rgba(43,0,255,.05); --panel: #FFFFFF; --page: #EDE7DF; --note: rgba(255,66,0,.06);
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --panel: #232323; --page: #0E0E0E; --note: rgba(255,66,0,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(620px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+
+  .app { display: grid; grid-template-columns: 140px 1fr; height: 640px; border: .5px solid var(--line); overflow: hidden; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 9px; margin-bottom: 22px; }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .nav .cnt { background: var(--orange); color: #fff; padding: 0 4px; margin-left: 4px; }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 16px; overflow: hidden; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 10px; margin-bottom: 8px; gap: 8px; }
+  .ph h2 { margin: 3px 0 0; font-size: 20px; font-weight: 700; }
+  .ph .sub { font-size: 11px; color: var(--muted); }
+  .kind { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 5px 8px; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.link { border: 0; padding: 2px 0; color: var(--muted); }
+  .btn.red { color: var(--danger); }
+  .acts { display: flex; gap: 4px; }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 10px 0 6px; border-top: .5px solid var(--line); padding-top: 8px; }
+  .dl { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+  .k { font-family: var(--mono); font-size: 8px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .v { font-size: 11px; margin-bottom: 6px; border-bottom: .5px solid var(--line-list); padding-bottom: 4px; }
+  .lk { color: var(--blue); }
+  .mention { color: var(--blue); background: var(--wash); font-weight: 600; padding: 0 2px; }
+  .when { font-family: var(--mono); font-size: 8px; color: var(--muted); white-space: nowrap; }
+  .ta { border: .5px solid var(--line); background: var(--panel); padding: 7px 8px; font-size: 11px; min-height: 46px; position: relative; }
+  .ta .caret { border-left: 1px solid var(--ink); margin-left: 1px; }
+  .pick { position: absolute; left: 120px; top: 30px; width: 150px; background: var(--panel); border: .5px solid var(--line); border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,.18); padding: 3px 0; font-size: 10px; z-index: 2; }
+  .pick div { padding: 4px 8px; }
+  .pick .on { background: var(--wash); }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; }
+  .on-deal { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .on-deal a, .on-deal span.d { color: var(--blue); }
+  .ntext { font-size: 11px; line-height: 1.45; margin: 3px 0; white-space: pre-wrap; }
+  .edited { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+
+  
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { font-family: var(--mono); font-size: 8px; letter-spacing: .2em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 4px; border-bottom: .5px solid var(--line-soft); white-space: nowrap; }
+  td { padding: 4px; border-bottom: .5px solid var(--line-list); vertical-align: top; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .strip { display: flex; border: .5px solid var(--line-soft); background: var(--panel); margin: 6px 0 4px; }
+  .strip > div { flex: 1 1 0; padding: 5px 7px; border-right: .5px solid var(--line-soft); }
+  .strip > div:last-child { border-right: 0; }
+  .strip .k { font-size: 7px; }
+  .strip .n { font-size: 13px; font-weight: 600; }
+  .won { color: #16A34A; } .lost { color: var(--danger); }
+  .badge { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; border: .5px solid var(--blue); color: var(--blue); padding: 1px 4px; margin-left: 6px; vertical-align: middle; }
+  .badge.amb { background: var(--orange); border-color: var(--orange); color: #fff; }
+  .new { outline: 2px dashed var(--orange); outline-offset: 2px; }
+  .day { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 7px 0 2px; }
+  .ent { display: grid; grid-template-columns: 46px 1fr auto; gap: 7px; padding: 4px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; align-items: start; }
+  .kd { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; border: .5px solid var(--line); padding: 1px 3px; text-align: center; }
+  .kd.note { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .kd.deal { color: var(--blue); border-color: var(--blue); }
+  .notebody { border-left: 3px solid var(--orange); background: var(--note); padding: 3px 6px; border-radius: 0 6px 6px 0; }
+  .more { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; color: var(--muted); margin-top: 4px; }
+  .C .cols { display: grid; grid-template-columns: 1fr 210px; gap: 12px; }
+  .C .feed { border-left: .5px solid var(--line); padding-left: 10px; }
+  .C .item { padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; }
+  .C .item .top { display: flex; justify-content: space-between; gap: 6px; }
+  .legend { font-size: 13px; color: var(--muted); margin: 4px 32px 0; }
+  .legend span { outline: 2px dashed var(--orange); outline-offset: 2px; padding: 0 4px; }
+  .app.short { height: 300px; margin-top: 8px; }
+  .app { height: 560px; }
+  .tabs { display: flex; gap: 0; border-bottom: .5px solid var(--line); margin: 6px 0 8px; }
+  .tabs span { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 5px 10px; color: var(--muted); }
+  .tabs span.on { color: var(--blue); border-bottom: 2px solid var(--blue); }
+  .in { border: .5px solid var(--line); background: var(--panel); padding: 4px 6px; font-size: 10px; display: inline-block; min-width: 60px; }
+  .sel::after { content: " ▾"; color: var(--muted); }
+  .addrow { display: flex; gap: 4px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .typ { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .chips { font-size: 9px; color: var(--muted); }
+  .tick { font-family: var(--mono); font-size: 9px; }
+  .box { position: absolute; left: 50%; top: 70px; transform: translateX(-50%); width: 300px; background: var(--panel); border: .5px solid var(--line); border-radius: 10px; box-shadow: 0 16px 40px rgba(0,0,0,.28); padding: 12px; z-index: 3; }
+  .box h3 { margin: 2px 0 8px; font-size: 14px; }
+  .box .f { margin-bottom: 7px; }
+  .box .f .k { margin-bottom: 2px; }
+  .shade { position: absolute; inset: 0; background: rgba(0,0,0,.25); z-index: 2; }
+  .main.rel { position: relative; }
+  .ch { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 3px 0; border-bottom: .5px solid var(--line-list); }
+  .split { display: grid; grid-template-columns: 170px 1fr; gap: 10px; }
+  .fl { border-right: .5px solid var(--line); padding-right: 8px; }
+  .fl .it { padding: 4px 6px; font-size: 10px; border-bottom: .5px solid var(--line-list); display: flex; justify-content: space-between; gap: 4px; }
+  .fl .it.on { background: var(--wash); }
+  .fl .h { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 8px 0 3px; }
+  .warn { border: .5px solid var(--danger); padding: 7px; font-size: 10px; margin-top: 8px; }
+  .warn b { color: var(--danger); }
+  .filters { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+  .mini { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .2em; color: var(--muted); margin: 4px 0; }
+  .grid4 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-115 · CUSTOM FIELDS · DESIGN OPTIONS</div>
+  <h1>Where admins manage custom fields, and how the fields show on records and lists</h1>
+  <p>All three show the people fields "Diet" (single choice: None, Vegetarian, Vegan), "Birthday" (date) and "Newsletter topics" (multiple choice), and the deal field "Contract end" (date). Admin: Ada Fake. Top: the admin page. Bottom: the person page and the People list.</p>
+</header>
+<p class="legend"><span>Dashed orange</span> = new in this issue.</p>
+<div class="grid">
+<figure>
+  <div class="tag"><b>A</b>One page, three lists side by side, like Lead sources and labels</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span class="new on">Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="ph"><div><div class="label"><span class="c">//</span> ADMIN</div><h2>Custom fields</h2></div></div>
+      <div class="grid4" style="grid-template-columns:1.3fr 1fr 1fr">
+        <div>
+          <div class="sect"><span class="c">//</span> PEOPLE</div>
+          <div class="addrow"><span class="in">New field</span><span class="in sel">Text</span><span class="btn solid">[ ADD ]</span></div>
+          <table><tbody>
+            <tr><td><span class="in">Diet</span> <span class="btn link">[ RENAME ]</span><br><span class="typ">Single choice</span> <span class="tick">☑ In list</span><br><span class="chips">None · Vegetarian · Vegan</span> <span class="btn link">[ CHOICES ]</span></td><td class="num"><span class="btn link">↑</span> <span class="btn link">↓</span><br><span class="btn link red">[ DELETE ]</span></td></tr>
+            <tr><td><span class="in">Birthday</span> <span class="btn link">[ RENAME ]</span><br><span class="typ">Date</span> <span class="tick">☐ In list</span></td><td class="num"><span class="btn link">↑</span> <span class="btn link">↓</span><br><span class="btn link red">[ DELETE ]</span></td></tr>
+            <tr><td><span class="in">Newsletter topics</span> <span class="btn link">[ RENAME ]</span><br><span class="typ">Multiple choice</span> <span class="tick">☑ In list</span><br><span class="chips">AI · Events · Hiring</span> <span class="btn link">[ CHOICES ]</span></td><td class="num"><span class="btn link">↑</span> <span class="btn link">↓</span><br><span class="btn link red">[ DELETE ]</span></td></tr>
+          </tbody></table>
+          <div class="warn"><b>3 people have a value in Diet.</b> Deleting the field deletes these values for good.<div class="acts" style="margin-top:6px"><span class="btn solid" style="background:var(--danger);border-color:var(--danger)">[ DELETE FIELD ]</span><span class="btn">[ CANCEL ]</span></div></div>
+        </div>
+        <div>
+          <div class="sect"><span class="c">//</span> ORGANISATIONS</div>
+          <div class="addrow"><span class="in">New field</span><span class="in sel">Text</span><span class="btn solid">[ ADD ]</span></div>
+          <p class="chips">No custom fields yet.</p>
+        </div>
+        <div>
+          <div class="sect"><span class="c">//</span> DEALS</div>
+          <div class="addrow"><span class="in">New field</span><span class="in sel">Text</span><span class="btn solid">[ ADD ]</span></div>
+          <table><tbody>
+            <tr><td><span class="in">Contract end</span><br><span class="typ">Date</span> <span class="tick">☑ In list</span></td><td class="num"><span class="btn link red">[ DELETE ]</span></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="app short">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span class="new">Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="kind">PERSON</div>
+      <div class="ph"><div><h2>Bob Sample</h2><div class="sub">CTO at <span class="lk">Sample Partners Fake</span></div></div><div class="acts"><span class="btn">[ EDIT ]</span></div></div>
+      <div class="sect"><span class="c">//</span> DETAILS</div>
+      <div class="dl">
+        <div><div class="k">Owner</div><div class="v">Ada Fake</div></div>
+        <div><div class="k">Lead source</div><div class="v">Referral</div></div>
+        <div class="new"><div class="k">Diet</div><div class="v">Vegan</div></div>
+        <div class="new"><div class="k">Birthday</div><div class="v">24 Nov 1990</div></div>
+        <div class="new"><div class="k">Newsletter topics</div><div class="v">AI, Events</div></div>
+      </div>
+      <div class="mini">PEOPLE LIST</div>
+      <table><thead><tr><th>Name</th><th>Organisation</th><th>Owner</th><th class="new">Diet</th><th class="new">Newsletter topics</th></tr></thead>
+      <tbody><tr><td>Bob Sample</td><td>Sample Partners Fake</td><td>Ada Fake</td><td>Vegan</td><td>AI, Events</td></tr></tbody></table>
+    </div>
+  </div>
+  <figcaption><b>A</b> — Good for a few fields: everything on one screen, the same look as Lead sources and labels; custom values sit inside // DETAILS with the built-in fields.</figcaption>
+</figure>
+<figure>
+  <div class="tag"><b>B</b>One tab per kind, a table, a box to add or edit a field</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span class="new on">Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main rel new">
+      <div class="ph"><div><div class="label"><span class="c">//</span> ADMIN</div><h2>Custom fields</h2></div><span class="btn solid">[ ADD FIELD ]</span></div>
+      <div class="tabs"><span class="on">People · 3</span><span>Organisations · 0</span><span>Deals · 1</span></div>
+      <table><thead><tr><th>Order</th><th>Name</th><th>Type</th><th>Choices</th><th>In list</th><th></th></tr></thead><tbody>
+        <tr><td>↑ ↓</td><td>Diet</td><td class="typ">Single choice</td><td class="chips">None, Vegetarian, Vegan</td><td>Yes</td><td><div class="acts"><span class="btn link">[ EDIT ]</span><span class="btn link red">[ DELETE ]</span></div></td></tr>
+        <tr><td>↑ ↓</td><td>Birthday</td><td class="typ">Date</td><td>—</td><td>No</td><td><div class="acts"><span class="btn link">[ EDIT ]</span><span class="btn link red">[ DELETE ]</span></div></td></tr>
+        <tr><td>↑ ↓</td><td>Newsletter topics</td><td class="typ">Multiple choice</td><td class="chips">AI, Events, Hiring</td><td>Yes</td><td><div class="acts"><span class="btn link">[ EDIT ]</span><span class="btn link red">[ DELETE ]</span></div></td></tr>
+      </tbody></table>
+      <div class="shade"></div>
+      <div class="box">
+        <div class="kind">EDIT PEOPLE FIELD</div>
+        <h3>Diet</h3>
+        <div class="f"><div class="k">Name</div><span class="in" style="width:100%">Diet</span></div>
+        <div class="f"><div class="k">Type</div><span class="typ">Single choice (can't be changed)</span></div>
+        <div class="f"><div class="k">Choices</div>
+          <div class="ch"><span>None</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>
+          <div class="ch"><span>Vegetarian</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>
+          <div class="ch"><span>Vegan</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>
+          <div class="addrow" style="margin-top:4px"><span class="in">New choice</span><span class="btn">[ ADD ]</span></div>
+        </div>
+        <div class="f tick">☑ Show in the People list</div>
+        <div class="acts"><span class="btn solid">[ SAVE ]</span><span class="btn">[ CANCEL ]</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="app short">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span class="new">Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="kind">PERSON</div>
+      <div class="ph"><div><h2>Bob Sample</h2><div class="sub">CTO at <span class="lk">Sample Partners Fake</span></div></div><div class="acts"><span class="btn">[ EDIT ]</span></div></div>
+      <div class="sect"><span class="c">//</span> DETAILS</div>
+      <div class="dl"><div><div class="k">Owner</div><div class="v">Ada Fake</div></div><div><div class="k">Lead source</div><div class="v">Referral</div></div></div>
+      <div class="new">
+      <div class="sect"><span class="c">//</span> MORE DETAILS</div>
+      <div class="dl">
+        <div><div class="k">Diet</div><div class="v">Vegan</div></div>
+        <div><div class="k">Birthday</div><div class="v">24 Nov 1990</div></div>
+        <div><div class="k">Newsletter topics</div><div class="v">AI, Events</div></div>
+      </div></div>
+      <div class="filters"><span class="in sel">Any owner</span><span class="in sel new">Any diet</span><span class="in sel new">Any newsletter topic</span></div>
+      <table><thead><tr><th>Name</th><th>Owner</th><th class="new">Diet</th><th class="new">Newsletter topics</th></tr></thead>
+      <tbody><tr><td>Bob Sample</td><td>Ada Fake</td><td>Vegan</td><td>AI, Events</td></tr></tbody></table>
+    </div>
+  </div>
+  <figcaption><b>B</b> — Good for many fields and long choice lists: a clear table per kind, editing in a box over the page like the activity box; custom values in their own // MORE DETAILS section.</figcaption>
+</figure>
+<figure>
+  <div class="tag"><b>C</b>Field list on the left, the chosen field on the right</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span class="new on">Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="ph"><div><div class="label"><span class="c">//</span> ADMIN</div><h2>Custom fields</h2></div></div>
+      <div class="split">
+        <div class="fl">
+          <div class="h">// PEOPLE</div>
+          <div class="it on"><span>Diet</span><span class="typ">Choice</span></div>
+          <div class="it"><span>Birthday</span><span class="typ">Date</span></div>
+          <div class="it"><span>Newsletter topics</span><span class="typ">Multi</span></div>
+          <div class="btn link">[ + ADD PEOPLE FIELD ]</div>
+          <div class="h">// ORGANISATIONS</div>
+          <div class="btn link">[ + ADD ORGANISATION FIELD ]</div>
+          <div class="h">// DEALS</div>
+          <div class="it"><span>Contract end</span><span class="typ">Date</span></div>
+          <div class="btn link">[ + ADD DEAL FIELD ]</div>
+        </div>
+        <div>
+          <div class="kind">PEOPLE FIELD · SINGLE CHOICE</div>
+          <div class="f" style="margin:6px 0"><div class="k">Name</div><span class="in" style="width:70%">Diet</span> <span class="btn link">↑ ↓</span></div>
+          <div class="k">Choices</div>
+          <div class="ch"><span>None</span><span class="btn link">↑ ↓ [ RENAME ] [ REMOVE ]</span></div>
+          <div class="ch"><span>Vegetarian</span><span class="btn link">↑ ↓ [ RENAME ] [ REMOVE ]</span></div>
+          <div class="ch"><span>Vegan</span><span class="btn link">↑ ↓ [ RENAME ] [ REMOVE ]</span></div>
+          <div class="addrow" style="margin-top:4px"><span class="in">New choice</span><span class="btn">[ ADD ]</span></div>
+          <div class="tick" style="margin:6px 0">☑ Show in the People list</div>
+          <div class="acts"><span class="btn solid">[ SAVE ]</span><span class="btn link red">[ DELETE FIELD ]</span></div>
+          <div class="warn"><b>3 people have a value in Diet.</b> Deleting the field deletes these values for good.<div class="acts" style="margin-top:6px"><span class="btn solid" style="background:var(--danger);border-color:var(--danger)">[ DELETE FIELD ]</span><span class="btn">[ CANCEL ]</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="app short">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span class="on">People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span class="new">Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="kind">PERSON</div>
+      <div class="ph"><div><h2>Bob Sample</h2><div class="sub">CTO at <span class="lk">Sample Partners Fake</span></div></div><div class="acts"><span class="btn">[ EDIT ]</span></div></div>
+      <div class="sect"><span class="c">//</span> DETAILS</div>
+      <div class="dl">
+        <div><div class="k">Owner</div><div class="v">Ada Fake</div></div>
+        <div><div class="k">Lead source</div><div class="v">Referral</div></div>
+        <div class="new"><div class="k">Diet</div><div class="v">Vegan</div></div>
+        <div class="new"><div class="k">Birthday</div><div class="v">24 Nov 1990</div></div>
+        <div class="new"><div class="k">Newsletter topics</div><div class="v">AI, Events</div></div>
+      </div>
+      <div class="filters"><span class="in sel">Any owner</span><span class="in sel new">Any diet</span><span class="in sel new">Any newsletter topic</span></div>
+      <table><thead><tr><th>Name</th><th>Owner</th><th class="new">Diet</th><th class="new">Newsletter topics</th></tr></thead>
+      <tbody><tr><td>Bob Sample</td><td>Ada Fake</td><td>Vegan</td><td>AI, Events</td></tr></tbody></table>
+    </div>
+  </div>
+  <figcaption><b>C</b> — Good for editing one field in depth without leaving the page: all kinds visible at once, one field open at a time; custom values inside // DETAILS.</figcaption>
+</figure>
+</div>
+</body>
+</html>

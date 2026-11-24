@@ -14,6 +14,7 @@ import { archiveDeal, deleteDeal, moveDeal } from "./actions";
 import { day, StatusBadge } from "./DealBits";
 import { NextActivities } from "../activities/NextActivities";
 import { FilesSection } from "../records/FilesSection";
+import { MoreDetails } from "../records/MoreDetails";
 
 type Props = {
   deal: DealView;
@@ -70,6 +71,7 @@ export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, 
         <Field k="Expected close">{deal.expectedClose ? day(deal.expectedClose) : null}</Field>
         <Field k="Date added">{formatDate(deal.createdAt)}</Field>
       </dl>
+      <MoreDetails details={deal.custom} drawer />
       {canMove && (
         <form action={moveDeal} className="move-to">
           <input type="hidden" name="id" value={deal.id} />

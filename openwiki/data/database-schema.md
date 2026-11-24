@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T11:23:52.677Z
+    at: 2026-11-24T11:28:51.796Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -25,15 +25,15 @@ sources:
     resource: repo://migrations/0008_activities.sql
   - id: openwiki-source-afe126abfd80a7bbf3246173
     resource: repo://migrations/0009_ambassadors.sql
-  - id: openwiki-source-bcc466cbe055ea0c54eff37e
-    resource: repo://migrations/0011_files.sql
+  - id: openwiki-source-720a4e6307035f2f4697bba4
+    resource: repo://migrations/0010_custom_fields.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T11:23:52.677Z" }
+generated: { by: "claude-code", at: "2026-11-24T11:28:51.796Z" }
 ---
 
 # Database schema and access
@@ -158,21 +158,21 @@ gets `from_person_id` (the previous referrer, only on `referrer_changed` events)
 `person_deleted`. Partial indexes serve the "referred by" lookups. See
 [People and organisations](../features/people-and-organisations.md).
 
-### `files`, `file_uploads`, `file_cleanup` (migration 0011)
+### Custom fields (migration 0010)
 
-Added by `0011_files.sql` (see [Files](../features/files.md)). `files` holds one row per stored file: exactly one of
-`deal_id`, `person_id`, `organisation_id` (check `files_one_record`; all cascade on delete), `name` (1 to 255
-characters), `size` (1 byte to 25 MB), `kind` (`jpeg`, `png`, `gif`, `webp`, `pdf`, `other`), a unique `storage_path`,
-`added_by` and `added_at`. `file_uploads` is an upload asked for and not yet read back from Storage; it is never listed.
-`file_cleanup` queues Storage paths to remove (`due_at`, `attempts`). The migration also adds `file_id`, `file_name`,
-`file_size` and `deleted_file_id` to `timeline_events` and the kinds `file_added` and `file_deleted`.
+`0010_custom_fields.sql` adds `custom_fields` (a field of kind `person`, `organisation` or `deal`, with a type, a
+position and `in_list`), `custom_field_choices` (choices of the two choice types, soft-removed with `removed_at`) and
+`custom_values` (one row per field and record that has a value; exactly one of the person, organisation or deal ids
+and exactly one typed value column are set; unique per field and record). `timeline_events` gets `field_name`,
+`old_value` and `new_value` and the kinds `custom_set`, `custom_changed` and `custom_cleared`. See
+[Custom fields](../features/custom-fields.md).
 
 ## Row level security
 
 Every `create table` is followed by `alter table … enable row level security`, with no policies. On
 Supabase this means the Data API roles (`anon`, `authenticated`) can neither read nor write app data,
 while the app's own database user, which owns the tables, is not affected. `tests/integration/rls.test.ts`
-fails if any table in the public schema lacks it (it also checks that the app's tables, including the tables from migrations 0004, 0005, `csv_imports` from 0006 and `note_mentions` from 0007, `activities` from 0008 and `files`, `file_uploads` and `file_cleanup` from 0011, exist). Migration files may only contain statements allowed inside a transaction.
+fails if any table in the public schema lacks it (it also checks that the app's tables, including the tables from migrations 0004, 0005, `csv_imports` from 0006 and `note_mentions` from 0007 and `activities` from 0008, exist). Migration files may only contain statements allowed inside a transaction.
 
 ## Connecting
 

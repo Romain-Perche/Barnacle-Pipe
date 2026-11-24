@@ -66,3 +66,19 @@ describe("docs/DECISIONS.md (SF-116)", () => {
     expect(sf116.some((l) => /Departs from blueprint/.test(l))).toBe(false);
   });
 });
+
+// covers SF-115 spec.md § Clarifications (Session 2026-11-24): the choices people made are recorded, one line each
+describe("docs/DECISIONS.md (SF-115)", () => {
+  const sf115 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-115)"));
+  it("records design B, the shared Show in list, the fixed type and the six confirmed choices", () => {
+    expect(sf115.slice(0, 3)).toEqual([
+      "- Custom fields use design B: a Custom fields admin page with a tab per kind and a table, the add and edit form and the delete confirmation in a box over the page; values in their own // MORE DETAILS section (SF-115)",
+      "- An admin ticks \"Show in list\" on a custom field; it is the same for every user, at most 8 per list (SF-115)",
+      "- A custom field's type cannot be changed: to change it, delete the field and add a new one (SF-115)",
+    ]);
+    expect(sf115).toHaveLength(9);
+    expect(sf115.some((l) => l.includes("archived person or deal") && l.includes("refused until it is restored"))).toBe(true);
+    expect(sf115.some((l) => l.includes("file_added and file_deleted"))).toBe(true);
+    expect(sf115.some((l) => l.startsWith("- Departs from blueprint"))).toBe(false);
+  });
+});

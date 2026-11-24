@@ -93,3 +93,17 @@ describe("activity deleted notice", () => {
     expect(await readFlash(["activity_deleted"])).toEqual({ text: "Activity deleted." });
   });
 });
+
+// covers SF-115 US4 scenario 2 ("Diet deleted.") and the choice refusals of the field box (names never in the address)
+describe("custom field notices", () => {
+  it("renders the delete notice and a choice refusal; ignores an unknown detail", async () => {
+    await setFlash({ code: "custom_field_deleted", name: "Diet" });
+    expect(await readFlash(["custom_field_deleted"])).toEqual({ text: "Diet deleted." });
+    await setFlash({ code: "custom_choice_error", name: "Vegan", detail: "custom_choice_exists" });
+    expect(await readFlash(["custom_choice_error"])).toEqual({ text: "There is already a choice called Vegan." });
+    await setFlash({ code: "custom_choice_error", name: "", detail: "custom_choice_last" });
+    expect(await readFlash(["custom_choice_error"])).toEqual({ text: "A choice field needs at least one choice." });
+    put({ code: "custom_choice_error", name: "x", detail: "deal_count" });
+    expect(await readFlash(["custom_choice_error"])).toBeUndefined();
+  });
+});

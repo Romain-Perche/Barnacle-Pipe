@@ -1,5 +1,7 @@
 // List addresses (contracts/list-query.md). Pure: searchParams in, a validated query out, and links back.
 // Invalid values are dropped (treated as absent), never echoed as messages.
+import { SORTABLE_TYPES, parseNumber, type CustomField } from "@/server/custom-fields/rules";
+import { parseDate, parseMoney } from "@/server/deals/rules";
 import { CONSENTS, SIZES, toId, type Consent, type Size } from "@/server/records/rules";
 
 export type Params = Record<string, string | string[] | undefined>;
@@ -10,6 +12,11 @@ export const ORGANISATION_SORTS = ["name", "people", "added"] as const;
 export const DEAL_SORTS = ["title", "value", "organisation", "stage", "owner", "close", "added"] as const;
 export const DEAL_STATUSES = ["open", "won", "lost"] as const;
 export const PAGE_SIZE = 50;
+// SF-115: a sort by a custom field shown in the list (`sort=cf<id>`).
+export type CustomSort = `cf${number}`;
+// SF-115: the list's custom filters, raw from the address (`cf<id>`, `cf<id>_from`, `cf<id>_to`); knownCustomQuery keeps
+// only those of fields shown in the list with a valid value.
+export type CustomQuery = Record<string, string>;
 
 export type PeopleQuery = {
   q: string;
@@ -18,13 +25,14 @@ export type PeopleQuery = {
   source: number | null;
   org: number | null;
   consent: Consent | null;
-  sort: (typeof PEOPLE_SORTS)[number];
+  sort: (typeof PEOPLE_SORTS)[number] | CustomSort;
   dir: Dir;
   page: number;
   archived: boolean;
   open: number | null;
   // SF-114: "Referred by" (a person id).
   ref: number | null;
+  custom: CustomQuery;
 };
 
 export type OrganisationsQuery = {
@@ -32,11 +40,12 @@ export type OrganisationsQuery = {
   owner: number | null;
   sector: string | null;
   size: Size | null;
-  sort: (typeof ORGANISATION_SORTS)[number];
+  sort: (typeof ORGANISATION_SORTS)[number] | CustomSort;
   dir: Dir;
   page: number;
   archived: boolean;
   open: number | null;
+  custom: CustomQuery;
 };
 
 // The deal list (SF-95 research.md §5): newest first by default; `status` is only used when closed or archived deals
@@ -48,7 +57,7 @@ export type DealsQuery = {
   owner: number | null;
   label: number | null;
   status: (typeof DEAL_STATUSES)[number] | null;
-  sort: (typeof DEAL_SORTS)[number];
+  sort: (typeof DEAL_SORTS)[number] | CustomSort;
   dir: Dir;
   page: number;
   closed: boolean;
@@ -56,6 +65,7 @@ export type DealsQuery = {
   open: number | null;
   // SF-114: "Referred by" (a person id).
   ref: number | null;
+  custom: CustomQuery;
 };
 
 // The Activities list (SF-109 contracts/routes.md § /activities): `assignee` null is the viewer, "all" everyone.
@@ -81,6 +91,26 @@ export function parseId(value: string | undefined | null): number | null {
   return toId(value ?? "");
 }
 
+const CUSTOM_KEY = /^cf[1-9][0-9]{0,15}(_from|_to)?$/;
+const CUSTOM_SORT = /^cf[1-9][0-9]{0,15}$/;
+const MAX_CUSTOM = 24;
+
+// SF-115 research.md §10: at most 24 non-empty `cf…` entries, each value trimmed and cut at 200 characters.
+function customParams(params: Params): CustomQuery {
+  const custom: CustomQuery = {};
+  for (const key of Object.keys(params)) {
+    if (Object.keys(custom).length >= MAX_CUSTOM) break;
+    if (!CUSTOM_KEY.test(key)) continue;
+    const value = first(params, key).trim().slice(0, 200);
+    if (value !== "") custom[key] = value;
+  }
+  return custom;
+}
+
+function sortOf<T extends string>(raw: string, allowed: readonly T[], fallback: T): T | CustomSort {
+  return oneOf(raw, allowed) ?? (CUSTOM_SORT.test(raw) ? (raw as CustomSort) : fallback);
+}
+
 function common(params: Params) {
   const page = Number(first(params, "page"));
   return {
@@ -102,12 +132,13 @@ export function parsePeopleQuery(params: Params): PeopleQuery {
     source: parseId(first(params, "source")),
     org: parseId(first(params, "org")),
     consent: oneOf(first(params, "consent"), CONSENTS),
-    sort: oneOf(first(params, "sort"), PEOPLE_SORTS) ?? "name",
+    sort: sortOf(first(params, "sort"), PEOPLE_SORTS, "name"),
     dir: c.dir,
     page: c.page,
     archived: c.archived,
     open: c.open,
     ref: parseId(first(params, "ref")),
+    custom: customParams(params),
   };
 }
 
@@ -119,11 +150,12 @@ export function parseOrganisationsQuery(params: Params): OrganisationsQuery {
     owner: c.owner,
     sector: sector === "" ? null : sector,
     size: oneOf(first(params, "size"), SIZES),
-    sort: oneOf(first(params, "sort"), ORGANISATION_SORTS) ?? "name",
+    sort: sortOf(first(params, "sort"), ORGANISATION_SORTS, "name"),
     dir: c.dir,
     page: c.page,
     archived: c.archived,
     open: c.open,
+    custom: customParams(params),
   };
 }
 
@@ -136,13 +168,14 @@ export function parseDealsQuery(params: Params): DealsQuery {
     owner: c.owner,
     label: parseId(first(params, "label")),
     status: oneOf(first(params, "status"), DEAL_STATUSES),
-    sort: oneOf(first(params, "sort"), DEAL_SORTS) ?? "added",
+    sort: sortOf(first(params, "sort"), DEAL_SORTS, "added"),
     dir: first(params, "dir") === "asc" ? "asc" : "desc",
     page: c.page,
     closed: first(params, "closed") === "1",
     archived: c.archived,
     open: c.open,
     ref: parseId(first(params, "ref")),
+    custom: customParams(params),
   };
 }
 
@@ -160,7 +193,7 @@ export function parseActivitiesQuery(params: Params): ActivitiesQuery {
 export function hasDealFilters(query: DealsQuery): boolean {
   return (
     query.q !== "" || query.pipeline !== null || query.stage !== null || query.owner !== null || query.label !== null ||
-    query.status !== null || query.closed || query.archived || query.ref !== null
+    query.status !== null || query.closed || query.archived || query.ref !== null || Object.keys(query.custom).length > 0
   );
 }
 
@@ -188,6 +221,51 @@ export function knownDealsQuery(
 // never filters, counts or shows back. Owner, label, source, organisation and consent are not private: unchanged.
 export function knownPeopleQuery(query: PeopleQuery, options: { referrers: readonly Known[] }): PeopleQuery {
   return { ...query, ref: query.ref !== null && options.referrers.some((o) => o.id === query.ref) ? query.ref : null };
+}
+
+// SF-115 (FR-012): only filters of fields shown in the list with a value valid for the type are kept (a choice of
+// the field, removed ones included; "empty" for a single choice or yes / no; yes / no; a number, an amount or a day that reads); a sort on a field that
+// is not shown or not sortable falls back to the list's default. Nothing else from the address is used.
+export function knownCustomQuery<Q extends PeopleQuery | OrganisationsQuery | DealsQuery>(query: Q, shown: readonly CustomField[]): Q {
+  const custom: CustomQuery = {};
+  for (const field of shown) {
+    const key = `cf${field.id}`;
+    const raw = query.custom[key];
+    const range = (check: (v: string) => boolean) => {
+      for (const end of ["_from", "_to"]) {
+        const v = query.custom[key + end];
+        if (v !== undefined && check(v)) custom[key + end] = v;
+      }
+    };
+    // "empty" (no value) is offered only for Single choice and Yes/No; for Text and Long text it is ordinary text.
+    if (raw === "empty" && (field.type === "single_choice" || field.type === "yes_no")) custom[key] = raw;
+    switch (field.type) {
+      case "text":
+      case "long_text":
+        if (raw !== undefined) custom[key] = raw;
+        break;
+      case "number":
+        range((v) => { const n = parseNumber(v); return n.ok && n.value !== null; });
+        break;
+      case "money":
+        range((v) => { const m = parseMoney(v); return m.ok && m.pence !== null; });
+        break;
+      case "date":
+        range((v) => { const d = parseDate(v); return d.ok && d.date !== null; });
+        break;
+      case "single_choice":
+      case "multiple_choice":
+        if (raw !== undefined && field.choices.some((c) => String(c.id) === raw)) custom[key] = raw;
+        break;
+      case "yes_no":
+        if (raw === "yes" || raw === "no") custom[key] = raw;
+        break;
+    }
+  }
+  const sortField = CUSTOM_SORT.test(query.sort) ? shown.find((f) => `cf${f.id}` === query.sort) : undefined;
+  const fallback = "closed" in query ? "added" : "name";
+  const sort = CUSTOM_SORT.test(query.sort) && !(sortField && SORTABLE_TYPES.includes(sortField.type)) ? fallback : query.sort;
+  return { ...query, custom, sort };
 }
 
 // The sector filter only keeps a value that is one of the sectors in use (matched ignoring case), so text
@@ -225,6 +303,9 @@ export function withParams<Q extends AnyQuery>(path: string, current: Q, changes
     }
     search.set(key, String(value));
   }
+  // SF-115: the custom filters, after the built-in keys, sorted by key.
+  const custom = (next.custom ?? {}) as CustomQuery;
+  for (const key of Object.keys(custom).sort()) search.set(key, custom[key]);
   const text = search.toString();
   return text ? `${path}?${text}` : path;
 }
@@ -235,5 +316,5 @@ export function hasFilters(query: PeopleQuery | OrganisationsQuery): boolean {
     "label" in query
       ? query.label !== null || query.source !== null || query.org !== null || query.consent !== null || query.ref !== null
       : query.sector !== null || query.size !== null;
-  return q !== "" || owner !== null || extra;
+  return q !== "" || owner !== null || extra || Object.keys(query.custom).length > 0;
 }

@@ -2,7 +2,9 @@
 // preview and the import itself. Every query on csv_imports names its user: only the user who started an import can
 // read or change it. No session state (Supabase's transaction-mode pooler): each change is one sql.begin().
 import { sql, type Sql } from "@/server/db";
-import { checkMapping, suggest, toField, toKind, type ColumnMapping, type ImportKind, type MappingError } from "@/server/imports/columns";
+import { listFields } from "@/server/custom-fields/fields";
+import { formatValue, type CustomField, type CustomValue, type RecordKind } from "@/server/custom-fields/rules";
+import { checkMapping, customFieldId, suggest, toField, toKind, type ColumnMapping, type ImportKind, type MappingError } from "@/server/imports/columns";
 import { MAX_BYTES, PART_BYTES, readFile, type CsvRow, type ReadResult } from "@/server/imports/csv";
 import {
   emptyLookups,
@@ -37,6 +39,12 @@ const CHUNK = 1000;
 const DAY = "24 hours";
 
 const isKind = (k: unknown): k is ImportKind => k === "people" || k === "organisations";
+const RECORD_KIND: Record<ImportKind, RecordKind> = { people: "person", organisations: "organisation" };
+
+// SF-115: the custom fields a people or organisations import can fill.
+export function importCustomFields(kind: ImportKind, db: Sql = sql, lock = false): Promise<CustomField[]> {
+  return listFields(RECORD_KIND[kind], db, lock);
+}
 
 // Deletes the user's unfinished imports and every import older than 24 hours, finished ones included (research.md §3).
 export async function purgeImports(db: Sql, userId: number): Promise<void> {
@@ -91,7 +99,7 @@ export async function finishUpload(userId: number, id: number): Promise<{ ok: tr
   if (!row.content || row.content.length !== row.size_bytes) return refuse("import_upload_failed");
   const file = readFile(row.content);
   if (!file.ok) return refuse(file.code);
-  const mapping = suggest(row.kind, file.headings);
+  const mapping = suggest(row.kind, file.headings, await importCustomFields(row.kind));
   await sql`
     update csv_imports set status = 'ready', row_count = ${file.rows.length}, mapping = ${sql.json(mapping)}
     where id = ${id} and user_id = ${userId} and status = 'uploading'`;
@@ -140,14 +148,17 @@ export async function saveColumns(
     select kind, status, mapping from csv_imports where id = ${id} and user_id = ${viewerId}`;
   if (!r) return { status: "not_found" };
   if (r.status !== "ready" || !r.mapping) return { status: r.status };
+  const custom = await importCustomFields(r.kind);
   const mapping: ColumnMapping = {
     columns: r.mapping.columns.map((c) => {
-      const field = toField(r.kind, choices.get(c.index)?.field);
+      const field = toField(r.kind, choices.get(c.index)?.field, custom);
       const base = { index: c.index, heading: c.heading, field };
+      const customName = custom.find((f) => f.id === customFieldId(field))?.name;
+      if (customName !== undefined) return { ...base, customName };
       return field === "email" || field === "phone" ? { ...base, kind: toKind(choices.get(c.index)?.kind) } : base;
     }),
   };
-  const error = checkMapping(r.kind, mapping);
+  const error = checkMapping(r.kind, mapping, custom);
   if (error) return { error };
   await sql`update csv_imports set mapping = ${sql.json(mapping)} where id = ${id} and user_id = ${viewerId} and status = 'ready'`;
   return { ok: true };
@@ -164,9 +175,11 @@ function wanted(kind: ImportKind, rows: CsvRow[], mapping: ColumnMapping) {
 
 type Display = { leadSources: Map<number, string>; labels: Map<number, string>; users: Map<number, string> };
 
-async function loadLookups(db: Sql, importerId: number, kind: ImportKind, rows: CsvRow[], mapping: ColumnMapping): Promise<{ lookups: Lookups; display: Display }> {
+// `lock`: inside the import's transaction, the custom fields are read `for share` (a delete waits, or has already run).
+async function loadLookups(db: Sql, importerId: number, kind: ImportKind, rows: CsvRow[], mapping: ColumnMapping, lock = false): Promise<{ lookups: Lookups; display: Display }> {
   const want = wanted(kind, rows, mapping);
   const lookups = emptyLookups(importerId);
+  lookups.customFields = await importCustomFields(kind, db, lock);
   const emails = await db<{ email: string; person_id: number }[]>`
     select e.email, e.person_id::int as person_id from person_emails e where e.email = any(${want.emails}::text[])`;
   for (const e of emails) lookups.emails.set(e.email, { personId: e.person_id });
@@ -203,7 +216,23 @@ function makePlan(kind: ImportKind, rows: CsvRow[], mapping: ColumnMapping, look
 export type Sample = { columns: string[]; rows: string[][] };
 const SAMPLE_SIZE = 5;
 
-function sampleOf(p: AnyPlan, display: Display, lookups: Lookups): Sample {
+// SF-115: the mapped custom fields still there, in the mapping's column order.
+function mappedCustom(mapping: ColumnMapping, fields: CustomField[]): CustomField[] {
+  return mapping.columns.flatMap((c) => fields.filter((f) => f.id === customFieldId(c.field)));
+}
+
+function sampleOf(p: AnyPlan, display: Display, lookups: Lookups, mapping: ColumnMapping): Sample {
+  const custom = mappedCustom(mapping, lookups.customFields);
+  const customCells = (values: { fieldId: number; value: CustomValue }[]) =>
+    custom.map((f) => formatValue(f, values.find((v) => v.fieldId === f.id)?.value ?? null));
+  const sample = withCustom(p, display, lookups);
+  return {
+    columns: [...sample.columns, ...custom.map((f) => f.name)],
+    rows: sample.rows.map((row, i) => [...row, ...customCells(p.plan.adds[i].custom)]),
+  };
+}
+
+function withCustom(p: AnyPlan, display: Display, lookups: Lookups): Sample {
   if (p.kind === "organisations") {
     return {
       columns: ["Name", "Website", "Sector", "Size", "Location", "Owner"],
@@ -257,7 +286,7 @@ export async function previewImport(viewerId: number, id: number): Promise<Previ
     warnings: p.plan.warnings,
     withoutEmail: p.plan.withoutEmail,
     needsConsent: p.plan.needsConsent,
-    sample: sampleOf(p, display, lookups),
+    sample: sampleOf(p, display, lookups, r.mapping),
     names: await namesForReport(viewerId, p.plan.skipped),
   };
 }
@@ -305,7 +334,7 @@ async function insertNewOrganisations(db: Sql, actorId: number, names: { key: st
   return new Map(names.map((o, i) => [o.key, ids[i]]));
 }
 
-async function importPeople(db: Sql, actorId: number, plan: ImportPlan<PersonToAdd>, consent: Consent | null): Promise<EventRow[]> {
+async function importPeople(db: Sql, actorId: number, plan: ImportPlan<PersonToAdd>, consent: Consent | null, fields: CustomField[]): Promise<EventRow[]> {
   const orgIds = await insertNewOrganisations(db, actorId, plan.newOrganisations);
   const ids = await newIds(db, "persons", plan.adds.length);
   const people = plan.adds.map((a, i) => ({
@@ -334,6 +363,7 @@ async function importPeople(db: Sql, actorId: number, plan: ImportPlan<PersonToA
   await inChunks(labels, (c) => db`
     insert into person_labels (person_id, label_id)
     select * from unnest(${col(c, (l) => l.personId)}::bigint[], ${col(c, (l) => l.labelId)}::bigint[])`);
+  await insertCustomValues(db, "people", fields, people);
   return [
     ...[...orgIds.values()].map((id) => ({ personId: null, organisationId: id, kind: "imported" as const, relatedPersonId: null })),
     ...people.map((p) => ({ personId: p.id, organisationId: null, kind: "imported" as const, relatedPersonId: null })),
@@ -343,7 +373,25 @@ async function importPeople(db: Sql, actorId: number, plan: ImportPlan<PersonToA
   ];
 }
 
-async function importOrganisations(db: Sql, actorId: number, plan: ImportPlan<OrganisationToAdd>): Promise<EventRow[]> {
+// SF-115: the custom values of the imported records, in bulk (one array per column); multiple choice as text '{1,2}'.
+// No timeline entry per value: the record has its "imported" entry (spec Clarifications).
+async function insertCustomValues(db: Sql, kind: ImportKind, fields: CustomField[], records: { id: number; custom: { fieldId: number; value: CustomValue }[] }[]) {
+  const byId = new Map(fields.map((f) => [f.id, f]));
+  const rows = records.flatMap((r) => r.custom.filter((c) => byId.has(c.fieldId)).map((c) => ({ id: r.id, field: byId.get(c.fieldId)!, value: c.value })));
+  const of = (row: (typeof rows)[number], types: CustomField["type"][]) => (types.includes(row.field.type) ? row.value : null);
+  const target = kind === "people" ? db`person_id` : db`organisation_id`;
+  await inChunks(rows, (c) => db`
+    insert into custom_values (field_id, ${target}, text_value, number_value, money_pence, date_value, choice_id, choice_ids, bool_value)
+    select field_id, target, text_value, number_value::numeric, money_pence, date_value::date, choice_id, choice_ids::bigint[], bool_value
+    from unnest(${col(c, (r) => r.field.id)}::bigint[], ${col(c, (r) => r.id)}::bigint[], ${col(c, (r) => of(r, ["text", "long_text"]) as string | null)}::text[],
+                ${col(c, (r) => of(r, ["number"]) as string | null)}::text[], ${col(c, (r) => of(r, ["money"]) as number | null)}::bigint[],
+                ${col(c, (r) => of(r, ["date"]) as string | null)}::text[], ${col(c, (r) => of(r, ["single_choice"]) as number | null)}::bigint[],
+                ${col(c, (r) => { const v = of(r, ["multiple_choice"]) as number[] | null; return v === null ? null : `{${v.join(",")}}`; })}::text[],
+                ${col(c, (r) => of(r, ["yes_no"]) as boolean | null)}::boolean[])
+         as t(field_id, target, text_value, number_value, money_pence, date_value, choice_id, choice_ids, bool_value)`);
+}
+
+async function importOrganisations(db: Sql, actorId: number, plan: ImportPlan<OrganisationToAdd>, fields: CustomField[]): Promise<EventRow[]> {
   const ids = await newIds(db, "organisations", plan.adds.length);
   const orgs = plan.adds.map((a, i) => ({ id: ids[i], ...a.fields }));
   await inChunks(orgs, (c) => db`
@@ -353,6 +401,7 @@ async function importOrganisations(db: Sql, actorId: number, plan: ImportPlan<Or
                 ${col(c, (o) => o.sector)}::text[], ${col(c, (o) => o.size)}::text[], ${col(c, (o) => o.location)}::text[],
                 ${col(c, (o) => o.ownerId)}::bigint[])
          as t(id, name, website, sector, size, location, owner_id)`);
+  await insertCustomValues(db, "organisations", fields, plan.adds.map((a, i) => ({ id: ids[i], custom: a.custom })));
   return ids.map((id) => ({ personId: null, organisationId: id, kind: "imported" as const, relatedPersonId: null }));
 }
 
@@ -370,10 +419,16 @@ export async function runImport(viewerId: number, id: number, consentChoice: str
     if (r.status !== "ready") return { status: "not_found" as const };
     if (r.kind === "people") await db`lock table organisations, person_emails in share row exclusive mode`;
     else await db`lock table organisations in share row exclusive mode`;
-    const { lookups } = await loadLookups(db, viewerId, r.kind, r.rows, r.mapping);
+    const { lookups } = await loadLookups(db, viewerId, r.kind, r.rows, r.mapping, true);
     const p = makePlan(r.kind, r.rows, r.mapping, lookups);
     if (p.kind === "people" && p.plan.needsConsent > 0 && consent === null) return { status: "consent_required" as const };
-    const events = p.kind === "people" ? await importPeople(db, viewerId, p.plan, consent) : await importOrganisations(db, viewerId, p.plan);
+    const fields = lookups.customFields;
+    const events = p.kind === "people" ? await importPeople(db, viewerId, p.plan, consent, fields) : await importOrganisations(db, viewerId, p.plan, fields);
+    // SF-115 US5 scenario 5: a mapped custom field deleted since the columns step is not used, and the report says so.
+    const goneFields = r.mapping.columns.flatMap((c) => {
+      const fieldId = customFieldId(c.field);
+      return fieldId !== null && !fields.some((f) => f.id === fieldId) ? [c.customName ?? ""] : [];
+    });
     await insertEvents(db, viewerId, events);
     const report: ImportReport = {
       imported: p.plan.adds.length,
@@ -381,6 +436,7 @@ export async function runImport(viewerId: number, id: number, consentChoice: str
       organisationsAddedNames: p.plan.newOrganisations.map((o) => o.name),
       skipped: p.plan.skipped,
       warnings: p.plan.warnings,
+      ...(goneFields.length > 0 ? { goneFields } : {}),
     };
     await db`
       update csv_imports set status = 'done', content = null, report = ${db.json(report)}, imported_at = now()

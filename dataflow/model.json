@@ -20,10 +20,6 @@
     {
       "id": "google",
       "label": "Google (third party)"
-    },
-    {
-      "id": "supabase",
-      "label": "Supabase Storage"
     }
   ],
   "groups": [
@@ -66,11 +62,6 @@
       "id": "deals-database",
       "label": "Deals database",
       "description": "The Postgres tables for pipelines, stages, deals, their stage time, labels, linked people and followers."
-    },
-    {
-      "id": "files",
-      "label": "Files",
-      "description": "Files on deals, people and organisations: upload, download and preview through signed Storage addresses."
     }
   ],
   "actors": [
@@ -90,11 +81,6 @@
       "id": "google-oauth-api",
       "label": "Google OAuth and userinfo API",
       "zone": "google"
-    },
-    {
-      "id": "supabase-storage",
-      "label": "Supabase Storage",
-      "zone": "supabase"
     }
   ],
   "processes": [
@@ -314,33 +300,15 @@
       ]
     },
     {
-      "id": "files",
-      "label": "Files section and routes",
+      "id": "custom-fields",
+      "label": "Custom fields",
       "zone": "app",
-      "group": "files",
+      "group": "records",
       "sources": [
-        "src/server/files/files.ts",
-        "src/app/(app)/records/file-actions.ts",
-        "src/app/(app)/files"
-      ]
-    },
-    {
-      "id": "storage-client",
-      "label": "Storage client",
-      "zone": "app",
-      "group": "files",
-      "sources": [
-        "src/server/files/storage.ts"
-      ]
-    },
-    {
-      "id": "fake-storage",
-      "label": "Fake Storage (dev and tests)",
-      "zone": "app",
-      "group": "files",
-      "sources": [
-        "src/server/files/fake-storage.ts",
-        "src/app/dev/fake-storage"
+        "src/app/(app)/admin/custom-fields",
+        "src/server/custom-fields/fields.ts",
+        "src/server/custom-fields/values.ts",
+        "src/server/custom-fields/rules.ts"
       ]
     }
   ],
@@ -535,13 +503,22 @@
       ]
     },
     {
-      "id": "files-tables",
-      "label": "Postgres files, file_uploads, file_cleanup",
-      "zone": "postgres",
+      "id": "custom-fields-table",
+      "label": "Custom fields and choices",
       "group": "database",
       "sources": [
-        "migrations/0011_files.sql"
-      ]
+        "migrations/0010_custom_fields.sql"
+      ],
+      "zone": "postgres"
+    },
+    {
+      "id": "custom-values-table",
+      "label": "Custom values",
+      "group": "database",
+      "sources": [
+        "migrations/0010_custom_fields.sql"
+      ],
+      "zone": "postgres"
     }
   ],
   "flows": [
@@ -1839,115 +1816,114 @@
     },
     {
       "from": "session-guard",
-      "to": "files",
-      "data": "signed-in user check",
+      "to": "custom-fields",
+      "data": "admin check, signed-in user",
       "sources": [
-        "src/app/(app)/records/file-actions.ts"
+        "src/server/auth/session.ts"
       ]
     },
     {
-      "from": "staff",
-      "to": "files",
-      "data": "file to add, delete and download requests",
+      "from": "admin",
+      "to": "custom-fields",
+      "data": "field and choice changes",
       "sources": [
-        "src/app/(app)/records/file-actions.ts",
-        "src/app/(app)/files"
+        "src/app/(app)/admin/custom-fields/actions.ts"
       ]
     },
     {
-      "from": "files",
-      "to": "staff",
-      "data": "file list, 303 to a 60-second Storage address",
+      "from": "custom-fields",
+      "to": "custom-fields-table",
+      "data": "field and choice definitions",
       "sources": [
-        "src/app/(app)/files/file-route.ts"
+        "src/server/custom-fields/fields.ts"
       ]
     },
     {
-      "from": "files",
-      "to": "files-tables",
-      "data": "file rows, upload records, cleanup queue",
+      "from": "custom-fields-table",
+      "to": "custom-fields",
+      "data": "field definitions for forms and lists",
       "sources": [
-        "src/server/files/files.ts"
+        "src/server/custom-fields/values.ts"
       ]
     },
     {
-      "from": "files-tables",
-      "to": "files",
-      "data": "visible files",
+      "from": "custom-fields",
+      "to": "custom-values-table",
+      "data": "saved record values",
       "sources": [
-        "src/server/files/files.ts"
+        "src/server/custom-fields/values.ts"
       ]
     },
     {
-      "from": "files",
+      "from": "custom-values-table",
+      "to": "custom-fields",
+      "data": "record values, list columns and filters",
+      "sources": [
+        "src/server/custom-fields/values.ts"
+      ]
+    },
+    {
+      "from": "custom-fields",
       "to": "timeline-table",
-      "data": "file added and deleted events",
+      "data": "custom field set, changed, cleared events",
       "sources": [
-        "src/server/files/files.ts"
+        "src/server/custom-fields/values.ts"
       ]
     },
     {
-      "from": "files",
-      "to": "storage-client",
-      "data": "upload, read and delete requests",
+      "from": "custom-fields",
+      "to": "people-pages",
+      "data": "custom inputs, values, filters",
       "sources": [
-        "src/server/files/files.ts"
+        "src/app/(app)/records/CustomInputs.tsx"
       ]
     },
     {
-      "from": "storage-client",
-      "to": "supabase-storage",
-      "data": "signed upload address, info, first bytes, deletes",
+      "from": "custom-fields",
+      "to": "organisations-pages",
+      "data": "custom inputs, values, filters",
       "sources": [
-        "src/server/files/storage.ts"
+        "src/app/(app)/records/CustomInputs.tsx"
       ]
     },
     {
-      "from": "supabase-storage",
-      "to": "storage-client",
-      "data": "signed addresses, file info and first bytes",
+      "from": "custom-fields",
+      "to": "deals-board",
+      "data": "custom inputs, values, filters",
       "sources": [
-        "src/server/files/storage.ts"
+        "src/app/(app)/records/CustomInputs.tsx"
       ]
     },
     {
-      "from": "staff",
-      "to": "supabase-storage",
-      "data": "file bytes (PUT to signed address)",
+      "from": "custom-fields",
+      "to": "csv-import",
+      "data": "custom field columns and cell checks",
       "sources": [
-        "src/app/(app)/records/AddFiles.tsx"
-      ]
-    },
-    {
-      "from": "storage-client",
-      "to": "fake-storage",
-      "data": "same calls when no Supabase is set",
-      "sources": [
-        "src/server/files/fake-storage.ts"
-      ]
-    },
-    {
-      "from": "env-settings",
-      "to": "storage-client",
-      "data": "SUPABASE_URL and key",
-      "sources": [
-        "src/server/env.ts"
+        "src/server/imports/columns.ts"
       ]
     },
     {
       "from": "migrate",
-      "to": "files-tables",
+      "to": "custom-fields-table",
       "data": "table definitions",
       "sources": [
-        "migrations/0011_files.sql"
+        "migrations/0010_custom_fields.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "custom-values-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0010_custom_fields.sql"
       ]
     },
     {
       "from": "seed",
-      "to": "files-tables",
-      "data": "fake files",
+      "to": "custom-fields-table",
+      "data": "fake custom fields and values",
       "sources": [
-        "src/seed/files.ts"
+        "src/seed/custom-fields.ts"
       ]
     }
   ]

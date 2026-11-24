@@ -24,6 +24,8 @@ describe("entryTag", () => {
   it("is NOTE for a note, CHANGE for another event, DEAL for a deal's entry", () => {
     expect(entryTag({ kind: "note", deal: null })).toBe("NOTE");
     expect(entryTag({ kind: "moved", deal: null })).toBe("CHANGE");
+    // covers FR-009 (SF-115): custom value entries are CHANGE entries
+    for (const kind of ["custom_set", "custom_changed", "custom_cleared"]) expect(entryTag({ kind, deal: null })).toBe("CHANGE");
     expect(entryTag({ kind: "note", deal: { id: 1, title: "x", archived: false } })).toBe("DEAL");
     expect(entryTag({ kind: "added", deal: { id: 1, title: "x", archived: false } })).toBe("DEAL");
   });

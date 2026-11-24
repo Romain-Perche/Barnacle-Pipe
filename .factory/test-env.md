@@ -91,6 +91,19 @@
   `file_added`/`file_deleted` plus SF-115's `custom_*` kinds), applied on a fresh database by `migrate.test.ts`, which also
   checks Postgres's own 23514 refusals (a file on two records or none, size 0 / 26214401, a 256-character name, kind
   `svg`, FILE events without their fields).
+  The custom fields code (SF-115: `src/server/custom-fields/` — `rules.ts`, `fields.ts`, `values.ts` — and the value saves
+  in `people.ts`, `organisations.ts`, `deals.ts` and the CSV import's `imports.ts`) keeps to the same pooler limits: no fake,
+  the real local PostgreSQL 17, no public schema on GitHub, follows
+  https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session advisory lock,
+  scanned by `tests/integration/migrate.test.ts`; only a transaction-level `pg_advisory_xact_lock` per kind while an admin
+  adds or reorders fields), one `sql.begin()` per change (admin changes re-check `isActiveAdmin` inside it; record values are
+  saved inside the record's own save transaction, the fields read `for share`), bulk inserts of imported values through
+  `unnest` arrays in chunks of 1,000. Its tables, columns and kinds come from `migrations/0010_custom_fields.sql`
+  (`custom_fields`, `custom_field_choices`, `custom_values`; `timeline_events.field_name`/`old_value`/`new_value`; kinds
+  `custom_set`/`custom_changed`/`custom_cleared`, plus SF-116's `file_added`/`file_deleted` in the shared kind check), applied
+  on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a 61-character or
+  `colour`-typed field, a second "diet" person field, a value row with two values or two targets, a second value for the
+  same field and person, a `custom_set` without a field name, an `edited` event with an old value). No new outside service.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -161,6 +174,14 @@
     £4,000), "… · app" (lost £1,500, "Fake: chose another supplier"), "… · audit" (open £2,000, private, Linus Fake's); notes by
     Ada Fake on "… · website" and on Dee. So Sales has 4 more deals and there are 44 fake people. For Ada, Cara's page shows
     People 3 · Deals 3 · Open £4,500 · Won £4,000 · Lost 1; for Linus, Deals 4 · Open £6,500.
+    SF-115 adds (seeder "custom-fields", after ambassadors) nine "(fake)" custom fields: people Diet (single choice None /
+    Vegetarian / Vegan / Pescatarian (removed), in list), Birthday (date), Newsletter topics (multiple choice AI / Events /
+    Hiring, in list), Head count met (number), Notes (long text); organisations Account code (text, in list), Annual budget
+    (money, in list); deals Contract end (date, in list), Signed NDA (yes/no, in list). Values: Cara Example (Diet Vegan,
+    Birthday 24 Nov 1990, topics AI + Events, Notes on two lines), Dora Privatefake (private, Linus Fake's: Diet Vegetarian),
+    Ben Referredfake (the removed choice Pescatarian, Head count 12), Dee Referredfake (Hiring), Sample Studios Fake
+    (FAKE-001, £25,000), "Fake referral · website" (31 Mar 2027, NDA Yes) and the private "… · audit" (15 Jan 2027, NDA No),
+    each with a "<Field> set to <value>" timeline entry by the record's creator.
   - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
     1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
@@ -340,6 +361,20 @@
     recreates crm_dev/crm_test, follows the README (install, `.env.local`, migrate, seed, dev server shows the fake
     login), then `npm test`, `npm run typecheck`.
   - Stop servers by pid (`ss -ltnp | grep next-server`), not `pkill -f next…`: that also kills the calling shell.
+  - SF-115 (custom fields) AI-review scripts, against :3000/crm_dev, each on fresh fake data
+    (`bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/<script>`); helpers in
+    `sf115-lib.js` (`q` runs SQL on `$DB`, `addField`, `more` = text of a page's // MORE DETAILS; record pages are
+    uppercase in `innerText`, so match names case-insensitively; the delete box is `role="alertdialog"`, the add/edit box
+    `role="dialog"`). The seed's person fields are ids 1–5 (Diet single choice with removed "Pescatarian", Birthday date,
+    Newsletter topics multiple, Head count number, Notes long text), organisation 6–7, deal 8–9 (Contract end, Signed NDA).
+    Persons 36 (Cara), 38–42 are visible to Ada; 37 (Dora) is private to Linus; 31 (Fay Mockup) archived; 35 (Sam) Alan's.
+    Edge numbers follow the spec after fix round 1 (Edge 7 is the "empty" text filter; the old 7–12 are now 8–13).
+    - `scenarios-sf115-us1.js`: US1 1–8, edges 1, 2, 4, 10 (admin page, non-admin action replay).
+    - `scenarios-sf115-us2.js`: US2 1–7, edges 3, 5, 8, 9, 11, 12 (forms, pages, drawer, timeline, archived, hand-over).
+    - `scenarios-sf115-us3-4-6.js`: US3 1–5, US4 1–5, US6 1–3, edges 6, 13 (lists as Grace, delete box, privacy).
+    - `scenarios-sf115-edge7.js`: edge 7 (`cf<id>=empty` on a Text / Long text filter is text; "Empty" only on Single choice / Yes/No).
+    - `scenarios-sf115-us5.js`: US5 1–5 (CSV import; preview needs the consent radio "Subscribed"). Import warnings list rows
+      as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
 
 ## Smoke checks
 1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json

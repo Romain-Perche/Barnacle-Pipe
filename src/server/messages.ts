@@ -107,6 +107,21 @@ export const messages = {
   referrer_self: "A person can't be their own referrer.",
   referrer_invalid: "Choose an ambassador from the list.",
   no_people_referred: "No people referred yet.",
+  // SF-115: custom fields
+  custom_field_name_required: "Give the field a name.",
+  custom_field_name_too_long: "A field name can be at most 60 characters.",
+  custom_field_type_required: "Choose a type.",
+  custom_choices_required: "Add at least one choice.",
+  custom_choice_name_required: "Give the choice a name.",
+  custom_choice_name_too_long: "A choice name can be at most 60 characters.",
+  custom_choice_twice: "Two choices have the same name.",
+  custom_choice_last: "A choice field needs at least one choice.",
+  custom_choice_removed_exists: "A removed choice has this name. Add it again to bring it back.",
+  custom_fields_limit: "A kind can have at most 50 custom fields.",
+  custom_choices_limit: "A field can have at most 100 choices.",
+  custom_list_limit: "At most 8 custom fields can be shown in a list.",
+  custom_fields_empty: "No custom fields yet.",
+  custom_record_archived: "Restore this record before changing its custom fields.",
   no_deals_referred: "No deals referred yet.",
   no_longer_ambassador: "No longer an ambassador",
   referred_by_private: "Referred by a private person",
@@ -150,6 +165,7 @@ const privateDeals = (n: number) => (n === 1 ? "1 private deal" : `${n} private 
 const recordLabels = (people: number, deals: number) => [people > 0 ? privatePeople(people) : "", deals > 0 ? privateDeals(deals) : ""].filter(Boolean);
 // SF-103: "(row 7)" / "(rows 4, 9)"
 const rowsNote = (rows: number[]) => (rows.length === 1 ? `(row ${rows[0]})` : `(rows ${rows.join(", ")})`);
+const KIND_WORDS = { person: ["person", "people"], organisation: ["organisation", "organisations"], deal: ["deal", "deals"] } as const;
 const counted = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const recordsPhrase = (people: number, deals: number) => recordLabels(people, deals).join(" and ");
 
@@ -226,14 +242,43 @@ export const templates = {
   // One-shot notices (flash.ts) after a file delete
   file_deleted: (_name: string) => messages.file_deleted,
   file_not_found: (_name: string) => messages.file_not_found,
+  // SF-115: custom fields; field, choice and value texts come from the database
+  custom_field_exists: (name: string) => `There is already a field called ${name}.`,
+  custom_choice_exists: (name: string) => `There is already a choice called ${name}.`,
+  custom_text_too_long: (name: string) => `${name}: at most 255 characters.`,
+  custom_long_text_too_long: (name: string) => `${name}: at most 10,000 characters.`,
+  custom_number_invalid: (name: string) => `${name}: enter a number.`,
+  custom_number_decimals: (name: string) => `${name}: at most 4 decimal places.`,
+  custom_number_range: (name: string) => `${name}: enter a number between -1,000,000,000,000 and 1,000,000,000,000.`,
+  custom_money_invalid: (name: string) => `${name}: enter an amount in pounds, for example 4000 or 4000.50.`,
+  custom_date_invalid: (name: string) => `${name}: enter a real date.`,
+  custom_choice_invalid: (name: string) => `${name}: choose one of the choices.`,
+  custom_delete_count: (n: number, kind: "person" | "organisation" | "deal", name: string) =>
+    `${counted(n, KIND_WORDS[kind][0] + " has", KIND_WORDS[kind][1] + " have")} a value in ${name}. Deleting the field deletes these values for good.`,
+  custom_delete_none: (name: string) => `No record has a value in ${name}.`,
+  custom_field_deleted: (name: string) => `${name} deleted.`,
+  custom_set_event: (field: string, value: string) => `${field} set to ${value}`,
+  custom_changed_event: (field: string, from: string, to: string) => `${field} changed from ${from} to ${to}`,
+  custom_changed_plain: (field: string) => `${field} changed`,
+  custom_cleared_event: (field: string) => `${field} cleared`,
+  import_custom_choice_unknown: (field: string, value: string, rows: number[]) => `${field}: "${value}" is not one of its choices and was not set. ${rowsNote(rows)}`,
+  import_custom_unreadable: (field: string, value: string, rows: number[]) => `${field}: "${value}" could not be read and was left empty. ${rowsNote(rows)}`,
+  import_custom_field_gone: (name: string) => `${name} was deleted before the import ran: its column was not imported.`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;
+
+// SF-115: messages that name a custom field or choice (the name comes from the database or the admin's own input).
+const NAMED_CODES = ["custom_field_exists", "custom_choice_exists", "custom_text_too_long", "custom_long_text_too_long", "custom_number_invalid",
+  "custom_number_decimals", "custom_number_range", "custom_money_invalid", "custom_date_invalid", "custom_choice_invalid"] as const;
 
 // A form field's message: a template when the server gave a name, else a fixed text.
 export function fieldMessage(error: { code: string; name?: string }): string | undefined {
   if (error.name !== undefined && (error.code === "duplicate_email" || error.code === "organisation_exists" || error.code === "mention_cannot_see" || error.code === "assignee_cannot_see")) {
     return templates[error.code](error.name);
+  }
+  if (error.name !== undefined && (NAMED_CODES as readonly string[]).includes(error.code)) {
+    return templates[error.code as (typeof NAMED_CODES)[number]](error.name);
   }
   return messageFor(error.code);
 }

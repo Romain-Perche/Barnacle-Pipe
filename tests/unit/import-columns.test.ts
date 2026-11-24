@@ -95,3 +95,29 @@ describe("exampleCsv", () => {
     expect(suggest("organisations", file.headings).columns.every((c) => c.field !== "skip")).toBe(true);
   });
 });
+
+// covers SF-115 FR-013, US5 scenario 1: custom fields as targets, suggested by name before built-in aliases, one column each
+import { checkMapping as checkCustom, fieldLabel as labelOf, fieldsFor as fieldsOf, suggest as suggestCustom, toField as toFieldCustom } from "@/server/imports/columns";
+import type { CustomField } from "@/server/custom-fields/rules";
+describe("custom field targets", () => {
+  const source: CustomField = { id: 7, kind: "person", name: "Source", type: "text", position: 1, inList: false, choices: [] };
+  const diet: CustomField = { id: 8, kind: "person", name: "Dietary needs", type: "single_choice", position: 2, inList: false, choices: [] };
+  it("offers custom fields after the built-in fields", () => {
+    const keys = fieldsOf("people", [source, diet]).map((f) => f.key);
+    expect(keys.slice(-2)).toEqual(["custom:7", "custom:8"]);
+    expect(labelOf("people", "custom:8", [source, diet])).toBe("Dietary needs");
+    expect(toFieldCustom("people", "custom:8", [diet])).toBe("custom:8");
+    expect(toFieldCustom("people", "custom:9", [diet])).toBe("skip");
+  });
+  it("suggests a heading equal to the field name (case, spaces, punctuation ignored) before a built-in alias", () => {
+    const m = suggestCustom("people", ["First name", "SOURCE", "dietary-needs", "Lead source", "Source"], [source, diet]);
+    expect(m.columns.map((c) => c.field)).toEqual(["first_name", "custom:7", "custom:8", "lead_source", "skip"]);
+    expect(m.columns[2].customName).toBe("Dietary needs");
+    // Without the custom field, "Source" is the lead source as before.
+    expect(suggestCustom("people", ["Source"]).columns[0].field).toBe("lead_source");
+  });
+  it("lets a custom field take one column", () => {
+    const mapping = { columns: [{ index: 0, heading: "a", field: "first_name" as const }, { index: 1, heading: "b", field: "custom:8" as const }, { index: 2, heading: "c", field: "custom:8" as const }] };
+    expect(checkCustom("people", mapping, [diet])).toEqual({ code: "import_one_column", field: "custom:8" });
+  });
+});

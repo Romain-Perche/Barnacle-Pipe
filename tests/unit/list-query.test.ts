@@ -3,14 +3,15 @@
 import { describe, expect, it } from "vitest";
 import {
   hasDealFilters, hasFilters, knownDealsQuery, knownPeopleQuery, knownSector, parseActivitiesQuery, parseDealsQuery, parseId, parseOrganisationsQuery,
-  parsePeopleQuery, withParams,
+  parsePeopleQuery, withParams, knownCustomQuery,
 } from "@/server/records/list-query";
+import type { CustomField } from "@/server/custom-fields/rules";
 
 describe("parsePeopleQuery", () => {
   it("has the defaults: sort by name A–Z, page 1, no filter", () => {
     expect(parsePeopleQuery({})).toEqual({
       q: "", owner: null, label: null, source: null, org: null, consent: null,
-      sort: "name", dir: "asc", page: 1, archived: false, open: null, ref: null,
+      sort: "name", dir: "asc", page: 1, archived: false, open: null, ref: null, custom: {},
     });
   });
   it("reads every parameter", () => {
@@ -21,7 +22,7 @@ describe("parsePeopleQuery", () => {
       }),
     ).toEqual({
       q: "ada", owner: 2, label: 3, source: 4, org: 5, consent: "unsubscribed",
-      sort: "contacted", dir: "desc", page: 3, archived: true, open: 7, ref: null,
+      sort: "contacted", dir: "desc", page: 3, archived: true, open: 7, ref: null, custom: {},
     });
     for (const sort of ["name", "organisation", "added", "contacted"]) expect(parsePeopleQuery({ sort }).sort).toBe(sort);
   });
@@ -45,7 +46,7 @@ describe("parsePeopleQuery", () => {
 describe("parseOrganisationsQuery", () => {
   it("has the defaults", () => {
     expect(parseOrganisationsQuery({})).toEqual({
-      q: "", owner: null, sector: null, size: null, sort: "name", dir: "asc", page: 1, archived: false, open: null,
+      q: "", owner: null, sector: null, size: null, sort: "name", dir: "asc", page: 1, archived: false, open: null, custom: {},
     });
   });
   it("reads sector, size and the three sorts; ignores the rest", () => {
@@ -103,7 +104,7 @@ describe("parseDealsQuery", () => {
   it("has the defaults: newest first, page 1, open deals only", () => {
     expect(parseDealsQuery({})).toEqual({
       q: "", pipeline: null, stage: null, owner: null, label: null, status: null,
-      sort: "added", dir: "desc", page: 1, closed: false, archived: false, open: null, ref: null,
+      sort: "added", dir: "desc", page: 1, closed: false, archived: false, open: null, ref: null, custom: {},
     });
   });
   it("reads every parameter and the seven sorts", () => {
@@ -114,7 +115,7 @@ describe("parseDealsQuery", () => {
       }),
     ).toEqual({
       q: "fake", pipeline: 1, stage: 2, owner: 3, label: 4, status: "won", sort: "value", dir: "asc", page: 2,
-      closed: true, archived: true, open: 8, ref: null,
+      closed: true, archived: true, open: 8, ref: null, custom: {},
     });
     for (const sort of ["title", "value", "organisation", "stage", "owner", "close", "added"]) expect(parseDealsQuery({ sort }).sort).toBe(sort);
     for (const status of ["open", "won", "lost"]) expect(parseDealsQuery({ status }).status).toBe(status);
@@ -246,5 +247,60 @@ describe("parseActivitiesQuery", () => {
     expect(withParams("/activities", parseActivitiesQuery({}), { when: "planned" })).toBe("/activities");
     const mine = withParams("/activities", q, { assignee: 5, type: null });
     expect(parseActivitiesQuery(Object.fromEntries(new URL(mine, "http://x").searchParams))).toEqual({ when: "today", assignee: 5, type: null, page: 1 });
+  });
+});
+
+// covers SF-115 FR-010, FR-012, US3 scenario 4: custom filters and sorts in the list address
+describe("custom fields in list addresses", () => {
+  const f = (id: number, type: CustomField["type"], over: Partial<CustomField> = {}): CustomField =>
+    ({ id, kind: "person", name: `F${id}`, type, position: id, inList: true, choices: [], ...over });
+  const diet = f(1, "single_choice", { choices: [{ id: 11, name: "Vegan", position: 1, removed: false }, { id: 12, name: "Old", position: 2, removed: true }] });
+  const shown = [diet, f(2, "text"), f(3, "number"), f(4, "money"), f(5, "date"), f(6, "yes_no"), f(7, "long_text"),
+    f(8, "multiple_choice", { choices: [{ id: 81, name: "AI", position: 1, removed: false }] })];
+
+  it("collects cf<id>, cf<id>_from and cf<id>_to (at most 24, values cut at 200) and sort=cf<id>", () => {
+    const q = parsePeopleQuery({ cf1: "11", cf3_from: " 2 ", cf3_to: "9", other: "x", cfx: "y", cf2: "x".repeat(300), sort: "cf2" });
+    expect(q.custom).toEqual({ cf1: "11", cf3_from: "2", cf3_to: "9", cf2: "x".repeat(200) });
+    expect(q.sort).toBe("cf2");
+    const many = Object.fromEntries(Array.from({ length: 30 }, (_, i) => [`cf${i + 1}`, "a"]));
+    expect(Object.keys(parseDealsQuery(many).custom)).toHaveLength(24);
+    expect(parseOrganisationsQuery({ cf9: "a", sort: "cf9" })).toMatchObject({ custom: { cf9: "a" }, sort: "cf9" });
+  });
+
+  it("keeps only shown fields with a valid value; drops the rest (FR-012)", () => {
+    const q = parsePeopleQuery({
+      cf1: "12", cf2: "vegan", cf3_from: "1,000", cf3_to: "abc", cf4_from: "£10", cf4_to: "-1", cf5_from: "2026-01-01", cf5_to: "2026-02-30",
+      cf6: "maybe", cf7: "empty", cf8: "81", cf99: "x", cf2_from: "1",
+    });
+    expect(knownCustomQuery(q, shown).custom).toEqual({ cf1: "12", cf2: "vegan", cf3_from: "1,000", cf4_from: "£10", cf5_from: "2026-01-01", cf7: "empty", cf8: "81" });
+    expect(knownCustomQuery(parsePeopleQuery({ cf1: "99" }), shown).custom).toEqual({});
+    expect(knownCustomQuery(parsePeopleQuery({ cf1: "empty", cf6: "no" }), shown).custom).toEqual({ cf1: "empty", cf6: "no" });
+    // covers SF-115 fix round 1 (US3 scenario 3, FR-012): "empty" means "no value" only for Single choice and Yes/No;
+    // for text it is ordinary text, for number, money, date and multiple choice it is dropped.
+    expect(knownCustomQuery(parsePeopleQuery({ cf2: "empty", cf3: "empty", cf4: "empty", cf5: "empty", cf6: "empty", cf8: "empty" }), shown).custom)
+      .toEqual({ cf2: "empty", cf6: "empty" });
+    // A field not shown in the list (or of another kind) is dropped.
+    expect(knownCustomQuery(parsePeopleQuery({ cf2: "a" }), shown.filter((x) => x.id !== 2)).custom).toEqual({});
+  });
+
+  it("drops a sort on an unknown, hidden, long text or multiple choice field", () => {
+    expect(knownCustomQuery(parsePeopleQuery({ sort: "cf3", dir: "desc" }), shown)).toMatchObject({ sort: "cf3", dir: "desc" });
+    for (const sort of ["cf7", "cf8", "cf99"]) expect(knownCustomQuery(parsePeopleQuery({ sort }), shown).sort).toBe("name");
+    expect(knownCustomQuery(parseDealsQuery({ sort: "cf99" }), shown).sort).toBe("added");
+    expect(knownCustomQuery(parseOrganisationsQuery({ sort: "cf99" }), shown).sort).toBe("name");
+  });
+
+  it("writes custom entries after the built-in keys, sorted, and goes back to page 1", () => {
+    const q = knownCustomQuery(parsePeopleQuery({ cf2: "a b", cf1: "11", owner: "3", page: "2" }), shown);
+    expect(withParams("/people", q, { sort: "cf3", dir: "desc" })).toBe("/people?owner=3&sort=cf3&dir=desc&cf1=11&cf2=a+b");
+    expect(withParams("/people", q, { custom: {} })).toBe("/people?owner=3");
+    expect(withParams("/people", q, { page: 3 })).toBe("/people?owner=3&page=3&cf1=11&cf2=a+b");
+  });
+
+  it("counts custom filters as filters", () => {
+    expect(hasFilters(parsePeopleQuery({ cf1: "11" }))).toBe(true);
+    expect(hasFilters(parseOrganisationsQuery({ cf1: "11" }))).toBe(true);
+    expect(hasDealFilters(parseDealsQuery({ cf1: "11" }))).toBe(true);
+    expect(hasFilters(parsePeopleQuery({}))).toBe(false);
   });
 });
