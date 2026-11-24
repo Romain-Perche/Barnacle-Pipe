@@ -192,3 +192,33 @@ because it is shared by the three record kinds and the drawer.
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
 None.
+
+## Fix round 1
+
+AI review: 34 of 37 scenarios pass. Three fail.
+
+1. **An upload over 10 MB fails in development and test (US1-3, SC-002).**
+   - Cause: the `src/proxy.ts` matcher runs on `/dev/fake-storage/*`. Next's proxy reads the request body and cuts it at
+     10 MB (`proxyClientMaxBodySize`), so the PUT of a 25 MB file to the fake Storage fails. Production uploads go
+     straight to Supabase and are not affected. Build's tests call the fake in-process, so they miss it.
+   - Fix: leave `dev/fake-storage` out of the matcher (add it to the negative lookahead beside `_next/static`). The
+     path is already public and the fake checks its own tokens, so the proxy does nothing useful there. Drop the
+     `/dev/fake-storage` entry of `PUBLIC` (dead once the matcher skips it) and update the file's head comment. No
+     global body-size raise in `next.config.ts`: it would let every proxied request carry 25 MB for a dev-only need.
+2. **`[ DELETE ]` on a file someone else already deleted shows nothing (US5-2).**
+   - Cause: `FileOverlays` returns `null` when `pageFile` finds no file for `?delete-file=<id>`.
+   - Fix: when the record is not archived and `pageFile` finds nothing, ask `fileAccess(viewerId, id)` and redirect to
+     `back` with `error=file_gone` when it answers "gone", else `error=file_not_found` (hidden, never existed, or a file
+     of another record). `FilesSection` already shows these notices from `?error=`. Archived records keep opening
+     nothing (Edge case 1 passes as it is). A `?delete-file=` value that is not an id also gives `file_not_found`.
+3. **With Storage unreachable, the image preview box opens with a broken image (Edge case 8).**
+   - Cause: `FileOverlays` opens the box without calling Storage; only the `<img>` request to `/files/<id>/preview`
+     meets the failure, and an image cannot show a message.
+   - Fix: for `?file=<id>` of a visible image, make the 60-second read address in the overlay (`signedUrl`, no
+     download name) before showing the box, and use it as the `<img src>` with `referrerPolicy="no-referrer"`. On
+     `StorageUnreachable`, redirect to `back` with `error=files_unreachable` (the existing notice). The box shows only
+     after the address was made. The `/files/<id>/preview` route is unchanged (PDF previews and timeline links use it).
+     `?file=` of a missing or hidden file keeps opening nothing (no scenario asks otherwise).
+
+Files to change: `src/proxy.ts`, `src/app/(app)/records/FileOverlays.tsx`; tests in `tests/unit/proxy-matcher.test.ts`
+(new) and `tests/integration/files-actions.test.ts`. No new dependency, no migration, no new message, no spec change.

@@ -467,3 +467,24 @@ Task: "Extend tests/unit/timeline-view.test.ts with the FILE tag"
   - The seed is in the Polish phase because it needs every story's code.
   - "Bob Fake" in the spec is Grace Fake, the second admin of the fake users.
 - **The fake**: the only Storage fake is new and is checked against the schema (T014). No existing fake is extended without a schema check.
+
+## Fix round 1 (AI review)
+
+- [ ] T047 [P] Write `tests/unit/proxy-matcher.test.ts` first (`// covers US1 scenario 3, SC-002`): with
+  `unstable_doesMiddlewareMatch` from `next/experimental/testing/server` and `config` from `src/proxy.ts`, check that
+  `/dev/fake-storage/object/upload/sign/files/<uuid>?token=x` and `/dev/fake-storage/object/sign/files/<uuid>` do not
+  match, and that `/deals`, `/files/1/download`, `/sign-in` and `/dev/fake-google` still match. It fails now (the
+  fake-storage paths match).
+- [ ] T048 Leave `dev/fake-storage` out of the matcher in `src/proxy.ts`, drop its now-dead `PUBLIC` entry and fix the
+  head comment (plan.md § Fix round 1, item 1). T047 passes.
+- [ ] T049 [P] Extend `tests/integration/files-actions.test.ts` first, rendering `FileOverlays` as the
+  `/files/unavailable` tests do and catching the `NEXT_REDIRECT` error (read its digest for the target):
+  (a) `// covers US5 scenario 2`: after a file is deleted, `?delete-file=<its id>` on a non-archived record redirects to
+  `back` with `error=file_gone`; a file of a hidden record and an id that never existed redirect with
+  `error=file_not_found`; an archived record still renders nothing; (b) `// covers Edge case 8`: with the Storage
+  fetch made to throw (`useStorageFetchForTests` with a fetch that rejects), `?file=<visible image id>` redirects to
+  `back` with `error=files_unreachable` and renders no `<img>`; with the fake Storage, it renders the box with an
+  `<img>` whose `src` is a signed Storage address of that file and `referrerpolicy="no-referrer"`. Both fail now.
+- [ ] T050 Change `src/app/(app)/records/FileOverlays.tsx` as plan.md § Fix round 1, items 2 and 3 say. T049 passes.
+- [ ] T051 Run `npm run typecheck` and `npm test` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`;
+  fix every failure, keep the full failure output when reporting.
