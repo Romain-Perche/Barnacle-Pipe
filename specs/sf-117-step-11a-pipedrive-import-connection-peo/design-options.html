@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SF-117 · Pipedrive import · design options</title>
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626; --ok: #16A34A;
+    --wash: rgba(43,0,255,.05); --warnwash: rgba(255,66,0,.07); --panel: #FFFFFF; --page: #EDE7DF;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --warnwash: rgba(255,66,0,.12); --panel: #232323; --page: #0E0E0E;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(640px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+
+  .app { display: grid; grid-template-columns: 130px 1fr; height: 660px; border: .5px solid var(--line); overflow: hidden; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 8px; margin-bottom: 22px; display: flex; gap: 6px; align-items: center; }
+  .wm i { display: inline-block; width: 10px; height: 10px; background: #FF4201; transform: rotate(45deg); }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .grp b { color: var(--orange); }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 16px; overflow: hidden; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 10px; margin-bottom: 12px; gap: 8px; }
+  .ph .lb { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+  .ph h2 { margin: 3px 0 0; font-size: 20px; font-weight: 700; }
+  .back { font-family: var(--mono); font-size: 9px; color: var(--blue); letter-spacing: .05em; }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 5px 8px; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.off { opacity: .35; }
+  .sel { border: .5px solid var(--line); background: var(--panel); padding: 3px 5px; font-family: var(--mono); font-size: 9px; color: var(--ink); white-space: nowrap; display: inline-block; min-width: 120px; }
+  .sel.none { color: var(--muted); }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 12px 0 6px; border-top: .5px solid var(--line); padding-top: 8px; display: flex; justify-content: space-between; }
+  .sect .c { color: var(--orange); }
+  .sect.done { color: var(--muted); }
+  .ok { color: var(--ok); }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { font-family: var(--mono); font-size: 7.5px; letter-spacing: .2em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 4px; border-bottom: .5px solid var(--line-soft); }
+  td { padding: 4px; border-bottom: .5px solid var(--line-list); vertical-align: middle; }
+  td .m { color: var(--muted); display: block; font-size: 9px; }
+  .file { border: .5px dashed var(--line); padding: 8px; font-family: var(--mono); font-size: 9px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .hint { color: var(--muted); font-size: 10px; margin: 4px 0; }
+  .notice { border-left: 3px solid var(--blue); background: var(--wash); border-radius: 0 6px 6px 0; padding: 6px 9px; font-size: 10px; margin: 6px 0; }
+  .err { border-left: 3px solid var(--orange); background: var(--warnwash); border-radius: 0 6px 6px 0; padding: 6px 9px; font-size: 10px; margin: 6px 0; }
+  .radio { font-size: 10px; display: flex; gap: 12px; align-items: center; margin: 4px 0; }
+  .radio i { display: inline-block; width: 9px; height: 9px; border: .5px solid var(--line); border-radius: 50%; margin-right: 4px; vertical-align: -1px; background: var(--panel); }
+  .count { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .1em; }
+  .acts { display: flex; gap: 6px; margin-top: 10px; }
+  .steps { display: flex; gap: 0; margin-bottom: 12px; font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .15em; }
+  .steps span { flex: 1; border: .5px solid var(--line); padding: 6px 7px; color: var(--muted); margin-right: -0.5px; }
+  .steps span.done { color: var(--ink); }
+  .steps span.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .two { display: grid; grid-template-columns: 1fr 210px; gap: 12px; align-items: start; }
+  .panel { background: var(--panel); border-left: .5px solid var(--line); padding: 10px; }
+  .big { font-size: 22px; font-weight: 700; line-height: 1; }
+  .k { font-family: var(--mono); font-size: 7.5px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-top: 8px; }
+  .v { font-size: 10px; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  .o { color: var(--orange); }
+</style>
+<style>
+  .bar { height: 8px; border: .5px solid var(--line); background: var(--panel); margin: 3px 0 8px; }
+  .bar i { display: block; height: 100%; background: var(--blue); }
+  .cb { font-size: 10px; margin: 4px 0; } .cb i { display:inline-block; width:9px; height:9px; border:.5px solid var(--line); margin-right:5px; vertical-align:-1px; background:var(--panel); }
+  .cb i.on { background: var(--blue); border-color: var(--blue); }
+  .field { border: .5px solid var(--line); background: var(--panel); padding: 5px 6px; font-family: var(--mono); font-size: 9px; color: var(--muted); flex: 1; }
+  .line { display:flex; gap:6px; align-items:center; margin: 6px 0; }
+  .me .st { color:#fff; font-weight:700; letter-spacing:.1em; margin-bottom:4px; }
+  .mini { height: 300px; }
+  .state { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .2em; color: var(--blue); }
+  .log td { font-size: 9px; }
+</style>
+</head><body>
+<header class="top"><div class="label"><span class="c">//</span> SF-117 · PIPEDRIVE IMPORT</div>
+<h1>Import from Pipedrive: three designs</h1>
+<p>Top: the import running (3,000 people, 800 organisations in a fake Pipedrive). Bottom: the start or the report. In every design the token is saved in the "// PIPEDRIVE" section of the new Settings page (link at the bottom of the sidebar); the token is never shown.</p></header>
+<div class="grid"><figure><div class="tag"><b>A</b> All on the Settings page</div>
+<div class="app"><aside class="side"><div class="wm"><i></i>BARNACLE_LABS</div><div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications</span></div><div class="grp"><b>//</b> ADMIN</div><div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div><div class="me"><div class="n">Ada Fake</div><div class="st">SETTINGS ●</div><div class="so">[ SIGN OUT ]</div></div></aside><div class="main">
+<div class="ph"><div><div class="lb"><span class="c">//</span> YOU</div><h2>Settings</h2></div></div>
+<div class="sect"><span><span class="c">//</span> PIPEDRIVE</span></div>
+<div class="notice">Connected to Pipedrive as Fake Person (Fakeco Pipedrive). Token saved on 24 Nov 2026.</div>
+<div class="acts"><span class="btn">[ REPLACE TOKEN ]</span><span class="btn">[ REMOVE TOKEN ]</span></div>
+<div class="sect"><span><span class="c">//</span> IMPORT FROM PIPEDRIVE</span><span class="state">RUNNING</span></div>
+<div class="cb"><i class="on"></i>People <i class="on" style="margin-left:12px"></i>Organisations</div>
+<div class="k">Organisations · 800 of 800</div><div class="bar"><i style="width:100%"></i></div>
+<div class="k">People · 1,200 of 3,000</div><div class="bar"><i style="width:40%"></i></div>
+<div class="hint">Keep this page open: the import moves on while it is open. Closing it pauses the import.</div>
+<div class="acts"><span class="btn">[ STOP IMPORT ]</span></div>
+<div class="sect"><span><span class="c">//</span> LAST REPORT</span><span>21 NOV 2026</span></div>
+<div class="hint">Shown here when the import ends: counts, records not imported and why, owners, custom fields.</div>
+</div></div>
+<figcaption>Good for few clicks: the token, the choices, the progress and the last report are on one page, under Settings.</figcaption></figure><figure><div class="tag"><b>B</b> Its own page, step by step</div>
+<div class="app"><aside class="side"><div class="wm"><i></i>BARNACLE_LABS</div><div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications</span></div><div class="grp"><b>//</b> ADMIN</div><div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div><div class="me"><div class="n">Ada Fake</div><div class="st">SETTINGS ●</div><div class="so">[ SIGN OUT ]</div></div></aside><div class="main">
+<div class="back">← Settings</div>
+<div class="ph"><div><div class="lb"><span class="c">//</span> PIPEDRIVE</div><h2>Import from Pipedrive</h2></div><span class="count">FAKECO PIPEDRIVE</span></div>
+<div class="steps"><span class="done">1 CHOOSE ✓</span><span class="on">2 IMPORTING</span><span>3 REPORT</span></div>
+<div class="row">
+<div><div class="big">1,833</div><div class="k">Imported</div></div>
+<div><div class="big">145</div><div class="k">Linked to CRM records</div></div>
+<div><div class="big o">22</div><div class="k">Not imported</div></div></div>
+<div class="sect"><span><span class="c">//</span> PROGRESS</span><span class="state">RUNNING</span></div>
+<div class="k">Organisations · 800 of 800</div><div class="bar"><i style="width:100%"></i></div>
+<div class="k">People · 1,200 of 3,000</div><div class="bar"><i style="width:40%"></i></div>
+<div class="notice">Pipedrive asked us to slow down. Carrying on in 8 seconds.</div>
+<div class="hint">Keep this page open: the import moves on while it is open. Closing it pauses the import.</div>
+<div class="acts"><span class="btn">[ STOP IMPORT ]</span></div>
+</div></div>
+<figcaption>Good for matching the CSV import: Settings holds only the token; the import has its own page with a step bar (choose, importing, report).</figcaption></figure><figure><div class="tag"><b>C</b> Its own page, table and side panel</div>
+<div class="app"><aside class="side"><div class="wm"><i></i>BARNACLE_LABS</div><div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications</span></div><div class="grp"><b>//</b> ADMIN</div><div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div><div class="me"><div class="n">Ada Fake</div><div class="st">SETTINGS ●</div><div class="so">[ SIGN OUT ]</div></div></aside><div class="main">
+<div class="back">← Settings</div>
+<div class="ph"><div><div class="lb"><span class="c">//</span> PIPEDRIVE</div><h2>Import from Pipedrive</h2></div><span class="state">RUNNING · 1,200 OF 3,800</span></div>
+<div class="two"><div>
+<table class="log"><thead><tr><th>Kind</th><th>Done</th><th>Imported</th><th>Linked</th><th>Already imported</th><th>Not imported</th></tr></thead><tbody>
+<tr><td>Organisations</td><td>800 of 800 ✓</td><td>731</td><td>64</td><td>0</td><td>5</td></tr>
+<tr><td>People</td><td>1,200 of 3,000</td><td>1,102</td><td>81</td><td>0</td><td>17</td></tr></tbody></table>
+<div class="bar" style="margin-top:10px"><i style="width:53%"></i></div>
+<div class="sect"><span><span class="c">//</span> NOT IMPORTED SO FAR</span></div>
+<table><thead><tr><th>Pipedrive record</th><th>Reason</th></tr></thead><tbody>
+<tr><td>Person · Cleo Fake</td><td>No name.</td></tr>
+<tr><td>Person · Dan Fake</td><td>Its email addresses belong to more than one person in the CRM.</td></tr>
+<tr><td>Organisation · Sample Studios Fake…</td><td>Keep the name under 200 characters.</td></tr></tbody></table>
+<div class="err">Owner Jane Fake (jane@fake.example) has no CRM user: 12 records given to you.</div>
+<div class="err">No CRM field named 'Favourite colour'.</div>
+<div class="err">Label not on the list: 'Cold' (7 people)</div>
+</div><div class="panel">
+<div class="k">Connected as</div><div class="v">Fake Person (Fakeco Pipedrive)</div>
+<div class="k">Importing</div><div class="v">People, Organisations</div>
+<div class="k">Consent if none in Pipedrive</div><div class="v">Unsubscribed</div>
+<div class="k">Started</div><div class="v">24 Nov 2026, 10:42</div>
+<div class="acts"><span class="btn">[ STOP IMPORT ]</span></div>
+<div class="hint">Keep this page open: closing it pauses the import.</div>
+</div></div>
+</div></div>
+<figcaption>Good for watching the details: counts per kind and the reasons appear while the import runs, the settings of the run stay at the side.</figcaption></figure></div>
+<div class="grid" style="padding-top:0"><div class="app mini"><aside class="side"><div class="wm"><i></i>BARNACLE_LABS</div><div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications</span></div><div class="grp"><b>//</b> ADMIN</div><div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div><div class="me"><div class="n">Ada Fake</div><div class="st">SETTINGS ●</div><div class="so">[ SIGN OUT ]</div></div></aside><div class="main"><div class="ph"><div><div class="lb"><span class="c">//</span> YOU</div><h2>Settings</h2></div></div><div class="sect"><span><span class="c">//</span> IMPORT FROM PIPEDRIVE</span></div><div class="cb"><i></i>People <i style="margin-left:12px"></i>Organisations</div><div class="hint">12 people have no consent status in Pipedrive. Choose theirs:</div><div class="radio"><span><i></i>Subscribed</span><span><i></i>Unsubscribed</span></div><div class="acts"><span class="btn solid">[ IMPORT ]</span></div><div class="sect"><span><span class="c">//</span> LAST REPORT</span></div><table><thead><tr><th>Pipedrive record</th><th>Reason</th></tr></thead><tbody>
+<tr><td>Person · Cleo Fake</td><td>No name.</td></tr>
+<tr><td>Person · Dan Fake</td><td>Its email addresses belong to more than one person in the CRM.</td></tr>
+<tr><td>Organisation · Sample Studios Fake…</td><td>Keep the name under 200 characters.</td></tr></tbody></table>
+<div class="err">Owner Jane Fake (jane@fake.example) has no CRM user: 12 records given to you.</div>
+<div class="err">No CRM field named 'Favourite colour'.</div>
+<div class="err">Label not on the list: 'Cold' (7 people)</div></div></div><div class="app mini"><aside class="side"><div class="wm"><i></i>BARNACLE_LABS</div><div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications</span></div><div class="grp"><b>//</b> ADMIN</div><div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div><div class="me"><div class="n">Ada Fake</div><div class="st">SETTINGS ●</div><div class="so">[ SIGN OUT ]</div></div></aside><div class="main"><div class="back">← Settings</div><div class="ph"><div><div class="lb"><span class="c">//</span> PIPEDRIVE</div><h2>Import from Pipedrive</h2></div></div><div class="steps"><span class="done">1 CHOOSE ✓</span><span class="done">2 IMPORTING ✓</span><span class="on">3 REPORT</span></div><div class="row"><div><div class="big">3,689</div><div class="k">Imported</div></div><div><div class="big">145</div><div class="k">Linked</div></div><div><div class="big o">22</div><div class="k">Not imported</div></div></div><div class="sect"><span><span class="c">//</span> NOT IMPORTED</span></div><table><thead><tr><th>Pipedrive record</th><th>Reason</th></tr></thead><tbody>
+<tr><td>Person · Cleo Fake</td><td>No name.</td></tr>
+<tr><td>Person · Dan Fake</td><td>Its email addresses belong to more than one person in the CRM.</td></tr>
+<tr><td>Organisation · Sample Studios Fake…</td><td>Keep the name under 200 characters.</td></tr></tbody></table>
+<div class="err">Owner Jane Fake (jane@fake.example) has no CRM user: 12 records given to you.</div>
+<div class="err">No CRM field named 'Favourite colour'.</div>
+<div class="err">Label not on the list: 'Cold' (7 people)</div></div></div><div class="app mini"><aside class="side"><div class="wm"><i></i>BARNACLE_LABS</div><div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications</span></div><div class="grp"><b>//</b> ADMIN</div><div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div><div class="me"><div class="n">Ada Fake</div><div class="st">SETTINGS ●</div><div class="so">[ SIGN OUT ]</div></div></aside><div class="main"><div class="back">← Settings</div><div class="ph"><div><div class="lb"><span class="c">//</span> PIPEDRIVE</div><h2>Import from Pipedrive</h2></div><span class="state">FINISHED</span></div><table class="log"><thead><tr><th>Kind</th><th>Done</th><th>Imported</th><th>Linked</th><th>Already imported</th><th>Not imported</th></tr></thead><tbody>
+<tr><td>Organisations</td><td>800 of 800 ✓</td><td>731</td><td>64</td><td>0</td><td>5</td></tr>
+<tr><td>People</td><td>3,000 of 3,000 ✓</td><td>1,102</td><td>81</td><td>0</td><td>17</td></tr></tbody></table><div class="sect"><span><span class="c">//</span> NOT IMPORTED</span></div><table><thead><tr><th>Pipedrive record</th><th>Reason</th></tr></thead><tbody>
+<tr><td>Person · Cleo Fake</td><td>No name.</td></tr>
+<tr><td>Person · Dan Fake</td><td>Its email addresses belong to more than one person in the CRM.</td></tr>
+<tr><td>Organisation · Sample Studios Fake…</td><td>Keep the name under 200 characters.</td></tr></tbody></table>
+<div class="err">Owner Jane Fake (jane@fake.example) has no CRM user: 12 records given to you.</div>
+<div class="err">No CRM field named 'Favourite colour'.</div>
+<div class="err">Label not on the list: 'Cold' (7 people)</div></div></div></div>
+</body></html>
