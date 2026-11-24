@@ -25,7 +25,7 @@ repo. Nothing added (research.md §1).
 
 **Storage**: PostgreSQL (local for dev/tests, Supabase through its pooler in production). Migration
 `migrations/0010_custom_fields.sql`: tables `custom_fields`, `custom_field_choices`, `custom_values`; columns
-`field_name`, `old_value`, `new_value` and kinds `custom_set` / `custom_changed` / `custom_cleared` on `timeline_events`
+`field_name`, `old_value`, `new_value` and kinds `custom_set` / `custom_changed` / `custom_cleared` on `timeline_events` (the kind check also keeps room for SF-116's `file_added` / `file_deleted`)
 (data-model.md).
 
 **Testing**: Vitest only — unit (pure rules, list query, import columns/rows/plan, messages, nav) and integration on the
@@ -141,7 +141,7 @@ tests/unit/, tests/integration/                 # quickstart.md § Automated che
 
 ## Build steps (in order)
 
-1. **Migration** `migrations/0010_custom_fields.sql` exactly as data-model.md (check the kind list against 0009 first).
+1. **Migration** `migrations/0010_custom_fields.sql` exactly as data-model.md (check the kind list against 0009 first). The kind check also lists `file_added` and `file_deleted`, with a comment saying why: SF-116 (Files) rewrites the same check in `0011_files.sql` and lists the three custom kinds too, so neither migration drops the other's kinds whichever merges first (person's decision, 2026-11-24).
    `tests/support/reset.ts` truncates `custom_values, custom_field_choices, custom_fields`.
 2. **Pure rules** `src/server/custom-fields/rules.ts` (contracts/routes.md § Domain functions); messages and templates;
    `formatNumber` / `formatDay` there (or `format.ts` if shared). Reuse `parseMoney`, `parseDate`, `escapeLike`.

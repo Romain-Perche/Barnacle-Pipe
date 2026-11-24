@@ -85,6 +85,10 @@ should confirm are in spec.md § Clarifications ("decided by the factory, to con
   entries follow renames or vanish with the field. Entries live on the record's own timeline, so the existing
   `targetWhere` visibility covers them (and a person's / organisation's timeline shows a visible deal's entries as today).
 - **Alternatives**: one "edited" event listing custom field names in `fields` — rejected: US2-4 wants old and new values.
+- **Shared kind check** (person, 2026-11-24): the rewritten `timeline_events_kind_check` also lists `file_added` and
+  `file_deleted`. SF-116 (Files) is planned at the same time and rewrites the same check in `0011_files.sql`, listing these
+  three custom kinds too, so whichever pull request merges first, neither migration drops the other's kinds. A SQL comment
+  in `0010_custom_fields.sql` says so.
 
 ## 10. List addresses for custom filters and sorts
 

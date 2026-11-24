@@ -65,17 +65,21 @@ alter table timeline_events add column field_name text null check (char_length(f
 alter table timeline_events add column old_value text null check (char_length(old_value) <= 10000);
 alter table timeline_events add column new_value text null check (char_length(new_value) <= 10000);
 alter table timeline_events drop constraint timeline_events_kind_check;
+-- 'file_added' and 'file_deleted' belong to SF-116 (Files), planned at the same time. Its migration 0011_files.sql
+-- rewrites this same check and lists the three custom kinds too, so neither migration drops the other's kinds,
+-- whichever is merged first.
 alter table timeline_events add constraint timeline_events_kind_check
   check (kind in ('added', 'edited', 'archived', 'restored', 'person_linked', 'person_unlinked', 'handed_over', 'moved',
                   'won', 'lost', 'reopened', 'note', 'imported',
                   'ambassador_added', 'ambassador_removed', 'referrer_set', 'referrer_changed', 'referrer_cleared',
-                  'custom_set', 'custom_changed', 'custom_cleared'));
+                  'custom_set', 'custom_changed', 'custom_cleared',
+                  'file_added', 'file_deleted'));
 alter table timeline_events add constraint timeline_events_custom_check
   check ((kind in ('custom_set', 'custom_changed', 'custom_cleared')) = (field_name is not null)
          and (kind in ('custom_set', 'custom_changed', 'custom_cleared') or (old_value is null and new_value is null)));
 ```
 
-Build: check the kind list against `0009_ambassadors.sql` (the last one to set it) before copying. No foreign key from
+Build: check the kind list against `0009_ambassadors.sql` (the last one to set it) before copying. Keep `'file_added'`, `'file_deleted'` and the comment above them (person's decision, 2026-11-24): SF-116's `0011_files.sql` sets the same list. The app writes no file kind in SF-115. No foreign key from
 `timeline_events` to `custom_fields`: an entry keeps its text after a rename or a delete (FR-009). `tests/support/reset.ts`
 adds `custom_values, custom_field_choices, custom_fields` to its `truncate`; `rls.test.ts` finds the three tables by itself
 (check); `migrate.test.ts` covers 0010.
