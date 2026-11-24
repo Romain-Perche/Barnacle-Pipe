@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:d3df27c5720e393df44c011d5b99d97c82287af1a48c2c864a19c2945a789f01",
+  "claims": [
+    {
+      "id": "claim_60cf2a250e9947ad8b58b9cd4f53d259",
+      "statement": "countReach counts each person in one query under the first reason that applies: archived, unsubscribed, no email, otherwise reached.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/segments/reach.ts#L88-L99",
+          "version": "repo-lines-v1:sha256:e29c45ad3b902bb814819f7379c4c18b7f06a89471d75fc965ea20c84fd651eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEyNGFkZWZlNDMxM2M2OWM5YjcxZjljOWE3NTg5YWFjOGNkYmZkMzlhZDliYTE2ZmMxYzViYjY4ODgyNDlkNWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3NDM0ZTlkY2Q1OTFjMzhkZjBlNjA5ZjAwZjYyMTMwNGJhM2IyYWRmNjMyNTQwMDA2NzMxZjgxZmRiMjExYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiMTNmYmI2YzZmOTU3Y2ZkZjFkZDhjMzNiMDFkMDM2ZjBiYjk1NTM2MGZjNjIzNGNjY2MyZDMwZGU0NmJmNTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5a02193cdb5e4243800b22ae9e41ad84",
+      "statement": "Segment reach only counts people visible to the viewer through visiblePerson.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/segments/reach.ts#L78-L83",
+          "version": "repo-lines-v1:sha256:b183301206bad43f98a98dfa99d1bae9604f19a5d0fbd5d8fc597aaedda301bd:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDZlN2RkMjIwNmE2ZGJmMDMxNmFjNjE3MGUxMmQzMjljMDY3NDkyZDNkNjllNjhmYmNjOWY2NmI5NmQwMzAwNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmE0NTUzMzc2NTExZDZjOTA2ZjA4ZWI3ZjY5MTQ2YTdjZGUzMTcyMzU2MWIxOGYzZmU0YTk5MjIzN2E5OTU0NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjMzOWQ0NTEzOGZlYThmODM5MTQ0NDViNmNkMzhlMjdhNmFjZDc1OTk3Zjk4Y2U3NDkxYmIzMDNkZGQ3Y2ZjMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3e68c45be5d3486bac12c329b79c5150",
+      "statement": "updateSegment checks the row version before saving.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/segments/segments.ts#L194-L221",
+          "version": "repo-lines-v1:sha256:fa73b928a25272e60a50ff30938c206f207facac7eb9ba1c1e63354294c9fdda:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3ZjA0NDhmM2FiZDNiNzhhNTkzNTZhZmE1NGI5NTNkZTA3MzgzZmZiODA1MGM5MGRlYjg4OGExODBhNjEyNGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhNGZhMWQ3NTk1NWJlNjVmOTBjZTBlMDY3ODYzYjNhNDkyNmZmYWExMjY2MTRmYmI2MTVjYzNlMDkyZTkwMjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmNjZmMjhhNGM2ZDk5N2U4NjNmNWRiNmFkZGMxMGE1MTg2OTczMTAzZTk0YzYzMGRkMGMxNzY5ZTIxMjk5YTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlOTY3YzVhMTkzZWUyNDNmYmZlYTk2MDA3YTE5ZjMwNDBkNjliZDgyNGVjYjY1YjI1ZmE2OWMwZGMwNjA2ZmUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-24T17:35:43.352Z"
+  }
+}

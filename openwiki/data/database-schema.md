@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T14:34:59.724Z
+    at: 2026-11-24T17:35:43.352Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -31,13 +31,15 @@ sources:
     resource: repo://migrations/0011_files.sql
   - id: openwiki-source-dc1f2867de00af07970a260d
     resource: repo://migrations/0012_pipedrive.sql
+  - id: openwiki-source-285be5ef7c105195eec5b95a
+    resource: repo://migrations/0013_segments.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T14:34:59.724Z" }
+generated: { by: "claude-code", at: "2026-11-24T17:35:43.352Z" }
 ---
 
 # Database schema and access
@@ -189,6 +191,14 @@ counts, consent and the report; a unique index allows one open run per user) and
 Pipedrive id as the primary key, so a Pipedrive record never leads to two CRM records; a deleted CRM record keeps its
 link row). Row level security is on all three with no policy, and the `timeline_events` kind list gains
 `pipedrive_imported` and `pipedrive_unsubscribed`. See [Pipedrive import](../features/pipedrive-import.md).
+
+### Segments (migration 0013)
+
+`0013_segments.sql` adds `segments`, saved segments shared by the whole team: a unique name (case-insensitive), `who`
+(`everyone`, `pipeline` or `stage`) with optional `pipeline_id`, `stage_id` and `deal_status`, the `conditions` as a
+jsonb array of at most 20, and created/updated by and a `version` for edit checks. The pipeline, stage and condition
+ids carry no foreign key on purpose, so a deleted one stays in the segment and matches nobody. It also adds the partial
+index `deals_stage_live_idx` on `deals (stage_id)` for non-archived deals. See [Saved segments](../features/segments.md).
 
 ## Row level security
 
