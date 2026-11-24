@@ -10,6 +10,8 @@ import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { RecordHeader } from "../../records/RecordHeader";
 import { NoteNotices } from "../../records/NoteNotices";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { FileOverlays } from "../../records/FileOverlays";
+import { FilesSection } from "../../records/FilesSection";
 import { ReferredBy } from "../../records/ReferredBy";
 import { ActivityNotices } from "../../activities/ActivityNotices";
 import { ActivityOverlays } from "../../activities/ActivityOverlays";
@@ -154,6 +156,8 @@ export default async function PersonPage({ params, searchParams }: Props) {
 
       <NextActivities viewerId={user.id} target={{ personId: id }} archived={person.archived} back={href} />
 
+      <FilesSection viewerId={user.id} target={{ personId: id }} archived={person.archived} back={href} error={first(query, "error")} />
+
       <RecordTimeline
         viewerId={user.id}
         target={{ personId: id }}
@@ -166,6 +170,13 @@ export default async function PersonPage({ params, searchParams }: Props) {
         archived={person.archived}
         back={href}
         query={{ activity: first(query, "activity"), followup: first(query, "followup"), deleteActivity: first(query, "delete-activity") }}
+      />
+      <FileOverlays
+        viewerId={user.id}
+        target={{ personId: id }}
+        archived={person.archived}
+        back={href}
+        query={{ file: first(query, "file"), deleteFile: first(query, "delete-file") }}
       />
     </>
   );

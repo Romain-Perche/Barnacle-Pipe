@@ -17,6 +17,7 @@ import { day } from "../DealBits";
 import { ViewSwitch } from "../ViewSwitch";
 import { ActivityNotices } from "../../activities/ActivityNotices";
 import { ActivityOverlays } from "../../activities/ActivityOverlays";
+import { FileOverlays } from "../../records/FileOverlays";
 
 const PATH = "/deals/list";
 
@@ -204,6 +205,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
             closeHref={link({ open: null })}
             deleteHref={withConfirm(preview(found.id))}
             back="list"
+            fileError={first(params, "error")}
           />
         )}
         {found && (
@@ -213,6 +215,15 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
             archived={found.archived}
             back={preview(found.id)}
             query={{ activity: first(params, "activity"), followup: first(params, "followup"), deleteActivity: first(params, "delete-activity") }}
+          />
+        )}
+        {found && (
+          <FileOverlays
+            viewerId={user.id}
+            target={{ dealId: found.id }}
+            archived={found.archived}
+            back={preview(found.id)}
+            query={{ file: first(params, "file"), deleteFile: first(params, "delete-file") }}
           />
         )}
       </div>

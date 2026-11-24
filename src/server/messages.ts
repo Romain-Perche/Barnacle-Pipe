@@ -1,3 +1,4 @@
+import { shortName } from "@/server/files/rules";
 import { formatMoney } from "@/server/format";
 
 // Every user-facing message, by code. The single source of these texts (contracts/routes.md § Messages).
@@ -132,6 +133,15 @@ export const messages = {
   followup_question: "Schedule a follow-up?",
   overdue: "Overdue",
   today: "Today",
+  // SF-116: files
+  file_added: "File added.",
+  file_deleted: "File deleted.",
+  file_not_found: "This file doesn't exist or you can't see it.",
+  file_gone: "This file doesn't exist any more.",
+  file_record_not_found: "This record doesn't exist or you can't see it.",
+  files_archived: "Restore this record before changing its files.",
+  files_unreachable: "Files can't be reached right now. Try again in a minute.",
+  no_files: "No files yet.",
 } as const;
 
 const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} private people`);
@@ -206,6 +216,16 @@ export const templates = {
   referred_by: (name: string) => `Referred by ${name}`,
   referrer_set_event: (name: string) => `Referred by set to ${name}`,
   referrer_changed_event: (from: string, to: string) => `Referred by changed from ${from} to ${to}`,
+  // SF-116: built from a file name (as given by the user or read from the database)
+  file_too_large: (name: string) => `${name} is over 25 MB, the most a file can be.`,
+  file_empty: (name: string) => `${name} is empty.`,
+  file_name_too_long: (name: string) => `${shortName(name)} has a name over 255 characters.`,
+  file_upload_failed: (name: string) => `${name} couldn't be uploaded. Try again.`,
+  file_uploading: (name: string, n: number) => `Uploading ${name}… ${n}%`,
+  file_delete_confirm: (name: string) => `Delete ${name}? This can't be undone.`,
+  // One-shot notices (flash.ts) after a file delete
+  file_deleted: (_name: string) => messages.file_deleted,
+  file_not_found: (_name: string) => messages.file_not_found,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

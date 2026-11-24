@@ -45,3 +45,19 @@ export function googleConfig(): GoogleConfig {
   }
   return { clientId, clientSecret, appUrl };
 }
+
+// SF-116 (contracts/storage.md § Settings): where file contents are kept. Supabase Storage when SUPABASE_URL (and its
+// secret key) is set; the fake storage of src/server/files/fake-storage.ts when it is empty and fakes are allowed;
+// otherwise "off": every file action answers "Files can't be reached right now." and the rest of the app works.
+export type StorageConfig =
+  | { mode: "supabase" | "fake"; baseUrl: string; key: string; bucket: string }
+  | { mode: "off" };
+
+export function storageConfig(): StorageConfig {
+  const url = (process.env.SUPABASE_URL ?? "").trim().replace(/\/+$/, "");
+  const key = process.env.SUPABASE_SECRET_KEY ?? "";
+  const bucket = (process.env.FILES_BUCKET ?? "").trim() || "crm-files";
+  if (url) return key ? { mode: "supabase", baseUrl: `${url}/storage/v1`, key, bucket } : { mode: "off" };
+  if (isFakeAllowed()) return { mode: "fake", baseUrl: `${appBaseUrl()}/dev/fake-storage`, key: "fake-storage-key", bucket };
+  return { mode: "off" };
+}

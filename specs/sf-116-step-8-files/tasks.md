@@ -24,7 +24,7 @@ description: "Task list for SF-116 Files"
 
 **Purpose**: The schema, the pure rules and the texts every story uses.
 
-- [ ] T001 Write `migrations/0011_files.sql` exactly as data-model.md § Migration.
+- [x] T001 Write `migrations/0011_files.sql` exactly as data-model.md § Migration.
   - **`files`**:
     - `name text not null check (char_length(name) between 1 and 255)`
     - `size bigint not null check (size between 1 and 26214400)`
@@ -54,10 +54,10 @@ description: "Task list for SF-116 Files"
     - above it, the comment of data-model.md: the custom kinds belong to SF-115 (`0010_custom_fields.sql`), which rewrites the same constraint; both lists hold every kind of both steps so neither migration drops the other's, whichever merges first
     - `timeline_events_file_check` as data-model.md: file kinds ⇔ `file_name` set; `file_size` only on `file_added`; `file_id` only on `file_added`; `deleted_file_id` set ⇔ `file_deleted`; `actor_id` required on file kinds
   - First confirm the constraint name with `\d timeline_events` on a migrated database. No `begin`/`commit`/`concurrently`.
-- [ ] T002 [P] Add the messages and templates of contracts/routes.md § Messages to `src/server/messages.ts` under an `// SF-116` comment.
+- [x] T002 [P] Add the messages and templates of contracts/routes.md § Messages to `src/server/messages.ts` under an `// SF-116` comment.
   - Codes: `file_added`, `file_deleted`, `file_not_found`, `file_gone`, `file_record_not_found`, `files_archived`, `files_unreachable`, `no_files`.
   - Templates: `file_too_large(name)`, `file_empty(name)`, `file_name_too_long(name)` (uses `shortName`), `file_upload_failed(name)`, `file_uploading(name, n)`, `file_delete_confirm(name)`.
-- [ ] T003 [P] Create the pure `src/server/files/rules.ts` (research.md §4, §9). Export:
+- [x] T003 [P] Create the pure `src/server/files/rules.ts` (research.md §4, §9). Export:
   - `MAX_FILE_BYTES = 26_214_400` and `MAX_FILE_NAME = 255`.
   - `validateFile({ name, size })`: returns `file_name_too_long` when there are more than 255 code points, `file_empty` when `size === 0`, `file_too_large` when `size > 26214400`, else ok.
   - `uploadContentType(name)`: `.jpg`/`.jpeg` → `image/jpeg`, `.png` → `image/png`, `.gif` → `image/gif`, `.webp` → `image/webp`, `.pdf` → `application/pdf` (any case), else `application/octet-stream`.
@@ -66,8 +66,8 @@ description: "Task list for SF-116 Files"
   - `kindLabel(name, kind)`: `JPG`/`PNG`/`GIF`/`WEBP`/`PDF` for previewable kinds; else the extension in capitals when it is 1–5 letters or digits; else `FILE`.
   - `safeDownloadName(name)`: replaces `/ \ : * ? " < > |` and control characters with `_`, trims dots and spaces at both ends, and gives `file` when the result is empty.
   - `shortName(name)`: the first 40 characters + "…" when longer.
-- [ ] T004 [P] Add `formatFileSize(bytes)` to `src/server/format.ts` (research.md §10): `< 1024` → "<n> B"; `< 1 MiB` → "<n> KB" rounded on a 1,024 base; else one decimal "<n.n> MB", dropping ".0" ("25 MB").
-- [ ] T005 [P] Unit tests in `tests/unit/files-rules.test.ts` for every function of T003 (`// covers FR-001, FR-004, FR-005, edge cases "kind", "file names"`):
+- [x] T004 [P] Add `formatFileSize(bytes)` to `src/server/format.ts` (research.md §10): `< 1024` → "<n> B"; `< 1 MiB` → "<n> KB" rounded on a 1,024 base; else one decimal "<n.n> MB", dropping ".0" ("25 MB").
+- [x] T005 [P] Unit tests in `tests/unit/files-rules.test.ts` for every function of T003 (`// covers FR-001, FR-004, FR-005, edge cases "kind", "file names"`):
   - sizes 0, 1, 26214400 and 26214401;
   - names of 255 and 256 code points, including non-Latin names and emoji;
   - each magic number with a matching name and type, a text file named `fake.png`, `a.svg`, `a.html`, and a PNG stored as `application/octet-stream` (→ `other`);
@@ -84,13 +84,13 @@ description: "Task list for SF-116 Files"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T006 Add `storageConfig()` to `src/server/env.ts` (contracts/storage.md § Settings), read at call time. It reads `SUPABASE_URL` (trailing slash removed), `SUPABASE_SECRET_KEY` and `FILES_BUCKET` (default `crm-files`). It returns one of:
+- [x] T006 Add `storageConfig()` to `src/server/env.ts` (contracts/storage.md § Settings), read at call time. It reads `SUPABASE_URL` (trailing slash removed), `SUPABASE_SECRET_KEY` and `FILES_BUCKET` (default `crm-files`). It returns one of:
   - `{ mode: "supabase", baseUrl: <url>/storage/v1, key, bucket }`;
   - `{ mode: "fake", baseUrl: appBaseUrl() + "/dev/fake-storage", key: "fake-storage-key", bucket }` when the URL is empty and `isFakeAllowed()`;
   - `{ mode: "off" }` otherwise.
 
   Extend `tests/unit/env.test.ts`, covering: fake only with APP_ENV development/test and not on Vercel production/preview; `off` in production with no URL.
-- [ ] T007 Create `src/server/files/fake-storage.ts` (contracts/storage.md § The fake).
+- [x] T007 Create `src/server/files/fake-storage.ts` (contracts/storage.md § The fake).
   - **API**: `class FakeStorage { constructor({ store, baseUrl, key, now? }); fetch(input, init): Promise<Response> }`, plus `MemoryStore`, and `DiskStore(dir = ".fake-storage")`, which keeps one file per object plus `<file>.json` holding the content type.
   - **Calls it implements**:
     - `POST /object/upload/sign/{bucket}/{*}` → `{ url, token }`.
@@ -108,21 +108,21 @@ description: "Task list for SF-116 Files"
     - Server calls need `authorization: Bearer <key>` and `apikey`.
     - Tokens are HMAC-SHA256 over `{ url: "<bucket>/<path>", exp }` with a random per-process secret. They are valid for one path only. Download tokens expire after `expiresIn` seconds, upload tokens after 2 hours. A wrong or expired token gets a 400 `InvalidJWT`.
   - **Where it is used**: export a `fakeStorage()` singleton that uses `MemoryStore` when `APP_ENV=test` and `DiskStore` in development. It throws unless `isFakeAllowed()`.
-- [ ] T008 Create `src/server/files/storage.ts` (contracts/storage.md § Operations).
+- [x] T008 Create `src/server/files/storage.ts` (contracts/storage.md § Operations).
   - **Functions**: `createSignedUploadUrl(path) → { url }`, `objectInfo(path) → { size, contentType } | null`, `readHead(path, n) → Uint8Array`, `signedUrl(path, { download? }) → string` (`expiresIn: 60`, `download` URI-encoded), `removeObjects(paths)` (≤ 100 per call). Every returned URL is absolute.
   - **Errors**: `class StorageUnreachable extends Error`, thrown on a network error, a 10 s timeout (`AbortSignal.timeout(10_000)`), a `5xx`, or `mode: "off"`.
   - **Headers**: every server call sends `authorization: Bearer <key>` and `apikey: <key>`.
   - **Fetch**: `fetch` by default; `fakeStorage().fetch` in fake mode. A test-only `useStorageFetchForTests(fn | null)` throws unless `process.env.APP_ENV === "test"`.
   - **Paths**: `newStoragePath()` → `files/<crypto.randomUUID()>`.
-- [ ] T009 Create `src/app/dev/fake-storage/[...path]/route.ts`. It exports `GET`, `PUT`, `POST`, `DELETE` and `HEAD`, answers 404 unless `isFakeAllowed()` and `storageConfig().mode === "fake"`, and otherwise forwards the request (path after `/dev/fake-storage`) to `fakeStorage().fetch`. Add `/^\/dev\/fake-storage(\/|$)/` to `PUBLIC` in `src/proxy.ts`, and `.fake-storage/` to `.gitignore`.
-- [ ] T010 [P] Add `visibleFile(db, viewer, alias = "f")` to `src/server/records/visibility.ts` (research.md §6): `((f.deal_id is null or exists (select 1 from deals vfd where vfd.id = f.deal_id and visibleDeal(vfd))) and (f.person_id is null or exists (select 1 from persons vfp where vfp.id = f.person_id and visiblePerson(vfp))))`. Organisations are never private. Add a header comment: every `files` read uses it.
-- [ ] T011 Timeline columns in `src/server/records/timeline.ts`:
+- [x] T009 Create `src/app/dev/fake-storage/[...path]/route.ts`. It exports `GET`, `PUT`, `POST`, `DELETE` and `HEAD`, answers 404 unless `isFakeAllowed()` and `storageConfig().mode === "fake"`, and otherwise forwards the request (path after `/dev/fake-storage`) to `fakeStorage().fetch`. Add `/^\/dev\/fake-storage(\/|$)/` to `PUBLIC` in `src/proxy.ts`, and `.fake-storage/` to `.gitignore`.
+- [x] T010 [P] Add `visibleFile(db, viewer, alias = "f")` to `src/server/records/visibility.ts` (research.md §6): `((f.deal_id is null or exists (select 1 from deals vfd where vfd.id = f.deal_id and visibleDeal(vfd))) and (f.person_id is null or exists (select 1 from persons vfp where vfp.id = f.person_id and visiblePerson(vfp))))`. Organisations are never private. Add a header comment: every `files` read uses it.
+- [x] T011 Timeline columns in `src/server/records/timeline.ts`:
   - `EventKind` gains `"file_added" | "file_deleted"`.
   - `recordEvent` accepts `fileId`, `fileName`, `fileSize` and `deletedFileId`, written to the new columns.
   - `selectEntries` selects `e.file_id, e.file_name, e.file_size` and `f.kind` (`left join files f on f.id = e.file_id`).
   - `TimelineEntry` gains `file: { id: number | null; name: string; size: number | null; kind: FileKind | null } | null`: set for the two file kinds, `null` otherwise, and `null` on activity entries.
-- [ ] T012 [P] In `tests/support/reset.ts`, add `files, file_uploads, file_cleanup` to the `truncate` list. Do the same in `.factory/run/reset-db.sh` if it lists tables.
-- [ ] T013 Turn `scripts/fetch-schemas.mjs` into a list of `{ file, url, sha256 }` entries:
+- [x] T012 [P] In `tests/support/reset.ts`, add `files, file_uploads, file_cleanup` to the `truncate` list. Do the same in `.factory/run/reset-db.sh` if it lists tables.
+- [x] T013 Turn `scripts/fetch-schemas.mjs` into a list of `{ file, url, sha256 }` entries:
   - keep the Google entry unchanged;
   - add `storage_v0_openapi.json` from `https://raw.githubusercontent.com/supabase/supabase/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json`, sha256 `bd435bab4b3b2ef87e3e61f2e948092c30db204f881a4d72d4234a032a356311`;
   - each missing file is downloaded and checked, and present files are skipped.
@@ -141,7 +141,7 @@ description: "Task list for SF-116 Files"
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T014 [US1] Download `storage_v0_openapi.json` from https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json at commit `aa0fb9e84b9d128342f0127c7650d8cc5b240202` into `.factory/schemas/` (`git init -q /tmp/supabase && git -C /tmp/supabase fetch -q --depth 1 https://github.com/supabase/supabase aa0fb9e84b9d128342f0127c7650d8cc5b240202 && git -C /tmp/supabase show FETCH_HEAD:apps/docs/spec/storage_v0_openapi.json > .factory/schemas/storage_v0_openapi.json`), and make the fake of Supabase Storage refuse a request that the schema refuses: a test sends a wrong field and must fail.
+- [x] T014 [US1] Download `storage_v0_openapi.json` from https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json at commit `aa0fb9e84b9d128342f0127c7650d8cc5b240202` into `.factory/schemas/` (`git init -q /tmp/supabase && git -C /tmp/supabase fetch -q --depth 1 https://github.com/supabase/supabase aa0fb9e84b9d128342f0127c7650d8cc5b240202 && git -C /tmp/supabase show FETCH_HEAD:apps/docs/spec/storage_v0_openapi.json > .factory/schemas/storage_v0_openapi.json`), and make the fake of Supabase Storage refuse a request that the schema refuses: a test sends a wrong field and must fail.
   - **The test fake**: `tests/fakes/storage.ts` (`StorageFake`) wraps a `FakeStorage` over a `MemoryStore` and installs it with `useStorageFetchForTests`.
   - **What it checks on every request**, against `.factory/schemas/storage_v0_openapi.json` (loaded like `tests/fakes/google.ts` does; a missing file throws, never skips):
     - the path matches a schema path (`{bucketName}`, `{*}`) and the method exists on it;
@@ -155,14 +155,14 @@ description: "Task list for SF-116 Files"
     - `DELETE /object/{bucket}` with `{ "paths": [...] }` must fail;
     - an unknown query parameter on `GET /object/sign/…` must fail;
     - the happy path: sign upload → PUT → info → ranged read → sign → signed GET with `download` gives an attachment, the same bytes, and an expired token refused.
-- [ ] T015 [US1] Supabase Postgres has no public schema on GitHub. The tests use a real local PostgreSQL 17, and the new code follows Supabase's documentation https://supabase.com/docs/guides/database/connecting-to-postgres (transaction-mode pooler). It copies these limits: no prepared statements (`prepare: false`, unchanged in `src/server/db.ts`), no session state (no `set`, `listen` or session advisory lock), every multi-statement change in one `sql.begin()`, at most 5 connections, and no network call inside a transaction. Extend `tests/integration/migrate.test.ts`:
+- [x] T015 [US1] Supabase Postgres has no public schema on GitHub. The tests use a real local PostgreSQL 17, and the new code follows Supabase's documentation https://supabase.com/docs/guides/database/connecting-to-postgres (transaction-mode pooler). It copies these limits: no prepared statements (`prepare: false`, unchanged in `src/server/db.ts`), no session state (no `set`, `listen` or session advisory lock), every multi-statement change in one `sql.begin()`, at most 5 connections, and no network call inside a transaction. Extend `tests/integration/migrate.test.ts`:
   - scan `src/server/files/*.ts` for `set `/`listen`/`pg_advisory_lock` and fail on any;
   - check that `migrations/0011_files.sql` has no `begin`/`commit`/`concurrently`;
   - apply 0011 on a fresh database (0010 is SF-115's number; this branch may not have it);
   - check Postgres's own 23514/23502 refusals: a file on two records and on none, `size` 0 and 26214401, a 256-character name, `kind = 'svg'`, a `file_added` event without `file_name`, a `file_deleted` event without `deleted_file_id`, `file_size` on a `file_deleted`;
   - check that the kind check still accepts `'note'` and `'referrer_set'`, and accepts SF-115's `'custom_set'`, `'custom_changed'` and `'custom_cleared'`;
   - check that RLS is on for the three new tables.
-- [ ] T016 [US1] Integration tests in `tests/integration/files.test.ts` (`// covers FR-001, FR-002, US1 scenarios 1–6, SC-002, SC-005`), using `StorageFake` and helpers in a new `tests/integration/file-helpers.ts` (`uploadFile(actor, target, name, bytes, contentType?)` = start → fake PUT → finish):
+- [x] T016 [US1] Integration tests in `tests/integration/files.test.ts` (`// covers FR-001, FR-002, US1 scenarios 1–6, SC-002, SC-005`), using `StorageFake` and helpers in a new `tests/integration/file-helpers.ts` (`uploadFile(actor, target, name, bytes, contentType?)` = start → fake PUT → finish):
   - a 2.1 MB PDF on a deal, a PNG on a person and an `.xlsx` on an organisation are each listed by `listFiles` with name, size, kind, uploader and date, newest first;
   - a second file with the same name keeps both;
   - `startFileUpload` refuses a 0-byte file (`file_empty`), 26214401 bytes (`file_too_large`) and a 256-character name (`file_name_too_long`), with no pending row; exactly 26214400 is accepted;
@@ -178,7 +178,7 @@ description: "Task list for SF-116 Files"
 
 ### Implementation for User Story 1
 
-- [ ] T017 [US1] Create `src/server/files/files.ts` with `startFileUpload(actorId, target, { name, size })` and `finishFileUpload(actorId, uploadId)` (data-model.md § State changes). Each returns `{ status: "ok", … } | { status: <code> }`.
+- [x] T017 [US1] Create `src/server/files/files.ts` with `startFileUpload(actorId, target, { name, size })` and `finishFileUpload(actorId, uploadId)` (data-model.md § State changes). Each returns `{ status: "ok", … } | { status: <code> }`.
   - **Record**: lock the record like `lockRecord` in `src/server/records/notes.ts` (`visibleDeal`/`visiblePerson`, `for update`, `archived`).
   - **Storage calls** go outside `sql.begin()`: the read-back (`objectInfo` + `readHead(path, 16)`) comes before the transaction.
   - **The finish transaction**:
@@ -192,11 +192,11 @@ description: "Task list for SF-116 Files"
     2. claims up to 50 due rows `for update skip locked`, pushes `due_at` 10 minutes ahead and commits;
     3. calls `removeObjects`;
     4. on success deletes those rows, on failure increments `attempts`.
-- [ ] T018 [US1] Create `src/app/(app)/records/file-actions.ts` (`"use server"`), with `startFileUpload({ kind, id, name, size })` and `finishFileUpload({ uploadId })` per contracts/routes.md § Server actions.
+- [x] T018 [US1] Create `src/app/(app)/records/file-actions.ts` (`"use server"`), with `startFileUpload({ kind, id, name, size })` and `finishFileUpload({ uploadId })` per contracts/routes.md § Server actions.
   - Each calls `requireUser()` first and resolves the record with `noteTarget`.
   - Returns plain `{ uploadId, url, contentType }` / `{ ok: true }` or `{ error: code, name? }`.
   - Never returns text taken from the request.
-- [ ] T019 [US1] Create the client `src/app/(app)/records/AddFiles.tsx`.
+- [x] T019 [US1] Create the client `src/app/(app)/records/AddFiles.tsx`.
   - **Picker**: `[ ADD FILE ]` opens a hidden `<input type="file" multiple>`.
   - **Each picked file, in turn**:
     - `validateFile` (refusals listed with their template);
@@ -206,13 +206,13 @@ description: "Task list for SF-116 Files"
     - `finishFileUpload`.
   - **At the end**: `router.refresh()`, then `messages.file_added` if at least one file was listed, plus one line per refused file.
   - File names are rendered as text only.
-- [ ] T020 [US1] Create the server `src/app/(app)/records/FilesSection.tsx` (design A):
+- [x] T020 [US1] Create the server `src/app/(app)/records/FilesSection.tsx` (design A):
   - heading `// FILES (<n>)` with `<AddFiles>` (not on archived records);
   - a table with Name | Kind (`<span className="ft">{kindLabel}</span>`) | Size (`formatFileSize`) | Added by ("<name> (deactivated)" when inactive) | Added (`formatDate`) | actions;
   - "No files yet." when empty.
 
   Name and action links come in US2. In US1 the name is plain text and `[ DOWNLOAD ]` links to `/files/<id>/download`.
-- [ ] T021 [US1] Place `<FilesSection>` between `<NextActivities>` and `<RecordTimeline>` in `src/app/(app)/deals/[id]/page.tsx`, `src/app/(app)/people/[id]/page.tsx`, `src/app/(app)/organisations/[id]/page.tsx` and `src/app/(app)/deals/DealDrawer.tsx` (with `[ ADD FILE ]` in the drawer too, US2 scenario 6). Add the `.ft` chip and the `// FILES` table styles to `src/app/globals.css`, following `design-options.html` option A.
+- [x] T021 [US1] Place `<FilesSection>` between `<NextActivities>` and `<RecordTimeline>` in `src/app/(app)/deals/[id]/page.tsx`, `src/app/(app)/people/[id]/page.tsx`, `src/app/(app)/organisations/[id]/page.tsx` and `src/app/(app)/deals/DealDrawer.tsx` (with `[ ADD FILE ]` in the drawer too, US2 scenario 6). Add the `.ft` chip and the `// FILES` table styles to `src/app/globals.css`, following `design-options.html` option A.
 
 **Checkpoint**: Files can be uploaded and are listed.
 
@@ -226,7 +226,7 @@ description: "Task list for SF-116 Files"
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T022 [P] [US2] Integration tests in `tests/integration/files-download.test.ts` (`// covers FR-003, FR-004, FR-005, US2 scenarios 1–5`). They call the route handlers' exported `GET` directly, with a session cookie built like the other route tests:
+- [x] T022 [P] [US2] Integration tests in `tests/integration/files-download.test.ts` (`// covers FR-003, FR-004, FR-005, US2 scenarios 1–5`). They call the route handlers' exported `GET` directly, with a session cookie built like the other route tests:
   - `/files/<id>/download` answers 303 to a fake Storage address with `download=<safeDownloadName>`, and following it gives the uploaded bytes with `content-disposition: attachment`;
   - `Cache-Control: no-store` and `Referrer-Policy: no-referrer` are on every answer;
   - `/files/<id>/preview` on a PNG or PDF answers 303 without `download`;
@@ -238,23 +238,23 @@ description: "Task list for SF-116 Files"
 
 ### Implementation for User Story 2
 
-- [ ] T023 [US2] In `src/server/files/files.ts`, add:
+- [x] T023 [US2] In `src/server/files/files.ts`, add:
   - `pageFile(viewerId, idParam, target)`: parses the id, then requires `visibleFile` and the file's record column to equal the target.
   - `fileAccess(viewerId, id)` → `{ status: "ok", file } | { status: "gone" } | { status: "hidden" }` (contracts/routes.md § Routes). `gone` when a `file_deleted` event with `deleted_file_id = id` is on a record the viewer can see.
-- [ ] T024 [US2] Create `src/app/(app)/files/[id]/download/route.ts` and `src/app/(app)/files/[id]/preview/route.ts` (research.md §3).
+- [x] T024 [US2] Create `src/app/(app)/files/[id]/download/route.ts` and `src/app/(app)/files/[id]/preview/route.ts` (research.md §3).
   - Call `requireUser()`, then `fileAccess`.
   - On `ok`: 303 to `signedUrl(path, { download: safeDownloadName(name) })`, or without `download` for a preview of a previewable kind.
   - A preview of another kind → 303 `/files/<id>/download`.
   - `hidden`/`gone`/`StorageUnreachable` → 303 `/files/unavailable?reason=hidden|gone|unreachable`.
   - Set `Cache-Control: no-store` and `Referrer-Policy: no-referrer` on every answer.
-- [ ] T025 [P] [US2] Create `src/app/(app)/files/unavailable/page.tsx` (design B). It calls `requireUser()` and shows the fixed message for `reason` (`hidden` → `file_not_found`, `gone` → `file_gone`, `unreachable` → `files_unreachable`, anything else → `file_not_found`) with a link to `/`.
-- [ ] T026 [US2] Complete `FilesSection.tsx`.
+- [x] T025 [P] [US2] Create `src/app/(app)/files/unavailable/page.tsx` (design B). It calls `requireUser()` and shows the fixed message for `reason` (`hidden` → `file_not_found`, `gone` → `file_gone`, `unreachable` → `files_unreachable`, anything else → `file_not_found`) with a link to `/`.
+- [x] T026 [US2] Complete `FilesSection.tsx`.
   - **Name links** (plain `<a>`, never `next/link`):
     - an image → the current page with `file=<id>`, keeping the other parameters;
     - a PDF → `/files/<id>/preview` with `target="_blank" rel="noopener noreferrer"`;
     - other kinds → `/files/<id>/download`.
   - **Actions**: `[ PREVIEW ]` for previewable kinds only, with the same target as the name; `[ DOWNLOAD ]`.
-- [ ] T027 [US2] Create the server `src/app/(app)/records/FileOverlays.tsx` (built like `ActivityOverlays.tsx`).
+- [x] T027 [US2] Create the server `src/app/(app)/records/FileOverlays.tsx` (built like `ActivityOverlays.tsx`).
   - It opens only for an image file of this record that the viewer can see (`pageFile`), from `?file=<id>`.
   - The box over the page shows: the header "<name> · <size>"; `[ DOWNLOAD ]`; `[ CLOSE ]` (a link to the page without `file`); and `<img src="/files/<id>/preview" alt={name}>`.
   - Wire it into the three record pages and the drawer's page (read `file` from `searchParams`).
@@ -272,7 +272,7 @@ description: "Task list for SF-116 Files"
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T028 [P] [US3] Integration tests in `tests/integration/files-private.test.ts` (`// covers FR-008, FR-009, FR-010, US3 scenarios 1–7, SC-004`):
+- [x] T028 [P] [US3] Integration tests in `tests/integration/files-private.test.ts` (`// covers FR-008, FR-009, FR-010, US3 scenarios 1–7, SC-004`):
   - **Ada's private deal and private person, as seen by Grace**:
     - `listFiles` is empty and the count is 0;
     - `fileAccess` gives `hidden`, the same as for an id that never existed;
@@ -289,7 +289,7 @@ description: "Task list for SF-116 Files"
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Check every `files` query in `src/server/files/files.ts` (`listFiles`, `pageFile`, `fileAccess`, `startFileUpload`, `finishFileUpload`, `deleteFile`) for `visibleFile` or the visibility-checked `lockRecord`, and fix any gap the tests show. In `fileAccess`, make the `gone` branch check the event's record with `visibleDeal`/`visiblePerson` (organisations always visible), so a deleted file on a hidden record answers `hidden`.
+- [x] T029 [US3] Check every `files` query in `src/server/files/files.ts` (`listFiles`, `pageFile`, `fileAccess`, `startFileUpload`, `finishFileUpload`, `deleteFile`) for `visibleFile` or the visibility-checked `lockRecord`, and fix any gap the tests show. In `fileAccess`, make the `gone` branch check the event's record with `visibleDeal`/`visiblePerson` (organisations always visible), so a deleted file on a hidden record answers `hidden`.
 
 **Checkpoint**: Privacy holds for files on every path.
 
@@ -303,23 +303,23 @@ description: "Task list for SF-116 Files"
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T030 [P] [US4] Integration tests in `tests/integration/files-timeline.test.ts` (`// covers FR-007, US4 scenarios 1–4, SC-006`):
+- [x] T030 [P] [US4] Integration tests in `tests/integration/files-timeline.test.ts` (`// covers FR-007, US4 scenarios 1–4, SC-006`):
   - each upload gives exactly one `file_added` and each delete exactly one `file_deleted`;
   - the `file_added` entry has `file.id` set while the file exists and `null` after the delete;
   - entries on a deal appear on its main person's, other linked person's and organisation's timelines with `deal` set;
   - none appear for a viewer who cannot see the deal;
   - `readAmbassadorUpdates` holds no file entries.
-- [ ] T031 [P] [US4] Extend `tests/unit/timeline-view.test.ts`: `entryTag` gives `FILE` for `file_added`/`file_deleted` on the record itself, `DEAL` when `deal` is set, and ACTIVITY/PERSON/NOTE/CHANGE unchanged (`// covers US4 scenario 3`).
+- [x] T031 [P] [US4] Extend `tests/unit/timeline-view.test.ts`: `entryTag` gives `FILE` for `file_added`/`file_deleted` on the record itself, `DEAL` when `deal` is set, and ACTIVITY/PERSON/NOTE/CHANGE unchanged (`// covers US4 scenario 3`).
 
 ### Implementation for User Story 4
 
-- [ ] T032 [US4] In `src/server/records/timeline-view.ts`, `EntryTag` gains `"FILE"`. `entryTag` returns ACTIVITY, PERSON and DEAL as today, then `FILE` for the two file kinds, then NOTE/CHANGE.
-- [ ] T033 [US4] In `src/app/(app)/records/Timeline.tsx` and `RecordTimeline.tsx`, render the two lines of data-model.md § Timeline event with `<span className="kd file">File</span>` (or the DEAL tag on a linked deal's entry):
+- [x] T032 [US4] In `src/server/records/timeline-view.ts`, `EntryTag` gains `"FILE"`. `entryTag` returns ACTIVITY, PERSON and DEAL as today, then `FILE` for the two file kinds, then NOTE/CHANGE.
+- [x] T033 [US4] In `src/app/(app)/records/Timeline.tsx` and `RecordTimeline.tsx`, render the two lines of data-model.md § Timeline event with `<span className="kd file">File</span>` (or the DEAL tag on a linked deal's entry):
   - "**<name>** added <file name> (<formatFileSize>)": the file name is a plain `<a>` while `file.id` is set (image → `?file=<id>` on the current page, PDF → `/files/<id>/preview` in a new tab, other → `/files/<id>/download`), and text otherwise;
   - "**<name>** deleted <file name>";
   - names are text nodes only;
   - add `.kd.file { color: var(--ink); background: var(--wash); border-color: var(--blue) }` to `globals.css`, using the nearest existing variables.
-- [ ] T034 [US4] In `src/server/records/ambassadors.ts`, add `and e.kind not in ('file_added', 'file_deleted')` to the `where` of `readAmbassadorUpdates` (SF-114 latest updates hold notes and changes only).
+- [x] T034 [US4] In `src/server/records/ambassadors.ts`, add `and e.kind not in ('file_added', 'file_deleted')` to the `where` of `readAmbassadorUpdates` (SF-114 latest updates hold notes and changes only).
 
 **Checkpoint**: Every file change is on the timeline.
 
@@ -333,7 +333,7 @@ description: "Task list for SF-116 Files"
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T035 [P] [US5] Integration tests in `tests/integration/files-delete.test.ts` (`// covers FR-006, FR-011, FR-012, US5 scenarios 1–3, edge cases`):
+- [x] T035 [P] [US5] Integration tests in `tests/integration/files-delete.test.ts` (`// covers FR-006, FR-011, FR-012, US5 scenarios 1–3, edge cases`):
   - `deleteFile` removes the row, then the fake object; `fileAccess` gives `gone`;
   - with `failDeletes()`: still `ok`, the file not listed, the path left in `file_cleanup` and removed by the next `sweepFileCleanup()`;
   - two concurrent `deleteFile` calls on one file give one `ok` and one `file_gone`, with exactly one `file_deleted` event;
@@ -345,7 +345,7 @@ description: "Task list for SF-116 Files"
 
 ### Implementation for User Story 5
 
-- [ ] T036 [US5] Add `deleteFile(actorId, target, fileId)` to `src/server/files/files.ts` (data-model.md § Delete a file).
+- [x] T036 [US5] Add `deleteFile(actorId, target, fileId)` to `src/server/files/files.ts` (data-model.md § Delete a file).
   - In one transaction:
     1. `lockRecord` (`file_record_not_found` / `files_archived`);
     2. `delete from files f where f.id = $id and <record column> = <target id> returning storage_path, name` (no row → `file_gone`);
@@ -353,16 +353,16 @@ description: "Task list for SF-116 Files"
     4. `recordEvent` with kind `file_deleted`, `fileName` and `deletedFileId`.
   - After commit: try `removeObjects([path])` (deleting the cleanup row on success), then `sweepFileCleanup()`.
   - Return `ok` whatever Storage answered.
-- [ ] T037 [US5] Add `cleanupPathsFor(db, target)` to `src/server/files/files.ts`: `insert into file_cleanup (storage_path) select storage_path from files where <col> = $id union all select storage_path from file_uploads where <col> = $id on conflict do nothing`.
+- [x] T037 [US5] Add `cleanupPathsFor(db, target)` to `src/server/files/files.ts`: `insert into file_cleanup (storage_path) select storage_path from files where <col> = $id union all select storage_path from file_uploads where <col> = $id on conflict do nothing`.
   - Call it inside the transactions of `deleteDeal` (`src/server/deals/deals.ts`), `deletePerson` (`src/server/records/people.ts`) and `deleteOrganisation` (`src/server/records/organisations.ts`), before their `delete`.
   - Call `sweepFileCleanup()` after each commit.
-- [ ] T038 [US5] Add `deleteFileAction` to `src/app/(app)/records/file-actions.ts`.
+- [x] T038 [US5] Add `deleteFileAction` to `src/app/(app)/records/file-actions.ts`.
   - Inputs: `target`, `targetId`, `fileId`, `back`.
   - Calls `requireUser()` first and checks `back` with `isSafeNext`.
   - Redirects to `back` without `delete-file`, with the notice `file_deleted`, or with the error code.
   - A hidden record → its `listPath` with `file_not_found`.
   - Show the notices in `FilesSection` the way `NoteNotices.tsx` does.
-- [ ] T039 [US5] Add `[ DELETE ]` (a red link to `?delete-file=<id>`, not on archived records) to `FilesSection.tsx`. In `FileOverlays.tsx`, open the confirmation box from `?delete-file=<id>` (`pageFile`, record not archived): `templates.file_delete_confirm(name)`, `[ DELETE ]` (a form posting to `deleteFileAction`) and `[ CANCEL ]` (a link back).
+- [x] T039 [US5] Add `[ DELETE ]` (a red link to `?delete-file=<id>`, not on archived records) to `FilesSection.tsx`. In `FileOverlays.tsx`, open the confirmation box from `?delete-file=<id>` (`pageFile`, record not archived): `templates.file_delete_confirm(name)`, `[ DELETE ]` (a form posting to `deleteFileAction`) and `[ CANCEL ]` (a link back).
 
 **Checkpoint**: All stories work on their own.
 
@@ -370,7 +370,7 @@ description: "Task list for SF-116 Files"
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T040 [P] Create `src/seed/files.ts` (data-model.md § Fake data) and register it in `src/seed/index.ts` after `notes`/`activities`.
+- [x] T040 [P] Create `src/seed/files.ts` (data-model.md § Fake data) and register it in `src/seed/index.ts` after `notes`/`activities`.
   - It is idempotent: skip a file whose (record, name) already exists.
   - It makes generated bytes only: a small valid PNG, a minimal one-page PDF, a GIF, zip bytes for `budget.xlsx`, text bytes named `fake.png`.
   - Each file goes through the storage module into the fake, then the same insert and `recordEvent` as `finishFileUpload`.
@@ -378,17 +378,17 @@ description: "Task list for SF-116 Files"
   - Files: on a shared deal, on Ada Fake's private deal (`contract.pdf`), on a private person (`cv-fake.pdf`), on an organisation, on an archived record (`old-brief.docx`), and on a shared person.
 
   Extend `tests/integration/seed.test.ts`: running it twice gives no duplicates, and the private files are hidden from Grace Fake (`// covers FR-016`).
-- [ ] T041 [P] Add `SUPABASE_URL=`, `SUPABASE_SECRET_KEY=` and `FILES_BUCKET=crm-files` to `.env.example`, with comments (the key is a secret; leave the URL empty locally to use the fake storage). In `README.md`:
+- [x] T041 [P] Add `SUPABASE_URL=`, `SUPABASE_SECRET_KEY=` and `FILES_BUCKET=crm-files` to `.env.example`, with comments (the key is a secret; leave the URL empty locally to use the fake storage). In `README.md`:
   - add the three rows to the Settings table;
   - add a "Files" section with the bucket setup of contracts/storage.md: private, 25 MB file size limit, no Storage policies, secret key server-only;
   - say that the fake is used when `SUPABASE_URL` is empty with APP_ENV development/test, and that local contents go in `.fake-storage/`.
-- [ ] T042 [P] Update `AGENTS.md` § Layout:
+- [x] T042 [P] Update `AGENTS.md` § Layout:
   - `src/server/files/` (`rules.ts` pure, `storage.ts`, `fake-storage.ts`, `files.ts`);
   - `visibleFile()` in `records/visibility.ts`: every `files` read uses it;
   - `records/FilesSection.tsx`, `AddFiles.tsx`, `FileOverlays.tsx`, `file-actions.ts`;
   - `src/app/(app)/files/` and `src/app/dev/fake-storage/`;
   - `tests/fakes/storage.ts` (checked against `storage_v0_openapi.json`); `src/seed/files.ts` in the seeder registry list.
-- [ ] T043 [P] At the end of `docs/DECISIONS.md`, add the seven choices people made in the spec, one line each, exactly:
+- [x] T043 [P] At the end of `docs/DECISIONS.md`, add the seven choices people made in the spec, one line each, exactly:
   - `- Files use design A: a "// FILES" table between "// NEXT ACTIVITIES" and "// TIMELINE" on record pages and the deal drawer, the image preview in a box over the page, FILE entries on the timeline (SF-116)`
   - `- Anyone who can see a record can delete its files, as with notes (SF-116)`
   - `- A person's or organisation's "// FILES" lists only their own files; their deals' files show only as FILE entries on the timeline (SF-116)`
@@ -398,9 +398,9 @@ description: "Task list for SF-116 Files"
   - `- With no file store set up, every file action shows "Files can't be reached right now. Try again in a minute." and nothing is stored anywhere else (SF-116)`
 
   No blueprint line. Run `tests/unit/decisions.test.ts`.
-- [ ] T044 [P] Extend `tests/unit/messages.test.ts` with the SF-116 codes and templates (exact texts of contracts/routes.md § Messages), and `tests/unit/nav.test.ts` only if the sidebar changed (it should not).
-- [ ] T045 Run `npm run test:schemas`, `npm run typecheck` and `npm test` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`. Fix every failure and keep the full failure output when reporting. Then check quickstart.md § Automated checks is fully covered.
-- [ ] T046 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its schema) and `## Schemas` (each schema's GitHub URL at its commit).
+- [x] T044 [P] Extend `tests/unit/messages.test.ts` with the SF-116 codes and templates (exact texts of contracts/routes.md § Messages), and `tests/unit/nav.test.ts` only if the sidebar changed (it should not).
+- [x] T045 Run `npm run test:schemas`, `npm run typecheck` and `npm test` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`. Fix every failure and keep the full failure output when reporting. Then check quickstart.md § Automated checks is fully covered.
+- [x] T046 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its schema) and `## Schemas` (each schema's GitHub URL at its commit).
   - **Services**:
     - Supabase Storage: fake `src/server/files/fake-storage.ts`, wrapped by `tests/fakes/storage.ts` and checked against `storage_v0_openapi.json`. It copies 409 on an existing object, 413 over 26214400 bytes, `InvalidJWT` for an expired or wrong token, 60 s read addresses and 2 h upload addresses. In the running app it is reached at `/dev/fake-storage` when `SUPABASE_URL` is empty.
     - Supabase Postgres: keep the existing line and add SF-116's tables (`migrations/0011_files.sql`) and its pooler limits.

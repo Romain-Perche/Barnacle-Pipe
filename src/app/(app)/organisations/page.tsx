@@ -30,7 +30,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
   const query = { ...parsed, sector: knownSector(parsed.sector, options.sectors) };
   const [list, flash, open] = await Promise.all([
     listOrganisations(user.id, query),
-    readFlash(["organisation_deleted", "note_not_found"]),
+    readFlash(["organisation_deleted", "note_not_found", "file_not_found"]),
     query.open ? getOrganisation(user.id, query.open) : null,
   ]);
   const shown = { ...query, page: list.page };

@@ -50,3 +50,19 @@ describe("docs/DECISIONS.md (SF-109)", () => {
     expect(sf109).toHaveLength(4);
   });
 });
+
+// covers SF-116 spec.md § Clarifications (T043): the seven choices people made are recorded, one line each
+describe("docs/DECISIONS.md (SF-116)", () => {
+  const sf116 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-116)"));
+  it("records the design, delete, listing, upload link, PDF preview, Kind column and no-store choices", () => {
+    expect(sf116).toHaveLength(7);
+    expect(sf116.some((l) => l.includes("Files use design A"))).toBe(true);
+    expect(sf116.some((l) => l.includes("can delete its files, as with notes"))).toBe(true);
+    expect(sf116.some((l) => l.includes("lists only their own files"))).toBe(true);
+    expect(sf116.some((l) => l.includes("valid for up to 2 hours") && l.includes("lasts 60 seconds"))).toBe(true);
+    expect(sf116.some((l) => l.includes("new browser tab"))).toBe(true);
+    expect(sf116.some((l) => l.includes("The Kind column"))).toBe(true);
+    expect(sf116.some((l) => l.includes("With no file store set up"))).toBe(true);
+    expect(sf116.some((l) => /Departs from blueprint/.test(l))).toBe(false);
+  });
+});

@@ -1,10 +1,11 @@
 // Next.js proxy: runs before every page. No session cookie on a protected path → sign-in page.
-// It only checks that the cookie is there; requireUser() checks the session itself.
+// It only checks that the cookie is there; requireUser() checks the session itself. SF-116: /dev/fake-storage is public
+// like Storage's signed addresses (the fake checks their tokens; it answers 404 outside development/test).
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/server/auth/cookie";
 import { FLASH_COOKIE } from "@/server/records/flash-cookie";
 
-const PUBLIC = [/^\/sign-in\/?$/, /^\/auth(\/|$)/, /^\/dev\/fake-google\/?$/];
+const PUBLIC = [/^\/sign-in\/?$/, /^\/auth(\/|$)/, /^\/dev\/fake-google\/?$/, /^\/dev\/fake-storage(\/|$)/];
 
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;

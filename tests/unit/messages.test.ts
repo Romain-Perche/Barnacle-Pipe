@@ -308,3 +308,30 @@ describe("activity messages", () => {
     expect(fieldMessage({ code: "assignee_cannot_see" })).toBeUndefined();
   });
 });
+
+// covers SF-116 FR-013 (contracts/routes.md § Messages): the file messages and templates, word for word
+describe("SF-116 file messages", () => {
+  it("has the fixed messages", () => {
+    const expected: Record<string, string> = {
+      file_added: "File added.",
+      file_deleted: "File deleted.",
+      file_not_found: "This file doesn't exist or you can't see it.",
+      file_gone: "This file doesn't exist any more.",
+      file_record_not_found: "This record doesn't exist or you can't see it.",
+      files_archived: "Restore this record before changing its files.",
+      files_unreachable: "Files can't be reached right now. Try again in a minute.",
+      no_files: "No files yet.",
+    };
+    for (const [code, text] of Object.entries(expected)) expect(messageFor(code), code).toBe(text);
+  });
+  it("has the templates built from a file name, never reachable from a URL code", () => {
+    expect(templates.file_too_large("big.zip")).toBe("big.zip is over 25 MB, the most a file can be.");
+    expect(templates.file_empty("empty.txt")).toBe("empty.txt is empty.");
+    expect(templates.file_name_too_long("a".repeat(300))).toBe(`${"a".repeat(40)}… has a name over 255 characters.`);
+    expect(templates.file_upload_failed("a.pdf")).toBe("a.pdf couldn't be uploaded. Try again.");
+    expect(templates.file_uploading("a.pdf", 42)).toBe("Uploading a.pdf… 42%");
+    expect(templates.file_delete_confirm("a.pdf")).toBe("Delete a.pdf? This can't be undone.");
+    expect(messageFor("file_too_large")).toBeUndefined();
+    expect(messageFor("file_uploading")).toBeUndefined();
+  });
+});

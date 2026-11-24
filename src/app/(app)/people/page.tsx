@@ -21,7 +21,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
   const query = knownPeopleQuery(parsed, options);
   const [list, flash, open] = await Promise.all([
     listPeople(user.id, query),
-    readFlash(["person_deleted", "person_no_longer_visible", "note_not_found"]),
+    readFlash(["person_deleted", "person_no_longer_visible", "note_not_found", "file_not_found"]),
     query.open ? getPerson(user.id, query.open) : null,
   ]);
   const shown = { ...query, page: list.page };

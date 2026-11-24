@@ -214,12 +214,14 @@ export async function getAmbassadorPage(viewerId: number, id: number, shown: { p
 }
 
 // // LATEST UPDATES (research.md §10): the ambassador's own person timeline and those of the people and deals they
-// referred that the viewer can see, newest first. Not the deals they are only linked to as a contact.
+// referred that the viewer can see, newest first. Not the deals they are only linked to as a contact. Notes and changes
+// only: no FILE entries (SF-116).
 export async function readAmbassadorUpdates(viewerId: number, id: number, limit: number): Promise<TimelinePage> {
   const where = sql`
     exists (select 1 from persons a where a.id = ${id} and ${visiblePerson(sql, viewerId, "a")})
     and (e.person_id = ${id}
          or e.person_id in (select r.id from persons r where r.referred_by_id = ${id} and ${visiblePerson(sql, viewerId, "r")})
-         or e.deal_id in (select d.id from deals d where d.referred_by_id = ${id} and ${visibleDeal(sql, viewerId, "d")}))`;
+         or e.deal_id in (select d.id from deals d where d.referred_by_id = ${id} and ${visibleDeal(sql, viewerId, "d")}))
+    and e.kind not in ('file_added', 'file_deleted')`;
   return selectEntries(viewerId, where, limit, { deals: true, personOtherThan: id });
 }

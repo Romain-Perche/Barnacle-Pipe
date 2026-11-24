@@ -4,6 +4,7 @@ import type { Sql } from "@/server/db";
 import { seedActivities } from "@/seed/activities";
 import { seedAmbassadors } from "@/seed/ambassadors";
 import { seedDeals } from "@/seed/deals";
+import { seedFiles } from "@/seed/files";
 import { seedNotes } from "@/seed/notes";
 import { seedPeople } from "@/seed/people";
 import { seedUsers } from "@/seed/users";
@@ -18,6 +19,8 @@ export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] =
   { name: "activities", run: seedActivities },
   // SF-114: ambassadors, referred people and deals (after the users, organisations and pipelines they use).
   { name: "ambassadors", run: seedAmbassadors },
+  // SF-116: files on deals, people and organisations, through the (fake) file storage, with their FILE entries.
+  { name: "files", run: seedFiles },
 ];
 
 export async function runSeeders(sql: Sql): Promise<string[]> {

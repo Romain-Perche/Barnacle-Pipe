@@ -3,7 +3,8 @@
 // the actions, // DETAILS (people, labels, followers) and // TIMELINE (SF-102: notes, day groups). ?confirm=lost opens the Lost box over the page;
 // ?confirm=delete (admins) the delete confirmation; ?error= only from the allow-list. A deal the user cannot see
 // answers "This deal doesn't exist or you can't see it." (not-found.tsx). SF-109: // NEXT ACTIVITIES above the timeline;
-// ?activity= / ?followup= / ?delete-activity= open the activity box (ActivityOverlays).
+// ?activity= / ?followup= / ?delete-activity= open the activity box (ActivityOverlays). SF-116: // FILES between them
+// and the timeline; ?file= / ?delete-file= open the image preview box / the delete confirmation (FileOverlays).
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
@@ -18,6 +19,8 @@ import { readFlash } from "@/server/records/flash";
 import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { PersonPicker } from "../../records/PersonPicker";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { FileOverlays } from "../../records/FileOverlays";
+import { FilesSection } from "../../records/FilesSection";
 import { ReferredBy } from "../../records/ReferredBy";
 import { archiveDeal, deleteDeal, followDeal, linkPerson, markWon, reopenDeal, restoreDeal, unfollowDeal, unlinkPerson } from "../actions";
 import { day, resultText } from "../DealBits";
@@ -274,6 +277,8 @@ export default async function DealPage({ params, searchParams }: { params: Promi
 
       <NextActivities viewerId={user.id} target={{ dealId: deal.id }} archived={deal.archived} back={here} />
 
+      <FilesSection viewerId={user.id} target={{ dealId: deal.id }} archived={deal.archived} back={here} error={error} />
+
       <RecordTimeline
         viewerId={user.id}
         target={{ dealId: deal.id }}
@@ -287,6 +292,13 @@ export default async function DealPage({ params, searchParams }: { params: Promi
         archived={deal.archived}
         back={here}
         query={{ activity: first(query, "activity"), followup: first(query, "followup"), deleteActivity: first(query, "delete-activity") }}
+      />
+      <FileOverlays
+        viewerId={user.id}
+        target={{ dealId: deal.id }}
+        archived={deal.archived}
+        back={here}
+        query={{ file: first(query, "file"), deleteFile: first(query, "delete-file") }}
       />
       {confirmLost && <LostBox dealId={deal.id} version={deal.version} error={boxError} />}
     </div>

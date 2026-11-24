@@ -2,6 +2,7 @@
 // kinds to the same table. SF-102: notes are events of kind "note" (body, editor, version); a person's and an
 // organisation's timeline also read the entries of their currently linked deals (research.md §6).
 import { sql, type Fragment, type Sql } from "@/server/db";
+import type { FileKind } from "@/server/files/rules";
 import { noteSegments, type NoteSegment } from "@/server/records/notes-rules";
 import { hasAmbassadorPage, visibleActivity, visibleDeal, visiblePerson } from "@/server/records/visibility";
 
@@ -16,7 +17,9 @@ export type EventKind =
   // SF-114: the Ambassador tick (on the person) and "Referred by" (on the person or deal)
   | "ambassador_added" | "ambassador_removed" | "referrer_set" | "referrer_changed" | "referrer_cleared"
   // SF-109: a done activity, read from `activities` (never a timeline_events row)
-  | "activity";
+  | "activity"
+  // SF-116: a file added to or deleted from the record
+  | "file_added" | "file_deleted";
 // Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)"); SF-114:
 // "person_deleted" on a referrer_cleared written when the referrer was deleted.
 export type MoveCause = "stage_deleted" | "pipeline_deleted" | "person_deleted";
@@ -60,6 +63,11 @@ export async function recordEvent(
     toStage?: string;
     cause?: MoveCause | null;
     reason?: string;
+    // SF-116: file_added (fileId, fileName, fileSize) and file_deleted (fileName, deletedFileId)
+    fileId?: number;
+    fileName?: string;
+    fileSize?: number;
+    deletedFileId?: number;
   },
 ): Promise<void> {
   const personId = "personId" in event ? event.personId : null;
@@ -67,10 +75,11 @@ export async function recordEvent(
   const dealId = "dealId" in event ? event.dealId : null;
   await db`
     insert into timeline_events (person_id, organisation_id, deal_id, kind, actor_id, fields, related_person_id, related_user_id,
-                                 from_stage, to_stage, cause, reason, from_person_id)
+                                 from_stage, to_stage, cause, reason, from_person_id, file_id, file_name, file_size, deleted_file_id)
     values (${personId}, ${organisationId}, ${dealId}, ${event.kind}, ${event.actorId}, ${event.fields ?? null},
             ${event.relatedPersonId ?? null}, ${event.relatedUserId ?? null}, ${event.fromStage ?? null},
-            ${event.toStage ?? null}, ${event.cause ?? null}, ${event.reason ?? null}, ${event.fromPersonId ?? null})`;
+            ${event.toStage ?? null}, ${event.cause ?? null}, ${event.reason ?? null}, ${event.fromPersonId ?? null},
+            ${event.fileId ?? null}, ${event.fileName ?? null}, ${event.fileSize ?? null}, ${event.deletedFileId ?? null})`;
 }
 
 export type TimelineEntry = TimelineEvent & {
@@ -83,7 +92,10 @@ export type TimelineEntry = TimelineEvent & {
   authorActive: boolean;
   // SF-109: a done activity (kind "activity"); `id` is then the activity's id and `createdAt` when it was marked done.
   activity: TimelineActivity | null;
+  // SF-116: on file_added / file_deleted: the file's name and size as they were; `id` and `kind` while the file exists.
+  file: TimelineFile | null;
 };
+export type TimelineFile = { id: number | null; name: string; size: number | null; kind: FileKind | null };
 export type TimelineActivity = {
   id: number; type: "call" | "meeting" | "task"; subject: string; note: string | null; doneByName: string; doneByActive: boolean;
   dueOn: string; dueTime: string | null; durationMinutes: number | null;
@@ -145,7 +157,7 @@ async function doneActivities(viewerId: number, target: Target, limit: number): 
     limit ${limit}`;
   return rows.map((r) => ({
     id: r.id, kind: "activity" as const, actorName: r.done_by_name, fields: null, relatedPerson: null, fromPerson: null, relatedUserName: null, fromStage: null,
-    toStage: null, cause: null, reason: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, person: null, note: null,
+    toStage: null, cause: null, reason: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, person: null, note: null, file: null,
     activity: {
       id: r.id, type: r.type, subject: r.subject, note: r.note, doneByName: r.done_by_name, doneByActive: r.done_by_active,
       dueOn: r.due_on, dueTime: r.due_time, durationMinutes: r.duration_minutes, archived: r.archived,
@@ -182,6 +194,7 @@ export async function selectEntries(
       reason: string | null; created_at: Date; body: string | null; version: number; editor_name: string | null; editor_active: boolean | null;
       deal_id: number | null; deal_title: string | null; deal_archived: boolean | null;
       person_id: number | null; person_name: string | null; person_archived: boolean | null;
+      file_id: number | null; file_name: string | null; file_size: number | null; file_kind: FileKind | null;
     }[]
   >`
     select e.id::int as id, e.kind, u.name as actor_name, u.status = 'active' as actor_active, e.fields, rp.id::int as rp_id,
@@ -192,7 +205,8 @@ export async function selectEntries(
            ru.name as ru_name, e.from_stage, e.to_stage, e.cause,
            e.reason, e.created_at, e.body, e.version, eu.name as editor_name, eu.status = 'active' as editor_active,
            de.id::int as deal_id, de.title as deal_title, de.archived_at is not null as deal_archived,
-           pe.id::int as person_id, btrim(pe.first_name || ' ' || pe.last_name) as person_name, pe.archived_at is not null as person_archived
+           pe.id::int as person_id, btrim(pe.first_name || ' ' || pe.last_name) as person_name, pe.archived_at is not null as person_archived,
+           e.file_id::int as file_id, e.file_name, e.file_size::float8 as file_size, fi.kind as file_kind
     from timeline_events e
     left join users u on u.id = e.actor_id
     left join persons rp on rp.id = e.related_person_id
@@ -201,6 +215,7 @@ export async function selectEntries(
     left join users eu on eu.id = e.edited_by
     left join deals de on de.id = e.deal_id
     left join persons pe on pe.id = e.person_id
+    left join files fi on fi.id = e.file_id
     where ${where}
       and (e.related_person_id is null or ${visiblePerson(sql, viewerId, "rp")})
       and (e.from_person_id is null or ${visiblePerson(sql, viewerId, "fp")})
@@ -248,6 +263,10 @@ export async function selectEntries(
             }
           : null,
       activity: null,
+      file:
+        (r.kind === "file_added" || r.kind === "file_deleted") && r.file_name !== null
+          ? { id: r.file_id, name: r.file_name, size: r.file_size, kind: r.file_kind }
+          : null,
     }));
   const merged = [...events, ...activities].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   return { more: merged.length > limit, entries: merged.slice(0, limit) };

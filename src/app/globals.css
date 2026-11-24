@@ -450,3 +450,22 @@ table.activities-list .due-cell { white-space: nowrap; }
 @media (max-width: 720px) {
   .boxrow { grid-template-columns: 1fr; }
 }
+/* SF-116 // FILES (design A): a plain table above the timeline, a kind chip, the FILE tag and the image preview box */
+.files { max-width: 900px; }
+.files .sect-row { flex-wrap: wrap; }
+.files .upload-status { flex-basis: 100%; font-family: var(--sans); font-size: 14px; font-weight: 400; letter-spacing: normal; text-transform: none; color: var(--ink); }
+.files .upload-status p { margin: 6px 0 0; }
+.files .uploading { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+table.files-table { width: 100%; border-collapse: collapse; }
+table.files-table .num { text-align: right; white-space: nowrap; }
+table.files-table .nowrap { white-space: nowrap; }
+table.files-table .fname { overflow-wrap: anywhere; }
+table.files-table .facts .btn { margin-left: 6px; }
+.ft { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; border: 0.5px solid var(--line); padding: 1px 4px; }
+.kd.file { color: var(--ink); background: var(--wash); border-color: var(--blue); }
+.filebox { max-width: min(960px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; }
+.filebox-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 0.5px solid var(--line); padding-bottom: 8px; margin-bottom: 12px; overflow-wrap: anywhere; }
+.filebox-acts { display: flex; gap: 6px; flex-shrink: 0; }
+.filebox img { display: block; margin: 0 auto; max-width: 100%; max-height: 70vh; object-fit: contain; }
+.deal-drawer .files { overflow-x: auto; }
+.deal-drawer table.files-table td { font-size: 13px; }

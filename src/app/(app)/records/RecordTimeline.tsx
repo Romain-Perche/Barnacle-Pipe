@@ -4,6 +4,7 @@
 // entries (DEAL: the deal's title links to it; read-only there). `?note=` / `?delete-note=` only pick which of the
 // notes shown is in edit / confirm mode; nothing from the address is shown. SF-109: a done activity is an ACTIVITY
 // entry (type, subject, note as text, "Done by <name>") with its box to untick it, except on archived records (its own or a linked one) and in the drawer.
+// SF-116: FILE entries (a file added or deleted); the name of a file that still exists links to it.
 import Link from "next/link";
 import { formatTime } from "@/server/format";
 import { templates } from "@/server/messages";
@@ -136,7 +137,7 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
                       </>
                     ) : (
                       <div>
-                        <Line e={e} onDeal={onDealPage || e.deal !== null} />
+                        <Line e={e} onDeal={onDealPage || e.deal !== null} filePage={e.deal ? `/deals/${e.deal.id}` : path} />
                       </div>
                     )}
                   </div>

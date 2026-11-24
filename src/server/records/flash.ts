@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { templates } from "@/server/messages";
 import { FLASH_COOKIE as COOKIE } from "@/server/records/flash-cookie";
 
-const CODES = ["person_deleted", "organisation_deleted", "person_no_longer_visible", "handed_over", "handover_none", "deal_deleted", "deal_no_longer_visible", "note_deleted", "note_not_found", "activity_deleted"] as const;
+const CODES = ["person_deleted", "organisation_deleted", "person_no_longer_visible", "handed_over", "handover_none", "deal_deleted", "deal_no_longer_visible", "note_deleted", "note_not_found", "activity_deleted", "file_deleted", "file_not_found"] as const;
 export type FlashCode = (typeof CODES)[number];
 // `count`: people handed over, `deals`: deals handed over (handed_over only).
 type Flash = { code: FlashCode; name: string; count?: number; deals?: number };
