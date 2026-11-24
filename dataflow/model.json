@@ -71,6 +71,11 @@
       "id": "files",
       "label": "Files",
       "description": "Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage."
+    },
+    {
+      "id": "segments",
+      "label": "Segments",
+      "description": "Saved, team-shared people segments and the count of who they reach."
     }
   ],
   "actors": [
@@ -337,6 +342,18 @@
         "src/app/(app)/records/file-actions.ts",
         "src/app/(app)/files"
       ]
+    },
+    {
+      "id": "segments",
+      "label": "Segments pages and reach",
+      "zone": "app",
+      "group": "segments",
+      "sources": [
+        "src/app/(app)/segments",
+        "src/server/segments/segments.ts",
+        "src/server/segments/reach.ts",
+        "src/server/segments/rules.ts"
+      ]
     }
   ],
   "stores": [
@@ -554,6 +571,15 @@
       "group": "database",
       "sources": [
         "migrations/0011_files.sql"
+      ]
+    },
+    {
+      "id": "segments-table",
+      "label": "Segments",
+      "zone": "postgres",
+      "group": "segments",
+      "sources": [
+        "migrations/0012_segments.sql"
       ]
     }
   ],
@@ -2073,6 +2099,78 @@
       "data": "files section",
       "sources": [
         "src/app/(app)/records/FilesSection.tsx"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "segments",
+      "data": "signed-in user",
+      "sources": [
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "segments",
+      "data": "segment form, count requests",
+      "sources": [
+        "src/app/(app)/segments/actions.ts"
+      ]
+    },
+    {
+      "from": "segments",
+      "to": "segments-table",
+      "data": "segment definitions",
+      "sources": [
+        "src/server/segments/segments.ts"
+      ]
+    },
+    {
+      "from": "segments-table",
+      "to": "segments",
+      "data": "saved segments",
+      "sources": [
+        "src/server/segments/segments.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "segments",
+      "data": "people reach counts",
+      "sources": [
+        "src/server/segments/reach.ts"
+      ]
+    },
+    {
+      "from": "deals-table",
+      "to": "segments",
+      "data": "deal conditions for reach",
+      "sources": [
+        "src/server/segments/reach.ts"
+      ]
+    },
+    {
+      "from": "custom-values-table",
+      "to": "segments",
+      "data": "custom value tests",
+      "sources": [
+        "src/server/custom-fields/values.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "segments-table",
+      "data": "table definition",
+      "sources": [
+        "migrations/0012_segments.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "segments-table",
+      "data": "fake segments",
+      "sources": [
+        "src/seed/segments.ts"
       ]
     }
   ]
