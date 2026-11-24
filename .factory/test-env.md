@@ -19,6 +19,9 @@
   and `apikey`. Switches: `down()` (network error), `failDeletes()` (500 on delete), `advance(ms)` (token clock),
   `objects()`, `requests`. In the running app (APP_ENV development/test and `SUPABASE_URL` empty) the same fake is
   reached by the browser at `/dev/fake-storage/...` (contents in `.fake-storage/`, git-ignored).
+  AI review only: `.factory/run/storage-proxy.js`, a stand-in Storage on :54321 (`/storage/v1/*` forwarded to the app's
+  `/dev/fake-storage`, CORS like Storage, `MODE=fail-deletes` answers 500 to every DELETE) for a second app run with
+  `SUPABASE_URL=http://localhost:54321 SUPABASE_SECRET_KEY=fake-storage-key`.
 - Supabase Postgres (through the Supavisor pooler): no fake — a real local PostgreSQL 17. No public schema
   on GitHub; follows Supabase's docs (https://supabase.com/docs/guides/database/connecting-to-postgres):
   transaction-mode pooler copied by always connecting with `prepare: false` and taking only
@@ -185,6 +188,18 @@
     answer 303 (follow with `maxRedirects: 0` to read the Location); `/files/unavailable?reason=…` shows the message.
     `reset-db.sh` also empties `files`, `file_uploads`, `file_cleanup` (run `npm run db:migrate` first on an older
     crm_dev, else the truncate fails and nothing is seeded); `.fake-storage/` keeps old contents (harmless).
+  - SF-116 AI review scripts (each on fresh data: `bash .factory/run/reset-db.sh` first; helpers in `sf116-lib.js`, which
+    makes the test files in `$TMPDIR/sf116-files`): `scenarios-sf116-a.js` (US1, US2), `scenarios-sf116-b.js` (US3; waits
+    61 s for a read address to expire; US3-7 moves a file onto Alan Fake's private deal/person by SQL, then hands over to
+    Linus in /admin/users), `scenarios-sf116-c.js` (US4, US5, edge cases; needs the two extra apps below). Run with
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf116-X.js`. Extra apps (after the build on :3000):
+    `PORT=3001 SKIP_BUILD=1 SKIP_SEED=1 SUPABASE_URL=http://localhost:9 SUPABASE_SECRET_KEY=fake-storage-key bash .factory/run/start-app.sh`
+    (Storage unreachable, edge 8) and `MODE=fail-deletes node .factory/run/storage-proxy.js &` then
+    `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 SUPABASE_URL=http://localhost:54321 SUPABASE_SECRET_KEY=fake-storage-key bash .factory/run/start-app.sh`
+    (a Storage that fails every delete, edge 9). Known: Next's proxy (`src/proxy.ts` matcher) cuts request bodies at 10 MB
+    (`proxyClientMaxBodySize`), so an upload over 10 MB to `/dev/fake-storage` fails in the running app; headless Chromium
+    here names every download with a non-ASCII name "download" (read `content-disposition` instead); a file on disk whose
+    name has a backslash is dropped by `setInputFiles` (pass `{ name, mimeType, buffer }`). Not re-runnable without a reset.
   - CSV import scenarios (SF-103): the fake files are in `tests/fixtures/csv/` (people-20.csv: rows 4 and 15 use
     `dup.one@`/`DUP.TWO@fakeco.example`, which a scenario puts
     in the CRM first, row 9 has an invalid address; organisations-10.csv: "FAKECO LTD" matches the seeded Fakeco Ltd, size
