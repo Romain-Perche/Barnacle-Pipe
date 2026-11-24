@@ -1,5 +1,7 @@
 // REGISTRY of fake data, run in this order by `npm run db:seed` and by the tests.
 // Later features append their seeder here (pipelines, deals, contacts…). Each one must be re-runnable.
+// SF-117: the fake Pipedrive needs no seeding: fakePipedrive() (src/server/pipedrive/fake-pipedrive.ts) builds its own
+// data, and its owners' emails are those of the fake users (ada@ and margaret@barnacle.ai) so owners match by hand.
 import type { Sql } from "@/server/db";
 import { seedActivities } from "@/seed/activities";
 import { seedAmbassadors } from "@/seed/ambassadors";

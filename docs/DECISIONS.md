@@ -84,3 +84,6 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - A CSV import adds no timeline entry per custom value: an imported record gets only its "imported" entry (SF-115)
 - A CSV column heading that matches a custom field name is suggested for the custom field before a built-in field (SF-115)
 - The timeline kind check of each migration also lists the kinds of features planned at the same time (SF-115 lists SF-116's file_added and file_deleted), so whichever merges first drops none (SF-115)
+- The Pipedrive import uses design B: Settings holds the token; the import has its own page with a step bar (choose, importing, report), like the CSV import (SF-117)
+- A Pipedrive contact visible only to its owner is private in the CRM and its owner is its creator: only the owner sees it, not whoever ran the import (SF-117)
+- A person Subscribed in the CRM whom Pipedrive says is unsubscribed becomes Unsubscribed on import, with a timeline entry and a report line; an import never makes anyone Subscribed (SF-117)

@@ -91,10 +91,9 @@ async function check(req: Request, fake: FakePipedrive): Promise<Response> {
 type Fetch = (input: string, init: RequestInit) => Promise<Response>;
 let installed: Fetch | null = null;
 
-// A fresh FakePipedrive, installed for the current test (and uninstalled after it).
-export function installFakePipedrive(): FakePipedrive {
+// A fresh FakePipedrive (or the one given), installed for the current test (and uninstalled after it).
+export function installFakePipedrive(fake: FakePipedrive = new FakePipedrive()): FakePipedrive {
   if (!process.env.PIPEDRIVE_TOKEN_KEY) process.env.PIPEDRIVE_TOKEN_KEY = TEST_PIPEDRIVE_KEY;
-  const fake = new FakePipedrive();
   installed = async (input, init) => check(new Request(input, init), fake);
   usePipedriveFetchForTests(installed);
   return fake;

@@ -22,6 +22,28 @@
   AI review only: `.factory/run/storage-proxy.js`, a stand-in Storage on :54321 (`/storage/v1/*` forwarded to the app's
   `/dev/fake-storage`, CORS like Storage, `MODE=fail-deletes` answers 500 to every DELETE) for a second app run with
   `SUPABASE_URL=http://localhost:54321 SUPABASE_SECRET_KEY=fake-storage-key`.
+- Pipedrive API (SF-117; v1 `GET /users/me`, `GET /users`; v2 `GET /persons`, `/organizations`, `/personFields`,
+  `/organizationFields`): fake `src/server/pipedrive/fake-pipedrive.ts` (`FakePipedrive`), wrapped for the tests by
+  `tests/fakes/pipedrive.ts` (`installFakePipedrive`, installed with `usePipedriveFetchForTests`; loaders in
+  `tests/fakes/pipedrive-schema.ts`), which checks every request and answer against the schemas
+  `pipedrive_v2_openapi.json` (`/api/v2/*`: path and method, query parameters declared, enum values (`sort_by`,
+  `sort_direction`, each `include_fields` item), `limit` ≤ the declared maximum 500, every property of a 200 answer's
+  `data[]` items (plus the fields asked for with `include_fields`) and of `additional_data` declared with its type, the
+  `x-api-token` header of the `api_key` scheme) and `pipedrive_v1_openapi.yml` (`/v1/*`: path and method, query
+  parameters declared (so `api_token` in the address throws: the app sends the header), every property of the 200
+  answer's `data` declared, the `x-api-token` header). The fake copies Pipedrive's behaviour: 401 for an unknown or
+  refused token, 429 with `Retry-After` (`slowDownEvery(n, seconds)`), 400 on `limit` > 500 and on
+  `include_fields=marketing_status` without the marketing app (`noMarketingApp()`), cursor paging (base64 of the last
+  id) in ascending ids, the `ids` filter. Switches: `failNext("network" | 500)`, `hangNext()` (no answer until the 10 s
+  time-out), `deletePerson` / `deleteOrganization`, `refuseToken`, `tamper` (changes the next answer), `requests`
+  (method, path, query; never the token). In the running app (APP_ENV development/test and `PIPEDRIVE_URL` empty) the
+  same fake runs in process (no route, no proxy): tokens `fake-pipedrive-token` ("Fake Person", "Fakeco Pipedrive" 1001:
+  60 organisations, 300 people; owners Fake Person = ada@barnacle.ai, Margaret Pipedrive Fake = margaret@barnacle.ai,
+  Jane Fake = jane@fake.example with no CRM user; "Fakeco Ltd" matches the seeded organisation; person 17 shares
+  person001's email, person 23 has an invalid email, person 99 has no name, organisation 60's name is over 200
+  characters; "Budget" (double), "Favourite colour" (varchar), "Job title", "Lead source" (Referral / Webinar / Event),
+  "LinkedIn", org "Region" (address), labels Hot / Cold / Investor) and `fake-pipedrive-other` ("Otherco Pipedrive"
+  1002). It needs `PIPEDRIVE_TOKEN_KEY` set (`start-app.sh` makes one into /tmp/pipedrive-token-key; tests set their own).
 - Supabase Postgres (through the Supavisor pooler): no fake — a real local PostgreSQL 17. No public schema
   on GitHub; follows Supabase's docs (https://supabase.com/docs/guides/database/connecting-to-postgres):
   transaction-mode pooler copied by always connecting with `prepare: false` and taking only
@@ -104,10 +126,24 @@
   on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a 61-character or
   `colour`-typed field, a second "diet" person field, a value row with two values or two targets, a second value for the
   same field and person, a `custom_set` without a field name, an `edited` event with an old value). No new outside service.
+  The Pipedrive import code (SF-117: `src/server/pipedrive/*.ts`, `deactivate()` in `users.ts`) keeps to the same pooler
+  limits: no fake, the real local PostgreSQL 17, no public schema on GitHub, follows
+  https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session advisory lock,
+  scanned by `tests/integration/migrate.test.ts`), every change one `sql.begin()`, and NO Pipedrive (network) call inside a
+  transaction: a part fetches first, then one transaction locks the import row `for update`, checks its step and cursor,
+  takes `lock table organisations, person_emails, pipedrive_links in share row exclusive mode` and saves the page with
+  bulk `unnest` inserts. Its tables come from `migrations/0012_pipedrive.sql` (`pipedrive_connections`,
+  `pipedrive_imports` with the partial unique index "one open import per user", `pipedrive_links` with the primary key
+  company + kind + Pipedrive id; RLS on each; kinds `pipedrive_imported`/`pipedrive_unsubscribed` added to the shared kind
+  check), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a
+  second open import, paused without a reason, People without consent, nothing ticked, a person link with an
+  organisation id, `how = 'copied'`, a 256-character company name).
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
 - storage_v0_openapi.json: https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json
+- pipedrive_v2_openapi.json: https://github.com/soenneker/soenneker.pipedrive.openapiclient/blob/77695f9076c899e2ba1e7e8eb029aabb28abed27/openapi.json
+- pipedrive_v1_openapi.yml: https://github.com/Zenika/zenpipe/blob/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml
 
 ## Docker images
 - none (PostgreSQL comes from Debian's apt repository, see below)
@@ -117,7 +153,8 @@
   binaries in `/usr/lib/postgresql/17/bin` still work), then as the normal user:
   `initdb -D /tmp/pgdata -U postgres --auth=trust && pg_ctl -D /tmp/pgdata -o "-k /tmp -c listen_addresses=localhost" -l /tmp/pg.log start`
   and `psql -h localhost -U postgres -c "create database crm_test" -c "create database crm_dev"`.
-- Schemas: `.factory/schemas/oauth2-api.json` and `.factory/schemas/storage_v0_openapi.json`, downloaded by
+- Schemas: `.factory/schemas/oauth2-api.json`, `.factory/schemas/storage_v0_openapi.json`,
+  `.factory/schemas/pipedrive_v2_openapi.json` and `.factory/schemas/pipedrive_v1_openapi.yml`, downloaded by
   `npm run test:schemas` (run by `npm test` as `pretest`; commits above, sha256 checked).
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
@@ -134,6 +171,8 @@
     background (log `/tmp/app-$PORT.log`). Env: `PORT` (3000), `APP_ENV` (development; `APP_ENV=` for empty),
     `DATABASE_URL` (crm_dev), `FIRST_ADMIN_EMAIL` (ada@barnacle.ai; `FIRST_ADMIN_EMAIL=` for none), `VERCEL_ENV`,
     `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
+    SF-117: `PIPEDRIVE_TOKEN_KEY` defaults to a key made once into /tmp/pipedrive-token-key (`PIPEDRIVE_TOKEN_KEY=` for
+    "The Pipedrive import isn't set up yet."); `PIPEDRIVE_URL` empty → the in-process fake Pipedrive.
   - `bash .factory/run/reset-db.sh [db]` — empties every app table (users, sessions, people, organisations,
     labels, timeline, pipelines, stages, deals, stage periods, activities…), puts back the six starting lead sources, and seeds
     again (`NO_SEED=1`: empty). Run `npm run db:migrate` first on a database created before a new migration (the
@@ -234,7 +273,7 @@
     ("Choose another file" after [ BACK ]); column selects are labelled "Field for <heading>" (values `role`, `skip`,
     `email:work`…); preview/report regions "Rows not imported", "Warnings", "First people"; consent radios "Subscribed" /
     "Unsubscribed" (`exact: true`). Seeded labels are Hot, Investor, Partner, so "Cold" is not on the list.
-    `reset-db.sh` also empties `csv_imports`.
+    `reset-db.sh` also empties `csv_imports` (SF-117: and `pipedrive_links`, `pipedrive_imports`, `pipedrive_connections`).
   - SF-103 AI-review scenario script `scenarios-sf103.js` (all 40 US1–US3 scenarios and edge cases 1–24, ~4 min, against
     :3000/crm_dev on fresh fake data; it makes its own CSV files in memory, adds "Ada Example" and the private "Hidden Privfake"
     (Linus) by SQL, a removed lead source/label by SQL; Edge 22 makes the import fail part-way with a temporary trigger on
@@ -380,6 +419,6 @@
       as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
 
 ## Smoke checks
-1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json
+1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in
