@@ -589,14 +589,14 @@ Task: "T023 tests/integration/pipedrive-helpers.ts"
 
 ## Fix round 1: counts per kind on the report (FR-025, US2 scenario 16)
 
-- [ ] T053 Write the test first, in `tests/integration/pipedrive-import.test.ts` (`// covers FR-025, US2 scenario 16`):
+- [x] T053 Write the test first, in `tests/integration/pipedrive-import.test.ts` (`// covers FR-025, US2 scenario 16`):
   run the US2 fake-data import (people and organisations ticked, one person and one organisation already in the CRM),
   then rerun it so records count as already imported, render `ReportStep` with `renderToStaticMarkup` and check the
   "// COUNTS" table has a People row and an Organisations row whose Imported, Linked, Already imported and Not imported
   cells equal `view.counts.people` / `view.counts.organisations` (each also checked against the fake data's known numbers,
   not a guess). It fails now (no such table) and passes once T054 is built.
-- [ ] T054 Add `src/app/(app)/settings/pipedrive-import/KindCounts.tsx` (server component: "// COUNTS" label, table
+- [x] T054 Add `src/app/(app)/settings/pipedrive-import/KindCounts.tsx` (server component: "// COUNTS" label, table
   rows People / Organisations, columns Imported, Linked, Already imported, Not imported, `en-GB` numbers; a row only
   for a ticked kind, or Organisations when any of its counts is not zero) and render it in `ReportStep.tsx` after the
   total tiles and "Already imported: n". The progress step stays as it is.
-- [ ] T055 Run `npm test && npm run typecheck` with `APP_ENV=test`.
+- [x] T055 Run `npm test && npm run typecheck` with `APP_ENV=test`.

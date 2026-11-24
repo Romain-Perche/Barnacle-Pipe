@@ -204,3 +204,61 @@ describe("only People ticked (US2-4, FR-012)", () => {
     expect(view.counts.organisations.linked).toBe(1);
   });
 });
+
+// The "// COUNTS" table of step 3 REPORT, as rendered: one row per kind, its cells taken from view.counts.
+const { createElement } = await import("react");
+const { renderToStaticMarkup } = await import("react-dom/server");
+const { ReportStep } = await import("@/app/(app)/settings/pipedrive-import/ReportStep");
+
+async function reportRows() {
+  const view = (await getImportView(linus.id))!;
+  const html = renderToStaticMarkup(createElement(ReportStep, { view, names: await namesForReport(linus.id, view.report) }));
+  const table = html.match(/<section aria-label="Counts per kind">([\s\S]*?)<\/section>/)?.[1] ?? "";
+  const rows = [...table.matchAll(/<tr><th scope="row">([^<]+)<\/th>((?:<td>[^<]*<\/td>)+)<\/tr>/g)].map((m) => [
+    m[1],
+    ...[...m[2].matchAll(/<td>([^<]*)<\/td>/g)].map((c) => c[1]),
+  ]);
+  return { view, html: table, rows };
+}
+const cells = (c: { imported: number; linked: number; already: number; notImported: number }) =>
+  [c.imported, c.linked, c.already, c.notImported].map(String);
+
+describe("the report's counts per kind (FR-025, US2 scenario 16)", () => {
+  // covers FR-025, US2 scenario 16
+  it("shows people and organisations imported, linked, already imported and not imported", async () => {
+    await importAll();
+    let r = await reportRows();
+    expect(r.html).toContain(`<span class="c">//</span> COUNTS`);
+    expect(r.html).toContain("Imported</th><th>Linked</th><th>Already imported</th><th>Not imported");
+    expect(r.rows).toEqual([
+      ["People", ...cells(r.view.counts.people)],
+      ["Organisations", ...cells(r.view.counts.organisations)],
+    ]);
+    expect(r.rows).toEqual([
+      ["People", "27", "1", "0", "2"],
+      ["Organisations", "9", "1", "0", "0"],
+    ]);
+    // Run again: every record saved the first time now counts as already imported.
+    await importAll();
+    r = await reportRows();
+    expect(r.rows).toEqual([
+      ["People", ...cells(r.view.counts.people)],
+      ["Organisations", ...cells(r.view.counts.organisations)],
+    ]);
+    expect(r.rows).toEqual([
+      ["People", "0", "0", "28", "2"],
+      ["Organisations", "0", "0", "10", "0"],
+    ]);
+  });
+
+  // covers FR-025, FR-012: only People ticked still shows the organisations they brought; nothing ticked has no row
+  it("has a row for a kind not ticked only when it has counts", async () => {
+    await importAll({ people: true, organisations: false });
+    expect((await reportRows()).rows).toEqual([
+      ["People", "27", "1", "0", "2"],
+      ["Organisations", "7", "1", "0", "0"],
+    ]);
+    await importAll({ people: false, organisations: true });
+    expect((await reportRows()).rows.map((row) => row[0])).toEqual(["Organisations"]);
+  });
+});

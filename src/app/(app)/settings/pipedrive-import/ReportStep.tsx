@@ -7,6 +7,7 @@ import { messages, templates } from "@/server/messages";
 import type { ImportView } from "@/server/pipedrive/imports";
 import { itemText, reportLines, warningLines, type Names } from "@/server/pipedrive/report";
 import { Counts } from "./Counts";
+import { KindCounts } from "./KindCounts";
 
 const KIND_WORD = { person: "Person", organisation: "Organisation" } as const;
 
@@ -17,6 +18,7 @@ export function ReportStep({ view, names }: { view: ImportView; names: Names }) 
     <>
       <Counts totals={view.totals} />
       <p className="hint">{templates.pipedrive_already(view.totals.already)}</p>
+      <KindCounts view={view} />
       {view.stoppedByUser && (
         <p className="notice" role="status">
           {messages.pipedrive_stopped_by_you}
