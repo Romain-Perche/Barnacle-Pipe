@@ -179,6 +179,41 @@ No other outside service: drafts, merge tags and the preview run in the app, its
 or stylesheets named in pasted HTML are fetched by the user's browser inside the sandboxed preview, not by the app's
 code (spec.md § Clarifications, Plan 2026-11-24).
 
+## Fix round 1
+
+AI review (2026-11-24): 40 of 41 checks passed. Three problems.
+
+1. **Reply-to message never shown (US1 scenario 4, FR-019).** Cause: `#campaign-form` in
+   `src/app/(app)/campaigns/CampaignEditor.tsx` has no `noValidate`, and Reply-to is `type="email"`, so the browser
+   blocks the save with its own message. The person, organisation and deal forms all set `noValidate`. Fix: add
+   `noValidate` to `#campaign-form`. The server checks stay the only checks.
+2. **Rename then delete shows the name before the rename (FR-009a).** Cause: `merge_links` entries keep the name of the
+   draft's last save (`{ field, name }`); `shownLinks` in `src/server/campaigns/merge.ts` uses the live field's name,
+   else that stored name. When the field is renamed and then deleted with no save in between, the stored name is the
+   old one. Fix: keep the field's last name when it is deleted. In `deleteField`
+   (`src/server/custom-fields/fields.ts`), for a `person` field, in the same transaction, add `"last": <field name>` to
+   every `campaigns.merge_links` entry whose `field` is that id (one `update campaigns ... where merge_links @>
+   jsonb_build_array(jsonb_build_object('field', <id>))`; `version`, `updated_by` and `updated_at` do not change: it
+   is not an edit of the draft). `StoredLink` becomes `{ field, name, last? }`. `shownLinks` shows the live field's
+   name, else `last`, else `name`. `rewriteNames` still finds tags by `name` (the text as stored), so the stored texts
+   are not touched. `linksToStore` keeps writing `{ field, name }` with the shown name, so the next save stores the
+   last name as `name`. Rejected: rewriting every draft's texts on each rename (changes drafts nobody edited and
+   makes open edit pages fail with a conflict); keeping deleted fields as hidden rows (changes the whole custom fields
+   feature). Also update the comment in `data-model.md` § Link (`{ field, name, last? }`).
+3. **Status column reads the badge message (minor).** Cause: the Campaigns page and the edit page header show
+   `messages.campaign_draft` ("DRAFT"); `messages.campaign_status_draft` ("Draft", spec US1 scenario 1) is unused. Fix:
+   use `campaign_status_draft` in both places and remove `campaign_draft`. The `.status` style still shows it in
+   capitals, as `docs/DESIGN.md` asks for status text.
+
+Not a problem: a person made private after being chosen keeps their values on screen until the next save or a new
+choice; the edge case in spec.md passes (the AI review saw it pass).
+
+Files to change: `src/app/(app)/campaigns/CampaignEditor.tsx`, `src/app/(app)/campaigns/page.tsx`,
+`src/server/messages.ts`, `src/server/campaigns/merge.ts`, `src/server/custom-fields/fields.ts`, `data-model.md`,
+`tests/integration/campaign-merge-links.test.ts`, `tests/unit/campaign-merge.test.ts`, a new
+`tests/unit/campaign-editor-form.test.ts`. No migration (the `merge_links` column is already `jsonb`), no new
+dependency, no new outside service.
+
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**

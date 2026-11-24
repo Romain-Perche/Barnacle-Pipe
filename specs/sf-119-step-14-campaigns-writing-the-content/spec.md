@@ -145,6 +145,8 @@ From the Campaigns page or a draft's edit page, the user duplicates a draft to s
 - Duplicating a draft whose name is 100 characters: the copy's name is cut to 100 characters.
 - An empty draft (only a name): it saves with "Draft saved.", its preview shows an empty subject and no content above the unsubscribe line, and duplicating it makes "Copy of <name>".
 - A user deactivated after creating drafts: the Campaigns page still lists their drafts, with their name under Created by.
+- A custom field renamed and then deleted, with no save of the draft in between (e.g. "Diet" renamed "Dietary needs", then deleted): the draft's tags show "Dietary needs", the name the field had when it was deleted, and are listed under "Unknown merge tags".
+- A Reply-to that is not an email address (e.g. "not-an-email"): pressing `[ SAVE ]` shows the app's "Reply-to: enter one valid email address.", not a browser message, and nothing is saved.
 
 ## Requirements *(mandatory)*
 
