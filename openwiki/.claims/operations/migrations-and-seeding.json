@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bc78a990910b8df4f178fbb4629175856f164e62b586b1167a9679c986dee722",
+  "pageVersion": "sha256:221bd8f1e22dbf42bf705077ac9ef26b8bd4995228b5ca327ca65616e02dd7cb",
   "claims": [
     {
       "id": "claim_a6e28665edd74e5a8d730754a3b01eab",
@@ -27,8 +27,8 @@
       "statement": "Seeders are registered in an ordered list in src/seed/index.ts and run in order by runSeeders.",
       "evidence": [
         {
-          "resource": "repo://src/seed/index.ts#L1-L27",
-          "version": "repo-lines-v1:sha256:82e30de26207c3b3b72e6a7627ec2d09e7976bcee201d8f3dfe2dbdfc5c091b7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MGNhMzAwNTcyODE5MzZiMTQ5NmJkNjliMTM4MzAwYWRlMDM5M2ZkZWIxYzcwOTcwMGU1NjM3MTJiOTIyZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src/seed/index.ts",
+          "version": "repo-file-v1:sha256:094a81b760d997250a579f14aeb24d168fdf68e5e3aa6d368ce1c3f33dfa4be6"
         }
       ]
     },
@@ -54,7 +54,7 @@
     },
     {
       "id": "claim_e9f5a6c86f2f403a9f3c75f1cdeb498f",
-      "statement": "src/seed/deals.ts seeds fake pipelines and deals re-runnably; notes.ts and activities.ts are registered after it and src/seed/ambassadors.ts last.",
+      "statement": "src/seed/deals.ts seeds fake pipelines and deals re-runnably; notes.ts and activities.ts are registered after it, then ambassadors.ts, custom-fields and campaigns.",
       "evidence": [
         {
           "resource": "repo://src/seed/ambassadors.ts",
@@ -62,13 +62,23 @@
         },
         {
           "resource": "repo://src/seed/index.ts",
-          "version": "repo-file-v1:sha256:82e30de26207c3b3b72e6a7627ec2d09e7976bcee201d8f3dfe2dbdfc5c091b7"
+          "version": "repo-file-v1:sha256:094a81b760d997250a579f14aeb24d168fdf68e5e3aa6d368ce1c3f33dfa4be6"
+        }
+      ]
+    },
+    {
+      "id": "claim_ffef276ef0a84cfea67885f0fa6b572d",
+      "statement": "The campaigns seeder adds a draft only when no campaign has its name.",
+      "evidence": [
+        {
+          "resource": "repo://src/seed/campaigns.ts",
+          "version": "repo-file-v1:sha256:005a2827f2b6381a0823c6d76a8739c93f0223051f5c94887282051a0e0619a7"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T18:05:22.701Z"
+    "at": "2026-11-24T17:53:35.777Z"
   }
 }

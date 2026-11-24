@@ -85,6 +85,11 @@
       "id": "unsubscribe",
       "label": "Unsubscribe",
       "description": "Lets an email recipient withdraw consent through a token link or RFC 8058 one-click."
+    },
+    {
+      "id": "campaigns",
+      "label": "Campaigns",
+      "description": "Lets the team write shared email campaign drafts with merge tags and preview them for a person."
     }
   ],
   "actors": [
@@ -385,6 +390,17 @@
         "src/server/records/unsubscribe.ts",
         "src/server/records/unsubscribe-rules.ts"
       ]
+    },
+    {
+      "id": "campaigns",
+      "label": "Campaigns",
+      "zone": "app",
+      "group": "campaigns",
+      "sources": [
+        "src/app/(app)/campaigns",
+        "src/server/campaigns/campaigns.ts",
+        "src/server/campaigns/preview.ts"
+      ]
     }
   ],
   "stores": [
@@ -620,6 +636,15 @@
       "group": "pipedrive",
       "sources": [
         "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "id": "campaigns-table",
+      "label": "Campaigns",
+      "zone": "postgres",
+      "group": "campaigns",
+      "sources": [
+        "migrations/0014_campaigns.sql"
       ]
     }
   ],
@@ -2312,6 +2337,62 @@
       "data": "unsubscribe token column",
       "sources": [
         "migrations/0013_unsubscribe.sql"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "campaigns",
+      "data": "signed-in user",
+      "sources": [
+        "src/app/(app)/campaigns/actions.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "campaigns",
+      "data": "campaign drafts and preview picks",
+      "sources": [
+        "src/app/(app)/campaigns/actions.ts"
+      ]
+    },
+    {
+      "from": "campaigns",
+      "to": "campaigns-table",
+      "data": "campaign drafts",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "campaigns-table",
+      "to": "campaigns",
+      "data": "campaign list and drafts",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "custom-fields-table",
+      "to": "campaigns",
+      "data": "people custom fields for merge tags",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "campaigns",
+      "data": "visible person values for preview",
+      "sources": [
+        "src/server/campaigns/preview.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "campaigns-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0014_campaigns.sql"
       ]
     }
   ]

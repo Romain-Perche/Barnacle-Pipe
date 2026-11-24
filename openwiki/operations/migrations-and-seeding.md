@@ -5,7 +5,7 @@ description: How npm run db:migrate applies migrations/*.sql safely through Supa
 tags: [migrations, seed, database, operations, fake-data]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T18:05:22.701Z
+    at: 2026-11-24T17:53:35.777Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -15,11 +15,13 @@ sources:
     resource: repo://scripts/seed.ts
   - id: openwiki-source-1554a73332a66ceee3c8a725
     resource: repo://src/seed/ambassadors.ts
+  - id: openwiki-source-a8f726ea5a5ac92f98706ec6
+    resource: repo://src/seed/campaigns.ts
   - id: openwiki-source-1c34aa4b66ba96eefc78bf08
     resource: repo://src/seed/index.ts
   - id: openwiki-source-010903950424d10f20cb451d
     resource: repo://src/seed/users.ts
-generated: { by: "claude-code", at: "2026-11-23T18:05:22.701Z" }
+generated: { by: "claude-code", at: "2026-11-24T17:53:35.777Z" }
 ---
 
 # Migrations and fake data
@@ -73,9 +75,14 @@ The fifth, `src/seed/activities.ts`, adds clearly fake [activities](../features/
 dates relative to the UK day of the run (one overdue, two due today, later ones, three done), including one on a
 private deal and one on a private person and two assignment notifications (one unread, one read). It is
 re-runnable: an activity is found by its exact subject. Migration `0008_activities.sql` creates the table.
-The sixth, `src/seed/ambassadors.ts`, runs last: it adds clearly fake ambassadors (one shared, one private, one former) with
+The sixth, `src/seed/ambassadors.ts`, runs after the activities seeder: it adds clearly fake ambassadors (one shared, one private, one former) with
 the people and deals they referred and two notes on referred records. It is re-runnable: people are found by email,
 deals by title. Migration `0009_ambassadors.sql` creates the columns.
+
+Further seeders follow in the registry (`custom-fields`, then `campaigns`). `src/seed/campaigns.ts` adds fake
+[campaign](../features/campaigns.md) drafts (one per layout, plus a pasted HTML email with a harmless script to show the
+preview runs none of it). It is re-runnable: a draft is added only when no campaign has its name, and the "Diet (fake)"
+draft is skipped when that custom field is missing. Migration `0014_campaigns.sql` creates the table.
 
 Later features append their seeder to the registry; see [Adding a feature](../workflows/adding-a-feature.md).
 Fake data never uses the real team's names.
