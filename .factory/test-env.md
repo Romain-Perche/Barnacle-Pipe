@@ -485,7 +485,8 @@
     (`/admin/custom-fields?kind=people&delete=<id>`, the `alertdialog`'s submit button), never by SQL: `deleteField` writes the
     `last` name onto `campaigns.merge_links`, which a SQL delete skips. Edge case 14 (Reply-to "not-an-email" through the normal
     form shows the app's message: `#campaign-form` has `noValidate`) is checked inside US1 scenario 4 of `scenarios-sf119-a.js`.
-    All 43 SF-119 scenarios pass (a then b after one reset).
+    All 43 SF-119 scenarios pass (a then b after one reset; re-run after the merge with main that renumbered the migration
+    to 0014: still all pass, schemas by `npm run -s test:schemas`, app by `start-app.sh`).
 
   - SF-121 (AI review): `node .factory/run/scenarios-sf121.js [prefix…]` (NODE_PATH=/opt/playwright/node_modules) on a
     fresh seed (app on :3000 from start-app.sh) runs every unsubscribe scenario: tokens and consents read with psql, the
