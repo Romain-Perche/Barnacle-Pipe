@@ -1,0 +1,8 @@
+[
+  {
+    "name": "yaml",
+    "version": "2.9.1",
+    "manager": "npm",
+    "why": "devDependency for the tests only: the test fake of Pipedrive checks the app's /v1/users/me and /v1/users calls against Pipedrive's v1 OpenAPI file, which only exists as YAML; Node has no YAML reader and writing one is not a few lines. It has no dependencies of its own and is never in the app bundle."
+  }
+]

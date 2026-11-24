@@ -15,6 +15,10 @@
 - Q: Which design do you want for the Pipedrive import screens? → A: Design: B, Settings holds the token; the import has its own page with a step bar (1 CHOOSE, 2 IMPORTING, 3 REPORT), like the CSV import (see `design-options.html`).
 - Q: A Pipedrive contact is "Owner only" and owned by another user. Who can see it in the CRM after an import? → A: Only its owner: the owner counts as its creator, and the importing user does not see it (unless they are the owner).
 - Q: A person already in the CRM is Subscribed, and the same person is unsubscribed in Pipedrive. What does the import do? → A: The CRM person becomes Unsubscribed, nothing else changes, a timeline entry is added, and the report lists it.
+- Q: An admin deleted a person or organisation that came from Pipedrive (for example after an erasure request). A later import finds it in Pipedrive again. Is it added back? → A: No: the CRM remembers the Pipedrive record and counts it as "already imported"; it is never added again (decided by the factory, to confirm)
+- Q: How long after the progress page is closed does the import show as paused? → A: 30 seconds without a part; the page then shows "Import paused: …" with `[ CONTINUE ]` and does not carry on by itself (decided by the factory, to confirm)
+- Q: Pipedrive asks the CRM to wait a long time (for example its daily limit is used up). How long does the import wait? → A: It shows the wait and carries on by itself after at most 5 minutes; if Pipedrive still refuses, it waits again; the user can stop it at any time (decided by the factory, to confirm)
+- Q: When no token encryption key is set in development, does the app use a built-in one? → A: No: without `PIPEDRIVE_TOKEN_KEY` the Pipedrive section says "The Pipedrive import isn't set up yet." everywhere, so a copied example settings file can never carry a usable key to production (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
