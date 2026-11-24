@@ -82,6 +82,23 @@ describe("custom field tags follow the field", () => {
     expect(await unknownOf(id)).toEqual([]);
   });
 
+  it("shows the name the field had when deleted, after a rename with no save in between (fix round 1)", async () => {
+    // covers SF-119 FR-009a
+    const id = await draft({ subject: "{{Diet}} for you" });
+    const before = (await sql`select version, updated_by, updated_at from campaigns where id = ${id}`)[0];
+    expect((await updateField(ada.id, dietId, { name: "Dietary needs", inList: false })).ok).toBe(true);
+    expect((await deleteField(ada.id, dietId)).ok).toBe(true);
+    expect((await stored(id)).merge_links).toEqual([{ field: dietId, name: "Diet", last: "Dietary needs" }]);
+    expect((await sql`select version, updated_by, updated_at from campaigns where id = ${id}`)[0]).toEqual(before);
+    const v = (await getCampaignById(id))!;
+    expect(v.subject).toBe("{{Dietary needs}} for you");
+    expect(v.links).toEqual([{ field: dietId, name: "Dietary needs", live: false }]);
+    expect(await unknownOf(id)).toEqual(["{{Dietary needs}}"]);
+    // The next save stores the last name as the name.
+    expect((await saveCampaign(linus.id, id, 2, form({ subject: v.subject }))).ok).toBe(true);
+    expect((await stored(id)).merge_links).toEqual([{ field: dietId, name: "Dietary needs" }]);
+  });
+
   it("links a hand-typed tag on save and saves an unknown tag", async () => {
     const id = await draft({ previewText: "{{ DIET | x }} {{Favourite colour}}" });
     expect((await stored(id)).merge_links).toEqual([{ field: dietId, name: "Diet" }]);

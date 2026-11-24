@@ -78,7 +78,7 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
                 </td>
                 <td>{shortSubject(c.subject)}</td>
                 <td>
-                  <span className="status">{messages.campaign_draft}</span>
+                  <span className="status">{messages.campaign_status_draft}</span>
                 </td>
                 <td>{c.createdBy}</td>
                 <td>{c.lastEdited}</td>

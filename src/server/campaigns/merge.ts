@@ -10,7 +10,8 @@ export type PreviewValues = Record<string, string | null>;
 export type Tag = { raw: string; name: string; fallback: string; start: number; nameStart: number; nameEnd: number };
 export type Segment = { text: string } | { tag: Tag };
 // A custom field a draft's tags use, as stored (`merge_links`) and as shown (current name, or the last one when deleted).
-export type StoredLink = { field: number; name: string };
+// `last`: the field's name when it was deleted (set by `deleteField`), so a rename then a delete shows the latest name.
+export type StoredLink = { field: number; name: string; last?: string };
 export type Link = { field: number; name: string; live: boolean };
 export type Resolved = MergeField | "unknown";
 
@@ -64,7 +65,7 @@ export function tagsIn(texts: readonly string[]): Tag[] {
 export function shownLinks(stored: readonly StoredLink[], custom: readonly { id: number; name: string }[]): Link[] {
   return stored.map((l) => {
     const field = custom.find((c) => c.id === l.field);
-    return { field: l.field, name: field ? field.name : l.name, live: Boolean(field) };
+    return { field: l.field, name: field ? field.name : (l.last ?? l.name), live: Boolean(field) };
   });
 }
 

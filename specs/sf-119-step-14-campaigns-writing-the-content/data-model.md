@@ -77,7 +77,7 @@ Merge tags are read in heading text, text, button label, image alt, and the HTML
 - Tag: `{{<name>}}` or `{{<name> | <fallback>}}` in the subject, preview text, the text-bearing block fields and the
   HTML (research.md §3). Fallback ≤ 100 for a tag that names a merge field (`campaign_fallback_too_long`).
 - Merge field: the 11 built-ins (keys `first_name` … `labels`) then people custom fields `cf:<id>` (research.md §3).
-- Link: `{ field, name }` in `merge_links` (research.md §4); shown to the editor as `{ name, field, live }`.
+- Link: `{ field, name, last? }` in `merge_links` (`last`: the field's name when it was deleted) (research.md §4); shown to the editor as `{ name, field, live }`.
 
 ### Person (read only)
 

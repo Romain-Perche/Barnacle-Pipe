@@ -139,7 +139,7 @@ export function CampaignEditor({ view, fields }: { view: CampaignView; fields: M
   return (
     <>
       <div className="label">
-        <span className="c">//</span> {messages.campaign_kind} · <span className="status">{messages.campaign_draft}</span>
+        <span className="c">//</span> {messages.campaign_kind} · <span className="status">{messages.campaign_status_draft}</span>
       </div>
       <div className="page-head">
         <div>
@@ -183,6 +183,7 @@ export function CampaignEditor({ view, fields }: { view: CampaignView; fields: M
         <form
           id={FORM_ID}
           className="campaign-form"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);

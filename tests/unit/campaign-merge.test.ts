@@ -50,6 +50,13 @@ describe("links and renames", () => {
   it("shows a live link with the field's current name and a dead one with its last name", () => {
     expect(links).toEqual([{ field: 7, name: "Dietary needs", live: true }, { field: 3, name: "Gone field", live: false }]);
   });
+  it("shows a deleted field's last name (kept on delete) before the name stored at the last save (fix round 1)", () => {
+    // covers SF-119 FR-009a
+    const renamedThenDeleted = [{ field: 3, name: "Diet", last: "Dietary needs" }];
+    expect(shownLinks(renamedThenDeleted, custom)).toEqual([{ field: 3, name: "Dietary needs", live: false }]);
+    expect(rewriteNames("{{Diet | x}}", renamedThenDeleted, custom)).toBe("{{Dietary needs | x}}");
+    expect(shownLinks([{ field: 7, name: "Diet", last: "Old" }], custom)).toEqual([{ field: 7, name: "Dietary needs", live: true }]);
+  });
   it("rewrites only the name characters of linked tags", () => {
     const html = '<p style="x">{{Diet | none given}}</p> {{ diet|x }} {{Diets}} Diet {{Gone field}}';
     expect(rewriteNames(html, stored, custom)).toBe('<p style="x">{{Dietary needs | none given}}</p> {{ Dietary needs|x }} {{Diets}} Diet {{Gone field}}');

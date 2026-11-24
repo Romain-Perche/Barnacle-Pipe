@@ -190,7 +190,6 @@ export const messages = {
   campaign_add_block: "[ + ADD BLOCK ]",
   campaign_remove_block: "[ REMOVE ]",
   campaign_kind: "CAMPAIGN",
-  campaign_draft: "DRAFT",
   campaign_status_draft: "Draft",
   campaign_preview_for: "PREVIEW FOR",
   campaign_find_person: "Type part of a name or email address",
