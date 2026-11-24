@@ -317,7 +317,8 @@
     feature calls it (`send`), the Sent messages and token statuses. Users: Linus (main), Margaret (2nd mailbox, then
     deactivated by Ada), Grace (two tabs). Fix round 1: `[ ALLOW ]` / `[ CANCEL ]` on the fake consent screen post a plain form to
     `/dev/fake-google/gmail/answer` (a 303 to the callback), so the browser sends the `crm_gmail_oauth` cookie; the script
-    clicks them as a user would. Round 2: all 32 pass (needs `npm run test:schemas` first for smoke checks 1 and 4).
+    clicks them as a user would. Round 2: all 32 pass (needs `npm run test:schemas` first for smoke checks 1 and 4). Round 3 (after the origin/main merge with campaigns, segments, unsubscribe): all 32 pass again. On a fresh
+    database `reset-db.sh` fails (tables not made yet): run `start-app.sh` first (it migrates and seeds), then reset.
   - SF-117 AI review (Pipedrive import). Start, after the build on :3000: `nohup npx tsx .factory/run/pipedrive-server.ts >/tmp/pd.log 2>&1 &`,
     `PORT=3001 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_URL=http://localhost:9400 bash .factory/run/start-app.sh` and (edge 18)
     `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_TOKEN_KEY= bash .factory/run/start-app.sh`. Then, each on fresh data
