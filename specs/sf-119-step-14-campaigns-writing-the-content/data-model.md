@@ -25,10 +25,11 @@ create table campaigns (
   updated_by bigint not null references users (id),
   updated_at timestamptz not null default now(),
   version int not null default 1,
+  -- `is not distinct from`: with content_kind null, a plain `=` would make the whole check null, which Postgres accepts.
   constraint campaigns_content_check check (
     (content_kind is null and blocks is null and html is null)
-    or (content_kind = 'blocks' and blocks is not null and html is null)
-    or (content_kind = 'html' and html is not null and blocks is null))
+    or (content_kind is not distinct from 'blocks' and blocks is not null and html is null)
+    or (content_kind is not distinct from 'html' and html is not null and blocks is null))
 );
 alter table campaigns enable row level security;
 create index campaigns_updated_idx on campaigns (updated_at desc, id desc);

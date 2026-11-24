@@ -5,7 +5,9 @@ import { cookies } from "next/headers";
 import { messageFor, templates } from "@/server/messages";
 import { FLASH_COOKIE as COOKIE } from "@/server/records/flash-cookie";
 
-const CODES = ["person_deleted", "organisation_deleted", "person_no_longer_visible", "handed_over", "handover_none", "deal_deleted", "deal_no_longer_visible", "note_deleted", "note_not_found", "activity_deleted", "file_deleted", "file_not_found", "custom_field_deleted", "custom_choice_error"] as const;
+const CODES = ["person_deleted", "organisation_deleted", "person_no_longer_visible", "handed_over", "handover_none", "deal_deleted", "deal_no_longer_visible", "note_deleted", "note_not_found", "activity_deleted", "file_deleted", "file_not_found", "custom_field_deleted", "custom_choice_error",
+  // SF-119: a deleted campaign draft (its name from the database) and a draft another user deleted.
+  "campaign_deleted", "campaign_gone"] as const;
 export type FlashCode = (typeof CODES)[number];
 // `count`: people handed over, `deals`: deals handed over (handed_over only). `detail`: the refusal code of a
 // custom_choice_error (SF-115: a choice change refused in the custom field box; `name` is the choice typed).

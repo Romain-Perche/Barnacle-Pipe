@@ -281,6 +281,60 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-119 T010, FR-003, FR-010, FR-012: 0012_campaigns.sql on a fresh database: Postgres's own refusals
+  it("applies 0012_campaigns.sql: name, content and status checks; RLS on", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0012_campaigns.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const add = (cols: Record<string, unknown>) =>
+        c`insert into campaigns ${c({ name: "Fake", created_by: u.id, updated_by: u.id, ...cols } as never)}`;
+      expect(await code(add({}))).toBe("ok");
+      expect(await code(add({ name: "n".repeat(100) }))).toBe("ok");
+      expect(await code(add({ name: "n".repeat(101) }))).toBe("23514");
+      expect(await code(add({ name: " x" }))).toBe("23514");
+      expect(await code(add({ name: "" }))).toBe("23514");
+      expect(await code(add({ status: "sent" }))).toBe("23514");
+      expect(await code(add({ content_kind: "blocks", blocks: c.json([{ type: "divider" }]) }))).toBe("ok");
+      expect(await code(add({ content_kind: "blocks", blocks: c.json([{ type: "divider" }]), html: "<p>x</p>" }))).toBe("23514");
+      expect(await code(add({ content_kind: "html" }))).toBe("23514");
+      expect(await code(add({ html: "<p>x</p>" }))).toBe("23514");
+      expect(await code(add({ content_kind: "html", html: "x".repeat(500_000) }))).toBe("ok");
+      expect(await code(add({ content_kind: "html", html: "x".repeat(500_001) }))).toBe("23514");
+      expect(await code(add({ content_kind: "blocks", blocks: c.json([]) }))).toBe("23514");
+      expect(await code(add({ content_kind: "blocks", blocks: c.json(Array.from({ length: 51 }, () => ({ type: "divider" }))) }))).toBe("23514");
+      expect(await code(add({ merge_links: c.json({}) }))).toBe("23514");
+      expect(await code(add({ subject: "s".repeat(256) }))).toBe("23514");
+      const rls = await c`select relname from pg_class where relname = 'campaigns' and relrowsecurity`;
+      expect(rls.length).toBe(1);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-119 T010: the campaigns code keeps to the pooler's limits (no session state); the migration is transaction-safe
+  it("keeps the campaigns code and 0012_campaigns.sql free of session state", () => {
+    const dir = "src/server/campaigns";
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["merge.ts", "content.ts", "rules.ts", "campaigns.ts", "preview.ts"]));
+    for (const file of readdirSync(dir)) {
+      const text = readFileSync(`${dir}/${file}`, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    // The pure files stay client-safe (the editor imports them).
+    for (const file of ["merge.ts", "content.ts", "rules.ts"]) {
+      expect(readFileSync(`${dir}/${file}`, "utf8"), file).not.toMatch(/@\/server\/db|next\/headers|server-only/);
+    }
+    const migration = readFileSync("migrations/0012_campaigns.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration.match(/create table/gi)?.length).toBe(1);
+    expect(migration.match(/enable row level security/gi)?.length).toBe(1);
+  });
+
   // covers SF-116 T015: the files code keeps to the pooler's limits (no session state); the migration is transaction-safe
   it("keeps the files code and 0011_files.sql free of session state", () => {
     const dir = "src/server/files";

@@ -82,3 +82,17 @@ describe("docs/DECISIONS.md (SF-115)", () => {
     expect(sf115.some((l) => l.startsWith("- Departs from blueprint"))).toBe(false);
   });
 });
+
+// covers SF-119 spec.md § Clarifications (Session 2026-11-24): the three choices people made, one line each; the
+// factory's "Plan 2026-11-24" choices are not recorded until a person confirms them
+describe("docs/DECISIONS.md (SF-119)", () => {
+  const sf119 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-119)"));
+  it("records design A, shared drafts and tags that follow renames", () => {
+    expect(sf119).toEqual([
+      "- Campaigns use design A: the Campaigns page is a table; a draft's edit page has the draft (// DETAILS, // CONTENT) on the left and a live preview for a chosen person on the right (SF-119)",
+      "- Campaign drafts are shared by the whole team: everyone can edit, duplicate and delete every draft (SF-119)",
+      "- Merge tags of a people custom field follow the field's renames, in the subject, preview text, layout blocks and pasted HTML; a tag typed by hand is matched to its field when the draft is saved (SF-119)",
+    ]);
+    expect(sf119.some((l) => /Departs from blueprint/.test(l))).toBe(false);
+  });
+});

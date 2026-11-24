@@ -80,13 +80,28 @@ OAuth code flow and database sessions.
 - `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms, `list/` (the deal
   list), `[id]/` (the deal page: `StageBar.tsx`, `LostBox.tsx`, `not-found.tsx`), `ViewSwitch.tsx` (Board / List);
   `src/app/(app)/admin/pipelines/` — the Pipelines admin pages.
+- `src/server/campaigns/` — campaign drafts (SF-119), shared by the whole team (no visibility rule): `merge.ts` (pure and
+  client-safe: the tag grammar `{{<name> | <if empty>}}`, the 11 built-in merge fields then people custom fields `cf:<id>`,
+  `resolveTag` link → built-in → custom → unknown, `rewriteNames` (custom field tags follow renames through `merge_links`),
+  `unknownTags`, `linksToStore`, `fillText` / `fillHtml` / `blockFill` with values HTML-escaped), `content.ts` (pure and
+  client-safe: blocks, `LAYOUTS`, `validateContent`, `blocksToHtml`, `frameDocument`: the preview's CSP and `<base
+  target="_blank">` first), `rules.ts` (pure and client-safe: limits in code points, `validateDraft`, `stillEmpty`,
+  `copyName`), `campaigns.ts` (list, open with renamed tags, create, save with the version check, duplicate, delete),
+  `preview.ts` (the picker search and a person's merge values, through `visiblePerson` / `getPerson`, never archived).
+  The pure files never import `@/server/db` or anything server-only: the editor imports them.
+- `src/app/(app)/campaigns/` (SF-119) — the Campaigns page (`page.tsx`, design A table, `?new=1` `NewCampaignBox.tsx`,
+  `?delete=<id>` `CampaignDeleteConfirm.tsx`), `[id]/` the edit page (`?delete=1`, `not-found.tsx`), `actions.ts`, and the
+  client parts: `CampaignEditor.tsx` (details, content, the live preview's filling), `BlockList.tsx`, `MergeTagMenu.tsx`,
+  `PreviewPersonPicker.tsx`, `CampaignPreview.tsx` (the email only inside `<iframe sandbox="allow-popups
+  allow-popups-to-escape-sandbox" srcDoc>`; never `dangerouslySetInnerHTML`). `next.config.ts` raises the server action
+  body limit to 4 MB for pasted HTML.
 - `src/server/imports/` — CSV import (SF-103): `csv.ts` (reading the file), `columns.ts` (fields, suggestions, mapping
   checks, example files), `rows.ts` (a row through `validatePerson`/`validateOrganisation`), `plan.ts` (what an import
   will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
   (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
   `person_emails`, bulk inserts).
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
-  files, custom fields: `custom-fields.ts`).
+  files, custom fields: `custom-fields.ts`, campaigns: `campaigns.ts`).
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google and Supabase Storage schemas).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),

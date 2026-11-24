@@ -10,7 +10,21 @@ describe("mainNav", () => {
     expect(mainNav[i]).toEqual({ href: "/activities", label: "Activities" });
     expect(labels[i - 1]).toBe("Ambassadors");
     expect(labels.indexOf("Organisations")).toBe(i - 2);
+    // SF-119 puts "Campaigns" between Activities and Notifications.
+    expect(labels[i + 1]).toBe("Campaigns");
+    expect(labels[i + 2]).toBe("Notifications");
+  });
+});
+
+// covers SF-119 FR-001, FR-020 (T006): "Campaigns" right after Activities, before Notifications, for every user
+describe("Campaigns in the sidebar", () => {
+  it("links Campaigns to /campaigns after Activities and before Notifications, not in the admin group", () => {
+    const labels = mainNav.map((n) => n.label);
+    const i = labels.indexOf("Campaigns");
+    expect(mainNav[i]).toEqual({ href: "/campaigns", label: "Campaigns" });
+    expect(labels[i - 1]).toBe("Activities");
     expect(labels[i + 1]).toBe("Notifications");
+    expect(adminNav.some((n) => n.href === "/campaigns")).toBe(false);
   });
 });
 

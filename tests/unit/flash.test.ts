@@ -107,3 +107,14 @@ describe("custom field notices", () => {
     expect(await readFlash(["custom_choice_error"])).toBeUndefined();
   });
 });
+
+// covers SF-119 US6 scenarios 2–3 (T005): 'Campaign "<name>" deleted.' and "This campaign no longer exists."
+describe("campaign notices", () => {
+  it("names the deleted draft and ignores the name of a gone one", async () => {
+    await setFlash({ code: "campaign_deleted", name: "Exec dinner (fake)" });
+    expect(await readFlash(["note_deleted"])).toBeUndefined();
+    expect(await readFlash(["campaign_deleted", "campaign_gone"])).toEqual({ text: 'Campaign "Exec dinner (fake)" deleted.' });
+    await setFlash({ code: "campaign_gone", name: "<script>x</script>" });
+    expect(await readFlash(["campaign_deleted", "campaign_gone"])).toEqual({ text: "This campaign no longer exists." });
+  });
+});

@@ -383,3 +383,66 @@ describe("custom field messages (SF-115)", () => {
     expect(missing).toEqual([]);
   });
 });
+
+// covers SF-119 FR-019, contracts/routes.md § Messages (T004): every campaign code, and the templates' exact texts
+describe("campaign messages (SF-119)", () => {
+  it("has the fixed texts of contracts/routes.md", () => {
+    const expected: Record<string, string> = {
+      campaigns_empty: "No campaigns yet.",
+      campaign_saved: "Draft saved.",
+      campaign_gone: "This campaign no longer exists.",
+      campaign_name_required: "Give the campaign a name.",
+      campaign_name_too_long: "A campaign name can be at most 100 characters.",
+      campaign_sender_too_long: "Sender name: at most 100 characters.",
+      campaign_reply_to_invalid: "Reply-to: enter one valid email address.",
+      campaign_subject_too_long: "Subject: at most 255 characters.",
+      campaign_preview_text_too_long: "Preview text: at most 255 characters.",
+      campaign_fallback_too_long: "If empty, show: at most 100 characters.",
+      campaign_html_too_long: "The HTML can be at most 500,000 characters.",
+      campaign_blocks_limit: "A campaign can have at most 50 blocks.",
+      campaign_content_invalid: "The content couldn't be read. Reload and try again.",
+      campaign_still_empty: "Still empty: ",
+      campaign_unknown_tags: "Unknown merge tags: ",
+      campaign_preview_choose: "Choose a person to preview.",
+      campaign_unsubscribe_line: "Don't want these emails?",
+      campaign_unsubscribe: "Unsubscribe",
+      campaign_switch_to_html: "Switch to Paste HTML? The HTML box will start with this content as HTML.",
+      campaign_switch_to_layout: "Switch to a layout? The pasted HTML will be replaced by the layout's blocks.",
+      campaign_new: "[ NEW CAMPAIGN ]",
+      campaign_save: "[ SAVE ]",
+      campaign_duplicate: "[ DUPLICATE ]",
+      campaign_delete: "[ DELETE ]",
+      campaign_insert_tag: "[ INSERT MERGE TAG ]",
+      campaign_if_empty: "If empty, show",
+      campaign_add_block: "[ + ADD BLOCK ]",
+      campaign_layout_blank: "Blank",
+      campaign_layout_text: "Text",
+      campaign_layout_text_button: "Text with a button",
+      campaign_layout_newsletter: "Newsletter",
+      campaign_paste_html: "Paste HTML",
+      campaign_block_heading: "Heading",
+      campaign_block_text: "Text",
+      campaign_block_button: "Button",
+      campaign_block_image: "Image",
+      campaign_block_divider: "Divider",
+      campaign_col_name: "Name",
+      campaign_col_subject: "Subject",
+      campaign_col_status: "Status",
+      campaign_col_created_by: "Created by",
+      campaign_col_last_edited: "Last edited",
+    };
+    for (const [code, text] of Object.entries(expected)) expect(messageFor(code), code).toBe(text);
+  });
+  it("builds the templates from names read from the database", () => {
+    expect(templates.campaign_deleted("Exec dinner (fake)")).toBe('Campaign "Exec dinner (fake)" deleted.');
+    expect(templates.campaign_delete_confirm("Exec dinner (fake)")).toBe(`Delete the campaign "Exec dinner (fake)" for good? This can't be undone.`);
+    expect(templates.campaign_edit_conflict("Ada Fake")).toBe("Ada Fake changed this campaign since you opened it. Reload to see their changes.");
+    expect(templates.campaign_button_url("Button")).toBe("Button: enter a web address starting with https://.");
+    expect(templates.campaign_image_url("Image")).toBe("Image: enter a web address starting with https://.");
+    expect(templates.campaign_block_too_long("Text", 10_000)).toBe("Text: at most 10,000 characters.");
+    expect(templates.campaign_copy_name("Exec dinner (fake)")).toBe("Copy of Exec dinner (fake)");
+    for (const code of ["campaign_deleted", "campaign_delete_confirm", "campaign_edit_conflict", "campaign_copy_name"]) {
+      expect(messageFor(code), code).toBeUndefined();
+    }
+  });
+});
