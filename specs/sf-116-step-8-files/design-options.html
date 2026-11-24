@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626; --green: #16A34A;
+    --wash: rgba(43,0,255,.05); --panel: #FFFFFF; --page: #EDE7DF; --note: rgba(255,66,0,.06);
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --panel: #232323; --page: #0E0E0E; --note: rgba(255,66,0,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .legend { font-size: 13px; color: var(--muted); margin: 4px 32px 0; }
+  .legend span { outline: 2px dashed var(--orange); outline-offset: 2px; padding: 0 4px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(620px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  .sub2 { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+
+  .app { display: grid; grid-template-columns: 140px 1fr; height: 700px; border: .5px solid var(--line); overflow: hidden; position: relative; }
+  .app.short { height: 330px; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 9px; margin-bottom: 22px; }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .nav .cnt { background: var(--orange); color: #fff; padding: 0 4px; margin-left: 4px; }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 14px 16px; overflow: hidden; position: relative; }
+  .back { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 8px; margin-bottom: 6px; gap: 8px; }
+  .ph h2 { margin: 3px 0 0; font-size: 18px; font-weight: 700; }
+  .kind { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 4px 7px; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.won { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn.lost { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .btn.link { border: 0; padding: 1px 0; color: var(--muted); }
+  .btn.red { color: var(--danger); }
+  .acts { display: flex; gap: 4px; align-items: center; }
+  .bar { display: flex; gap: 2px; margin: 4px 0; }
+  .bar span { flex: 1; font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 4px 6px; background: var(--line-soft); clip-path: polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%, 6% 50%); }
+  .bar span.done { background: var(--blue); color: #fff; }
+  .strip { display: flex; border: .5px solid var(--line-soft); background: var(--panel); margin: 4px 0; }
+  .strip > div { flex: 1 1 0; padding: 4px 7px; border-right: .5px solid var(--line-soft); }
+  .strip > div:last-child { border-right: 0; }
+  .k { font-family: var(--mono); font-size: 7px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .strip .n { font-size: 11px; font-weight: 600; }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 8px 0 4px; border-top: .5px solid var(--line); padding-top: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .lk { color: var(--blue); }
+  .muted { color: var(--muted); }
+  .arow { display: flex; gap: 6px; align-items: center; font-size: 10px; padding: 3px 0; border-bottom: .5px solid var(--line-list); }
+  .box { width: 10px; height: 10px; border: .5px solid var(--line); display: inline-block; }
+  .kd { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; border: .5px solid var(--line); padding: 1px 3px; text-align: center; }
+  .kd.note { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .kd.deal { color: var(--blue); border-color: var(--blue); }
+  .kd.file { color: var(--ink); background: var(--wash); border-color: var(--blue); }
+  .day { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 6px 0 2px; }
+  .ent { display: grid; grid-template-columns: 46px 1fr auto; gap: 7px; padding: 4px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; align-items: start; }
+  .when { font-family: var(--mono); font-size: 8px; color: var(--muted); white-space: nowrap; }
+  .notebody { border-left: 3px solid var(--orange); background: var(--note); padding: 3px 6px; border-radius: 0 6px 6px 0; }
+  .ta { border: .5px solid var(--line); background: var(--panel); padding: 6px 8px; font-size: 10px; min-height: 34px; color: var(--muted); }
+  .new { outline: 2px dashed var(--orange); outline-offset: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { font-family: var(--mono); font-size: 7px; letter-spacing: .2em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 3px 4px; border-bottom: .5px solid var(--line-soft); white-space: nowrap; }
+  td { padding: 3px 4px; border-bottom: .5px solid var(--line-list); vertical-align: middle; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .ft { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; border: .5px solid var(--line); padding: 1px 3px; }
+  .notice { font-size: 10px; border-left: 3px solid var(--blue); background: var(--wash); padding: 3px 6px; margin: 4px 0; }
+  /* B tiles */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .tile { border: .5px solid var(--line-soft); background: var(--panel); border-radius: 6px; overflow: hidden; font-size: 9px; }
+  .thumb { height: 46px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; font-size: 10px; letter-spacing: .1em; color: var(--muted); background: var(--line-soft); }
+  .thumb.img { background: linear-gradient(135deg, #8FB3FF 0%, #2B00FF 60%, #FF4200 100%); color: transparent; }
+  .tile .tn { padding: 3px 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .tile .tm { padding: 0 5px 4px; color: var(--muted); font-family: var(--mono); font-size: 7px; }
+  .drop { border: 1px dashed var(--line); border-radius: 6px; padding: 8px; text-align: center; font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+  /* C chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { border: .5px solid var(--line); border-radius: 999px; padding: 2px 8px; font-size: 9px; background: var(--panel); }
+  .chip .lk { font-weight: 600; }
+  /* overlay box */
+  .dim { position: absolute; inset: 0; background: rgba(17,24,39,.45); display: flex; align-items: center; justify-content: center; }
+  .modal { background: var(--paper); border: .5px solid var(--line); width: 86%; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+  .modal .hd { display: flex; justify-content: space-between; align-items: center; border-bottom: .5px solid var(--line); padding-bottom: 6px; margin-bottom: 8px; font-size: 11px; font-weight: 600; }
+  .pic { height: 190px; background: linear-gradient(135deg, #8FB3FF 0%, #2B00FF 60%, #FF4200 100%); display: flex; align-items: end; justify-content: start; padding: 6px; color: #fff; font-family: var(--mono); font-size: 8px; }
+  .fullpic { height: 230px; background: linear-gradient(135deg, #8FB3FF 0%, #2B00FF 60%, #FF4200 100%); margin-top: 8px; display: flex; align-items: end; padding: 6px; color: #fff; font-family: var(--mono); font-size: 8px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-116 · FILES · DESIGN OPTIONS</div>
+  <h1>Files on the deal page (the same on the person and organisation pages and in the deal drawer)</h1>
+  <p>All three show the deal "Example Ltd Fake · website" with 3 files, the FILE entries on the timeline, and below it the preview of the image "site-mockup.png".</p>
+</header>
+<p class="legend"><span>Dashed orange</span> = new in this issue.</p>
+<div class="grid">
+
+<!-- ================= A ================= -->
+<figure>
+  <div class="tag"><b>A</b>A "// FILES" list above the timeline</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">Deals</span><span>Activities</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="back">← Sales board</div>
+      <div class="ph"><div><div class="kind"><span class="c">//</span> DEAL</div><h2>Example Ltd Fake · website</h2></div>
+        <div class="acts"><span class="btn won">[ WON ]</span><span class="btn lost">[ LOST ]</span></div></div>
+      <div class="bar"><span class="done">Lead · 3d</span><span class="done">Qualified · 5d</span><span class="done">Proposal · 2d</span><span>Negotiation</span></div>
+      <div class="strip"><div><div class="k">Value</div><div class="n">£4,500</div></div><div><div class="k">Owner</div><div class="n">Ada Fake</div></div><div><div class="k">Expected close</div><div class="n">15 Dec 2026</div></div><div><div class="k">Status</div><div class="n">Open</div></div></div>
+      <div class="sect"><span><span class="c">//</span> NEXT ACTIVITIES</span><span class="btn">[ SCHEDULE ACTIVITY ]</span></div>
+      <div class="arow"><span class="box"></span><span class="kd">Call</span><span>Call Ada about the proposal <span class="muted">· 25 Nov 10:00 · Ada Fake</span></span></div>
+      <div class="new">
+        <div class="sect"><span><span class="c">//</span> FILES (3)</span><span class="btn">[ ADD FILE ]</span></div>
+        <p class="notice">File added.</p>
+        <table>
+          <tr><th>Name</th><th>Kind</th><th class="num">Size</th><th>Added by</th><th>Added</th><th></th></tr>
+          <tr><td class="lk">site-mockup.png</td><td><span class="ft">PNG</span></td><td class="num">840 KB</td><td>Ada Fake</td><td>23 Nov 2026</td><td class="num"><span class="btn link">[ PREVIEW ]</span> <span class="btn link">[ DOWNLOAD ]</span> <span class="btn link red">[ DELETE ]</span></td></tr>
+          <tr><td class="lk">proposal.pdf</td><td><span class="ft">PDF</span></td><td class="num">2.1 MB</td><td>Bob Fake</td><td>21 Nov 2026</td><td class="num"><span class="btn link">[ PREVIEW ]</span> <span class="btn link">[ DOWNLOAD ]</span> <span class="btn link red">[ DELETE ]</span></td></tr>
+          <tr><td class="lk">budget.xlsx</td><td><span class="ft">XLSX</span></td><td class="num">56 KB</td><td>Ada Fake</td><td>18 Nov 2026</td><td class="num"><span class="btn link">[ DOWNLOAD ]</span> <span class="btn link red">[ DELETE ]</span></td></tr>
+        </table>
+      </div>
+      <div class="sect"><span><span class="c">//</span> TIMELINE</span></div>
+      <div class="ta">Write a note… type @ to mention a teammate</div>
+      <div class="day">// TODAY · 23 NOV 2026</div>
+      <div class="ent new"><span class="kd file">File</span><div><b>Ada Fake</b> added <span class="lk">site-mockup.png</span> (840 KB)</div><span class="when">09:40</span></div>
+      <div class="day">// 22 NOV 2026</div>
+      <div class="ent new"><span class="kd file">File</span><div><b>Bob Fake</b> deleted old-brief.docx</div><span class="when">17:05</span></div>
+      <div class="ent"><span class="kd note">Note</span><div><b>Ada Fake</b><div class="notebody">They want the new site live before March.</div></div><span class="when">11:20</span></div>
+    </div>
+  </div>
+  <div class="sub2">The preview: a box over the page</div>
+  <div class="app short">
+    <aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div></aside>
+    <div class="main">
+      <div class="kind"><span class="c">//</span> DEAL</div>
+      <div class="dim"><div class="modal new">
+        <div class="hd"><span>site-mockup.png <span class="muted">· 840 KB</span></span><span class="acts"><span class="btn">[ DOWNLOAD ]</span><span class="btn">[ CLOSE ]</span></span></div>
+        <div class="pic">IMAGE, SCALED TO FIT</div>
+      </div></div>
+    </div>
+  </div>
+  <figcaption>Good for: like "// NEXT ACTIVITIES" and the People list: a plain table that is easy to scan, with the size and who added it on each row. A PDF opens in the browser's own viewer.</figcaption>
+</figure>
+
+<!-- ================= B ================= -->
+<figure>
+  <div class="tag"><b>B</b>Tiles with small pictures and a drop area</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">Deals</span><span>Activities</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="back">← Sales board</div>
+      <div class="ph"><div><div class="kind"><span class="c">//</span> DEAL</div><h2>Example Ltd Fake · website</h2></div>
+        <div class="acts"><span class="btn won">[ WON ]</span><span class="btn lost">[ LOST ]</span></div></div>
+      <div class="bar"><span class="done">Lead · 3d</span><span class="done">Qualified · 5d</span><span class="done">Proposal · 2d</span><span>Negotiation</span></div>
+      <div class="strip"><div><div class="k">Value</div><div class="n">£4,500</div></div><div><div class="k">Owner</div><div class="n">Ada Fake</div></div><div><div class="k">Expected close</div><div class="n">15 Dec 2026</div></div><div><div class="k">Status</div><div class="n">Open</div></div></div>
+      <div class="sect"><span><span class="c">//</span> NEXT ACTIVITIES</span><span class="btn">[ SCHEDULE ACTIVITY ]</span></div>
+      <div class="arow"><span class="box"></span><span class="kd">Call</span><span>Call Ada about the proposal <span class="muted">· 25 Nov 10:00 · Ada Fake</span></span></div>
+      <div class="new">
+        <div class="sect"><span><span class="c">//</span> FILES (3)</span></div>
+        <div class="drop">Drop files here or <span class="btn">[ ADD FILE ]</span> · up to 25 MB each</div>
+        <div class="tiles">
+          <div class="tile"><div class="thumb img">.</div><div class="tn">site-mockup.png</div><div class="tm">840 KB · ADA FAKE · 23 NOV</div></div>
+          <div class="tile"><div class="thumb">PDF</div><div class="tn">proposal.pdf</div><div class="tm">2.1 MB · BOB FAKE · 21 NOV</div></div>
+          <div class="tile"><div class="thumb">XLSX</div><div class="tn">budget.xlsx</div><div class="tm">56 KB · ADA FAKE · 18 NOV</div></div>
+        </div>
+        <div class="muted" style="font-size:9px;margin-top:3px">Click a tile to preview or download; [ DELETE ] is in the preview box.</div>
+      </div>
+      <div class="sect"><span><span class="c">//</span> TIMELINE</span></div>
+      <div class="ta">Write a note… type @ to mention a teammate</div>
+      <div class="day">// TODAY · 23 NOV 2026</div>
+      <div class="ent new"><span class="kd file">File</span><div><b>Ada Fake</b> added <span class="lk">site-mockup.png</span> (840 KB)</div><span class="when">09:40</span></div>
+      <div class="day">// 22 NOV 2026</div>
+      <div class="ent new"><span class="kd file">File</span><div><b>Bob Fake</b> deleted old-brief.docx</div><span class="when">17:05</span></div>
+    </div>
+  </div>
+  <div class="sub2">The preview: a box over the page, with the actions</div>
+  <div class="app short">
+    <aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div></aside>
+    <div class="main">
+      <div class="kind"><span class="c">//</span> DEAL</div>
+      <div class="dim"><div class="modal new">
+        <div class="hd"><span>site-mockup.png <span class="muted">· 840 KB · Ada Fake · 23 Nov 2026</span></span><span class="acts"><span class="btn">[ DOWNLOAD ]</span><span class="btn red">[ DELETE ]</span><span class="btn">[ CLOSE ]</span></span></div>
+        <div class="pic">IMAGE, SCALED TO FIT</div>
+      </div></div>
+    </div>
+  </div>
+  <figcaption>Good for: seeing images at a glance and dragging files straight from the desktop; takes more room on the page.</figcaption>
+</figure>
+
+<!-- ================= C ================= -->
+<figure>
+  <div class="tag"><b>C</b>A short line of files, preview on its own page</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">Deals</span><span>Activities</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="back">← Sales board</div>
+      <div class="ph"><div><div class="kind"><span class="c">//</span> DEAL</div><h2>Example Ltd Fake · website</h2></div>
+        <div class="acts"><span class="btn won">[ WON ]</span><span class="btn lost">[ LOST ]</span></div></div>
+      <div class="bar"><span class="done">Lead · 3d</span><span class="done">Qualified · 5d</span><span class="done">Proposal · 2d</span><span>Negotiation</span></div>
+      <div class="strip"><div><div class="k">Value</div><div class="n">£4,500</div></div><div><div class="k">Owner</div><div class="n">Ada Fake</div></div><div><div class="k">Expected close</div><div class="n">15 Dec 2026</div></div><div><div class="k">Status</div><div class="n">Open</div></div></div>
+      <div class="new">
+        <div class="sect"><span><span class="c">//</span> FILES (3)</span><span class="btn">[ ADD FILE ]</span></div>
+        <div class="chips">
+          <span class="chip"><span class="lk">site-mockup.png</span> <span class="muted">840 KB</span></span>
+          <span class="chip"><span class="lk">proposal.pdf</span> <span class="muted">2.1 MB</span></span>
+          <span class="chip"><span class="lk">budget.xlsx</span> <span class="muted">56 KB</span></span>
+        </div>
+      </div>
+      <div class="sect"><span><span class="c">//</span> NEXT ACTIVITIES</span><span class="btn">[ SCHEDULE ACTIVITY ]</span></div>
+      <div class="arow"><span class="box"></span><span class="kd">Call</span><span>Call Ada about the proposal <span class="muted">· 25 Nov 10:00 · Ada Fake</span></span></div>
+      <div class="sect"><span><span class="c">//</span> TIMELINE</span></div>
+      <div class="ta">Write a note… type @ to mention a teammate</div>
+      <div class="day">// TODAY · 23 NOV 2026</div>
+      <div class="ent new"><span class="kd file">File</span><div><b>Ada Fake</b> added <span class="lk">site-mockup.png</span> (840 KB)</div><span class="when">09:40</span></div>
+      <div class="day">// 22 NOV 2026</div>
+      <div class="ent new"><span class="kd file">File</span><div><b>Bob Fake</b> deleted old-brief.docx</div><span class="when">17:05</span></div>
+      <div class="ent"><span class="kd note">Note</span><div><b>Ada Fake</b><div class="notebody">They want the new site live before March.</div></div><span class="when">11:20</span></div>
+    </div>
+  </div>
+  <div class="sub2">The preview: the file's own page</div>
+  <div class="app short">
+    <aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div></aside>
+    <div class="main new">
+      <div class="back">← Example Ltd Fake · website</div>
+      <div class="ph"><div><div class="kind"><span class="c">//</span> FILE</div><h2 style="font-size:14px">site-mockup.png</h2><div class="muted" style="font-size:9px">840 KB · added by Ada Fake · 23 Nov 2026</div></div>
+        <div class="acts"><span class="btn">[ DOWNLOAD ]</span><span class="btn red">[ DELETE ]</span></div></div>
+      <div class="fullpic">IMAGE, SCALED TO FIT</div>
+    </div>
+  </div>
+  <figcaption>Good for: keeping the record page short; each file has its own address and a large preview, but opening one leaves the record page.</figcaption>
+</figure>
+</div>
+</body>
+</html>
