@@ -248,7 +248,7 @@ sends the `crm_gmail_oauth` cookie (path `/settings/gmail`, set by `startGmailCo
 so the callback finds no cookie and `connectFromCallback` answers `not_connected`. The integration test called the
 action and then the callback by hand with the cookie jar, so it never went through the browser's cookie path rule.
 
-**Fix (option A, recommended):** the two consent buttons post a plain HTML form to a route handler
+**Fix (option A, chosen by alexis@barnacle.ai on 2026-11-24):** the two consent buttons post a plain HTML form to a route handler
 `src/app/dev/fake-google/gmail/answer/route.ts` (`POST`). It runs the same checks as today (404 unless
 `isFakeAllowed()` and Gmail mode `fake`; 404 unless `redirect_uri` is exactly `${appBaseUrl()}/settings/gmail/callback`),
 reads the button pressed (`decision=allow` or `decision=cancel`), makes the fake code (allow) or sets
