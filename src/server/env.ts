@@ -61,3 +61,19 @@ export function storageConfig(): StorageConfig {
   if (isFakeAllowed()) return { mode: "fake", baseUrl: `${appBaseUrl()}/dev/fake-storage`, key: "fake-storage-key", bucket };
   return { mode: "off" };
 }
+
+// SF-117 (contracts/pipedrive-api.md § Settings): where Pipedrive is and the key that seals saved tokens. PIPEDRIVE_URL
+// when set; else the in-process fake (src/server/pipedrive/fake-pipedrive.ts) where fakes are allowed, else the real
+// Pipedrive. `key`: PIPEDRIVE_TOKEN_KEY decoded from base64 when it is exactly 32 bytes, else null ("isn't set up yet").
+// There is no built-in key: a copied .env.example can never carry a usable key to production.
+export type PipedriveConfig = { mode: "real" | "fake"; baseUrl: string; key: Buffer | null };
+
+export function pipedriveConfig(): PipedriveConfig {
+  const url = (process.env.PIPEDRIVE_URL ?? "").trim().replace(/\/+$/, "");
+  const rawKey = (process.env.PIPEDRIVE_TOKEN_KEY ?? "").trim();
+  const decoded = /^[A-Za-z0-9+/]+={0,2}$/.test(rawKey) ? Buffer.from(rawKey, "base64") : null;
+  const key = decoded && decoded.length === 32 ? decoded : null;
+  if (url) return { mode: "real", baseUrl: url, key };
+  if (isFakeAllowed()) return { mode: "fake", baseUrl: "https://fake.pipedrive.invalid", key };
+  return { mode: "real", baseUrl: "https://api.pipedrive.com", key };
+}

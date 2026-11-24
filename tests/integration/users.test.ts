@@ -82,6 +82,14 @@ describe("status", () => {
     expect(await changes()).toEqual([{ user_id: linus.id, actor_id: ada.id, action: "deactivated" }]);
   });
 
+  // covers SF-117 FR-003, edge case "deactivated while importing": deactivating deletes the user's Pipedrive token
+  it("deletes the user's Pipedrive connection when deactivating them (SF-117)", async () => {
+    await sql`insert into pipedrive_connections (user_id, token, pipedrive_user_id, pipedrive_user_name, company_id, company_name)
+              values (${linus.id}, ${Buffer.alloc(40, 1)}, 1, 'Fake Person', 1001, 'Fakeco Pipedrive')`;
+    expect(await deactivate(ada.id, linus.id)).toEqual({ ok: true });
+    expect(await sql`select 1 from pipedrive_connections where user_id = ${linus.id}`).toHaveLength(0);
+  });
+
   it("refuses to deactivate yourself (FR-015)", async () => {
     expect(await deactivate(ada.id, ada.id)).toEqual({ ok: false, code: "self_deactivate" });
     expect((await getUser("ada@barnacle.ai")).status).toBe("active");

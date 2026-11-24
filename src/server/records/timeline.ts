@@ -21,7 +21,9 @@ export type EventKind =
   // SF-109: a done activity, read from `activities` (never a timeline_events row)
   | "activity"
   // SF-116: a file added to or deleted from the record
-  | "file_added" | "file_deleted";
+  | "file_added" | "file_deleted"
+  // SF-117: added by a Pipedrive import (in place of "added"); made Unsubscribed by a Pipedrive import
+  | "pipedrive_imported" | "pipedrive_unsubscribed";
 // Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)"); SF-114:
 // "person_deleted" on a referrer_cleared written when the referrer was deleted.
 export type MoveCause = "stage_deleted" | "pipeline_deleted" | "person_deleted";

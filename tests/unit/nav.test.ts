@@ -22,3 +22,12 @@ describe("adminNav", () => {
     expect(adminNav.at(-2)?.label).toBe("Pipelines");
   });
 });
+
+// covers SF-117 FR-001, FR-029, US1 scenario 1: "Settings" at the bottom of the sidebar (footerNav), not in the main list
+import { footerNav } from "@/app/(app)/nav";
+describe("footerNav", () => {
+  it("holds Settings, linked to /settings", () => {
+    expect(footerNav).toEqual([{ href: "/settings", label: "Settings" }]);
+    expect(mainNav.map((n) => n.href)).not.toContain("/settings");
+  });
+});
