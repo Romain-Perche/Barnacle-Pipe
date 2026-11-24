@@ -90,6 +90,11 @@
       "id": "segments",
       "label": "Segments",
       "description": "Saved, team-shared people segments and the count of people each one reaches."
+    },
+    {
+      "id": "campaigns",
+      "label": "Campaigns",
+      "description": "Team-shared email campaign drafts: details, content blocks, merge tags and a live preview."
     }
   ],
   "actors": [
@@ -400,6 +405,17 @@
         "src/app/(app)/segments",
         "src/server/segments"
       ]
+    },
+    {
+      "id": "campaigns",
+      "label": "Campaign editor",
+      "zone": "app",
+      "group": "campaigns",
+      "sources": [
+        "src/app/(app)/campaigns",
+        "src/server/campaigns/campaigns.ts",
+        "src/server/campaigns/preview.ts"
+      ]
     }
   ],
   "stores": [
@@ -644,6 +660,15 @@
       "group": "segments",
       "sources": [
         "migrations/0014_segments.sql"
+      ]
+    },
+    {
+      "id": "campaigns-table",
+      "label": "Postgres campaigns",
+      "zone": "app",
+      "group": "campaigns",
+      "sources": [
+        "migrations/0015_campaigns.sql"
       ]
     }
   ],
@@ -2384,6 +2409,62 @@
       "data": "table definition",
       "sources": [
         "migrations/0014_segments.sql"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "campaigns",
+      "data": "campaign forms, blocks, preview person",
+      "sources": [
+        "src/app/(app)/campaigns/actions.ts"
+      ]
+    },
+    {
+      "from": "campaigns",
+      "to": "staff",
+      "data": "campaign list, editor and live preview",
+      "sources": [
+        "src/app/(app)/campaigns/page.tsx"
+      ]
+    },
+    {
+      "from": "campaigns",
+      "to": "campaigns-table",
+      "data": "campaign drafts",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "campaigns-table",
+      "to": "campaigns",
+      "data": "saved drafts",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "campaigns",
+      "data": "visible person merge values for preview",
+      "sources": [
+        "src/server/campaigns/preview.ts"
+      ]
+    },
+    {
+      "from": "custom-fields-table",
+      "to": "campaigns",
+      "data": "people custom field names for merge tags",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "campaigns-table",
+      "data": "table definition",
+      "sources": [
+        "scripts/migrate.ts"
       ]
     }
   ]

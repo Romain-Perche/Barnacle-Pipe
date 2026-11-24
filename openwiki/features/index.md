@@ -1,6 +1,7 @@
 # Files
 
 - [Activities (calls, meetings and tasks)](activities.md) - Scheduling, editing, ticking and deleting activities, the Activities list, next activities on records and the deals board, who can see an activity, assignment notifications and how done activities reach the timeline.
+- [Campaigns (SF-119)](campaigns.md) - Team-shared campaign drafts - details, block or pasted-HTML content, merge tags, the live sandboxed preview, the save version check, duplicate and delete.
 - [Custom fields (SF-115)](custom-fields.md) - Admin-defined fields on people, organisations and deals, their eight types, how values are saved, shown, filtered and imported, and the timeline events they raise.
 - [Files on records (SF-116)](files.md) - Files on people, organisations and deals — limits, the two-step upload straight to Supabase Storage, download and preview through short-lived addresses, privacy, deletion and clean-up, and FILE timeline entries.
 - [People and organisations](people-and-organisations.md) - The signed-in People, Organisations and Lead sources and labels pages — lists with search and filters, forms, the private-person rule, archive and delete, timelines, optimistic versions and the one-shot delete notice.

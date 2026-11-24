@@ -4,20 +4,20 @@ title: "Segments (SF-120)"
 openwiki_generated: true
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T17:52:29.768Z
+    at: 2026-11-24T18:25:19.853Z
 sources:
   - id: openwiki-source-c11c28cf1917d03e6960020c
     resource: repo://src/server/segments/reach.ts
   - id: openwiki-source-1d002b44f4dfbc6660b385e3
     resource: repo://src/server/segments/rules.ts
-generated: { by: "claude-code", at: "2026-11-24T17:52:29.768Z" }
+generated: { by: "claude-code", at: "2026-11-24T18:25:19.853Z" }
 ---
 
 
 # Segments (SF-120)
 
 A segment is a saved choice of recipients, shared by the whole team. It stores the choice, never people: the
-people are worked out from the live records each time it is read. Campaigns will use segments later;
+people are worked out from the live records each time it is read. [Campaigns](campaigns.md) (drafts only so far) will use segments later;
 `reachedPeople` (person and first email) is the function they will call. For how segment data moves, see
 [the data flow](../../dataflow/DATAFLOW.md).
 
