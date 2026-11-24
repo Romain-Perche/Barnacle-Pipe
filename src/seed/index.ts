@@ -3,6 +3,7 @@
 import type { Sql } from "@/server/db";
 import { seedActivities } from "@/seed/activities";
 import { seedAmbassadors } from "@/seed/ambassadors";
+import { seedCustomFields } from "@/seed/custom-fields";
 import { seedDeals } from "@/seed/deals";
 import { seedNotes } from "@/seed/notes";
 import { seedPeople } from "@/seed/people";
@@ -18,6 +19,8 @@ export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] =
   { name: "activities", run: seedActivities },
   // SF-114: ambassadors, referred people and deals (after the users, organisations and pipelines they use).
   { name: "ambassadors", run: seedAmbassadors },
+  // SF-115: custom fields of every type and values on fake records (after the people, organisations and deals).
+  { name: "custom-fields", run: seedCustomFields },
 ];
 
 export async function runSeeders(sql: Sql): Promise<string[]> {

@@ -13,6 +13,8 @@ import { OrganisationPicker } from "../records/OrganisationPicker";
 import { PersonPicker } from "../records/PersonPicker";
 import { ReferrerPicker, type CurrentReferrer } from "../records/ReferrerPicker";
 import { StageSelect } from "./StageSelect";
+import type { FormField } from "@/server/custom-fields/values";
+import { CustomInputs } from "../records/CustomInputs";
 
 type Props = {
   action: (prev: FormState<Values>, fd: FormData) => Promise<FormState<Values>>;
@@ -22,6 +24,8 @@ type Props = {
   withStage: boolean;
   // SF-114: the deal's current referrer (edit only).
   currentReferrer?: CurrentReferrer;
+  // SF-115: the custom fields of deals.
+  customFields?: FormField[];
   id?: number;
   version?: number;
   cancelHref: string;
@@ -66,7 +70,7 @@ function Text({ name, label, value, error, type = "text", placeholder }: { name:
   );
 }
 
-export function DealForm({ action, initial, choices, canSetPrivate, withStage, currentReferrer = null, id, version, cancelHref, back }: Props) {
+export function DealForm({ action, initial, choices, canSetPrivate, withStage, currentReferrer = null, customFields = [], id, version, cancelHref, back }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
   const v = state?.values ?? initial;
   const errors = state?.errors ?? {};
@@ -132,6 +136,7 @@ export function DealForm({ action, initial, choices, canSetPrivate, withStage, c
           <input type="checkbox" name="private" defaultChecked={v.private} /> Private (only its creator and owner can see this deal)
         </label>
       )}
+      <CustomInputs fields={customFields} values={v.custom} errors={errors} />
       <div className="form-acts">
         <button className="btn solid" type="submit" disabled={pending}>
           [ SAVE ]

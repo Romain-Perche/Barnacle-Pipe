@@ -19,4 +19,6 @@ export const adminNav: NavItem[] = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/lead-sources-and-labels", label: "Lead sources and labels" },
   { href: "/admin/pipelines", label: "Pipelines" },
+  // SF-115: custom fields of people, organisations and deals.
+  { href: "/admin/custom-fields", label: "Custom fields" },
 ];

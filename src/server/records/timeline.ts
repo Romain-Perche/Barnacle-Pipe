@@ -15,6 +15,8 @@ export type EventKind =
   | "imported"
   // SF-114: the Ambassador tick (on the person) and "Referred by" (on the person or deal)
   | "ambassador_added" | "ambassador_removed" | "referrer_set" | "referrer_changed" | "referrer_cleared"
+  // SF-115: a custom value set, changed or cleared (field name and values as shown at the time)
+  | "custom_set" | "custom_changed" | "custom_cleared"
   // SF-109: a done activity, read from `activities` (never a timeline_events row)
   | "activity";
 // Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)"); SF-114:
@@ -41,6 +43,10 @@ export type TimelineEvent = {
   cause: MoveCause | null;
   // On lost: the reason as typed then (reopening clears the deal's reason, not this).
   reason: string | null;
+  // SF-115: on custom_set / custom_changed / custom_cleared, the field's name and the values as text of the time.
+  fieldName: string | null;
+  oldValue: string | null;
+  newValue: string | null;
   createdAt: Date;
 };
 
@@ -60,6 +66,9 @@ export async function recordEvent(
     toStage?: string;
     cause?: MoveCause | null;
     reason?: string;
+    fieldName?: string;
+    oldValue?: string | null;
+    newValue?: string | null;
   },
 ): Promise<void> {
   const personId = "personId" in event ? event.personId : null;
@@ -67,10 +76,11 @@ export async function recordEvent(
   const dealId = "dealId" in event ? event.dealId : null;
   await db`
     insert into timeline_events (person_id, organisation_id, deal_id, kind, actor_id, fields, related_person_id, related_user_id,
-                                 from_stage, to_stage, cause, reason, from_person_id)
+                                 from_stage, to_stage, cause, reason, from_person_id, field_name, old_value, new_value)
     values (${personId}, ${organisationId}, ${dealId}, ${event.kind}, ${event.actorId}, ${event.fields ?? null},
             ${event.relatedPersonId ?? null}, ${event.relatedUserId ?? null}, ${event.fromStage ?? null},
-            ${event.toStage ?? null}, ${event.cause ?? null}, ${event.reason ?? null}, ${event.fromPersonId ?? null})`;
+            ${event.toStage ?? null}, ${event.cause ?? null}, ${event.reason ?? null}, ${event.fromPersonId ?? null},
+            ${event.fieldName ?? null}, ${event.oldValue ?? null}, ${event.newValue ?? null})`;
 }
 
 export type TimelineEntry = TimelineEvent & {
@@ -145,7 +155,7 @@ async function doneActivities(viewerId: number, target: Target, limit: number): 
     limit ${limit}`;
   return rows.map((r) => ({
     id: r.id, kind: "activity" as const, actorName: r.done_by_name, fields: null, relatedPerson: null, fromPerson: null, relatedUserName: null, fromStage: null,
-    toStage: null, cause: null, reason: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, person: null, note: null,
+    toStage: null, cause: null, reason: null, fieldName: null, oldValue: null, newValue: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, person: null, note: null,
     activity: {
       id: r.id, type: r.type, subject: r.subject, note: r.note, doneByName: r.done_by_name, doneByActive: r.done_by_active,
       dueOn: r.due_on, dueTime: r.due_time, durationMinutes: r.duration_minutes, archived: r.archived,
@@ -179,7 +189,7 @@ export async function selectEntries(
       id: number; kind: EventKind; actor_name: string | null; actor_active: boolean | null; fields: string[] | null; rp_id: number | null;
       rp_name: string | null; rp_page: boolean | null; fp_id: number | null; fp_name: string | null; fp_page: boolean | null;
       ru_name: string | null; from_stage: string | null; to_stage: string | null; cause: MoveCause | null;
-      reason: string | null; created_at: Date; body: string | null; version: number; editor_name: string | null; editor_active: boolean | null;
+      reason: string | null; field_name: string | null; old_value: string | null; new_value: string | null; created_at: Date; body: string | null; version: number; editor_name: string | null; editor_active: boolean | null;
       deal_id: number | null; deal_title: string | null; deal_archived: boolean | null;
       person_id: number | null; person_name: string | null; person_archived: boolean | null;
     }[]
@@ -190,7 +200,7 @@ export async function selectEntries(
            fp.id::int as fp_id, btrim(fp.first_name || ' ' || fp.last_name) as fp_name,
            case when fp.id is not null then ${hasAmbassadorPage(sql, viewerId, "fp")} end as fp_page,
            ru.name as ru_name, e.from_stage, e.to_stage, e.cause,
-           e.reason, e.created_at, e.body, e.version, eu.name as editor_name, eu.status = 'active' as editor_active,
+           e.reason, e.field_name, e.old_value, e.new_value, e.created_at, e.body, e.version, eu.name as editor_name, eu.status = 'active' as editor_active,
            de.id::int as deal_id, de.title as deal_title, de.archived_at is not null as deal_archived,
            pe.id::int as person_id, btrim(pe.first_name || ' ' || pe.last_name) as person_name, pe.archived_at is not null as person_archived
     from timeline_events e
@@ -232,6 +242,9 @@ export async function selectEntries(
       toStage: r.to_stage,
       cause: r.cause,
       reason: r.reason,
+      fieldName: r.field_name,
+      oldValue: r.old_value,
+      newValue: r.new_value,
       createdAt: r.created_at,
       authorActive: r.actor_active ?? true,
       deal: show.deals && r.deal_id !== null ? { id: r.deal_id, title: r.deal_title ?? "", archived: r.deal_archived ?? false } : null,

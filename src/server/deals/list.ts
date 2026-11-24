@@ -5,7 +5,9 @@ import { sql } from "@/server/db";
 import type { DealStatus } from "@/server/deals/deals";
 import { referrerOptions } from "@/server/records/ambassadors";
 import { direction, ownerOptions, type Option, type UserRef } from "@/server/records/common";
-import { PAGE_SIZE, type DealsQuery } from "@/server/records/list-query";
+import { PAGE_SIZE, type DEAL_SORTS, type DealsQuery } from "@/server/records/list-query";
+import type { CustomField } from "@/server/custom-fields/rules";
+import { customListParts } from "@/server/custom-fields/values";
 import { escapeLike } from "@/server/records/rules";
 import { visibleDeal, visiblePerson } from "@/server/records/visibility";
 
@@ -36,7 +38,10 @@ export async function stageOfPipeline(pipelineId: number | null, stageId: number
   return rows.length === 1 ? stageId : null;
 }
 
-export async function listDeals(viewerId: number, query: DealsQuery): Promise<DealList> {
+// SF-115: `shown` are the deal fields shown in the list; their filters run inside the same visible `where`, so the
+// count and the total follow them.
+export async function listDeals(viewerId: number, query: DealsQuery, shown: CustomField[] = []): Promise<DealList> {
+  const custom = customListParts(sql, "deal", "d", shown, query);
   const stage = await stageOfPipeline(query.pipeline, query.stage);
   const status = query.closed || query.archived ? query.status : null;
   const pattern = `%${escapeLike(query.q)}%`;
@@ -50,14 +55,15 @@ export async function listDeals(viewerId: number, query: DealsQuery): Promise<De
     ${query.owner !== null ? sql`and d.owner_id = ${query.owner}` : sql``}
     ${query.label !== null ? sql`and exists (select 1 from deal_label_links dl where dl.deal_id = d.id and dl.label_id = ${query.label})` : sql``}
     ${query.q ? sql`and d.title ilike ${pattern}` : sql``}
-    ${query.ref !== null ? sql`and d.referred_by_id = ${query.ref}` : sql``}`;
+    ${query.ref !== null ? sql`and d.referred_by_id = ${query.ref}` : sql``}
+    ${custom.where}`;
   const [{ total, total_pence }] = await sql<{ total: number; total_pence: string }[]>`
     select count(*)::int as total, coalesce(sum(d.value_pence), 0)::bigint as total_pence
     from deals d join stages s on s.id = d.stage_id where ${where}`;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(query.page, pages);
   const dir = direction(sql, query.dir);
-  const order = {
+  const order = custom.order ? sql`${custom.order}, d.created_at desc, d.id desc` : {
     title: sql`lower(d.title) ${dir}, d.id ${dir}`,
     value: sql`d.value_pence ${dir} nulls last, d.id ${dir}`,
     organisation: sql`lower(o.name) ${dir} nulls last, d.id ${dir}`,
@@ -65,7 +71,7 @@ export async function listDeals(viewerId: number, query: DealsQuery): Promise<De
     owner: sql`lower(u.name) ${dir}, d.id ${dir}`,
     close: sql`d.expected_close_on ${dir} nulls last, d.id ${dir}`,
     added: sql`d.created_at ${dir}, d.id ${dir}`,
-  }[query.sort];
+  }[query.sort as (typeof DEAL_SORTS)[number]] ?? sql`d.created_at desc, d.id desc`;
   const rows = await sql<
     {
       id: number; title: string; value_pence: string | null; org_id: number | null; org_name: string | null; org_archived: boolean | null;
@@ -88,6 +94,7 @@ export async function listDeals(viewerId: number, query: DealsQuery): Promise<De
     join users u on u.id = d.owner_id
     left join organisations o on o.id = d.organisation_id
     left join persons p on p.id = d.person_id and ${visiblePerson(sql, viewerId)}
+    ${custom.join}
     where ${where}
     order by ${order}
     limit ${PAGE_SIZE} offset ${(page - 1) * PAGE_SIZE}`;

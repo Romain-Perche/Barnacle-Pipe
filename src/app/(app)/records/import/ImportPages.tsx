@@ -4,8 +4,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
-import { fieldLabel, fieldsFor, type ImportKind } from "@/server/imports/columns";
-import { getColumns, getImport, namesForReport, previewImport, type ImportInfo } from "@/server/imports/imports";
+import type { CustomField } from "@/server/custom-fields/rules";
+import { customTarget, fieldLabel, fieldsFor, type ImportKind } from "@/server/imports/columns";
+import { getColumns, getImport, importCustomFields, namesForReport, previewImport, type ImportInfo } from "@/server/imports/imports";
 import { skipReason, warningText, type Names } from "@/server/imports/text";
 import type { Skip, Warning } from "@/server/imports/plan";
 import { messages, templates } from "@/server/messages";
@@ -66,6 +67,11 @@ function fieldOptions(kind: ImportKind): { value: string; label: string }[] {
   ];
 }
 
+// SF-115: the kind's custom fields, after the built-in ones, in a "Custom fields" group (names from the database).
+function customOptions(custom: CustomField[]): { value: string; label: string }[] {
+  return custom.map((f) => ({ value: customTarget(f.id), label: f.name }));
+}
+
 const COLUMN_ERRORS = ["import_one_column", "import_person_name_column", "import_organisation_name_column"] as const;
 
 export async function ColumnsPage({ kind, params, searchParams }: { kind: ImportKind; params: Params; searchParams: Search }) {
@@ -75,9 +81,11 @@ export async function ColumnsPage({ kind, params, searchParams }: { kind: Import
   if (!columns) notFound();
   const query = await searchParams;
   const code = allowed(one(query.error), COLUMN_ERRORS);
-  const label = code === "import_one_column" ? fieldLabel(kind, one(query.field)) : undefined;
+  const custom = await importCustomFields(kind);
+  const label = code === "import_one_column" ? fieldLabel(kind, one(query.field) ?? "", custom) : undefined;
   const error = code === "import_one_column" ? (label ? templates.import_one_column(label) : null) : code ? messages[code] : null;
   const options = fieldOptions(kind);
+  const extra = customOptions(custom);
   const fullNameIgnored =
     kind === "people" && columns.some((c) => c.field === "full_name") && columns.some((c) => c.field === "first_name" || c.field === "last_name");
   return (
@@ -117,6 +125,15 @@ export async function ColumnsPage({ kind, params, searchParams }: { kind: Import
                           {o.label}
                         </option>
                       ))}
+                      {extra.length > 0 && (
+                        <optgroup label="Custom fields">
+                          {extra.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                   </td>
                 </tr>
@@ -298,6 +315,11 @@ export async function ReportPage({ kind, params }: { kind: ImportKind; params: P
           : templates.import_summary_organisations(report.imported, report.skipped.length)}
       </p>
       {report.organisationsAddedNames.length > 0 && <p className="hint">{report.organisationsAddedNames.join(", ")}</p>}
+      {(report.goneFields ?? []).map((name, i) => (
+        <p key={i} className="hint">
+          {templates.import_custom_field_gone(name)}
+        </p>
+      ))}
       <NotImported skipped={report.skipped} names={names} />
       <Warnings warnings={report.warnings} />
       <div className="import-acts">

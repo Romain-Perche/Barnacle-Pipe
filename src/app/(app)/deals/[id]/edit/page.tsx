@@ -8,6 +8,7 @@ import { boardHref, parseBack } from "@/server/deals/rules";
 import { parseId } from "@/server/records/list-query";
 import { updateDeal } from "../../actions";
 import { DealForm } from "../../DealForm";
+import { formFields } from "@/server/custom-fields/values";
 
 export default async function EditDealPage({
   params, searchParams,
@@ -37,6 +38,7 @@ export default async function EditDealPage({
         withStage={false}
         currentReferrer={deal.referredBy}
         initial={dealToForm(deal)}
+        customFields={formFields(deal.custom)}
         id={deal.id}
         version={deal.version}
         back={back ?? undefined}

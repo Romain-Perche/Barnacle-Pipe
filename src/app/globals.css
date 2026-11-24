@@ -450,3 +450,29 @@ table.activities-list .due-cell { white-space: nowrap; }
 @media (max-width: 720px) {
   .boxrow { grid-template-columns: 1fr; }
 }
+
+/* SF-115 custom fields, design B: a tab per kind and a table on the admin page, the field box over the page, values in
+   // MORE DETAILS, list filters. Existing tokens only. */
+.cf-tabs { margin: 0 0 16px; }
+.cf-table td.order { white-space: nowrap; }
+.cf-table td.order form, .cf-table td.acts form { display: inline; margin: 0; }
+.cf-table .typ, .fieldbox .typ { font-family: var(--mono); font-size: 12px; color: var(--muted); margin: 0; }
+.cf-table .chips { overflow-wrap: anywhere; }
+.fieldbox > .label { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; color: var(--muted); }
+.fieldbox h2 { overflow-wrap: anywhere; margin-bottom: 8px; }
+.fieldbox form { margin-bottom: 12px; }
+.fieldbox .choices { margin-bottom: 12px; }
+.fieldbox .choices form { display: inline; margin: 0; }
+.choice-rows { list-style: none; margin: 0 0 8px; padding: 0; }
+.choice-rows li { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+.choice-rows form.inline { display: flex; gap: 6px; align-items: center; flex: 1; }
+.choice-rows form.inline .input { flex: 1; }
+.fieldbox .choices .addrow { display: flex; margin: 0; }
+.fieldbox .check { margin-bottom: 12px; }
+.custom-value { white-space: pre-wrap; }
+.cf-range { display: inline-flex; gap: 4px; align-items: center; }
+.cf-range .input { width: 110px; }
+.more-details { margin-top: 8px; }
+.more-details .wide { grid-column: 1 / -1; }
+.money-input { display: flex; align-items: center; gap: 6px; }
+.money-input .input { flex: 1; }

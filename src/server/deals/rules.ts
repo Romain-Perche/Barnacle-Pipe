@@ -1,6 +1,6 @@
 // Pure rules for deals, pipelines and stages (research.md §2, data-model.md § Validation).
 // No database, no Next.js: unit-tested directly.
-import { changedFields, toId, type FieldErrors, type FieldList } from "@/server/records/rules";
+import { changedFields, toId, type CustomForm, type FieldErrors, type FieldList } from "@/server/records/rules";
 
 // What the deal form sends, as typed (also sent back to the form on a refusal).
 export type DealForm = {
@@ -17,6 +17,8 @@ export type DealForm = {
   labelIds: string[];
   // SF-114: "Referred by": "", "<id>" or "keep".
   referredBy: string;
+  // SF-115: absent when the form showed no custom field.
+  custom?: CustomForm;
 };
 
 // A deal's fields once validated (and as compared for the history). Pipeline and stage only on add.

@@ -1,7 +1,8 @@
 // From one CSV row and the column mapping to a person's or an organisation's fields, through the forms' own
 // validators (SF-103 research.md §5). Pure. Lengths are checked first: the forms cut long values silently, an import
 // refuses them so that nothing is lost without telling.
-import type { ColumnMapping, ImportField } from "@/server/imports/columns";
+import { MAX_LONG_TEXT, MAX_TEXT, readImportCell, type CustomField, type CustomValue } from "@/server/custom-fields/rules";
+import { customFieldId, type ColumnMapping, type ImportField } from "@/server/imports/columns";
 import {
   SIZES,
   validateOrganisation,
@@ -16,7 +17,10 @@ import {
 export type RowError = { code: string; args?: Record<string, string | number> };
 type FromRow<T> = { ok: true; value: T; label: string } | { ok: false; error: RowError; label: string };
 
-export type PersonFromRow = {
+// SF-115: the custom values a row gives (readable ones), and the cells that could not be read (left empty, warned about).
+export type CustomCells = { custom: { fieldId: number; value: CustomValue }[]; unreadable: { field: string; value: string }[] };
+
+export type PersonFromRow = CustomCells & {
   fields: PersonFields;
   organisationName: string;
   leadSource: string;
@@ -24,7 +28,7 @@ export type PersonFromRow = {
   owner: string;
   consent: Consent | null;
 };
-export type OrganisationFromRow = { fields: OrganisationFields; owner: string; sizeUnknown: string | null };
+export type OrganisationFromRow = CustomCells & { fields: OrganisationFields; owner: string; sizeUnknown: string | null };
 
 export function splitFullName(text: string): { first: string; last: string } {
   const [first, ...rest] = text.trim().split(/\s+/);
@@ -77,7 +81,24 @@ function valuesOf(values: string[], mapping: ColumnMapping, field: ImportField) 
 const first = (values: string[], mapping: ColumnMapping, field: ImportField) => valuesOf(values, mapping, field)[0]?.value ?? "";
 const firstError = (errors: Record<string, { code: string }>): RowError => ({ code: Object.values(errors)[0].code });
 
-export function personFormFromRow(values: string[], mapping: ColumnMapping): FromRow<PersonFromRow> {
+// The mapped custom columns of a row, for the given fields (a column of a field not given is ignored). Text over its
+// limit refuses the row with the "too long" reason; another unreadable value is left out and reported.
+export function customFromRow(values: string[], mapping: ColumnMapping, fields: readonly CustomField[]): { ok: true; cells: CustomCells } | { ok: false; error: RowError } {
+  const cells: CustomCells = { custom: [], unreadable: [] };
+  for (const c of mapping.columns) {
+    const id = customFieldId(c.field);
+    const field = id === null ? undefined : fields.find((f) => f.id === id);
+    if (!field) continue;
+    const cell = values[c.index] ?? "";
+    const read = readImportCell(field, cell);
+    if ("tooLong" in read) return { ok: false, error: { code: "import_too_long", args: { field: field.name, max: field.type === "text" ? MAX_TEXT : MAX_LONG_TEXT } } };
+    if ("unreadable" in read) cells.unreadable.push({ field: field.name, value: cell.trim() });
+    else if (read.value !== null) cells.custom.push({ fieldId: field.id, value: read.value });
+  }
+  return { ok: true, cells };
+}
+
+export function personFormFromRow(values: string[], mapping: ColumnMapping, customFields: readonly CustomField[] = []): FromRow<PersonFromRow> {
   const emails = valuesOf(values, mapping, "email").flatMap((c) => splitMulti(c.value).map((value) => ({ value, kind: c.kind })));
   const phones = valuesOf(values, mapping, "phone").flatMap((c) => splitMulti(c.value).map((value) => ({ value, kind: c.kind })));
   const hasNameColumns = mapping.columns.some((c) => c.field === "first_name" || c.field === "last_name");
@@ -96,6 +117,8 @@ export function personFormFromRow(values: string[], mapping: ColumnMapping): Fro
     tooLong("role", role, 200) ??
     tooLong("organisation name", organisationName, 200);
   if (long) return refuse(long);
+  const cells = customFromRow(values, mapping, customFields);
+  if (!cells.ok) return refuse(cells.error);
   const consentText = first(values, mapping, "consent");
   const consent = parseConsent(consentText);
   if (consent === "unknown") return refuse({ code: "import_consent_unknown", args: { value: consentText } });
@@ -129,11 +152,12 @@ export function personFormFromRow(values: string[], mapping: ColumnMapping): Fro
       labels: valuesOf(values, mapping, "labels").flatMap((c) => splitMulti(c.value)),
       owner: first(values, mapping, "owner"),
       consent,
+      ...cells.cells,
     },
   };
 }
 
-export function organisationFormFromRow(values: string[], mapping: ColumnMapping): FromRow<OrganisationFromRow> {
+export function organisationFormFromRow(values: string[], mapping: ColumnMapping, customFields: readonly CustomField[] = []): FromRow<OrganisationFromRow> {
   const name = first(values, mapping, "name");
   const refuse = (error: RowError) => ({ ok: false as const, error, label: name });
   if (values.length > mapping.columns.length) return refuse({ code: "import_too_many_values" });
@@ -141,6 +165,8 @@ export function organisationFormFromRow(values: string[], mapping: ColumnMapping
   const location = first(values, mapping, "location");
   const long = tooLong("name", name, 200) ?? tooLong("sector", sector, 100) ?? tooLong("location", location, 100);
   if (long) return refuse(long);
+  const cells = customFromRow(values, mapping, customFields);
+  if (!cells.ok) return refuse(cells.error);
   const sizeText = first(values, mapping, "size");
   const size = parseSize(sizeText);
   const v = validateOrganisation({
@@ -152,5 +178,5 @@ export function organisationFormFromRow(values: string[], mapping: ColumnMapping
     ownerId: "",
   });
   if (!v.ok) return refuse(firstError(v.errors));
-  return { ok: true, label: name, value: { fields: v.value, owner: first(values, mapping, "owner"), sizeUnknown: size === "unknown" ? sizeText : null } };
+  return { ok: true, label: name, value: { fields: v.value, owner: first(values, mapping, "owner"), sizeUnknown: size === "unknown" ? sizeText : null, ...cells.cells } };
 }

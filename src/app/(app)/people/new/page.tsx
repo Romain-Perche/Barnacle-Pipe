@@ -2,6 +2,7 @@ import { requireUser } from "@/server/auth/session";
 import { personFormChoices } from "@/server/records/people";
 import { PersonForm } from "../../records/PersonForm";
 import { createPerson } from "../actions";
+import { newFormFields } from "@/server/custom-fields/values";
 
 export default async function NewPersonPage() {
   const user = await requireUser();
@@ -20,6 +21,7 @@ export default async function NewPersonPage() {
         action={createPerson}
         choices={choices}
         canSetPrivate
+        customFields={await newFormFields("person")}
         cancelHref="/people"
         initial={{
           firstName: "",

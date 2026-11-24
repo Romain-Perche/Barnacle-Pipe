@@ -68,6 +68,19 @@
   `ambassador_added`/`ambassador_removed`/`referrer_set`/`referrer_changed`/`referrer_cleared`, cause `person_deleted`;
   no new table), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514 refusals (a
   person referred by themselves, a `from_person_id` on another kind, an unknown cause). No new outside service.
+  The custom fields code (SF-115: `src/server/custom-fields/` — `rules.ts`, `fields.ts`, `values.ts` — and the value saves
+  in `people.ts`, `organisations.ts`, `deals.ts` and the CSV import's `imports.ts`) keeps to the same pooler limits: no fake,
+  the real local PostgreSQL 17, no public schema on GitHub, follows
+  https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session advisory lock,
+  scanned by `tests/integration/migrate.test.ts`; only a transaction-level `pg_advisory_xact_lock` per kind while an admin
+  adds or reorders fields), one `sql.begin()` per change (admin changes re-check `isActiveAdmin` inside it; record values are
+  saved inside the record's own save transaction, the fields read `for share`), bulk inserts of imported values through
+  `unnest` arrays in chunks of 1,000. Its tables, columns and kinds come from `migrations/0010_custom_fields.sql`
+  (`custom_fields`, `custom_field_choices`, `custom_values`; `timeline_events.field_name`/`old_value`/`new_value`; kinds
+  `custom_set`/`custom_changed`/`custom_cleared`, plus SF-116's `file_added`/`file_deleted` in the shared kind check), applied
+  on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a 61-character or
+  `colour`-typed field, a second "diet" person field, a value row with two values or two targets, a second value for the
+  same field and person, a `custom_set` without a field name, an `edited` event with an old value). No new outside service.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -136,6 +149,14 @@
     £4,000), "… · app" (lost £1,500, "Fake: chose another supplier"), "… · audit" (open £2,000, private, Linus Fake's); notes by
     Ada Fake on "… · website" and on Dee. So Sales has 4 more deals and there are 44 fake people. For Ada, Cara's page shows
     People 3 · Deals 3 · Open £4,500 · Won £4,000 · Lost 1; for Linus, Deals 4 · Open £6,500.
+    SF-115 adds (seeder "custom-fields", after ambassadors) nine "(fake)" custom fields: people Diet (single choice None /
+    Vegetarian / Vegan / Pescatarian (removed), in list), Birthday (date), Newsletter topics (multiple choice AI / Events /
+    Hiring, in list), Head count met (number), Notes (long text); organisations Account code (text, in list), Annual budget
+    (money, in list); deals Contract end (date, in list), Signed NDA (yes/no, in list). Values: Cara Example (Diet Vegan,
+    Birthday 24 Nov 1990, topics AI + Events, Notes on two lines), Dora Privatefake (private, Linus Fake's: Diet Vegetarian),
+    Ben Referredfake (the removed choice Pescatarian, Head count 12), Dee Referredfake (Hiring), Sample Studios Fake
+    (FAKE-001, £25,000), "Fake referral · website" (31 Mar 2027, NDA Yes) and the private "… · audit" (15 Jan 2027, NDA No),
+    each with a "<Field> set to <value>" timeline entry by the record's creator.
   - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
     1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`

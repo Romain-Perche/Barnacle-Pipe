@@ -147,3 +147,36 @@ describe("value rules", () => {
     expect(parseSize("medium")).toBe("unknown");
   });
 });
+
+// covers SF-115 FR-013, US5 scenarios 2–4: custom cells read, unreadable ones listed, too long text refuses the row
+import { personFormFromRow as personRow, organisationFormFromRow as orgRow } from "@/server/imports/rows";
+import type { CustomField as CF } from "@/server/custom-fields/rules";
+describe("custom columns of a row", () => {
+  const diet: CF = { id: 1, kind: "person", name: "Diet", type: "single_choice", position: 1, inList: false,
+    choices: [{ id: 11, name: "Vegan", position: 1, removed: false }, { id: 12, name: "Old", position: 2, removed: true }] };
+  const nick: CF = { id: 2, kind: "person", name: "Nick", type: "text", position: 2, inList: false, choices: [] };
+  const born: CF = { id: 3, kind: "person", name: "Born", type: "date", position: 3, inList: false, choices: [] };
+  const mapping = { columns: [
+    { index: 0, heading: "First", field: "first_name" as const }, { index: 1, heading: "Diet", field: "custom:1" as const },
+    { index: 2, heading: "Nick", field: "custom:2" as const }, { index: 3, heading: "Born", field: "custom:3" as const },
+  ] };
+  it("reads readable values and lists the unreadable ones", () => {
+    const r = personRow(["Ada", "vegan", "Addy", "24/11/1990"], mapping, [diet, nick, born]);
+    expect(r).toMatchObject({ ok: true, value: { custom: [{ fieldId: 1, value: 11 }, { fieldId: 2, value: "Addy" }, { fieldId: 3, value: "1990-11-24" }], unreadable: [] } });
+    const bad = personRow(["Ada", "Pescatarian", "", "soon"], mapping, [diet, nick, born]);
+    expect(bad).toMatchObject({ ok: true, value: { custom: [], unreadable: [{ field: "Diet", value: "Pescatarian" }, { field: "Born", value: "soon" }] } });
+    // A removed choice is not set from a file.
+    expect(personRow(["Ada", "Old", "", ""], mapping, [diet, nick, born])).toMatchObject({ ok: true, value: { unreadable: [{ field: "Diet", value: "Old" }] } });
+  });
+  it("refuses a row whose text is over its limit", () => {
+    expect(personRow(["Ada", "", "x".repeat(256), ""], mapping, [diet, nick, born])).toMatchObject({ ok: false, error: { code: "import_too_long", args: { field: "Nick", max: 255 } } });
+  });
+  it("ignores a column of a field that is gone", () => {
+    expect(personRow(["Ada", "vegan", "x", "y"], mapping, [nick])).toMatchObject({ ok: true, value: { custom: [{ fieldId: 2, value: "x" }], unreadable: [] } });
+  });
+  it("reads organisation rows too", () => {
+    const code: CF = { id: 4, kind: "organisation", name: "Code", type: "number", position: 1, inList: false, choices: [] };
+    const m = { columns: [{ index: 0, heading: "Name", field: "name" as const }, { index: 1, heading: "Code", field: "custom:4" as const }] };
+    expect(orgRow(["Fakeco", "1,234"], m, [code])).toMatchObject({ ok: true, value: { custom: [{ fieldId: 4, value: "1234" }] } });
+  });
+});

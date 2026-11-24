@@ -308,3 +308,49 @@ describe("activity messages", () => {
     expect(fieldMessage({ code: "assignee_cannot_see" })).toBeUndefined();
   });
 });
+
+// covers SF-115 contracts/routes.md § Messages (T049): every custom field code used in src/server/custom-fields/ exists
+import { readdirSync as readDir, readFileSync as readText } from "node:fs";
+describe("custom field messages (SF-115)", () => {
+  it("has the fixed texts", () => {
+    expect(messageFor("custom_field_name_required")).toBe("Give the field a name.");
+    expect(messageFor("custom_field_name_too_long")).toBe("A field name can be at most 60 characters.");
+    expect(messageFor("custom_field_type_required")).toBe("Choose a type.");
+    expect(messageFor("custom_choices_required")).toBe("Add at least one choice.");
+    expect(messageFor("custom_choice_name_required")).toBe("Give the choice a name.");
+    expect(messageFor("custom_choice_name_too_long")).toBe("A choice name can be at most 60 characters.");
+    expect(messageFor("custom_choice_twice")).toBe("Two choices have the same name.");
+    expect(messageFor("custom_choice_last")).toBe("A choice field needs at least one choice.");
+    expect(messageFor("custom_choice_removed_exists")).toBe("A removed choice has this name. Add it again to bring it back.");
+    expect(messageFor("custom_fields_limit")).toBe("A kind can have at most 50 custom fields.");
+    expect(messageFor("custom_choices_limit")).toBe("A field can have at most 100 choices.");
+    expect(messageFor("custom_list_limit")).toBe("At most 8 custom fields can be shown in a list.");
+    expect(messageFor("custom_fields_empty")).toBe("No custom fields yet.");
+    expect(messageFor("custom_record_archived")).toBe("Restore this record before changing its custom fields.");
+  });
+  it("has the templates, never reachable from a URL code, and names the field next to its input", () => {
+    expect(templates.custom_field_exists("Owner")).toBe("There is already a field called Owner.");
+    expect(templates.custom_choice_exists("Vegan")).toBe("There is already a choice called Vegan.");
+    expect(templates.custom_number_range("N")).toBe("N: enter a number between -1,000,000,000,000 and 1,000,000,000,000.");
+    expect(templates.custom_money_invalid("Budget")).toBe("Budget: enter an amount in pounds, for example 4000 or 4000.50.");
+    expect(templates.custom_choice_invalid("Diet")).toBe("Diet: choose one of the choices.");
+    expect(templates.custom_set_event("Diet", "Vegan")).toBe("Diet set to Vegan");
+    expect(templates.custom_changed_event("Diet", "Vegan", "Vegetarian")).toBe("Diet changed from Vegan to Vegetarian");
+    expect(templates.custom_changed_plain("Notes")).toBe("Notes changed");
+    expect(templates.custom_cleared_event("Diet")).toBe("Diet cleared");
+    expect(templates.import_custom_field_gone("Diet")).toBe("Diet was deleted before the import ran: its column was not imported.");
+    expect(messageFor("custom_field_exists")).toBeUndefined();
+    expect(messageFor("custom_set_event")).toBeUndefined();
+    expect(fieldMessage({ code: "custom_number_decimals", name: "Head count" })).toBe("Head count: at most 4 decimal places.");
+  });
+  it("knows every custom_* code the custom fields code uses", () => {
+    const used = new Set<string>();
+    for (const file of readDir("src/server/custom-fields")) {
+      for (const m of readText(`src/server/custom-fields/${file}`, "utf8").matchAll(/"(custom_[a-z_]+)"/g)) used.add(m[1]);
+    }
+    const kinds = new Set(["custom_set", "custom_changed", "custom_cleared", "custom_fields", "custom_field_choices", "custom_values", "custom_fields_name_key", "custom_field_choices_name_key"]);
+    const missing = [...used].filter((c) => !kinds.has(c) && messageFor(c) === undefined && !Object.hasOwn(templates, c));
+    expect(used.size).toBeGreaterThan(10);
+    expect(missing).toEqual([]);
+  });
+});

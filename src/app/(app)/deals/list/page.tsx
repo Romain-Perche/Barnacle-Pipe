@@ -9,7 +9,10 @@ import { formatDate, formatMoney } from "@/server/format";
 import { messages, templates } from "@/server/messages";
 import { ownerName } from "@/server/records/common";
 import { readFlash } from "@/server/records/flash";
-import { hasDealFilters, knownDealsQuery, parseDealsQuery, withParams, type DealsQuery, type Params } from "@/server/records/list-query";
+import { listShownFields } from "@/server/custom-fields/fields";
+import { customColumns, customFilterOptions } from "@/server/custom-fields/values";
+import { hasDealFilters, knownCustomQuery, knownDealsQuery, parseDealsQuery, withParams, type DealsQuery, type Params } from "@/server/records/list-query";
+import { CustomCells, CustomFilters, CustomHeaders, customSortOptions } from "../../records/CustomFilters";
 import { Cell, FilterRow, PreviewLink, Select, SortHeader } from "../../records/ListBits";
 import { Pager } from "../../records/Pager";
 import { DealDrawer } from "../DealDrawer";
@@ -29,13 +32,16 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
   const user = await requireUser();
   const params = await searchParams;
   const parsed = parseDealsQuery(params);
-  const options = await dealFilterOptions(user.id, parsed.pipeline);
-  const query = knownDealsQuery(parsed, options);
-  const [list, flash, found] = await Promise.all([
-    listDeals(user.id, query),
+  const [options, fields] = await Promise.all([dealFilterOptions(user.id, parsed.pipeline), listShownFields("deal")]);
+  // SF-115: only filters and a sort of the custom fields shown in the list, with valid values; count and total follow.
+  const query = knownCustomQuery(knownDealsQuery(parsed, options), fields);
+  const [list, flash, found, choiceOptions] = await Promise.all([
+    listDeals(user.id, query, fields),
     readFlash(["deal_deleted", "deal_no_longer_visible"]),
     query.open ? getDeal(user.id, query.open) : null,
+    customFilterOptions(user.id, "deal", fields),
   ]);
+  const cells = await customColumns("deal", fields, list.rows.map((r) => r.id));
   const pipelines = found ? await stageChoices() : [];
   const shown = { ...query, page: list.page };
   const link = (changes: Partial<DealsQuery>) => withParams(PATH, shown, changes);
@@ -100,6 +106,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
             options={[{ value: "", label: "Any status" }, { value: "open", label: "Open" }, { value: "won", label: "Won" }, { value: "lost", label: "Lost" }]}
           />
         )}
+        <CustomFilters fields={fields} options={choiceOptions} custom={query.custom} />
         <Select
           name="sort"
           label="Sort by"
@@ -112,6 +119,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
             { value: "stage", label: "Sort: stage" },
             { value: "owner", label: "Sort: owner" },
             { value: "close", label: "Sort: expected close" },
+            ...customSortOptions(fields),
           ]}
         />
         <Select name="dir" label="Order" value={query.dir} options={[{ value: "desc", label: "Descending" }, { value: "asc", label: "Ascending" }]} />
@@ -140,6 +148,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
                   <SortHeader label="Owner" sort="owner" query={shown} path={PATH} />
                   <SortHeader label="Expected close" sort="close" query={shown} path={PATH} />
                   <SortHeader label="Date added" sort="added" query={shown} path={PATH} />
+                  <CustomHeaders fields={fields} query={shown} path={PATH} />
                 </tr>
               </thead>
               <tbody>
@@ -186,6 +195,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
                     <Cell href={preview(r.id)}>{ownerName(r.owner)}</Cell>
                     <Cell href={preview(r.id)}>{r.expectedClose ? day(r.expectedClose) : "—"}</Cell>
                     <Cell href={preview(r.id)}>{formatDate(r.createdAt)}</Cell>
+                    <CustomCells fields={fields} cells={cells.get(r.id)} href={preview(r.id)} />
                   </tr>
                 ))}
               </tbody>

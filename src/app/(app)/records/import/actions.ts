@@ -44,7 +44,8 @@ export async function saveColumns(formData: FormData) {
   for (const [name, value] of formData.entries()) {
     const m = /^field\.(\d{1,4})$/.exec(name);
     if (!m || typeof value !== "string") continue;
-    const [field, kind = "work"] = value.split(":");
+    // SF-115: a custom field target is "custom:<id>" as a whole.
+    const [field, kind = "work"] = value.startsWith("custom:") ? [value] : value.split(":");
     choices.set(Number(m[1]), { field, kind });
   }
   const result = await imports.saveColumns(user.id, id, choices);
