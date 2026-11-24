@@ -32,12 +32,8 @@ async function connect(p, { account, untick, cancel } = {}) {
   await Promise.all([p.waitForURL(/fake-google\/gmail/), p.locator('section[aria-label="Gmail"] button', { hasText: /CONNECT GMAIL/ }).click()]);
   if (account) await p.fill('input[name="email"]', account);
   if (untick) await p.locator("label.check", { hasText: untick }).locator("input").uncheck();
-  await Promise.all([p.waitForURL(/\/settings\/gmail\/callback/), p.click(cancel ? "text=[ CANCEL ]" : "text=[ ALLOW ]")]);
-  await p.waitForTimeout(1500);
-  // SF-118 review finding: the fake consent screen's server-action redirect runs the callback inside the action request
-  // (no crm_gmail_oauth cookie, path /settings/gmail), so it always ends in "Gmail was not connected.". Real Google does a
-  // full browser redirect: do the same (RAW=1 keeps the click's own result).
-  if (!process.env.RAW) await p.goto(p.url());
+  // The consent buttons post to /dev/fake-google/gmail/answer, a 303 to the callback, then a 303 to /settings.
+  await Promise.all([p.waitForURL(/\/settings(\?|$)/), p.click(cancel ? "text=[ CANCEL ]" : "text=[ ALLOW ]")]);
   await p.waitForLoadState("networkidle");
   return norm(await p.locator('section[aria-label="Gmail"]').innerText());
 }
@@ -333,7 +329,7 @@ function person(first, last, emails, { priv = false, archived = false } = {}) {
     await g2.goto(BASE + "/settings"); // tab 2 opened before tab 1 connects
     const c1 = await connect(gp);
     await Promise.all([g2.waitForURL(/fake-google\/gmail/), g2.locator('section[aria-label="Gmail"] button', { hasText: /CONNECT GMAIL/ }).click()]);
-    await Promise.all([g2.waitForURL(/callback/), g2.click("text=[ ALLOW ]")]); await g2.waitForTimeout(1500); await g2.goto(g2.url());
+    await Promise.all([g2.waitForURL(/\/settings(\?|$)/), g2.click("text=[ ALLOW ]")]); await g2.waitForLoadState("networkidle");
     const c2 = norm(await g2.locator('section[aria-label="Gmail"]').innerText());
     const c = await card(gp);
     const rows = q(`select count(*) from gmail_connections where user_id=${uid("grace@barnacle.ai")}`);
@@ -377,7 +373,7 @@ function person(first, last, emails, { priv = false, archived = false } = {}) {
     // reconnect
     await lp.goto(BASE + "/settings");
     await Promise.all([lp.waitForURL(/fake-google\/gmail/), lp.click("text=[ RECONNECT GMAIL ]")]);
-    await Promise.all([lp.waitForURL(/callback/), lp.click("text=[ ALLOW ]")]); await lp.waitForTimeout(1500); await lp.goto(lp.url());
+    await Promise.all([lp.waitForURL(/\/settings(\?|$)/), lp.click("text=[ ALLOW ]")]); await lp.waitForLoadState("networkidle");
     const c = norm(await lp.locator('section[aria-label="Gmail"]').innerText());
     const warn = await lp.locator("a", { hasText: /^Settings/ }).locator(".warn").count();
     await runCheck(lp, L); // the message that came while refused is in a new conversation: copied now (carry on from the last sync)

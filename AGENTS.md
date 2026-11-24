@@ -127,7 +127,7 @@ OAuth code flow and database sessions.
   `StopConfirm.tsx`, `actions.ts`) and `ImportRunner.tsx` (client: one part, `router.refresh()`, the next part a second
   later or after Pipedrive's wait). `records/import/StepBar.tsx` takes a `steps` prop.
 - `src/app/gmail/push/route.ts` (Pub/Sub push, Google's token) and `src/app/cron/gmail/route.ts` (the 15-minute check,
-  `CRON_SECRET`), scheduled by `vercel.json` (SF-118); `src/app/dev/fake-google/gmail` (the fake consent screen) and
+  `CRON_SECRET`), scheduled by `vercel.json` (SF-118); `src/app/dev/fake-google/gmail` (the fake consent screen; its buttons post a plain form to `answer/route.ts`, a 303 to the callback) and
   `src/app/dev/fake-gmail` (the fake mailbox page), 404 unless the Gmail mode is `fake`.
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, gmail (SF-118: Ada Fake's fake Gmail
   connection and three conversations), notes, activities, ambassadors, files, custom fields: `custom-fields.ts`). The

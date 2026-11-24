@@ -621,7 +621,7 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
 
 ## Fix round 1 (AI review: the fake consent screen never connects)
 
-- [ ] T045 Test first, in `tests/integration/gmail-dev-fake.test.ts` (`// covers SF-118 FR-018, FR-002, US1 scenarios
+- [x] T045 Test first, in `tests/integration/gmail-dev-fake.test.ts` (`// covers SF-118 FR-018, FR-002, US1 scenarios
   2-5, US4 scenario 3, plan.md Fix round 1`): render the consent page and check both buttons submit a plain form to
   `/dev/fake-google/gmail/answer` with `method="post"` (no server action); `POST` the allow form (as
   `application/x-www-form-urlencoded`) to the route's handler and check 303 with `Location` = the callback with
@@ -631,7 +631,7 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
   `?gmail=not_connected`; one box unticked → the callback gives the missing-permissions notice; another account →
   the wrong-account notice; the route answers 404 outside fake mode and for any other `redirect_uri`. Replace the
   calls to `allowFakeGmail` / `cancelFakeGmail`. See it fail before T046.
-- [ ] T046 Add `src/app/dev/fake-google/gmail/answer/route.ts` (`POST`, `dynamic = "force-dynamic"`): the checks of
+- [x] T046 Add `src/app/dev/fake-google/gmail/answer/route.ts` (`POST`, `dynamic = "force-dynamic"`): the checks of
   today's `callback()` (404 unless `isFakeAllowed()` and `gmailConfig().mode === "fake"`, 404 unless `redirect_uri`
   is exactly `${appBaseUrl()}/settings/gmail/callback`); `decision=allow` → `fakeGmail().consent(...)` with the same
   fields as today and `code` on the callback; `decision=cancel` → `error=access_denied`; any other decision → 404;
@@ -639,7 +639,7 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
   `src/app/dev/fake-google/gmail/page.tsx` at it (`action="/dev/fake-google/gmail/answer" method="post"`, the button
   pressed as `decision`), keep the page's text and fields, and delete `src/app/dev/fake-google/gmail/actions.ts`.
   Update the fake consent screen line in `AGENTS.md` if it names the actions.
-- [ ] T047 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
+- [x] T047 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
   `DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; then, with `npm run dev`, press `[ CONNECT GMAIL ]` and
   `[ ALLOW ]` in a browser and see "Gmail connected." on Settings. Update `.factory/test-env.md` only if it names the
   consent screen's actions.

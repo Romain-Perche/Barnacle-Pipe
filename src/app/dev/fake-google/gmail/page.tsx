@@ -1,10 +1,9 @@
 // The fake Google consent screen for Gmail (SF-118 research.md §14, FR-018), development and tests only: the account
 // (pre-filled from login_hint), the two permissions as ticked boxes, [ ALLOW ] and [ CANCEL ]. 404 unless fakes are
-// allowed and Gmail runs on the fake.
+// allowed and Gmail runs on the fake. Both buttons post a plain form to ./answer (a 303 to the callback).
 import { notFound } from "next/navigation";
 import { Wordmark } from "@/app/Wordmark";
 import { appBaseUrl, gmailConfig, isFakeAllowed } from "@/server/env";
-import { allowFakeGmail, cancelFakeGmail } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +28,7 @@ export default async function FakeGmailConsentPage({ searchParams }: Props) {
           <span className="c">//</span> FAKE GOOGLE · GMAIL ACCESS · DEVELOPMENT AND TEST ONLY
         </div>
         <h1>Barnacle CRM wants to access your Google Account</h1>
-        <form action={allowFakeGmail} className="stack">
+        <form action="/dev/fake-google/gmail/answer" method="post" className="stack">
           {hidden.map((k) => (
             <input key={k} type="hidden" name={k} value={one(q[k])} />
           ))}
@@ -42,15 +41,15 @@ export default async function FakeGmailConsentPage({ searchParams }: Props) {
               <input type="checkbox" name={`scope:${b.scope}`} defaultChecked /> {b.label}
             </label>
           ))}
-          <button className="btn solid" type="submit">
+          <button className="btn solid" type="submit" name="decision" value="allow">
             [ ALLOW ]
           </button>
         </form>
-        <form action={cancelFakeGmail} style={{ marginTop: 24 }}>
+        <form action="/dev/fake-google/gmail/answer" method="post" style={{ marginTop: 24 }}>
           {hidden.map((k) => (
             <input key={k} type="hidden" name={k} value={one(q[k])} />
           ))}
-          <button className="btn" type="submit">
+          <button className="btn" type="submit" name="decision" value="cancel">
             [ CANCEL ]
           </button>
         </form>

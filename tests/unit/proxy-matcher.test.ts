@@ -28,6 +28,7 @@ describe("proxy without a session (SF-118)", () => {
     ["/gmail/push", "POST"],
     ["/cron/gmail", "GET"],
     ["/dev/fake-google/gmail", "GET"],
+    ["/dev/fake-google/gmail/answer", "POST"],
     ["/dev/fake-gmail", "GET"],
     ["/dev/fake-gmail/", "GET"],
   ])("lets %s through", (path, method) => {

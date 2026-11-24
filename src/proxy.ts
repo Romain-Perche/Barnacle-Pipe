@@ -12,7 +12,7 @@ const PUBLIC = [
   /^\/sign-in\/?$/,
   /^\/auth(\/|$)/,
   /^\/dev\/fake-google\/?$/,
-  /^\/dev\/fake-google\/gmail\/?$/,
+  /^\/dev\/fake-google\/gmail(\/answer)?\/?$/,
   /^\/dev\/fake-gmail\/?$/,
   /^\/gmail\/push\/?$/,
   /^\/cron\/gmail\/?$/,
