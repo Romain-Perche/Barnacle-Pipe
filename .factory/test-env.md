@@ -44,6 +44,38 @@
   characters; "Budget" (double), "Favourite colour" (varchar), "Job title", "Lead source" (Referral / Webinar / Event),
   "LinkedIn", org "Region" (address), labels Hot / Cold / Investor) and `fake-pipedrive-other` ("Otherco Pipedrive"
   1002). It needs `PIPEDRIVE_TOKEN_KEY` set (`start-app.sh` makes one into /tmp/pipedrive-token-key; tests set their own).
+- Gmail API (SF-118; users.getProfile, watch, stop, history.list, messages.list/get/send, threads.get): fake
+  `src/server/gmail/fake-gmail.ts` (`FakeGoogleMail`), wrapped for the tests by `tests/fakes/gmail.ts` (`GmailFake`,
+  `installGmailFake()`, installed with `useGmailFetchForTests`), which checks every Gmail request and answer against the
+  schema `gmail-api.json` (path and method among `resources.users` methods, each query parameter declared for that
+  method, JSON body properties declared in `WatchRequest` / `Message`, every answer property declared in its response
+  schema — `Profile`, `WatchResponse`, `ListHistoryResponse` → `History` → `HistoryMessageAdded` → `Message`,
+  `ListMessagesResponse`, `Message` → `MessagePart` → `MessagePartHeader` / `MessagePartBody`, `Thread` — with the JSON
+  types, int64/uint64 as strings); a refused call throws and is kept in `violations`, which fails the test in afterEach.
+  The fake copies Gmail's behaviour: 401 for a dead or expired access token, 403 `insufficientPermissions` outside the
+  token's scopes, rising history ids, `history.list` 404 for a start id older than the kept history (`forgetHistory()`),
+  `messages.list` newest first with `q=after:<seconds>` and spam/bin left out, a watch for 7 days, `messages.send` puts
+  the message in the sender's mailbox with SENT (and INBOX when sent to self). Switches: `down()`, `refuseKey(email)`,
+  `failWatch(on)`, `forgetHistory()`, `advance(ms)`, `tamper(fn)`, `requests`, `mailbox(email)`, `sent(email)`,
+  `tokenStatus(token)`, `tokensOf(email)`, `watchOf(email)`. In the running app (APP_ENV development/test,
+  `GMAIL_PUBSUB_TOPIC` empty, `GMAIL_TOKEN_KEY` set) the same fake runs in process (state in `.fake-gmail/state.json`):
+  `[ CONNECT GMAIL ]` opens the fake consent screen `/dev/fake-google/gmail`, and `/dev/fake-gmail` puts mail in a
+  user's mailbox (with or without its notice), runs the 15-minute check, refuses the key, fails renewals, forgets history.
+  `start-app.sh` makes a key into /tmp/gmail-token-key (`GMAIL_TOKEN_KEY=` for "Gmail can't be connected right now.") and
+  sets `CRON_SECRET=fake-cron-secret-0123456789`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY` for every test.
+- Cloud Pub/Sub push (SF-118; Gmail's notices to `POST /gmail/push`): the same fake's `notice(email)` (a Google-signed
+  OIDC token by the fake's RSA key, served at the certs URL) and `GmailFake.deliver(email)` (to `receiveGmailPush`, the
+  route's own handler), every push body checked against `PubsubMessage` in the schema `pubsub-api.json` (`message`
+  properties declared, `data` base64, wrapper `{ message, subscription }`); `dropNotice(email)` drops one.
+- Google OAuth 2.0 token and revoke endpoints and Google's signing keys (SF-118; oauth2.googleapis.com/token, /revoke,
+  www.googleapis.com/oauth2/v3/certs): the same fake. No public schema on GitHub (google-api-go-client's oauth2 v1/v2
+  files only describe userinfo and tokeninfo); it follows Google's "Using OAuth 2.0 for Web Server Applications" and
+  "Authenticate push subscriptions" pages and RFC 6749 §5.1/§5.2/§6, RFC 7636, RFC 7009 §2.2 and RFC 7517, checked by
+  `tests/unit/gmail-fake-oauth.test.ts`: codes once and for 10 minutes, `invalid_grant` for an unknown/used/expired code,
+  a wrong `code_verifier` or a revoked/refused refresh token, `401 invalid_client` for a wrong secret, `400
+  invalid_request` for a missing parameter, `scope` with only the ticked scopes, a refresh token only with
+  `access_type=offline`, 1-hour access tokens that die with their refresh token, revoke `200` / `400 invalid_token`, a
+  JWK set (`kid`, `kty` RSA, `alg` RS256, `n`, `e`) with `cache-control: max-age`.
 - Supabase Postgres (through the Supavisor pooler): no fake — a real local PostgreSQL 17. No public schema
   on GitHub; follows Supabase's docs (https://supabase.com/docs/guides/database/connecting-to-postgres):
   transaction-mode pooler copied by always connecting with `prepare: false` and taking only
@@ -143,6 +175,17 @@
   check), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a
   second open import, paused without a reason, People without consent, nothing ticked, a person link with an
   organisation id, `how = 'copied'`, a 256-character company name).
+  The Gmail code (SF-118: `src/server/gmail/*.ts`, `src/server/crypto/seal.ts`, `deactivate()` in `users.ts`) keeps to the
+  same pooler limits: no fake, the real local PostgreSQL 17, no public schema on GitHub, follows
+  https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session advisory
+  lock, scanned by `tests/integration/migrate.test.ts`), overlapping syncs kept apart by a lease column
+  (`sync_lease_until`, `sync_again`) instead of a lock, every change one `sql.begin()` (one per stored message), and NO
+  Google (network) call inside a transaction: Google is called before (connect) or after commit (watch, stop, revoke).
+  Its tables come from `migrations/0016_gmail.sql` (`gmail_connections`, `email_threads`, `email_messages`,
+  `email_attachments`; RLS on each), applied on a fresh database after 0015 by `migrate.test.ts`, which also checks
+  Postgres's own 23514/23505 refusals (a disconnected row with a key, a working row without one, a non-barnacle address,
+  a disconnected row with a watch, direction `forwarded`, `to_list` `{}`, an attachment of size -1 or with an empty name,
+  a second copy of a message for one account) and the cascade from a thread to its messages and attachments.
   The unsubscribe code (SF-121: `src/server/records/unsubscribe.ts`) keeps to the same pooler limits: no fake, the real
   local PostgreSQL 17, no public schema; no session state, each unsubscribe one `sql.begin()` with a conditional
   `update persons … where unsubscribe_token = $1 and consent = 'subscribed' returning id` (Read Committed re-checks the
@@ -168,6 +211,8 @@
 - storage_v0_openapi.json: https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json
 - pipedrive_v2_openapi.json: https://github.com/soenneker/soenneker.pipedrive.openapiclient/blob/77695f9076c899e2ba1e7e8eb029aabb28abed27/openapi.json
 - pipedrive_v1_openapi.yml: https://github.com/Zenika/zenpipe/blob/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml
+- gmail-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json
+- pubsub-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/pubsub/v1/pubsub-api.json
 
 - Pipedrive stand-in over HTTP (AI review, SF-117): `.factory/run/pipedrive-server.ts` serves Build's `FakePipedrive`
   (`buildDevFake()`, the same data as the in-process fake) on :9400 (`npx tsx .factory/run/pipedrive-server.ts`), for a second
@@ -184,7 +229,8 @@
   `initdb -D /tmp/pgdata -U postgres --auth=trust && pg_ctl -D /tmp/pgdata -o "-k /tmp -c listen_addresses=localhost" -l /tmp/pg.log start`
   and `psql -h localhost -U postgres -c "create database crm_test" -c "create database crm_dev"`.
 - Schemas: `.factory/schemas/oauth2-api.json`, `.factory/schemas/storage_v0_openapi.json`,
-  `.factory/schemas/pipedrive_v2_openapi.json` and `.factory/schemas/pipedrive_v1_openapi.yml`, downloaded by
+  `.factory/schemas/pipedrive_v2_openapi.json`, `.factory/schemas/pipedrive_v1_openapi.yml`,
+  `.factory/schemas/gmail-api.json` and `.factory/schemas/pubsub-api.json`, downloaded by
   `npm run test:schemas` (run by `npm test` as `pretest`; commits above, sha256 checked).
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
@@ -258,6 +304,21 @@
     Ben Referredfake (the removed choice Pescatarian, Head count 12), Dee Referredfake (Hiring), Sample Studios Fake
     (FAKE-001, £25,000), "Fake referral · website" (31 Mar 2027, NDA Yes) and the private "… · audit" (15 Jan 2027, NDA No),
     each with a "<Field> set to <value>" timeline entry by the record's creator.
+  - SF-118 AI review (Gmail connect and sync): `rm -rf .fake-gmail && bash .factory/run/reset-db.sh`, the app on :3000
+    (`start-app.sh`, fake Gmail), plus `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh` (edge 9:
+    Gmail off) and `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_PUBSUB_TOPIC=projects/fake/topics/x GOOGLE_CLIENT_ID=x
+    GOOGLE_CLIENT_SECRET=y GMAIL_PUSH_SERVICE_ACCOUNT=sa@fake NODE_USE_ENV_PROXY=1 HTTPS_PROXY=http://127.0.0.1:9
+    https_proxy=http://127.0.0.1:9 NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1 bash .factory/run/start-app.sh` (same
+    database, real-mode Gmail with Google unreachable: US3-2 "Gmail does not answer"). Then
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf118.js` (all 32, ~2.5 min; results in
+    /tmp/sf118-results.json). `.factory/run/gmail-ctl.ts` (run with `npx tsx`, env in its head comment) steers the dev fake
+    through `.fake-gmail/state.json` for what `/dev/fake-gmail` has no button for: a signed notice kept for later
+    (`notice`), a notice signed by another key (`badnotice`), moving a message to the bin (`trash`), `sendGmail` as a later
+    feature calls it (`send`), the Sent messages and token statuses. Users: Linus (main), Margaret (2nd mailbox, then
+    deactivated by Ada), Grace (two tabs). Fix round 1: `[ ALLOW ]` / `[ CANCEL ]` on the fake consent screen post a plain form to
+    `/dev/fake-google/gmail/answer` (a 303 to the callback), so the browser sends the `crm_gmail_oauth` cookie; the script
+    clicks them as a user would. Round 2: all 32 pass (needs `npm run test:schemas` first for smoke checks 1 and 4). Round 3 (after the origin/main merge with campaigns, segments, unsubscribe): all 32 pass again. On a fresh
+    database `reset-db.sh` fails (tables not made yet): run `start-app.sh` first (it migrates and seeds), then reset.
   - SF-117 AI review (Pipedrive import). Start, after the build on :3000: `nohup npx tsx .factory/run/pipedrive-server.ts >/tmp/pd.log 2>&1 &`,
     `PORT=3001 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_URL=http://localhost:9400 bash .factory/run/start-app.sh` and (edge 18)
     `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_TOKEN_KEY= bash .factory/run/start-app.sh`. Then, each on fresh data
@@ -514,3 +575,5 @@
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in
+4. test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json
+5. test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/cron/gmail)" = 401

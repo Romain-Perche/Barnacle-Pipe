@@ -5,7 +5,7 @@
 import { sql, type Sql } from "@/server/db";
 import { pipedriveConfig } from "@/server/env";
 import { PipedriveRefused, whoAmI } from "@/server/pipedrive/api";
-import { openToken, sealToken, TokenUnreadable } from "@/server/pipedrive/crypto";
+import { openToken, sealToken, TokenUnreadable } from "@/server/crypto/seal";
 
 export const MAX_TOKEN = 200;
 
@@ -34,7 +34,7 @@ export async function saveToken(userId: number, raw: string): Promise<{ ok: true
     // Refused → the token is wrong; anything else (unreachable, 429, 5xx, time-out) → try again later.
     return { error: e instanceof PipedriveRefused ? "pipedrive_token_refused" : "pipedrive_unreachable" };
   }
-  const sealed = sealToken(key, userId, token);
+  const sealed = sealToken(key, "pipedrive-token", userId, token);
   await sql`
     insert into pipedrive_connections (user_id, token, pipedrive_user_id, pipedrive_user_name, company_id, company_name)
     values (${userId}, ${sealed}, ${me.id}, ${me.name.slice(0, 255)}, ${me.companyId}, ${me.companyName.slice(0, 255)})
@@ -62,7 +62,7 @@ export async function tokenFor(userId: number): Promise<{ token: string; company
     select token, company_id::text as company_id from pipedrive_connections where user_id = ${userId}`;
   if (!row) return null;
   try {
-    return { token: openToken(key, userId, row.token), companyId: Number(row.company_id) };
+    return { token: openToken(key, "pipedrive-token", userId, row.token), companyId: Number(row.company_id) };
   } catch (e) {
     if (e instanceof TokenUnreadable) return null;
     throw e;

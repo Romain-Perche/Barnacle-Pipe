@@ -378,6 +378,59 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-118 T009, data-model.md § Migration: 0016_gmail.sql after 0015_campaigns.sql on a fresh database, its 23514/23505
+  // refusals, the cascade from a thread to its messages and attachments, RLS on the four tables
+  it("applies 0016_gmail.sql: connection state and cipher checks, message and attachment checks, one copy per account", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out.indexOf("Applied 0015_campaigns.sql")).toBeGreaterThan(-1);
+    expect(run.out.indexOf("Applied 0016_gmail.sql")).toBeGreaterThan(run.out.indexOf("Applied 0015_campaigns.sql"));
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('linus@barnacle.ai', 'Linus') returning id`;
+      const cipher = Buffer.alloc(40, 1);
+      const conn = (cols: { email?: string; state?: string; cipher?: Buffer | null; expires?: Date | null }) =>
+        c`insert into gmail_connections (user_id, email, state, token_cipher, connected_at, watch_expires_at)
+          values (${u.id}, ${cols.email ?? "linus@barnacle.ai"}, ${cols.state ?? "working"},
+                  ${cols.cipher === undefined ? cipher : cols.cipher}, now(), ${cols.expires ?? null}) returning id`;
+      expect(await code(conn({ state: "disconnected" }))).toBe("23514");
+      expect(await code(conn({ cipher: null }))).toBe("23514");
+      expect(await code(conn({ email: "x@other.test" }))).toBe("23514");
+      expect(await code(conn({ email: " Linus@barnacle.ai" }))).toBe("23514");
+      expect(await code(conn({ state: "disconnected", cipher: null, expires: new Date() }))).toBe("23514");
+      expect(await code(conn({ state: "paused" }))).toBe("23514");
+      expect(await code(conn({ state: "disconnected", cipher: null }))).toBe("ok");
+      await c`delete from gmail_connections`;
+      const [g] = await conn({});
+      const [t] = await c`insert into email_threads (connection_id, gmail_thread_id, subject) values (${g.id}, 't1', 'Hi') returning id`;
+      const msg = (cols: { id: string; direction?: string; to?: object }) =>
+        c`insert into email_messages (connection_id, thread_id, gmail_message_id, direction, to_list, received_at)
+          values (${g.id}, ${t.id}, ${cols.id}, ${cols.direction ?? "received"}, ${c.json((cols.to ?? []) as never)}, now()) returning id`;
+      expect(await code(msg({ id: "m0", direction: "forwarded" }))).toBe("23514");
+      expect(await code(msg({ id: "m0", to: {} }))).toBe("23514");
+      expect(await code(msg({ id: "" }))).toBe("23514");
+      const [m] = await msg({ id: "m1", to: [{ email: "ana@example.test", name: null }] });
+      expect(await code(msg({ id: "m1" }))).toBe("23505");
+      const att = (cols: { position: number; name?: string; size?: number }) =>
+        c`insert into email_attachments (message_id, position, name, size) values (${m.id}, ${cols.position}, ${cols.name ?? "a.pdf"}, ${cols.size ?? 1})`;
+      expect(await code(att({ position: 0, size: -1 }))).toBe("23514");
+      expect(await code(att({ position: 0, name: "" }))).toBe("23514");
+      expect(await code(att({ position: 0, name: "x".repeat(256) }))).toBe("23514");
+      expect(await code(att({ position: 0, size: 20971520 }))).toBe("ok");
+      expect(await code(att({ position: 0 }))).toBe("23505");
+      // Deleting a thread takes its messages and their attachments with it.
+      await c`delete from email_threads where id = ${t.id}`;
+      const [{ n }] = await c`select (select count(*) from email_messages)::int + (select count(*) from email_attachments)::int as n`;
+      expect(n).toBe(0);
+      const rls = await c`select relname from pg_class where relname in ('gmail_connections', 'email_threads', 'email_messages', 'email_attachments') and relrowsecurity`;
+      expect(rls.length).toBe(4);
+    } finally {
+      await c.end();
+    }
+  });
+
   // covers SF-120 T005: the segments code keeps to the pooler's limits (no session state); 0014 is transaction-safe
   it("keeps the segments code and 0014_segments.sql free of session state", () => {
     const dir = "src/server/segments";
@@ -436,6 +489,21 @@ describe("npm run db:migrate", () => {
     } finally {
       await c.end();
     }
+  });
+
+  // covers SF-118 T009, T012: the Gmail code keeps to the pooler's limits (no session state); 0016 is transaction-safe
+  it("keeps the Gmail code and 0016_gmail.sql free of session state", () => {
+    const dir = "src/server/gmail";
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["rules.ts", "google-api.ts", "push.ts", "connections.ts", "sync.ts", "send.ts", "fake-gmail.ts"]));
+    for (const file of [...readdirSync(dir).map((f) => `${dir}/${f}`), "src/server/crypto/seal.ts"]) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0016_gmail.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration.match(/create table/gi)?.length).toBe(4);
+    expect(migration.match(/enable row level security/gi)?.length).toBe(4);
   });
 
   // covers SF-121 T004: the unsubscribe code keeps to the pooler's limits; the migration is transaction-safe, no table

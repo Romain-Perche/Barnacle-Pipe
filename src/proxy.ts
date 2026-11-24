@@ -6,10 +6,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/server/auth/cookie";
 import { FLASH_COOKIE } from "@/server/records/flash-cookie";
 
+// SF-118: Google's push (/gmail/push, a Google-signed token), Vercel's cron (/cron/gmail, CRON_SECRET) and the fake
+// Gmail pages (404 outside development/test) check their own proof; /settings/gmail/callback stays protected.
 const PUBLIC = [
   /^\/sign-in\/?$/,
   /^\/auth(\/|$)/,
   /^\/dev\/fake-google\/?$/,
+  /^\/dev\/fake-google\/gmail(\/answer)?\/?$/,
+  /^\/dev\/fake-gmail\/?$/,
+  /^\/gmail\/push\/?$/,
+  /^\/cron\/gmail\/?$/,
   // SF-121: public by design, the token in the address is the authority (the page, its button, RFC 8058 one-click);
   // the development links page answers 404 outside development and test.
   /^\/unsubscribe\/[^/]+(\/(confirm|one-click))?\/?$/,

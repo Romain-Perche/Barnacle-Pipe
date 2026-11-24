@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626; --green: #16A34A;
+    --wash: rgba(43,0,255,.05); --panel: #FFFFFF; --page: #EDE7DF; --note: rgba(255,66,0,.06);
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --panel: #232323; --page: #0E0E0E; --note: rgba(255,66,0,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .legend { font-size: 13px; color: var(--muted); margin: 4px 32px 0; }
+  .legend span { outline: 2px dashed var(--orange); outline-offset: 2px; padding: 0 4px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(620px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  .sub2 { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+
+  .app { display: grid; grid-template-columns: 140px 1fr; height: 700px; border: .5px solid var(--line); overflow: hidden; position: relative; }
+  .app.short { height: 330px; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 9px; margin-bottom: 22px; }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .nav .cnt { background: var(--orange); color: #fff; padding: 0 4px; margin-left: 4px; }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 14px 16px; overflow: hidden; position: relative; }
+  .back { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 8px; margin-bottom: 6px; gap: 8px; }
+  .ph h2 { margin: 3px 0 0; font-size: 18px; font-weight: 700; }
+  .kind { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 4px 7px; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.won { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn.lost { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .btn.link { border: 0; padding: 1px 0; color: var(--muted); }
+  .btn.red { color: var(--danger); }
+  .acts { display: flex; gap: 4px; align-items: center; }
+  .bar { display: flex; gap: 2px; margin: 4px 0; }
+  .bar span { flex: 1; font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 4px 6px; background: var(--line-soft); clip-path: polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%, 6% 50%); }
+  .bar span.done { background: var(--blue); color: #fff; }
+  .strip { display: flex; border: .5px solid var(--line-soft); background: var(--panel); margin: 4px 0; }
+  .strip > div { flex: 1 1 0; padding: 4px 7px; border-right: .5px solid var(--line-soft); }
+  .strip > div:last-child { border-right: 0; }
+  .k { font-family: var(--mono); font-size: 7px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .strip .n { font-size: 11px; font-weight: 600; }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 8px 0 4px; border-top: .5px solid var(--line); padding-top: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .lk { color: var(--blue); }
+  .muted { color: var(--muted); }
+  .arow { display: flex; gap: 6px; align-items: center; font-size: 10px; padding: 3px 0; border-bottom: .5px solid var(--line-list); }
+  .box { width: 10px; height: 10px; border: .5px solid var(--line); display: inline-block; }
+  .kd { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; border: .5px solid var(--line); padding: 1px 3px; text-align: center; }
+  .kd.note { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .kd.deal { color: var(--blue); border-color: var(--blue); }
+  .kd.file { color: var(--ink); background: var(--wash); border-color: var(--blue); }
+  .day { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 6px 0 2px; }
+  .ent { display: grid; grid-template-columns: 46px 1fr auto; gap: 7px; padding: 4px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; align-items: start; }
+  .when { font-family: var(--mono); font-size: 8px; color: var(--muted); white-space: nowrap; }
+  .notebody { border-left: 3px solid var(--orange); background: var(--note); padding: 3px 6px; border-radius: 0 6px 6px 0; }
+  .ta { border: .5px solid var(--line); background: var(--panel); padding: 6px 8px; font-size: 10px; min-height: 34px; color: var(--muted); }
+  .new { outline: 2px dashed var(--orange); outline-offset: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { font-family: var(--mono); font-size: 7px; letter-spacing: .2em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 3px 4px; border-bottom: .5px solid var(--line-soft); white-space: nowrap; }
+  td { padding: 3px 4px; border-bottom: .5px solid var(--line-list); vertical-align: middle; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .ft { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; border: .5px solid var(--line); padding: 1px 3px; }
+  .notice { font-size: 10px; border-left: 3px solid var(--blue); background: var(--wash); padding: 3px 6px; margin: 4px 0; }
+  .err { font-size: 10px; border-left: 3px solid var(--orange); background: var(--note); padding: 4px 6px; margin: 4px 0; }
+  .app.mid { height: 360px; }
+  .kv { display: grid; grid-template-columns: 120px 1fr; font-size: 10px; border-top: .5px solid var(--line-soft); }
+  .kv > div { padding: 4px 4px; border-bottom: .5px solid var(--line-list); }
+  .kv .k2 { font-family: var(--mono); font-size: 7px; letter-spacing: .2em; font-weight: 700; color: var(--muted); text-transform: uppercase; padding-top: 6px; }
+  .card { border: .5px solid var(--line-soft); background: var(--panel); border-radius: 8px; padding: 8px 10px; margin: 6px 0; }
+  .card .hd { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 4px; vertical-align: middle; }
+  .dot.bad { background: var(--danger); }
+  .warn { background: var(--orange); color: #fff; padding: 0 4px; margin-left: 4px; }
+  .me .st { color: #fff; font-weight: 700; letter-spacing: .1em; margin-bottom: 3px; }
+  .tabs { display: flex; gap: 2px; border-bottom: .5px solid var(--line); margin: 6px 0; }
+  .tabs span { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .15em; padding: 4px 8px; color: var(--muted); }
+  .tabs span.on { color: var(--ink); border-bottom: 2px solid var(--blue); }
+  .red { color: var(--danger); }
+  p.small { font-size: 10px; color: var(--muted); margin: 4px 0; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-118 · GMAIL: CONNECT AND SYNC · DESIGN OPTIONS</div>
+  <h1>The user's Settings page with Gmail connected, and the same page when Google no longer accepts the key</h1>
+  <p>All three show Ada Fake (ada.fake@barnacle.ai) connected, last sync 10:42 today, 37 conversations copied, just after "Send me a test email".</p>
+</header>
+<p class="legend"><span>Dashed orange</span> = new in this issue.</p>
+<div class="grid">
+<figure>
+  <div class="tag"><b>A</b>One-column Settings page, details in a summary strip</div>
+  <div class="app mid">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div>
+      <div class="me"><div class="n new">Ada Fake <span class="lk" style="color:#fff">· [ SETTINGS ]</span></div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="ph"><div><div class="kind"><span class="c">//</span> SETTINGS</div><h2>Ada Fake</h2></div></div>
+      <p class="notice">Test email sent to ada.fake@barnacle.ai. Check your inbox.</p>
+      <div class="sect"><span><span class="c">//</span> GMAIL</span><span class="acts"><span class="btn">[ SEND ME A TEST EMAIL ]</span><span class="btn red">[ DISCONNECT ]</span></span></div>
+      <div class="strip"><div><div class="k">Connected as</div><div class="n">ada.fake@barnacle.ai</div></div><div><div class="k">Last sync</div><div class="n">Today 10:42</div></div><div><div class="k">Conversations copied</div><div class="n">37</div></div></div>
+      <p class="small">Email to and from people in the CRM is copied from the moment you connected (20 Nov 2026).</p>
+    </div>
+  </div>
+  <div class="sub2">When Google no longer accepts the key</div>
+  <div class="app short">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake <span style="color:#fff">· [ SETTINGS ]</span></div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="ph"><div><div class="kind"><span class="c">//</span> SETTINGS</div><h2>Ada Fake</h2></div></div>
+      <div class="sect"><span><span class="c">//</span> GMAIL</span><span class="acts"><span class="btn solid">[ RECONNECT GMAIL ]</span><span class="btn red">[ DISCONNECT ]</span></span></div>
+      <p class="err">Google no longer accepts the CRM's access to ada.fake@barnacle.ai. Reconnect to carry on copying email.</p>
+      <div class="strip"><div><div class="k">Connected as</div><div class="n">ada.fake@barnacle.ai</div></div><div><div class="k">Last sync</div><div class="n">22 Nov 16:05</div></div><div><div class="k">Conversations copied</div><div class="n">37</div></div></div>
+    </div>
+  </div>
+  <figcaption><b>A.</b> Quietest: Settings sits under the user's name, like Sign out; the reconnect warning is only on the Settings page.</figcaption>
+</figure>
+<figure>
+  <div class="tag"><b>B</b>Settings in the sidebar, Gmail as a card, warning in the sidebar</div>
+  <div class="app mid">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span><span class="on new">Settings</span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="ph"><div><div class="kind"><span class="c">//</span> SETTINGS</div><h2>Your settings</h2></div></div>
+      <p class="notice">Test email sent to ada.fake@barnacle.ai. Check your inbox.</p>
+      <div class="card"><div class="hd"><span><span class="dot"></span>Gmail · connected</span><span class="acts"><span class="btn">[ SEND ME A TEST EMAIL ]</span><span class="btn red">[ DISCONNECT ]</span></span></div>
+        <div class="kv"><div class="k2">Connected as</div><div>ada.fake@barnacle.ai</div><div class="k2">Last sync</div><div>Today 10:42</div><div class="k2">Conversations copied</div><div>37</div><div class="k2">Copying since</div><div>20 Nov 2026</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="sub2">When Google no longer accepts the key</div>
+  <div class="app short">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span><span class="on new">Settings<span class="warn">!</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="ph"><div><div class="kind"><span class="c">//</span> SETTINGS</div><h2>Your settings</h2></div></div>
+      <div class="card"><div class="hd"><span><span class="dot bad"></span>Gmail · needs reconnecting</span><span class="acts"><span class="btn solid">[ RECONNECT GMAIL ]</span><span class="btn red">[ DISCONNECT ]</span></span></div>
+        <p class="err">Google no longer accepts the CRM's access to ada.fake@barnacle.ai. Reconnect to carry on copying email.</p>
+        <div class="kv"><div class="k2">Last sync</div><div>22 Nov 16:05</div><div class="k2">Conversations copied</div><div>37</div></div>
+      </div>
+    </div>
+  </div>
+  <figcaption><b>B.</b> Most visible: a "Settings" link for everyone, and an orange "!" on it from any page when Gmail stopped copying.</figcaption>
+</figure>
+<figure>
+  <div class="tag"><b>C</b>Settings with tabs, Gmail as a one-row table (like Users)</div>
+  <div class="app mid">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div>
+      <div class="me"><div class="n new">Ada Fake <span style="color:#fff">· [ SETTINGS ]</span></div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="ph"><div><div class="kind"><span class="c">//</span> SETTINGS</div><h2>Ada Fake</h2></div></div>
+      <div class="tabs"><span class="on">GMAIL</span></div>
+      <p class="notice">Test email sent to ada.fake@barnacle.ai. Check your inbox.</p>
+      <table>
+        <tr><th>Account</th><th>State</th><th>Last sync</th><th class="num">Conversations</th><th></th></tr>
+        <tr><td>ada.fake@barnacle.ai</td><td><span class="dot"></span>Connected</td><td>Today 10:42</td><td class="num">37</td><td class="num"><span class="btn link">[ SEND ME A TEST EMAIL ]</span> <span class="btn link red">[ DISCONNECT ]</span></td></tr>
+      </table>
+      <p class="small">Tabs leave room for later settings (Pipedrive token, Google Calendar).</p>
+    </div>
+  </div>
+  <div class="sub2">When Google no longer accepts the key</div>
+  <div class="app short">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake <span style="color:#fff">· [ SETTINGS ]</span></div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="ph"><div><div class="kind"><span class="c">//</span> SETTINGS</div><h2>Ada Fake</h2></div></div>
+      <div class="tabs"><span class="on">GMAIL</span></div>
+      <p class="err">Google no longer accepts the CRM's access to ada.fake@barnacle.ai. Reconnect to carry on copying email.</p>
+      <table>
+        <tr><th>Account</th><th>State</th><th>Last sync</th><th class="num">Conversations</th><th></th></tr>
+        <tr><td>ada.fake@barnacle.ai</td><td class="red"><span class="dot bad"></span>Needs reconnecting</td><td>22 Nov 16:05</td><td class="num">37</td><td class="num"><span class="btn link">[ RECONNECT GMAIL ]</span> <span class="btn link red">[ DISCONNECT ]</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <figcaption><b>C.</b> Most room to grow: one tab per outside account later (Pipedrive, Calendar), same table look as the Users page.</figcaption>
+</figure>
+</div>
+</body>
+</html>

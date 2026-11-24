@@ -29,8 +29,9 @@ and fake data stand in for them.
 npm install
 cp .env.example .env.local          # APP_ENV=development, DATABASE_URL=…/crm_dev, FIRST_ADMIN_EMAIL=ada@barnacle.ai
                                     # (Pipedrive import: also PIPEDRIVE_TOKEN_KEY=$(openssl rand -base64 32))
+                                    # (Gmail, fake: also GMAIL_TOKEN_KEY=$(openssl rand -base64 32), another key)
 npm run db:migrate                  # update the database structure
-npm run db:seed                     # load fake data (fake users, people, organisations, pipelines, deals, notes, ambassadors and custom fields)
+npm run db:seed                     # load fake data (fake users, people, organisations, pipelines, deals, Ada Fake's fake Gmail, notes, ambassadors and custom fields)
 npm run dev                         # http://localhost:3000
 ```
 
@@ -81,7 +82,8 @@ Event and Ambassador, and no labels.
 | `/notifications` | everyone | Your @mentions in notes, newest first, 50 at a time (`?shown=100`): "<name> mentioned you in a note on <record>", the date and the start of the note; pressing one opens the record and marks it read; `[ MARK ALL AS READ ]`. The sidebar shows "Notifications" with the unread count, up to date on every page you open (links, forms, back and forward). In the app only, no email; a mention on a record you can no longer see is hidden. SF-109: also "<name> assigned you a <call|meeting|task>: <subject>" with "Due <date>" when someone else assigns you an activity (it goes when you are no longer the assignee); opening one goes to its deal, else person, else organisation, else the Activities list |
 | `/deals/new`, `/deals/<id>/edit` | everyone (a private deal: its creator and owner) | Add a deal (`?pipeline=<id>&stage=<id>` pre-selects them), edit a deal and its deal labels (`?back=page` returns to the deal page) |
 | `/admin/pipelines`, `/admin/pipelines/<id>` | admins | Add, rename, reorder (↑/↓) and delete pipelines and their stages; deleting one that holds deals moves them to a stage you choose |
-| `/settings` | everyone | Your own settings (SF-117), linked at the bottom of the sidebar above `[ SIGN OUT ]`: "// PIPEDRIVE" with your Pipedrive API token (checked with Pipedrive before it is saved, stored encrypted, never shown again), "Connected to Pipedrive as <user> (<company>)." with the date saved, `[ REPLACE TOKEN ]` (`?replace=1`), `[ REMOVE TOKEN ]` (`?remove-token=1`, confirmed), `[ IMPORT FROM PIPEDRIVE ]`, and the line of an open import |
+| `/settings` | everyone | Your own settings (SF-117), linked at the bottom of the sidebar above `[ SIGN OUT ]`: "// PIPEDRIVE" with your Pipedrive API token (checked with Pipedrive before it is saved, stored encrypted, never shown again), "Connected to Pipedrive as <user> (<company>)." with the date saved, `[ REPLACE TOKEN ]` (`?replace=1`), `[ REMOVE TOKEN ]` (`?remove-token=1`, confirmed), `[ IMPORT FROM PIPEDRIVE ]`, and the line of an open import. Then (SF-118) the Gmail card: `[ CONNECT GMAIL ]`; connected: "Connected as …", last sync, conversations copied, copying since, `[ SEND ME A TEST EMAIL ]`, `[ DISCONNECT ]` (`?disconnect=1`, confirmed); `[ RECONNECT GMAIL ]` when Google no longer accepts the key (the sidebar's Settings link then shows an orange "!" on every page). See "Gmail" below |
+| `/settings/gmail/callback` | everyone | Where Google's consent screen sends the browser back (SF-118); then `/settings` |
 | `/settings/pipedrive-import` | everyone with a saved token | The Pipedrive import (SF-117, design B): step bar 1 CHOOSE · 2 IMPORTING · 3 REPORT. Choose People and/or Organisations (and the consent of people with no status in Pipedrive), watch the progress (counts, bars, waits, pause, `[ CONTINUE ]`, `[ STOP IMPORT ]` with `?stop=1`), then the report (`[ NEW IMPORT ]` with `?new=1`). See "Pipedrive import" below |
 | `/admin/custom-fields` | admins | Custom fields of people, organisations and deals (a tab per kind, `?kind=people\|organisations\|deals`): add (`?field=new`), rename, reorder (↑/↓), "Show in list" (at most 8 per kind), choices of choice fields, delete after a confirmation that counts the records with a value (`?delete=<id>`). Eight types: text, long text, number, money (£), date, single choice, multiple choice, yes/no; the type never changes. Values are filled in under "// MORE DETAILS" on the add and edit forms, shown on record pages and the deal drawer, logged on the timeline, shown as columns and filters of the lists (`?cf<id>=…`, `?cf<id>_from=…&cf<id>_to=…`, `?sort=cf<id>`) and can be mapped in the CSV import |
 
@@ -99,7 +101,8 @@ The test database is emptied and reloaded by the tests: never point `DATABASE_UR
 
 The first `npm test` downloads the Google userinfo schema the fake Google sign-in is checked against, Supabase
 Storage's OpenAPI file the fake file storage is checked against, and Pipedrive's v2 (JSON) and v1 (YAML) OpenAPI files
-the fake Pipedrive is checked against (`npm run test:schemas`, pinned files from GitHub, into the git-ignored
+the fake Pipedrive is checked against, and Gmail's and Cloud Pub/Sub's discovery files the fake Gmail is checked against
+(`npm run test:schemas`, pinned files from GitHub, into the git-ignored
 `.factory/schemas/`): it needs network access once.
 
 ## Commands
@@ -112,7 +115,7 @@ the fake Pipedrive is checked against (`npm run test:schemas`, pinned files from
 | `npm run db:migrate` | Apply the pending `migrations/*.sql`. Prints each one applied, or "Database is up to date.". Safe to run twice, or twice at once. |
 | `npm run db:seed` | Load fake data. Only when `APP_ENV` is exactly `development` or `test` and `VERCEL_ENV` is not `production`/`preview`; otherwise prints "Fake data can only be loaded when APP_ENV is development or test." and exits 1. Safe to run again. |
 | `npm test` | Unit and integration tests (runs `test:schemas` first). |
-| `npm run test:schemas` | Download the pinned Google, Supabase Storage and Pipedrive (v2 and v1) schemas into `.factory/schemas/` when missing; does nothing otherwise. |
+| `npm run test:schemas` | Download the pinned Google, Gmail, Pub/Sub, Supabase Storage and Pipedrive (v2 and v1) schemas into `.factory/schemas/` when missing; does nothing otherwise. |
 | `npm run typecheck` | `tsc --noEmit`. |
 
 ## Settings
@@ -133,6 +136,12 @@ Environment variables. `.env.example` lists them all, with no secret values. Sec
 | `FILES_BUCKET` | optional | The private Storage bucket of file contents. Default `crm-files`. |
 | `PIPEDRIVE_TOKEN_KEY` | to use the Pipedrive import | 32 random bytes in base64 (`openssl rand -base64 32`). Secret, server only. It encrypts the Pipedrive tokens users save (AES-256-GCM). Empty or not 32 bytes: Settings says "The Pipedrive import isn't set up yet." and no token can be saved; there is no built-in key, also locally. Changing it makes saved tokens unreadable: users save them again. |
 | `PIPEDRIVE_URL` | optional | Base address of Pipedrive's API. Empty with `APP_ENV` `development`/`test`: the fake Pipedrive (in process) is used. Empty otherwise: `https://api.pipedrive.com`. |
+| `GMAIL_PUBSUB_TOPIC` | production (Gmail) | `projects/<project>/topics/<topic>` Gmail sends its notices to (SF-118). Empty with `APP_ENV` `development`/`test`: the fake Gmail is used. Empty otherwise: "Gmail can't be connected right now." (the rest of the app works). |
+| `GMAIL_TOKEN_KEY` | with Gmail, also locally | 32 random bytes in base64 (`openssl rand -base64 32`), its own key, never `PIPEDRIVE_TOKEN_KEY`'s value. Secret, server only. Encrypts the Gmail keys users give (AES-256-GCM). No built-in value: without it Gmail is off, in development too. Changing it makes every user reconnect Gmail. |
+| `GMAIL_PUSH_SERVICE_ACCOUNT` | with `GMAIL_PUBSUB_TOPIC` | The service account email the Pub/Sub push subscription signs its notices with. |
+| `GMAIL_PUSH_AUDIENCE` | optional | The push token's audience. Default `${APP_URL}/gmail/push`. |
+| `GMAIL_PUSH_SUBSCRIPTION` | optional | `projects/<project>/subscriptions/<name>`. When set, notices from any other subscription are refused. |
+| `CRON_SECRET` | production | At least 16 characters. Secret. Vercel sends it to `/cron/gmail` as `Authorization: Bearer …`; without it the route answers 401. |
 | `VERCEL_ENV` | set by Vercel | `preview`: sign-in off, no database. `production`: `vercel-build` migrates. `production` or `preview`: the fake login and fake data are refused, whatever `APP_ENV` says. |
 
 There is no session secret: session tokens are random and only their SHA-256 is stored.
@@ -206,6 +215,36 @@ come in a later step).
   (`src/server/pipedrive/fake-pipedrive.ts`, nothing to seed) accepts `fake-pipedrive-token` ("Fake Person", "Fakeco
   Pipedrive": 60 organisations, 300 people; its owners match the fake users ada@ and margaret@, plus "Jane Fake" who has
   no CRM user) and `fake-pipedrive-other` ("Otherco Pipedrive"); any other token is refused.
+
+## Gmail
+
+Each user connects their own barnacle.ai Gmail on `/settings` (SF-118). The CRM asks Google, through the same Internal
+OAuth app as sign-in, for `gmail.modify` (read mail, change its labels and read state; this issue changes nothing in
+Gmail) and `gmail.send`, with offline access. The connection is refused when a permission is unticked or the account is
+not the user's sign-in address. Only the refresh key is stored, sealed with `GMAIL_TOKEN_KEY`, never shown or logged.
+
+- **What is copied**: from the moment of connecting (Gmail's own date), every message sent or received with a CRM person
+  (any of their addresses, in From, To, Cc or Bcc; private and archived people included), or in a conversation already
+  copied: headers, text, HTML, and the names, types and sizes of attachments (never their contents). Not drafts, spam or
+  bin. Each message is copied once per account. Disconnecting or deactivating a user keeps what was copied.
+- **How**: Gmail tells the CRM about new mail through Google Cloud Pub/Sub (`POST /gmail/push`, proved by a Google-signed
+  token). `vercel.json` runs `GET /cron/gmail` every 15 minutes (Vercel Pro, `CRON_SECRET`): it checks every working
+  connection for anything missed and renews each one's Gmail notices once a day. At most 300 messages are read per run;
+  the rest follow on the next notice or check.
+- **Google Cloud setup before go-live**:
+  1. In the Internal OAuth app's project, enable the Gmail API and the Cloud Pub/Sub API; add the scopes `gmail.modify`
+     and `gmail.send` to the consent screen; add the redirect URI `${APP_URL}/settings/gmail/callback`.
+  2. Create the topic (`GMAIL_PUBSUB_TOPIC`) and grant `gmail-api-push@system.gserviceaccount.com` the Pub/Sub Publisher
+     role on it.
+  3. Create a service account for push (no keys needed), then a push subscription to `${APP_URL}/gmail/push` with
+     authentication on that service account (`GMAIL_PUSH_SERVICE_ACCOUNT`), audience `GMAIL_PUSH_AUDIENCE` (default
+     `${APP_URL}/gmail/push`) and an acknowledgement deadline of 60 s.
+  4. Set the settings above in Vercel.
+- **Locally and in tests**: leave `GMAIL_PUBSUB_TOPIC` empty and set a `GMAIL_TOKEN_KEY`. The fake Google and Gmail
+  (`src/server/gmail/fake-gmail.ts`, state in the git-ignored `.fake-gmail/`) answer in process: `[ CONNECT GMAIL ]` opens
+  the fake consent screen `/dev/fake-google/gmail`, and `/dev/fake-gmail` puts received or sent mail in a user's fake
+  mailbox (with or without delivering its notice), runs the 15-minute check, refuses the key, fails renewals and forgets
+  Gmail's history. `npm run db:seed` connects Ada Fake with three copied conversations. The tests set their own key.
 
 ## Unsubscribe
 

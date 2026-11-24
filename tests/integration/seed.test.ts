@@ -1,6 +1,6 @@
 // covers FR-025, FR-026, US3 scenarios 1, 2 and 4, SC-007
 import { spawnSync } from "node:child_process";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { runSeeders } from "@/seed";
 import { listUsers } from "@/server/users";
@@ -510,6 +510,50 @@ describe("fake custom fields (SF-115)", () => {
     const again = await runSeeders(sql);
     expect(again.every((l) => l.startsWith("already there "))).toBe(true);
     expect(await snapshot()).toEqual(first);
+  });
+});
+
+// covers SF-118 FR-019 (T038): Ada Fake gets a working fake Gmail connection with three copied conversations with
+// attachments; a second run adds no duplicate; skipped with real settings or without GMAIL_TOKEN_KEY
+describe("fake Gmail (SF-118)", () => {
+  afterAll(() => vi.unstubAllEnvs());
+  it("connects Ada Fake and copies three conversations, once", async () => {
+    vi.stubEnv("GMAIL_TOKEN_KEY", Buffer.alloc(32, 0x5a).toString("base64"));
+    vi.stubEnv("GMAIL_PUBSUB_TOPIC", "");
+    const lines = await runSeeders(sql);
+    expect(lines).toContain("added a fake Gmail connection for Ada Fake with 3 conversations");
+    const state = async () => {
+      const [c] = await sql<{ state: string; email: string; key: boolean }[]>`
+        select c.state, c.email, c.token_cipher is not null as key from gmail_connections c join users u on u.id = c.user_id where u.name = 'Ada Fake'`;
+      const threads = await sql<{ subject: string }[]>`select subject from email_threads order by subject`;
+      const messages = await sql<{ n: number }[]>`select count(*)::int as n from email_messages`;
+      const atts = await sql<{ name: string; size: string }[]>`select name, size::text as size from email_attachments order by name`;
+      return { c, threads: threads.map((t) => t.subject), messages: messages[0].n, atts };
+    };
+    const first = await state();
+    expect(first.c).toEqual({ state: "working", email: "ada@barnacle.ai", key: true });
+    expect(first.threads).toEqual(["Fake follow-up", "Fake intro call", "Fake proposal"]);
+    expect(first.messages).toBe(4);
+    expect(first.atts).toEqual([
+      { name: "logo-fake.png", size: "18432" },
+      { name: "notes-fake.txt", size: "1024" },
+      { name: "proposal-fake.pdf", size: "250880" },
+    ]);
+    expect(await runSeeders(sql)).toContain("already there Gmail conversations");
+    expect(await state()).toEqual(first);
+  });
+  it("is skipped with real Gmail settings, and without GMAIL_TOKEN_KEY", async () => {
+    vi.stubEnv("GMAIL_TOKEN_KEY", "");
+    expect(await runSeeders(sql)).toContain("Gmail fake data skipped (GMAIL_TOKEN_KEY not set).");
+    vi.stubEnv("GMAIL_PUBSUB_TOPIC", "projects/p/topics/t");
+    vi.stubEnv("GMAIL_TOKEN_KEY", Buffer.alloc(32, 1).toString("base64"));
+    vi.stubEnv("GOOGLE_CLIENT_ID", "id");
+    vi.stubEnv("GOOGLE_CLIENT_SECRET", "secret");
+    vi.stubEnv("APP_URL", "https://crm.example.test");
+    vi.stubEnv("GMAIL_PUSH_SERVICE_ACCOUNT", "push@p.iam.gserviceaccount.com");
+    vi.stubEnv("CRON_SECRET", "a-cron-secret-of-16+");
+    expect(await runSeeders(sql)).toContain("Gmail fake data skipped (real Gmail settings).");
+    expect((await sql`select 1 from gmail_connections`).length).toBe(0);
   });
 });
 

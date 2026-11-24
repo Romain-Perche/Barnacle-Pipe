@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:df059bd394a31ba3ffe5924397f422067b759de468775c59ea06f330b59678f6",
+  "claims": [
+    {
+      "id": "claim_26dddd940894480690668615756bf371",
+      "statement": "syncConnection takes a per-connection lease, reads Gmail history since history_id, applies decideCopy and stores each message in its own transaction, with at most 300 messages.get calls per run.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/gmail/sync.ts",
+          "version": "repo-file-v1:sha256:08f5c1c9f4491ad1425801b0ed983ab05fef829bbf66afbfd3f790f2c700776e"
+        }
+      ]
+    },
+    {
+      "id": "claim_294aeb2a38794cb289d6c8fec0b325cf",
+      "statement": "vercel.json schedules /cron/gmail every 15 minutes, and push notices arrive at /gmail/push verified with Google's OIDC token.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/gmail/push.ts",
+          "version": "repo-file-v1:sha256:8d7f247084548fd79151299185f2663a7b4e04f9689697c51ddbcecbebd18a02"
+        },
+        {
+          "resource": "repo://vercel.json",
+          "version": "repo-file-v1:sha256:c5a862bc0475c8e665462aaf82321207758ff807665bb02225559cfb6880b32d"
+        }
+      ]
+    },
+    {
+      "id": "claim_4f01a75c8c3f4cb69f06289ad210145f",
+      "statement": "The Gmail refresh token is sealed with GMAIL_TOKEN_KEY and loadKey is the only reader of token_cipher.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/crypto/seal.ts",
+          "version": "repo-file-v1:sha256:37f70887203566e9ed07c68e45e9c773d0b3636e30ab65124e0ef697b3c6cc0a"
+        },
+        {
+          "resource": "repo://src/server/gmail/connections.ts",
+          "version": "repo-file-v1:sha256:99bf2d614b7f0611eac19a6355715fa6a0264d46be027038123a7b972624048c"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-24T20:17:37.578Z"
+  }
+}

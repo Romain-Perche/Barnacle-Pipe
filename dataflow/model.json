@@ -95,6 +95,11 @@
       "id": "campaigns",
       "label": "Campaigns",
       "description": "Team-shared email campaign drafts: details, content blocks, merge tags and a live preview."
+    },
+    {
+      "id": "gmail",
+      "label": "Gmail",
+      "description": "Connects a user's Gmail, copies mail into the CRM through push and a 15-minute check, and sends mail."
     }
   ],
   "actors": [
@@ -128,6 +133,14 @@
     {
       "id": "email-recipient",
       "label": "Email recipient / mail app"
+    },
+    {
+      "id": "gmail-api",
+      "label": "Google OAuth and Gmail API"
+    },
+    {
+      "id": "cloud-scheduler",
+      "label": "Vercel cron and Google Pub/Sub"
     }
   ],
   "processes": [
@@ -380,7 +393,7 @@
         "src/server/pipedrive/imports.ts",
         "src/server/pipedrive/api.ts",
         "src/server/pipedrive/connection.ts",
-        "src/server/pipedrive/crypto.ts",
+        "src/server/crypto/seal.ts",
         "src/app/(app)/settings/pipedrive-import",
         "src/app/(app)/settings/actions.ts"
       ]
@@ -415,6 +428,47 @@
         "src/app/(app)/campaigns",
         "src/server/campaigns/campaigns.ts",
         "src/server/campaigns/preview.ts"
+      ]
+    },
+    {
+      "id": "gmail-connect",
+      "label": "Gmail connect and disconnect",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/app/(app)/settings/actions.ts",
+        "src/app/(app)/settings/gmail/callback/route.ts",
+        "src/server/gmail/connections.ts"
+      ]
+    },
+    {
+      "id": "gmail-sync",
+      "label": "Gmail sync and push receiver",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/gmail/sync.ts",
+        "src/server/gmail/push.ts",
+        "src/app/gmail/push/route.ts",
+        "src/app/cron/gmail/route.ts"
+      ]
+    },
+    {
+      "id": "gmail-send",
+      "label": "Gmail send",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/gmail/send.ts"
+      ]
+    },
+    {
+      "id": "gmail-client",
+      "label": "Google API client",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/gmail/google-api.ts"
       ]
     }
   ],
@@ -669,6 +723,15 @@
       "group": "campaigns",
       "sources": [
         "migrations/0015_campaigns.sql"
+      ]
+    },
+    {
+      "id": "gmail-tables",
+      "label": "Gmail connections, threads, messages",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "migrations/0016_gmail.sql"
       ]
     }
   ],
@@ -2465,6 +2528,112 @@
       "data": "table definition",
       "sources": [
         "scripts/migrate.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "gmail-connect",
+      "data": "connect or disconnect Gmail",
+      "sources": [
+        "src/app/(app)/settings/actions.ts"
+      ]
+    },
+    {
+      "from": "gmail-connect",
+      "to": "gmail-client",
+      "data": "consent, token, revoke calls",
+      "sources": [
+        "src/server/gmail/connections.ts"
+      ]
+    },
+    {
+      "from": "gmail-client",
+      "to": "gmail-api",
+      "data": "OAuth and Gmail requests",
+      "sources": [
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-api",
+      "to": "gmail-client",
+      "data": "tokens, profile, messages",
+      "sources": [
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-connect",
+      "to": "gmail-tables",
+      "data": "refresh token sealed with AES-256-GCM",
+      "sources": [
+        "src/server/gmail/connections.ts",
+        "src/server/crypto/seal.ts"
+      ]
+    },
+    {
+      "from": "cloud-scheduler",
+      "to": "gmail-sync",
+      "data": "push notice and 15-minute check",
+      "sources": [
+        "src/app/gmail/push/route.ts",
+        "src/app/cron/gmail/route.ts"
+      ]
+    },
+    {
+      "from": "gmail-tables",
+      "to": "gmail-sync",
+      "data": "sealed token, history id",
+      "sources": [
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-sync",
+      "to": "gmail-client",
+      "data": "history and message reads",
+      "sources": [
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-sync",
+      "to": "gmail-tables",
+      "data": "copied threads and messages",
+      "sources": [
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-tables",
+      "to": "gmail-send",
+      "data": "sealed token",
+      "sources": [
+        "src/server/gmail/send.ts"
+      ]
+    },
+    {
+      "from": "gmail-send",
+      "to": "gmail-client",
+      "data": "outgoing MIME message",
+      "sources": [
+        "src/server/gmail/send.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "gmail-connect",
+      "data": "GMAIL_TOKEN_KEY, Google settings",
+      "sources": [
+        "src/server/env.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "gmail-tables",
+      "data": "schema",
+      "sources": [
+        "migrations/0016_gmail.sql"
       ]
     }
   ]

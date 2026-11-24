@@ -582,3 +582,17 @@ table.campaigns-list .acts form + a { margin-left: 14px; }
 .pd-bar progress::-webkit-progress-bar { background: var(--panel); }
 .pd-bar progress::-webkit-progress-value { background: var(--blue); }
 .pd-bar progress::-moz-progress-bar { background: var(--blue); }
+
+/* SF-118: the Gmail card on Settings (design B) and the "!" on the sidebar's Settings link */
+.gm-section { max-width: 760px; margin-top: 28px; }
+.gm-card { border: 1px solid var(--line-soft); background: var(--panel); border-radius: 8px; padding: 14px 18px; }
+.gm-hd { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.gm-hd h2 { font-size: 15px; font-weight: 600; margin: 0; }
+.gm-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.gm-acts form { margin: 0; }
+.gm-lines { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line-soft); font-size: 14px; }
+.gm-lines li { padding: 6px 0; border-bottom: 1px solid var(--line-list); }
+.gm-card .err { margin: 0 0 10px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 8px; vertical-align: middle; }
+.dot.bad { background: var(--danger); }
+.side nav a .warn { background: var(--orange); color: #fff; padding: 0 5px; margin-left: 6px; font-weight: 700; }

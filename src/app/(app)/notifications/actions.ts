@@ -4,6 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
+import { gmailNeedsReconnect } from "@/server/gmail/connections";
 import * as notifications from "@/server/notifications";
 import { idFrom } from "@/server/records/form-data";
 
@@ -25,9 +26,13 @@ export async function markAllNotificationsRead(): Promise<void> {
   redirect("/notifications");
 }
 
+export type SidebarState = { unread: number; gmailWarn: boolean };
+
 // SF-108: the sidebar count right now, asked by UnreadLink after every navigation (the shared layout is not rendered
-// again on client navigation). Read only: opening a page never marks anything read (FR-004).
-export async function currentUnread(): Promise<number> {
+// again on client navigation); SF-118: with the Settings "!" (Gmail needs reconnecting). Read only: opening a page
+// never marks anything read (FR-004).
+export async function currentSidebar(): Promise<SidebarState> {
   const user = await requireUser();
-  return notifications.unreadCount(user.id);
+  const [unread, gmailWarn] = await Promise.all([notifications.unreadCount(user.id), gmailNeedsReconnect(user.id)]);
+  return { unread, gmailWarn };
 }

@@ -19,6 +19,29 @@ describe("proxy matcher", () => {
   });
 });
 
+// covers SF-118 FR-015, T015: Google's push, Vercel's cron and the two fake Gmail pages pass without a session (they
+// check their own proof); the Settings page and the Gmail callback still need one.
+describe("proxy without a session (SF-118)", () => {
+  const run = (path: string, method = "GET") => proxy(new NextRequest(new URL(path, "http://localhost:3000"), { method }));
+  it.each([
+    ["/gmail/push", "POST"],
+    ["/cron/gmail", "GET"],
+    ["/dev/fake-google/gmail", "GET"],
+    ["/dev/fake-google/gmail/answer", "POST"],
+    ["/dev/fake-gmail", "GET"],
+    ["/dev/fake-gmail/", "GET"],
+  ])("lets %s through", (path, method) => {
+    expect(matches(path)).toBe(true);
+    expect(run(path, method).headers.get("location")).toBeNull();
+  });
+  it.each(["/settings", "/settings/gmail/callback?code=x&state=y", "/gmail/push/x", "/cron/gmail/other", "/dev/fake-gmail/x"])(
+    "sends %s to sign-in",
+    (path) => {
+      expect(run(path).headers.get("location")).toMatch(/^http:\/\/localhost:3000\/sign-in\?next=/);
+    },
+  );
+});
+
 // covers SF-121 FR-001, US2 scenario 1, FR-017 (T012, T019, T035): the unsubscribe page, its button, one-click and the
 // development links page need no session; anything else still goes to sign-in
 describe("public unsubscribe addresses (SF-121)", () => {
