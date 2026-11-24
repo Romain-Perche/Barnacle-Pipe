@@ -89,3 +89,16 @@ describe("timeline days and times", () => {
     expect(formatDayHeading(new Date("2026-09-05T12:00:00Z"), now)).toBe("05 SEP 2026");
   });
 });
+
+// covers SF-116 FR-003 (research.md §10): file sizes as in design A ("840 KB", "2.1 MB", "25 MB")
+import { formatFileSize } from "@/server/format";
+describe("formatFileSize", () => {
+  it("writes bytes, KB and MB on a 1,024 base", () => {
+    expect(formatFileSize(500)).toBe("500 B");
+    expect(formatFileSize(1023)).toBe("1023 B");
+    expect(formatFileSize(840 * 1024)).toBe("840 KB");
+    expect(formatFileSize(Math.round(2.1 * 1024 * 1024))).toBe("2.1 MB");
+    expect(formatFileSize(26_214_400)).toBe("25 MB");
+    expect(formatFileSize(1024 * 1024)).toBe("1 MB");
+  });
+});

@@ -1,6 +1,6 @@
 // The deal drawer (design A, contracts/routes.md § Pages), on the board and on the deal list (SF-95): details,
 // "Move to" (works with a keyboard and without JavaScript), [ EDIT ], [ ARCHIVE ], [ DELETE ] for admins,
-// [ OPEN DEAL PAGE ], [ CLOSE ], // NEXT ACTIVITIES (SF-109: done boxes and [ SCHEDULE ACTIVITY ], the box opens over the page) and // TIMELINE (SF-102: the newest 50 entries, read-only, no note box). A won or lost deal shows its status and no "Move to"; an archived one
+// [ OPEN DEAL PAGE ], [ CLOSE ], // NEXT ACTIVITIES, // FILES (SF-116: with [ ADD FILE ]), (SF-109: done boxes and [ SCHEDULE ACTIVITY ], the box opens over the page) and // TIMELINE (SF-102: the newest 50 entries, read-only, no note box). A won or lost deal shows its status and no "Move to"; an archived one
 // (only reachable from the list) shows "Archived" and only [ OPEN DEAL PAGE ] and [ CLOSE ].
 import Link from "next/link";
 import type { DealView, PipelineStages } from "@/server/deals/deals";
@@ -13,6 +13,7 @@ import { ReferredBy } from "../records/ReferredBy";
 import { archiveDeal, deleteDeal, moveDeal } from "./actions";
 import { day, StatusBadge } from "./DealBits";
 import { NextActivities } from "../activities/NextActivities";
+import { FilesSection } from "../records/FilesSection";
 import { MoreDetails } from "../records/MoreDetails";
 
 type Props = {
@@ -27,9 +28,11 @@ type Props = {
   deleteHref: string;
   // "list": the drawer's forms return to the deal list; absent: to the board (SF-93).
   back?: "list";
+  // SF-116: an error code of a file delete (`?error=`), shown in // FILES when it is one of its codes.
+  fileError?: string;
 };
 
-export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, hereHref, closeHref, deleteHref, back }: Props) {
+export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, hereHref, closeHref, deleteHref, back, fileError }: Props) {
   const canMove = deal.status === "open" && !deal.archived;
   return (
     <aside className="drawer deal-drawer" aria-label="Deal">
@@ -124,6 +127,7 @@ export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, 
         </Link>
       </div>
       <NextActivities viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} back={hereHref} />
+      <FilesSection viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} back={hereHref} error={fileError} />
       <RecordTimeline viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} readOnly />
     </aside>
   );

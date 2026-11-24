@@ -2,6 +2,7 @@
 // Every read of `deals` for a viewer goes through visibleDeal(); every change loads the deal through it first,
 // inside its transaction, so a private deal of someone else behaves exactly like a missing one. People shown on a
 // deal always go through visiblePerson().
+import { cleanupPathsFor, sweepFileCleanup } from "@/server/files/files";
 import { sql, type Sql } from "@/server/db";
 import { changedDealFields, validateDeal, validateLostReason, type DealFields, type DealForm } from "@/server/deals/rules";
 import { isActiveAdmin, isUniqueViolation, ownerOptions, refuse, Refused, resolveOwner, type Option, type UserRef } from "@/server/records/common";
@@ -589,9 +590,13 @@ export async function deleteDeal(
   actorId: number,
   id: number,
 ): Promise<{ status: "deleted"; name: string; pipelineId: number } | { status: "forbidden" } | { status: "not_found" }> {
-  return sql.begin(async (tx) => {
+  const result = await sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     if (!(await isActiveAdmin(db, actorId))) return { status: "forbidden" as const };
+    const [found] = await db`select 1 from deals d where d.id = ${id} and ${visibleDeal(db, actorId)} for update`;
+    if (!found) return { status: "not_found" as const };
+    // SF-116 FR-012: its files' contents are queued for removal from Storage; the rows go by cascade.
+    await cleanupPathsFor(db, { dealId: id });
     // SF-109 FR-014: its activities linked to nothing else go with it; the others lose the deal (on delete set null).
     await db`
       delete from activities a using deals d
@@ -602,4 +607,6 @@ export async function deleteDeal(
       returning d.title, s.pipeline_id::int as pipeline_id`;
     return row ? { status: "deleted" as const, name: row.title, pipelineId: row.pipeline_id } : { status: "not_found" as const };
   });
+  if (result.status === "deleted") await sweepFileCleanup();
+  return result;
 }

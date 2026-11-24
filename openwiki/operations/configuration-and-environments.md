@@ -5,13 +5,13 @@ description: The environment variables the CRM reads, how APP_ENV and VERCEL_ENV
 tags: [configuration, environment, secrets, vercel, deployment]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-19T12:52:49.147Z
+    at: 2026-11-24T11:56:37.160Z
 sources:
   - id: openwiki-source-5f5b95b3d6a215fa02ceb945
     resource: repo://.env.example
   - id: openwiki-source-47fb1d4b84dc3009a932e2d6
     resource: repo://src/server/env.ts
-generated: { by: "claude-code", at: "2026-11-19T12:52:49.147Z" }
+generated: { by: "claude-code", at: "2026-11-24T11:56:37.160Z" }
 ---
 
 # Configuration and environments
@@ -31,6 +31,7 @@ wins). In production they are Vercel environment settings. Nothing secret is com
 | `FIRST_ADMIN_EMAIL` | `firstAdminEmail()` | barnacle.ai address whose first sign-in creates the first admin. Normalised; empty means none. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `googleConfig()` | Internal OAuth client of the barnacle.ai Workspace. The secret is sent only to Google's token endpoint. |
 | `APP_URL` | `googleConfig()`, `appBaseUrl()` | Public base URL (trailing slash removed). Builds the redirect URI `${APP_URL}/auth/google/callback` and anchors `isSafeNext()`; defaults to `http://localhost:3000` for that check. |
+| `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `FILES_BUCKET` | `storageConfig()` in `src/server/env.ts` | Where file contents are kept (SF-116). With a URL and a key: Supabase Storage (`<url>/storage/v1`), bucket `FILES_BUCKET` (default `crm-files`). With an empty URL and fakes allowed: the fake storage under `/dev/fake-storage`. Otherwise "off": file actions answer that files can't be reached and the rest of the app works. The key is a server-only secret. See [Files on records](../features/files.md). |
 
 `googleConfig()` throws a message naming every missing Google setting; the start route turns that into
 "Sign-in was cancelled or failed". There is no session secret (session tokens are random and only their

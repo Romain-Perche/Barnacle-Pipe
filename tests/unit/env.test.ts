@@ -55,3 +55,30 @@ describe("isPreview / firstAdminEmail", () => {
     expect(firstAdminEmail()).toBeNull();
   });
 });
+
+// covers SF-116 FR-015, Clarifications "no file store set up" (contracts/storage.md § Settings)
+import { storageConfig } from "@/server/env";
+describe("storageConfig", () => {
+  it("uses Supabase when SUPABASE_URL is set (trailing slash removed, default bucket crm-files)", () => {
+    withEnv({ APP_ENV: "production", SUPABASE_URL: "https://abc.supabase.co/", SUPABASE_SECRET_KEY: "k", FILES_BUCKET: undefined });
+    expect(storageConfig()).toEqual({ mode: "supabase", baseUrl: "https://abc.supabase.co/storage/v1", key: "k", bucket: "crm-files" });
+    withEnv({ APP_ENV: "test", SUPABASE_URL: "https://abc.supabase.co", SUPABASE_SECRET_KEY: "k", FILES_BUCKET: "other" });
+    expect(storageConfig()).toMatchObject({ mode: "supabase", bucket: "other" });
+  });
+  it.each(["development", "test"])("uses the fake with APP_ENV=%s and no SUPABASE_URL", (appEnv) => {
+    withEnv({ APP_ENV: appEnv, VERCEL_ENV: undefined, SUPABASE_URL: "", APP_URL: "http://localhost:3000/" });
+    expect(storageConfig()).toEqual({ mode: "fake", baseUrl: "http://localhost:3000/dev/fake-storage", key: "fake-storage-key", bucket: "crm-files" });
+  });
+  it.each([
+    ["production", undefined],
+    ["development", "production"],
+    ["test", "preview"],
+  ])("is off with APP_ENV=%s, VERCEL_ENV=%s and no SUPABASE_URL", (appEnv, vercelEnv) => {
+    withEnv({ APP_ENV: appEnv, VERCEL_ENV: vercelEnv, SUPABASE_URL: undefined });
+    expect(storageConfig()).toEqual({ mode: "off" });
+  });
+  it("is off when the URL is set without its key", () => {
+    withEnv({ APP_ENV: "production", SUPABASE_URL: "https://abc.supabase.co", SUPABASE_SECRET_KEY: "" });
+    expect(storageConfig()).toEqual({ mode: "off" });
+  });
+});

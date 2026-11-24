@@ -1,8 +1,11 @@
 // The line of a change on a timeline (SF-102: RecordTimeline.tsx shows the entries). Later features add their own
-// event kinds here.
+// event kinds here. SF-116: "<name> added <file> (<size>)" (the file name links while the file exists) and
+// "<name> deleted <file>"; names are text nodes only.
 import Link from "next/link";
 import { messages, templates } from "@/server/messages";
-import type { EventPerson, TimelineEvent } from "@/server/records/timeline";
+import { formatFileSize } from "@/server/format";
+import type { EventPerson, TimelineEvent, TimelineFile } from "@/server/records/timeline";
+import { FileLink } from "./FileLink";
 
 function by(actor: string | null) {
   return actor ? ` by ${actor}` : "";
@@ -15,8 +18,32 @@ function Referrer({ p }: { p: EventPerson | null }) {
   return <Link href={p.ambassadorPage ? `/ambassadors/${p.id}` : `/people/${p.id}`}>{p.name}</Link>;
 }
 
-export function Line({ e, onDeal }: { e: TimelineEvent; onDeal: boolean }) {
+// `filePage`: the page of the file's record, where an image's preview box opens.
+export function Line({ e, onDeal, filePage }: { e: TimelineEvent & { file?: TimelineFile | null }; onDeal: boolean; filePage?: string }) {
   switch (e.kind) {
+    case "file_added": {
+      const f = e.file;
+      if (!f) return null;
+      return (
+        <>
+          <b>{e.actorName}</b> added{" "}
+          {f.id !== null && f.kind !== null && filePage ? (
+            <FileLink file={{ id: f.id, kind: f.kind }} page={filePage}>
+              {f.name}
+            </FileLink>
+          ) : (
+            f.name
+          )}
+          {f.size !== null ? ` (${formatFileSize(f.size)})` : ""}
+        </>
+      );
+    }
+    case "file_deleted":
+      return (
+        <>
+          <b>{e.actorName}</b> deleted {e.file?.name}
+        </>
+      );
     case "added":
       return <>Added{by(e.actorName)}</>;
     case "imported":

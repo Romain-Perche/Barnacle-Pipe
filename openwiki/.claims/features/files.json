@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:53392fb79991629058b6bd17e244ba1a911cb2726e474e097b22916ef3f13958",
+  "claims": [
+    {
+      "id": "claim_c024d3284ab647c4a7636472f5a9bfca",
+      "statement": "Uploads are two steps: startFileUpload returns a signed upload address and the browser PUTs straight to Storage; finishFileUpload reads the object back before listing the file.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/files/files.ts#L99-L180",
+          "version": "repo-lines-v1:sha256:03e0860da181ae09f1a88c0e3a27537eac4d1a7d4e4ef111b0f230ac544a1874:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5MTkyZWFmM2UyMGRlODc5MDgyOTQyMDk5ZmY0MjNlZjZkMzU0MGJlM2IwMmViNmNjMTQzN2VlZmRiOTdjZjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2MWNiY2M1NDcxOTc2ZDZiYjJiYzAwYjM4MmU0ZGMyNjZkYWFhZjQxNWY0MjkzNjkyNGY5YjNmMmNjZGFkNWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxOTNiNzUwNmUzYjNmYTJlOTIxMmE1NDFmMjdkZDRiYmNiN2M5MTk1ZjgwOGJhY2I5N2QyOTlmNTM3NmZhMDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAzM2M1MDE3MTRjODE0NDM4NTViNWQzNTVkZjkzZDUyYzczNjc3MGQ1YjE3MjdkZjBmMzE1YTkwNGM3Y2E1MGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d51a152a464a41c288f7b07d0b4dc5bc",
+      "statement": "Download and preview routes redirect with a 303 to a 60-second Storage address after fileAccess checks visibility.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/(app)/files/file-route.ts",
+          "version": "repo-file-v1:sha256:d88fd9d3057e306ea8b727fe86f3b448cbd9ca27dbd5d343bb2dbddbefe07471"
+        }
+      ]
+    },
+    {
+      "id": "claim_4c1b6f35985a4644aa52daf6183dc4cf",
+      "statement": "Files are limited to 25 MB and 255-character names.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/files/rules.ts#L4-L12",
+          "version": "repo-lines-v1:sha256:d811d3d6c20814df12fdd738ef02ec74332e826ba78f0ba05090d2c8b15c7f0a:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDYzMTg3NTAxMzVkNDk3ZTZhOWUzOTBmYjk1MGRkNTY1YjkwODkwOTZiYWVjZDJlZGJlNTU1MjIwZjZhMjkyYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODNkOGE0ODYxOWMyYzMwYzkyZTI2NTUyMjRmZjRhOGE3ZmNlZjg4MWIyODM0OTQ1NTA5ZGJjNWQwM2ZhZjFmMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjBhNjk4YTEyNjNjZTk0M2JjNGQwZmFkMmQ1NDIxZmQ0NmRhNGI3NzkyMzY0NjQwNWUwYjdhZDNjOWU1YThjOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjA1N2Y5ZGVmNTUyM2EwMGI5YjM0ZDFlYTIzYzYzNzNhNTFmZWI1ZWFlYTBjZGFiZGQyYjJhM2E3MDBmMjIzZiJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-24T11:56:37.160Z"
+  }
+}

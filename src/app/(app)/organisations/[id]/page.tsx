@@ -10,6 +10,8 @@ import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { RecordHeader } from "../../records/RecordHeader";
 import { NoteNotices } from "../../records/NoteNotices";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { FileOverlays } from "../../records/FileOverlays";
+import { FilesSection } from "../../records/FilesSection";
 import { ActivityNotices } from "../../activities/ActivityNotices";
 import { ActivityOverlays } from "../../activities/ActivityOverlays";
 import { NextActivities } from "../../activities/NextActivities";
@@ -115,6 +117,8 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
 
       <NextActivities viewerId={user.id} target={{ organisationId: id }} archived={org.archived} back={href} />
 
+      <FilesSection viewerId={user.id} target={{ organisationId: id }} archived={org.archived} back={href} error={first(query, "error")} />
+
       <RecordTimeline
         viewerId={user.id}
         target={{ organisationId: id }}
@@ -127,6 +131,13 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
         archived={org.archived}
         back={href}
         query={{ activity: first(query, "activity"), followup: first(query, "followup"), deleteActivity: first(query, "delete-activity") }}
+      />
+      <FileOverlays
+        viewerId={user.id}
+        target={{ organisationId: id }}
+        archived={org.archived}
+        back={href}
+        query={{ file: first(query, "file"), deleteFile: first(query, "delete-file") }}
       />
     </>
   );

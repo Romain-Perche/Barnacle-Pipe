@@ -25,7 +25,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
   const query = knownCustomQuery(knownPeopleQuery(parsed, options), fields);
   const [list, flash, open, choiceOptions] = await Promise.all([
     listPeople(user.id, query, fields),
-    readFlash(["person_deleted", "person_no_longer_visible", "note_not_found"]),
+    readFlash(["person_deleted", "person_no_longer_visible", "note_not_found", "file_not_found"]),
     query.open ? getPerson(user.id, query.open) : null,
     customFilterOptions(user.id, "person", fields),
   ]);

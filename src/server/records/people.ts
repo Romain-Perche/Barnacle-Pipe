@@ -2,6 +2,7 @@
 // Every read of `persons` goes through visiblePerson() (a private person: their creator and owner only); every
 // change loads the person through it first, inside its transaction, so a private person the actor cannot see
 // behaves exactly like a missing one.
+import { cleanupPathsFor, sweepFileCleanup } from "@/server/files/files";
 import { sql, type Sql } from "@/server/db";
 import {
   direction,
@@ -368,12 +369,14 @@ export const restorePerson = (actorId: number, id: number) => setArchived(actorI
 // (FR-007). No "unlinked" event is written. SF-114 (research.md §6): what the person referred loses its "Referred by",
 // with a "Referred by cleared (a deleted person)" event each, or none (and their referral events go) when private.
 export async function deletePerson(actorId: number, id: number): Promise<DeleteResult> {
-  return sql.begin(async (tx) => {
+  const result = await sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     if (!(await isActiveAdmin(db, actorId))) return { status: "forbidden" as const };
     const [cur] = await db<{ private: boolean }[]>`
       select p.private from persons p where p.id = ${id} and ${visiblePerson(db, actorId)} for update`;
     if (!cur) return { status: "not_found" as const };
+    // SF-116 FR-012: their files' contents are queued for removal from Storage; the rows go by cascade.
+    await cleanupPathsFor(db, { personId: id });
     if (cur.private) await db`delete from timeline_events where related_person_id = ${id} or from_person_id = ${id}`;
     else {
       await db`
@@ -391,6 +394,8 @@ export async function deletePerson(actorId: number, id: number): Promise<DeleteR
     const [row] = await db<{ name: string }[]>`delete from persons p where p.id = ${id} returning ${NAME()} as name`;
     return { status: "deleted" as const, name: row.name };
   });
+  if (result.status === "deleted") await sweepFileCleanup();
+  return result;
 }
 
 // SF-115: `shown` are the people fields shown in the list; their filters and sort (query.custom, sort=cf<id>, already

@@ -7,3 +7,6 @@ next-env.d.ts
 .env*.local
 .factory/schemas/
 openwiki/.run.json
+
+# SF-116: the fake file storage of local runs
+.fake-storage/

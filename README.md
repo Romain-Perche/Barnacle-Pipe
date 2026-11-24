@@ -10,8 +10,8 @@ pipelines and their stages (`/admin/pipelines`). People and organisations can be
 (`[ IMPORT CSV ]` on each list, see [CSV import](#csv-import)). Product rules are in
 `docs/PRODUCT.md`, the look in `docs/DESIGN.md`, the team's choices in `docs/DECISIONS.md`.
 
-You need **no Google, Vercel or Supabase account** to develop or test: a fake Google login and fake
-data stand in for them.
+You need **no Google, Vercel or Supabase account** to develop or test: a fake Google login, a fake file storage
+and fake data stand in for them.
 
 ## Prerequisites
 
@@ -89,9 +89,9 @@ npm run typecheck    # TypeScript
 
 The test database is emptied and reloaded by the tests: never point `DATABASE_URL` at a database you care about.
 
-The first `npm test` downloads the Google userinfo schema the fake Google sign-in is checked against
-(`npm run test:schemas`, a pinned file from GitHub, into the git-ignored `.factory/schemas/`): it needs
-network access once.
+The first `npm test` downloads the Google userinfo schema the fake Google sign-in is checked against, and Supabase
+Storage's OpenAPI file the fake file storage is checked against (`npm run test:schemas`, pinned files from GitHub,
+into the git-ignored `.factory/schemas/`): it needs network access once.
 
 ## Commands
 
@@ -103,7 +103,7 @@ network access once.
 | `npm run db:migrate` | Apply the pending `migrations/*.sql`. Prints each one applied, or "Database is up to date.". Safe to run twice, or twice at once. |
 | `npm run db:seed` | Load fake data. Only when `APP_ENV` is exactly `development` or `test` and `VERCEL_ENV` is not `production`/`preview`; otherwise prints "Fake data can only be loaded when APP_ENV is development or test." and exits 1. Safe to run again. |
 | `npm test` | Unit and integration tests (runs `test:schemas` first). |
-| `npm run test:schemas` | Download the pinned Google schema into `.factory/schemas/` when it is missing; does nothing otherwise. |
+| `npm run test:schemas` | Download the pinned Google and Supabase Storage schemas into `.factory/schemas/` when missing; does nothing otherwise. |
 | `npm run typecheck` | `tsc --noEmit`. |
 
 ## Settings
@@ -119,6 +119,9 @@ Environment variables. `.env.example` lists them all, with no secret values. Sec
 | `GOOGLE_CLIENT_ID` | real Google sign-in | From the Internal OAuth app in the barnacle.ai Google Workspace. |
 | `GOOGLE_CLIENT_SECRET` | real Google sign-in | Secret. |
 | `APP_URL` | real Google sign-in | Public base URL, e.g. `http://localhost:3000`. The OAuth redirect URI is `${APP_URL}/auth/google/callback`. Also anchors the check of the return path after sign-in (`http://localhost:3000` when unset). |
+| `SUPABASE_URL` | production (files) | `https://<project>.supabase.co`. Empty with `APP_ENV` `development`/`test`: the fake file storage is used. Empty otherwise: every file action answers "Files can't be reached right now. Try again in a minute."; the rest of the app works. |
+| `SUPABASE_SECRET_KEY` | with `SUPABASE_URL` | Supabase secret key (or the legacy `service_role` key). Secret, server only, never sent to the browser. |
+| `FILES_BUCKET` | optional | The private Storage bucket of file contents. Default `crm-files`. |
 | `VERCEL_ENV` | set by Vercel | `preview`: sign-in off, no database. `production`: `vercel-build` migrates. `production` or `preview`: the fake login and fake data are refused, whatever `APP_ENV` says. |
 
 There is no session secret: session tokens are random and only their SHA-256 is stored.
@@ -140,6 +143,24 @@ There is no session secret: session tokens are random and only their SHA-256 is 
   4.5 MB) into the `csv_imports` table. The file is deleted when it is imported; an unfinished upload is deleted when
   the same user starts another import; any import, file and report, older than 24 hours is deleted the next time
   anyone starts one. Only the user who started an import can open its steps and report.
+
+## Files
+
+Deals, people and organisations have a `// FILES` section (up to 25 MB per file). Contents are kept in Supabase
+Storage, never in the database. The browser sends a file straight to Storage through a write-only address made by
+the app after its checks (Vercel refuses request bodies over 4.5 MB); the app lists the file only after reading it
+back. Downloads and previews go through `/files/<id>/download` and `/files/<id>/preview`, which check the record's
+private rules on every request and then redirect to a Storage address valid for 60 seconds.
+
+- **Bucket setup (once, by a person)**: in the Supabase project, create a **private** bucket `crm-files` (Public
+  off), file size limit **25 MB** (26214400 bytes), no allowed-types list, and **no Storage policies** (only the
+  secret key reaches it, like the database's row level security with no policies). Set `SUPABASE_URL` and
+  `SUPABASE_SECRET_KEY` (server only) in Vercel. The app never creates or changes buckets.
+- **Locally and in tests**: leave `SUPABASE_URL` empty. With `APP_ENV` `development` or `test` the app uses its fake
+  storage (`src/server/files/fake-storage.ts`), reached by the browser at `/dev/fake-storage/...`; local contents go
+  in `.fake-storage/` (git-ignored), tests keep them in memory. The fake data command adds a few fake files.
+- **Clean-up**: contents of deleted files and records are removed from Storage right away, or by a later file action
+  when Storage did not answer (table `file_cleanup`; there is no cron).
 
 ## Production notes
 

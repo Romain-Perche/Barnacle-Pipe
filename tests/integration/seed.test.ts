@@ -441,6 +441,46 @@ describe("fake activities (SF-109)", () => {
   });
 });
 
+// covers SF-116 FR-016, T040: fake files of several kinds on deals, people and organisations, on a private deal, a
+// private person and an archived record, with their FILE entries (one deleted); hidden from Grace where private; once
+describe("fake files (SF-116)", () => {
+  it("adds files of each kind with their timeline entries, hides the private ones from Grace, and adds nothing the second time", async () => {
+    const { StorageFake } = await import("../fakes/storage");
+    const { listFiles, fileAccess } = await import("@/server/files/files");
+    const fake = new StorageFake().install();
+    try {
+      await runSeeders(sql);
+      const files = () => sql<{ id: number; name: string; kind: string; on: string; private: boolean; archived: boolean }[]>`
+        select f.id::int as id, f.name, f.kind,
+               case when f.deal_id is not null then 'deal' when f.person_id is not null then 'person' else 'organisation' end as on,
+               coalesce(d.private, p.private, false) as private, coalesce(d.archived_at, p.archived_at, o.archived_at) is not null as archived
+        from files f left join deals d on d.id = f.deal_id left join persons p on p.id = f.person_id
+        left join organisations o on o.id = f.organisation_id order by f.id`;
+      const first = await files();
+      expect(new Set(first.map((f) => f.on))).toEqual(new Set(["deal", "person", "organisation"]));
+      expect(new Set(first.map((f) => f.kind))).toEqual(new Set(["png", "pdf", "gif", "other"]));
+      expect(first.find((f) => f.name === "fake.png")?.kind).toBe("other");
+      expect(first.filter((f) => f.private).map((f) => f.name).sort()).toEqual(["contract.pdf", "cv-fake.pdf"]);
+      expect(first.filter((f) => f.archived).map((f) => f.name)).toEqual(["old-brief.docx"]);
+      expect(first.every((f) => /fake|\.(pdf|png|gif|xlsx|docx)$/.test(f.name))).toBe(true);
+      // Every listed file has its contents in the (fake) storage, read back byte for byte.
+      expect(fake.objects().size).toBe(first.length);
+      const events = await sql<{ kind: string; n: number }[]>`
+        select kind, count(*)::int as n from timeline_events where kind in ('file_added', 'file_deleted') group by kind order by kind`;
+      expect(events).toEqual([{ kind: "file_added", n: first.length + 1 }, { kind: "file_deleted", n: 1 }]);
+      const [grace] = await sql<{ id: number }[]>`select id::int as id from users where name = 'Grace Fake'`;
+      for (const f of first.filter((x) => x.private)) expect((await fileAccess(grace.id, f.id)).status).toBe("hidden");
+      const [secret] = await sql<{ id: number }[]>`select id::int as id from deals where title = 'Fake secret project'`;
+      expect(await listFiles(grace.id, { dealId: secret.id })).toEqual([]);
+      const second = await runSeeders(sql);
+      expect(second).toContain("already there files");
+      expect(await files()).toEqual(first);
+    } finally {
+      fake.uninstall();
+    }
+  });
+});
+
 // covers SF-115 FR-018 (T044): every type, a field in each list, a removed choice still on a record, values on a private
 // person and a private deal, a timeline entry per value; a second run adds no row
 describe("fake custom fields (SF-115)", () => {

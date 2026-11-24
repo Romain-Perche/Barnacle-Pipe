@@ -33,7 +33,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
   const query = knownCustomQuery({ ...parsed, sector: knownSector(parsed.sector, options.sectors) }, fields);
   const [list, flash, open, choiceOptions] = await Promise.all([
     listOrganisations(user.id, query, fields),
-    readFlash(["organisation_deleted", "note_not_found"]),
+    readFlash(["organisation_deleted", "note_not_found", "file_not_found"]),
     query.open ? getOrganisation(user.id, query.open) : null,
     customFilterOptions(user.id, "organisation", fields),
   ]);

@@ -66,3 +66,10 @@ export function formatTime(date: Date): string {
   const p = ukParts(date);
   return `${p.hour}:${p.minute}`;
 }
+
+// SF-116 (research.md §10): a file size, 1,024 base: "500 B", "840 KB", "2.1 MB", "25 MB".
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(Math.round((bytes / (1024 * 1024)) * 10) / 10).toString()} MB`;
+}

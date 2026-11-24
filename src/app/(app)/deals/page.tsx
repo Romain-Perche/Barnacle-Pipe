@@ -13,6 +13,7 @@ import { DealDrawer } from "./DealDrawer";
 import { ViewSwitch } from "./ViewSwitch";
 import { ActivityNotices } from "../activities/ActivityNotices";
 import { ActivityOverlays } from "../activities/ActivityOverlays";
+import { FileOverlays } from "../records/FileOverlays";
 
 function first(params: BoardParams, key: string): string | undefined {
   const v = params[key];
@@ -25,7 +26,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
   const query = parseBoardQuery(params);
   const [board, flash] = await Promise.all([
     getBoard(user.id, query.pipeline),
-    readFlash(["deal_deleted", "deal_no_longer_visible", "note_not_found"]),
+    readFlash(["deal_deleted", "deal_no_longer_visible", "note_not_found", "file_not_found"]),
   ]);
   const isAdmin = user.role === "admin";
 
@@ -118,6 +119,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
               hereHref={boardHref(open.pipeline.id, { open: open.id })}
               closeHref={boardHref(open.pipeline.id)}
               deleteHref={boardHref(open.pipeline.id, { open: open.id, confirm: "delete" })}
+              fileError={first(params, "error")}
             />
           )}
           {open && (
@@ -127,6 +129,15 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
               archived={open.archived}
               back={boardHref(open.pipeline.id, { open: open.id })}
               query={{ activity: first(params, "activity"), followup: first(params, "followup"), deleteActivity: first(params, "delete-activity") }}
+            />
+          )}
+          {open && (
+            <FileOverlays
+              viewerId={user.id}
+              target={{ dealId: open.id }}
+              archived={open.archived}
+              back={boardHref(open.pipeline.id, { open: open.id })}
+              query={{ file: first(params, "file"), deleteFile: first(params, "delete-file") }}
             />
           )}
         </div>

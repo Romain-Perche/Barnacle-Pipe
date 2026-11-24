@@ -219,6 +219,83 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-116 T015, FR-002, FR-007: 0011_files.sql on a fresh database: the file, upload and FILE event checks
+  it("applies 0011_files.sql: one record per file, size and name limits, known kinds, FILE event fields, other kinds kept", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0011_files.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [o] = await c`insert into organisations (name, owner_id, created_by) values ('Fakeco', ${u.id}, ${u.id}) returning id`;
+      const [p] = await c`insert into persons (first_name, owner_id, created_by) values ('Cara', ${u.id}, ${u.id}) returning id`;
+      let n = 0;
+      const file = (cols: { org?: number; person?: number; size?: number; name?: string; kind?: string }) =>
+        c`insert into files (organisation_id, person_id, name, size, kind, storage_path, added_by)
+          values (${cols.org ?? null}, ${cols.person ?? null}, ${cols.name ?? "a.pdf"}, ${cols.size ?? 10}, ${cols.kind ?? "pdf"}, ${`files/x${n++}`}, ${u.id}) returning id`;
+      expect(await code(file({ org: o.id }))).toBe("ok");
+      expect(await code(file({ org: o.id, person: p.id }))).toBe("23514");
+      expect(await code(file({}))).toBe("23514");
+      expect(await code(file({ org: o.id, size: 0 }))).toBe("23514");
+      expect(await code(file({ org: o.id, size: 26214400 }))).toBe("ok");
+      expect(await code(file({ org: o.id, size: 26214401 }))).toBe("23514");
+      expect(await code(file({ org: o.id, name: "x".repeat(255) }))).toBe("ok");
+      expect(await code(file({ org: o.id, name: "x".repeat(256) }))).toBe("23514");
+      expect(await code(file({ org: o.id, kind: "svg" }))).toBe("23514");
+      expect(await code(c`insert into file_uploads (organisation_id, person_id, name, size, content_type, storage_path, user_id)
+        values (${o.id}, ${p.id}, 'a', 1, 'x', 'files/u1', ${u.id})`)).toBe("23514");
+      expect(await code(c`insert into file_uploads (name, size, content_type, storage_path, user_id) values ('a', 1, 'x', 'files/u2', ${u.id})`)).toBe("23514");
+      expect(await code(c`insert into file_cleanup (storage_path) values ('files/c1')`)).toBe("ok");
+      const [f] = await c`select id from files limit 1`;
+      const ev = (kind: string, extra: { file_id?: number; file_name?: string | null; file_size?: number | null; deleted?: number; actor?: number | null }) =>
+        c`insert into timeline_events (organisation_id, kind, actor_id, file_id, file_name, file_size, deleted_file_id)
+          values (${o.id}, ${kind}, ${extra.actor === undefined ? u.id : extra.actor}, ${extra.file_id ?? null}, ${extra.file_name ?? null},
+                  ${extra.file_size ?? null}, ${extra.deleted ?? null})`;
+      expect(await code(ev("file_added", { file_id: f.id, file_name: "a.pdf", file_size: 10 }))).toBe("ok");
+      expect(await code(ev("file_added", { file_id: f.id, file_size: 10 }))).toBe("23514");
+      expect(await code(ev("file_added", { file_id: f.id, file_name: "a.pdf", actor: null }))).toBe("23514");
+      expect(await code(ev("file_deleted", { file_name: "a.pdf", deleted: 99 }))).toBe("ok");
+      expect(await code(ev("file_deleted", { file_name: "a.pdf" }))).toBe("23514");
+      expect(await code(ev("file_deleted", { file_name: "a.pdf", deleted: 99, file_size: 10 }))).toBe("23514");
+      expect(await code(ev("file_deleted", { file_name: "a.pdf", deleted: 99, file_id: f.id }))).toBe("23514");
+      expect(await code(ev("edited", { file_name: "a.pdf" }))).toBe("23514");
+      expect(await code(ev("other_kind", {}))).toBe("23514");
+      for (const kind of ["edited", "referrer_set"]) {
+        expect(await code(ev(kind, {})), kind).toBe("ok");
+      }
+      // SF-115's kinds stay allowed (with the field name 0010_custom_fields.sql asks of them).
+      for (const kind of ["custom_set", "custom_changed", "custom_cleared"]) {
+        expect(await code(c`insert into timeline_events (organisation_id, kind, actor_id, field_name) values (${o.id}, ${kind}, ${u.id}, 'Diet')`), kind).toBe("ok");
+      }
+      expect(await code(c`insert into timeline_events (organisation_id, kind, actor_id, body) values (${o.id}, 'note', ${u.id}, 'x')`)).toBe("ok");
+      // Deleting the file keeps its "added" event, without the link.
+      await c`delete from files where id = ${f.id}`;
+      const [{ k }] = await c`select count(*)::int as k from timeline_events where kind = 'file_added' and file_id is null`;
+      expect(k).toBe(1);
+      const rls = await c`select relname from pg_class where relname in ('files', 'file_uploads', 'file_cleanup') and relrowsecurity`;
+      expect(rls.map((r) => r.relname).sort()).toEqual(["file_cleanup", "file_uploads", "files"]);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-116 T015: the files code keeps to the pooler's limits (no session state); the migration is transaction-safe
+  it("keeps the files code and 0011_files.sql free of session state", () => {
+    const dir = "src/server/files";
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["rules.ts", "storage.ts", "fake-storage.ts", "files.ts"]));
+    for (const file of readdirSync(dir)) {
+      const text = readFileSync(`${dir}/${file}`, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0011_files.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration.match(/create table/gi)?.length).toBe(3);
+    expect(migration.match(/enable row level security/gi)?.length).toBe(3);
+  });
+
   // covers SF-114 T012: the ambassador code keeps to the pooler's limits (no session state)
   it("keeps the ambassador code and 0009_ambassadors.sql free of session state", () => {
     for (const file of ["src/server/records/ambassadors.ts", "src/server/records/referral-rules.ts", "src/server/records/people.ts"]) {
@@ -404,9 +481,12 @@ describe("npm run db:migrate", () => {
       expect(await code(c`insert into timeline_events (person_id, kind, actor_id, old_value) values (${p.id}, 'edited', ${u.id}, 'x')`)).toBe("23514");
       expect(await code(c`insert into timeline_events (person_id, kind, actor_id, field_name, new_value) values (${p.id}, 'custom_set', ${u.id}, 'Diet', 'Vegan')`)).toBe("ok");
       expect(await code(c`insert into timeline_events (person_id, kind, actor_id, body) values (${p.id}, 'note', ${u.id}, 'x')`)).toBe("ok");
-      for (const kind of ["imported", "referrer_set", "file_added", "file_deleted"]) {
+      for (const kind of ["imported", "referrer_set"]) {
         expect(await code(c`insert into timeline_events (person_id, kind, actor_id) values (${p.id}, ${kind}, ${u.id})`), kind).toBe("ok");
       }
+      // SF-116's kinds stay allowed (with the fields 0011_files.sql asks of them).
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, file_name, file_size) values (${p.id}, 'file_added', ${u.id}, 'a.pdf', 10)`), "file_added").toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, file_name, deleted_file_id) values (${p.id}, 'file_deleted', ${u.id}, 'a.pdf', 99)`), "file_deleted").toBe("ok");
       const [q] = await c`insert into persons (first_name, owner_id, created_by) values ('Ben', ${u.id}, ${u.id}) returning id`;
       expect(await code(c`insert into timeline_events (person_id, kind, actor_id, related_person_id, from_person_id) values (${q.id}, 'referrer_changed', ${u.id}, ${p.id}, ${p.id})`)).toBe("ok");
       // A field delete takes its values with it.

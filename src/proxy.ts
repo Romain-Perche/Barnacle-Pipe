@@ -1,5 +1,7 @@
 // Next.js proxy: runs before every page. No session cookie on a protected path → sign-in page.
-// It only checks that the cookie is there; requireUser() checks the session itself.
+// It only checks that the cookie is there; requireUser() checks the session itself. SF-116: the matcher leaves out
+// /dev/fake-storage: the proxy would cut upload bodies at 10 MB, and the fake checks its own tokens like Storage's
+// signed addresses (it answers 404 outside development/test).
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/server/auth/cookie";
 import { FLASH_COOKIE } from "@/server/records/flash-cookie";
@@ -35,5 +37,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.[a-zA-Z0-9]+$).*)"],
+  matcher: ["/((?!_next/static|dev/fake-storage/|_next/image|favicon.ico|.*\\.[a-zA-Z0-9]+$).*)"],
 };

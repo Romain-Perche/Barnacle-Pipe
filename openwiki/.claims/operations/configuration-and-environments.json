@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7601e404c40e6366174279aac419fd6de4ce33b29caa177f9d21f86f3faf8a25",
+  "pageVersion": "sha256:48dfa1fece539a7080db7745e1ec8738fb1eaf3306b50924d7c295a42e34f56c",
   "claims": [
     {
       "id": "claim_13428ba51be747709f2744c129d2c44d",
@@ -44,17 +44,27 @@
     },
     {
       "id": "claim_774570b347784264ba15d181f129dc17",
-      "statement": ".env.example lists APP_ENV, DATABASE_URL, FIRST_ADMIN_EMAIL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and APP_URL without real secrets.",
+      "statement": ".env.example lists APP_ENV, DATABASE_URL, FIRST_ADMIN_EMAIL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_URL, SUPABASE_URL, SUPABASE_SECRET_KEY and FILES_BUCKET without real secrets.",
       "evidence": [
         {
           "resource": "repo://.env.example",
-          "version": "repo-file-v1:sha256:afe2a4c879ee99f21fb66bbb24401a3e5911660666ef0557ba715642d2e9147d"
+          "version": "repo-file-v1:sha256:381564e967909364261dd8f3b371a3363baf410638dddf27a52c963a321ddc41"
+        }
+      ]
+    },
+    {
+      "id": "claim_e866f5c1dfeb45bfb4f9b40c2136827e",
+      "statement": "storageConfig() uses Supabase Storage when SUPABASE_URL and key are set, the fake storage when the URL is empty and fakes are allowed, otherwise is off.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/env.ts#L49-L63",
+          "version": "repo-lines-v1:sha256:7756eb1a6473ebc3bacaf1e95d99e58fce4bd5eb746fe62e03f94d2d5c5ab827:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0ZDJmYzllYTE3NzI1YzI3NjY1M2ZhYWNhOTE0ZGJlZmY0Yjk1MmUxNjE3NjFiZTc5ZmM4Y2IwNTUxNGFmM2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlMDQyZDE1Y2ZlMTBhZTEzMDljODE4MDRlYzZlMzMzZWU0Mjg5NmI0Yjk1NGE4OTk4YmFhYTM4ODM1NmMzYmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-19T12:52:49.147Z"
+    "at": "2026-11-24T11:56:37.160Z"
   }
 }

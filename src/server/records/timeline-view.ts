@@ -15,14 +15,16 @@ export function groupByDay<T extends { createdAt: Date }>(entries: T[], now: Dat
   return groups;
 }
 
-export type EntryTag = "NOTE" | "CHANGE" | "DEAL" | "PERSON" | "ACTIVITY";
+export type EntryTag = "NOTE" | "CHANGE" | "DEAL" | "PERSON" | "ACTIVITY" | "FILE";
 
 // DEAL: an entry of a linked deal on a person's or organisation's timeline (or of a referred deal on an ambassador's
 // page); PERSON: an entry of a referred person on an ambassador's page (SF-114); NOTE: a note of the page's record;
-// ACTIVITY: a done call, meeting or task (SF-109), wherever it is linked.
+// ACTIVITY: a done call, meeting or task (SF-109), wherever it is linked; FILE: a file added to or deleted from the
+// page's record (SF-116).
 export function entryTag(e: { kind: string; deal: unknown; person?: unknown }): EntryTag {
   if (e.kind === "activity") return "ACTIVITY";
   if (e.person) return "PERSON";
   if (e.deal) return "DEAL";
+  if (e.kind === "file_added" || e.kind === "file_deleted") return "FILE";
   return e.kind === "note" ? "NOTE" : "CHANGE";
 }

@@ -38,6 +38,15 @@ OAuth code flow and database sessions.
   `referrerOptions`, the check `isOfferedAmbassador`, `referrerOf`; counts through one shared summary fragment) and
   `records/referral-rules.ts` (pure: `parseReferredBy`, `decideReferrer`, `referralEvent`); `people.ts` holds
   `resolveReferrer` / `recordReferral`, shared with `deals.ts`. `hasAmbassadorPage()` sits in `visibility.ts`.
+- `src/server/files/` — files on deals, people and organisations (SF-116): `rules.ts` (pure: 25 MB / 255-character
+  limits `validateFile`, `uploadContentType`, `fileKind` from bytes + name + stored type, `kindLabel`, `safeDownloadName`,
+  `fileHref`), `storage.ts` (Supabase Storage through plain `fetch`: signed upload address, info, first bytes, 60-second
+  read address, bulk delete; `StorageUnreachable`; `useStorageFetchForTests`), `fake-storage.ts` (`FakeStorage` over
+  `MemoryStore` in tests / `DiskStore` `.fake-storage/` in development; `storageConfig()` in `env.ts` picks Supabase, the
+  fake or "off"), `files.ts` (`listFiles`, `pageFile`, `fileAccess`, `startFileUpload` / `finishFileUpload` (table
+  `file_uploads`), `deleteFile`, `cleanupPathsFor` (used by the three record deletes), `sweepFileCleanup` (table
+  `file_cleanup`, swept after every file action: no cron)). No Storage call inside a transaction. `visibleFile()` in
+  `records/visibility.ts`: every `files` read uses it. FILE timeline entries: kinds `file_added` / `file_deleted`.
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
   `records/import/`: the CSV import screens shared by `/people/import` and `/organisations/import` (`ImportPages.tsx`:
   the four steps; `FileStep.tsx`: the only client part, sends the file in 512 KiB parts; `actions.ts`; `example.ts`).
@@ -48,6 +57,12 @@ OAuth code flow and database sessions.
   and "Schedule a follow-up?" in a box over the page), `ActivityOverlays.tsx` (opens the box or the delete confirmation from
   `?activity=` / `?followup=` / `?delete-activity=`), `NextActivities.tsx` ("// NEXT ACTIVITIES" of record pages and the
   drawer), `DoneBox.tsx`, `ActivityBits.tsx`, `ActivityDeleteConfirm.tsx`, `ActivityNotices.tsx`.
+  SF-116 files: `records/FilesSection.tsx` ("// FILES" of record pages and the drawer, design A, with its notices),
+  `records/AddFiles.tsx` (client: [ ADD FILE ], the PUT straight to Storage with progress), `records/FileOverlays.tsx`
+  (`?file=` image preview box, `?delete-file=` confirmation), `records/FileLink.tsx` (plain `<a>`, never `next/link`),
+  `records/file-actions.ts`. `src/app/(app)/files/` — `[id]/download` and `[id]/preview` routes (`file-route.ts`: check,
+  then a 303 to a 60-second Storage address) and `unavailable/`. `src/app/dev/fake-storage/` — the fake Storage as the
+  browser reaches it (404 unless `isFakeAllowed()` and no `SUPABASE_URL`).
   SF-115 custom fields: `src/server/custom-fields/` — `rules.ts` (pure: types, built-in names, limits, field and value
   checks `validateFieldForm` / `validateCustomValues`, `formatValue` / `listText`, `customEvent`, CSV cells `readImportCell`),
   `fields.ts` (admin: fields and choices, `countValues`; admin re-checked in each transaction), `values.ts` (record values:
@@ -71,9 +86,9 @@ OAuth code flow and database sessions.
   (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
   `person_emails`, bulk inserts).
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
-  custom fields: `custom-fields.ts`).
+  files, custom fields: `custom-fields.ts`).
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
-- `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google schema).
+- `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google and Supabase Storage schemas).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),
   `tests/support/reset.ts` (empties every app table; lead sources back to the six starting ones).
 
@@ -98,7 +113,8 @@ npm test && npm run typecheck
 ```
 
 Each test names what it covers (`// covers FR-003, US1 scenario 2`). Fakes only for outside services
-(Google Sign-In: `tests/fakes/google.ts`, checked against its schema; see `.factory/test-env.md`).
+(Google Sign-In: `tests/fakes/google.ts`; Supabase Storage: `tests/fakes/storage.ts`, checked against
+`storage_v0_openapi.json`; each checked against its schema; see `.factory/test-env.md`).
 
 <!-- OPENWIKI:START -->
 

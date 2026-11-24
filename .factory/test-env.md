@@ -8,6 +8,20 @@
   schema): copies `invalid_grant` for an unknown or reused code and a wrong `code_verifier`,
   `invalid_client` for a wrong secret, `invalid_request` for a missing parameter. In the running app the
   in-app fake Google login `/dev/fake-google` (APP_ENV=test or development) is used instead.
+- Supabase Storage (SF-116, file contents): fake `src/server/files/fake-storage.ts` (`FakeStorage`), wrapped for the
+  tests by `tests/fakes/storage.ts` (`StorageFake`, installed with `useStorageFetchForTests`), which checks every request
+  and answer against the schema `storage_v0_openapi.json` (path and method among the schema's paths, query parameters
+  declared, JSON body properties declared with their types and `required`, properties of each 200 JSON answer declared;
+  the info answer has no 200 schema there and follows the Storage server's renderer `size`/`content_type`). The fake
+  copies Storage's behaviour: 409 on an existing object (no upsert), 413 over 26214400 bytes, `400 InvalidJWT` for an
+  expired or wrong token, a token valid for one path only (an upload token never reads), 60 s read addresses and 2 h
+  upload addresses, `download` → `content-disposition: attachment`, `range` → 206, the key required in `authorization`
+  and `apikey`. Switches: `down()` (network error), `failDeletes()` (500 on delete), `advance(ms)` (token clock),
+  `objects()`, `requests`. In the running app (APP_ENV development/test and `SUPABASE_URL` empty) the same fake is
+  reached by the browser at `/dev/fake-storage/...` (contents in `.fake-storage/`, git-ignored).
+  AI review only: `.factory/run/storage-proxy.js`, a stand-in Storage on :54321 (`/storage/v1/*` forwarded to the app's
+  `/dev/fake-storage`, CORS like Storage, `MODE=fail-deletes` answers 500 to every DELETE) for a second app run with
+  `SUPABASE_URL=http://localhost:54321 SUPABASE_SECRET_KEY=fake-storage-key`.
 - Supabase Postgres (through the Supavisor pooler): no fake — a real local PostgreSQL 17. No public schema
   on GitHub; follows Supabase's docs (https://supabase.com/docs/guides/database/connecting-to-postgres):
   transaction-mode pooler copied by always connecting with `prepare: false` and taking only
@@ -68,6 +82,15 @@
   `ambassador_added`/`ambassador_removed`/`referrer_set`/`referrer_changed`/`referrer_cleared`, cause `person_deleted`;
   no new table), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514 refusals (a
   person referred by themselves, a `from_person_id` on another kind, an unknown cause). No new outside service.
+  The files code (SF-116: `src/server/files/*.ts`, the record deletes in `deals.ts`, `people.ts`, `organisations.ts`)
+  keeps to the same pooler limits: no fake, the real local PostgreSQL 17, no public schema on GitHub, follows
+  https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (scanned by `migrate.test.ts`), every
+  change one `sql.begin()` locking the record row `for update`, and no Storage (network) call inside a transaction (the
+  read-back comes before it, the delete after it). Its tables and columns come from `migrations/0011_files.sql` (`files`,
+  `file_uploads`, `file_cleanup`, RLS on each; `timeline_events.file_id/file_name/file_size/deleted_file_id`, kinds
+  `file_added`/`file_deleted` plus SF-115's `custom_*` kinds), applied on a fresh database by `migrate.test.ts`, which also
+  checks Postgres's own 23514 refusals (a file on two records or none, size 0 / 26214401, a 256-character name, kind
+  `svg`, FILE events without their fields).
   The custom fields code (SF-115: `src/server/custom-fields/` — `rules.ts`, `fields.ts`, `values.ts` — and the value saves
   in `people.ts`, `organisations.ts`, `deals.ts` and the CSV import's `imports.ts`) keeps to the same pooler limits: no fake,
   the real local PostgreSQL 17, no public schema on GitHub, follows
@@ -84,6 +107,7 @@
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
+- storage_v0_openapi.json: https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json
 
 ## Docker images
 - none (PostgreSQL comes from Debian's apt repository, see below)
@@ -93,7 +117,8 @@
   binaries in `/usr/lib/postgresql/17/bin` still work), then as the normal user:
   `initdb -D /tmp/pgdata -U postgres --auth=trust && pg_ctl -D /tmp/pgdata -o "-k /tmp -c listen_addresses=localhost" -l /tmp/pg.log start`
   and `psql -h localhost -U postgres -c "create database crm_test" -c "create database crm_dev"`.
-- Schema: `.factory/schemas/oauth2-api.json`, downloaded by `npm run test:schemas` (run by `npm test` as `pretest`; commit above, sha256 checked).
+- Schemas: `.factory/schemas/oauth2-api.json` and `.factory/schemas/storage_v0_openapi.json`, downloaded by
+  `npm run test:schemas` (run by `npm test` as `pretest`; commits above, sha256 checked).
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
   `npm test` and `npm run typecheck`. No browser tests in the repo (docs/DECISIONS.md): the AI review drives the app with
@@ -170,6 +195,35 @@
     Timeline lines read with the tag first ("CHANGEReferred by set to …"). Edge 13 (unknown `ref` on /people and
     /deals/list for Ada: Dora and Ben) checks for the text "Dora Privatefake" only: Pat Privatefake is Ada's own, and US2's
     deals are titled "SF114 Dora deal …". The script is not re-runnable without `reset-db.sh` (names are reused).
+  - Files (SF-116). The seed (seeder "files", last) adds, through the fake storage: on "Fakeco website" `site-mockup.png`
+    (PNG), `proposal.pdf`, `budget.xlsx` (empty zip, kind other) and the deleted `old-version.pdf` (a "deleted" FILE
+    entry); `contract.pdf` on the private deal "Fake secret project"; `cv-fake.pdf` on the private Pat Privatefake;
+    `brand-guide.pdf` and `logo.gif` on Fakeco Ltd; `old-brief.docx` on the archived "Old fake opportunity"; `fake.png`
+    (text bytes, kind other, no preview) on the first shared person. Selectors: the section is the `region` "Files"
+    (heading "// FILES (n)", button "[ ADD FILE ]" opens the hidden `input[type=file]` labelled "Files to add": use
+    `setInputFiles` on it), table `table.files-table` (name link `a.nm`, chip `.ft`, links named "Preview <name>",
+    "Download <name>", "Delete <name>"); upload progress `.upload-status .uploading`, messages `.upload-status
+    .notice` / `.err`; the image box is the `dialog` labelled by the file name (`.filebox img`, links "[ DOWNLOAD ]",
+    "[ CLOSE ]"); the confirmation is the `alertdialog` "Delete <name>? This can't be undone." (button "[ DELETE ]", link
+    "[ CANCEL ]"); timeline FILE entries have `.kd.file`. A PDF name has `target=_blank`. `/files/<id>/download|preview`
+    answer 303 (follow with `maxRedirects: 0` to read the Location); `/files/unavailable?reason=…` shows the message.
+    `reset-db.sh` also empties `files`, `file_uploads`, `file_cleanup` (run `npm run db:migrate` first on an older
+    crm_dev, else the truncate fails and nothing is seeded); `.fake-storage/` keeps old contents (harmless).
+  - SF-116 AI review scripts (each on fresh data: `bash .factory/run/reset-db.sh` first; helpers in `sf116-lib.js`, which
+    makes the test files in `$TMPDIR/sf116-files`): `scenarios-sf116-a.js` (US1, US2), `scenarios-sf116-b.js` (US3; waits
+    61 s for a read address to expire; US3-7 moves a file onto Alan Fake's private deal/person by SQL, then hands over to
+    Linus in /admin/users), `scenarios-sf116-c.js` (US4, US5, edge cases; needs the two extra apps below). Run with
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf116-X.js`. Extra apps (after the build on :3000):
+    `PORT=3001 SKIP_BUILD=1 SKIP_SEED=1 SUPABASE_URL=http://localhost:9 SUPABASE_SECRET_KEY=fake-storage-key bash .factory/run/start-app.sh`
+    (Storage unreachable, edge 8) and `MODE=fail-deletes node .factory/run/storage-proxy.js &` then
+    `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 SUPABASE_URL=http://localhost:54321 SUPABASE_SECRET_KEY=fake-storage-key bash .factory/run/start-app.sh`
+    (a Storage that fails every delete, edge 9). Known: Next's proxy cuts request bodies at 10 MB (`proxyClientMaxBodySize`), so the
+    `src/proxy.ts` matcher leaves out `/dev/fake-storage/` (fix round 1) and 25 MB uploads reach the fake; headless Chromium
+    here names every download with a non-ASCII name "download" (read `content-disposition` instead); a file on disk whose
+    name has a backslash is dropped by `setInputFiles` (pass `{ name, mimeType, buffer }`). Not re-runnable without a reset.
+    `check-edge8-box.js` (with :3001 up, after a seed): `?file=<png>` on the Storage-down app goes back to the page with
+    `?error=files_unreachable` and the message, no dialog (fix round 1; `NODE_PATH=/opt/playwright/node_modules node .factory/run/check-edge8-box.js`).
+    All 37 SF-116 scenarios pass with a, b, c in a row (reset before each; ~3, ~2 and ~4 min).
   - CSV import scenarios (SF-103): the fake files are in `tests/fixtures/csv/` (people-20.csv: rows 4 and 15 use
     `dup.one@`/`DUP.TWO@fakeco.example`, which a scenario puts
     in the CRM first, row 9 has an invalid address; organisations-10.csv: "FAKECO LTD" matches the seeded Fakeco Ltd, size
@@ -326,6 +380,6 @@
       as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
 
 ## Smoke checks
-1. test -s .factory/schemas/oauth2-api.json
+1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in

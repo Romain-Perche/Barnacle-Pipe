@@ -50,3 +50,18 @@ describe("entryTag for activities", () => {
     expect(entryTag({ kind: "activity", deal: { id: 1, title: "x", archived: false } })).toBe("ACTIVITY");
   });
 });
+
+// covers SF-116 US4 scenario 3, FR-007 (T031): a file entry is tagged FILE on its record, DEAL from a linked deal
+describe("entryTag for files", () => {
+  it("is FILE for file_added / file_deleted on the record, DEAL for a deal's, others unchanged", () => {
+    const deal = { id: 1, title: "x", archived: false };
+    expect(entryTag({ kind: "file_added", deal: null })).toBe("FILE");
+    expect(entryTag({ kind: "file_deleted", deal: null })).toBe("FILE");
+    expect(entryTag({ kind: "file_added", deal })).toBe("DEAL");
+    expect(entryTag({ kind: "file_deleted", deal })).toBe("DEAL");
+    expect(entryTag({ kind: "activity", deal })).toBe("ACTIVITY");
+    expect(entryTag({ kind: "note", deal: null })).toBe("NOTE");
+    expect(entryTag({ kind: "edited", deal: null })).toBe("CHANGE");
+    expect(entryTag({ kind: "file_added", deal: null, person: { id: 2, name: "Ben", archived: false } })).toBe("PERSON");
+  });
+});

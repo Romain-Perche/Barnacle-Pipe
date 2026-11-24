@@ -20,6 +20,10 @@
     {
       "id": "google",
       "label": "Google (third party)"
+    },
+    {
+      "id": "supabase",
+      "label": "Supabase Storage (third party)"
     }
   ],
   "groups": [
@@ -62,6 +66,11 @@
       "id": "deals-database",
       "label": "Deals database",
       "description": "The Postgres tables for pipelines, stages, deals, their stage time, labels, linked people and followers."
+    },
+    {
+      "id": "files",
+      "label": "Files",
+      "description": "Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage."
     }
   ],
   "actors": [
@@ -81,6 +90,11 @@
       "id": "google-oauth-api",
       "label": "Google OAuth and userinfo API",
       "zone": "google"
+    },
+    {
+      "id": "supabase-storage",
+      "label": "Supabase Storage",
+      "zone": "supabase"
     }
   ],
   "processes": [
@@ -310,6 +324,19 @@
         "src/server/custom-fields/values.ts",
         "src/server/custom-fields/rules.ts"
       ]
+    },
+    {
+      "id": "files",
+      "label": "Files on records",
+      "zone": "app",
+      "group": "files",
+      "sources": [
+        "src/server/files/files.ts",
+        "src/server/files/storage.ts",
+        "src/server/files/rules.ts",
+        "src/app/(app)/records/file-actions.ts",
+        "src/app/(app)/files"
+      ]
     }
   ],
   "stores": [
@@ -519,6 +546,15 @@
         "migrations/0010_custom_fields.sql"
       ],
       "zone": "postgres"
+    },
+    {
+      "id": "files-tables",
+      "label": "File rows, uploads and cleanup",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0011_files.sql"
+      ]
     }
   ],
   "flows": [
@@ -1924,6 +1960,119 @@
       "data": "fake custom fields and values",
       "sources": [
         "src/seed/custom-fields.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "files",
+      "data": "files to add, delete, download, preview",
+      "sources": [
+        "src/app/(app)/records/file-actions.ts",
+        "src/app/(app)/files/file-route.ts"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "staff",
+      "data": "303 to a 60-second read address",
+      "sources": [
+        "src/app/(app)/files/file-route.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "files",
+      "data": "signed-in user",
+      "sources": [
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "files-tables",
+      "data": "file rows, upload and cleanup records",
+      "sources": [
+        "src/server/files/files.ts"
+      ]
+    },
+    {
+      "from": "files-tables",
+      "to": "files",
+      "data": "file rows visible to the user",
+      "sources": [
+        "src/server/files/files.ts"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "timeline-table",
+      "data": "file added and deleted events",
+      "sources": [
+        "src/server/files/files.ts"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "supabase-storage",
+      "data": "signed upload address, info, delete requests",
+      "sources": [
+        "src/server/files/storage.ts"
+      ]
+    },
+    {
+      "from": "supabase-storage",
+      "to": "files",
+      "data": "object info and first bytes",
+      "sources": [
+        "src/server/files/storage.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "supabase-storage",
+      "data": "file contents (PUT to signed address)",
+      "sources": [
+        "src/app/(app)/records/AddFiles.tsx"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "files-tables",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0011_files.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "files-tables",
+      "data": "fake files",
+      "sources": [
+        "src/seed/files.ts"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "people-pages",
+      "data": "files section",
+      "sources": [
+        "src/app/(app)/records/FilesSection.tsx"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "organisations-pages",
+      "data": "files section",
+      "sources": [
+        "src/app/(app)/records/FilesSection.tsx"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "deals-board",
+      "data": "files section",
+      "sources": [
+        "src/app/(app)/records/FilesSection.tsx"
       ]
     }
   ]

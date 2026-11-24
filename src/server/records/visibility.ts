@@ -2,6 +2,7 @@
 // their current owner, admins included. Every query that reads `persons` uses this fragment.
 // `viewer` is a user id, or (SF-102 research.md §5) a SQL fragment such as sql`u.id` to ask which users can see a record.
 // SF-109: `visibleActivity()` below it: every `activities` read uses it.
+// SF-116: `visibleFile()` at the end: every `files` read uses it.
 import type { Fragment, Sql } from "@/server/db";
 
 export type Viewer = number | Fragment;
@@ -35,4 +36,13 @@ export function visibleActivity(db: Sql, viewer: Viewer, alias = "a") {
   const a = db(alias);
   return db`((${a}.person_id is null or exists (select 1 from persons vp where vp.id = ${a}.person_id and ${visiblePerson(db, viewer, "vp")}))
     and (${a}.deal_id is null or exists (select 1 from deals vd where vd.id = ${a}.deal_id and ${visibleDeal(db, viewer, "vd")})))`;
+}
+
+// SF-116 (research.md §6): a file is seen by those who can see its record (its deal through visibleDeal, its person
+// through visiblePerson; organisations are never private). Every query that reads `files` for a viewer uses this
+// fragment, so a hidden file does not exist for them: lists, counts, boxes, timelines, routes and actions.
+export function visibleFile(db: Sql, viewer: Viewer, alias = "f") {
+  const f = db(alias);
+  return db`((${f}.deal_id is null or exists (select 1 from deals vfd where vfd.id = ${f}.deal_id and ${visibleDeal(db, viewer, "vfd")}))
+    and (${f}.person_id is null or exists (select 1 from persons vfp where vfp.id = ${f}.person_id and ${visiblePerson(db, viewer, "vfp")})))`;
 }

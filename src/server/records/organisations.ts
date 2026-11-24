@@ -1,5 +1,6 @@
 // Organisations (data-model.md): read, add, edit, archive, restore, delete, list. Organisations are always
 // shared; the people shown on them go through the visibility rule.
+import { cleanupPathsFor, sweepFileCleanup } from "@/server/files/files";
 import { sql, type Sql } from "@/server/db";
 import {
   direction,
@@ -206,14 +207,18 @@ export const restoreOrganisation = (actorId: number, id: number) => setArchived(
 
 // Admins only, re-checked here; its people stay, with no organisation (on delete set null).
 export async function deleteOrganisation(actorId: number, id: number): Promise<DeleteResult> {
-  return sql.begin(async (tx) => {
+  const result = await sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     if (!(await isActiveAdmin(db, actorId))) return { status: "forbidden" as const };
+    // SF-116 FR-012: its files' contents are queued for removal from Storage; the rows go by cascade.
+    await cleanupPathsFor(db, { organisationId: id });
     // SF-109 FR-014: its activities linked to nothing else go with it; the others lose the organisation.
     await db`delete from activities where organisation_id = ${id} and deal_id is null and person_id is null`;
     const [row] = await db<{ name: string }[]>`delete from organisations where id = ${id} returning name`;
     return row ? { status: "deleted" as const, name: row.name } : { status: "not_found" as const };
   });
+  if (result.status === "deleted") await sweepFileCleanup();
+  return result;
 }
 
 // SF-115: `shown` are the organisation fields shown in the list (filters and sort from knownCustomQuery).
