@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T11:28:51.796Z
+    at: 2026-11-24T11:56:37.160Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -27,13 +27,15 @@ sources:
     resource: repo://migrations/0009_ambassadors.sql
   - id: openwiki-source-720a4e6307035f2f4697bba4
     resource: repo://migrations/0010_custom_fields.sql
+  - id: openwiki-source-bcc466cbe055ea0c54eff37e
+    resource: repo://migrations/0011_files.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T11:28:51.796Z" }
+generated: { by: "claude-code", at: "2026-11-24T11:56:37.160Z" }
 ---
 
 # Database schema and access
@@ -166,6 +168,15 @@ position and `in_list`), `custom_field_choices` (choices of the two choice types
 and exactly one typed value column are set; unique per field and record). `timeline_events` gets `field_name`,
 `old_value` and `new_value` and the kinds `custom_set`, `custom_changed` and `custom_cleared`. See
 [Custom fields](../features/custom-fields.md).
+
+### Files (migration 0011)
+
+`0011_files.sql` adds `files` (one row per stored file: exactly one of `deal_id`, `person_id`, `organisation_id`;
+name 1–255 characters, size 1 byte to 25 MB, `kind` of `jpeg`, `png`, `gif`, `webp`, `pdf` or `other`, a unique
+`storage_path`, who added it and when), `file_uploads` (an upload asked for but not yet read back from Storage, never
+listed) and `file_cleanup` (Storage paths still to delete, with `due_at` and `attempts`). `timeline_events` gets
+`file_id`, `file_name`, `file_size` and `deleted_file_id` and the kinds `file_added` and `file_deleted`. See
+[Files on records](../features/files.md).
 
 ## Row level security
 
