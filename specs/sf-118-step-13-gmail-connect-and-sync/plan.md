@@ -234,6 +234,56 @@ has its own outside service, like `src/server/files/`. Copied emails are not rec
     - `.factory/test-env.md` is written by Build and the AI review, not here.
     - No blueprint exception, so no "Departs from blueprint" line.
 
+## Fix round 1
+
+**Problem (AI review, US1 scenarios 2, 4, 5, US4 scenario 3, Edge case 10):** on the fake consent screen
+`/dev/fake-google/gmail`, `[ ALLOW ]` always ends on Settings with "Gmail was not connected.", whatever the account
+and the ticked boxes. Locally (FR-018) no one can connect Gmail through the screen. Real Google is not affected: it
+sends the browser to the callback with a full navigation.
+
+**Cause:** `[ ALLOW ]` and `[ CANCEL ]` are server actions (`src/app/dev/fake-google/gmail/actions.ts`) that call
+`redirect()` to the app's own `/settings/gmail/callback`. For a same-app address, Next does not send the browser
+there: it renders the target inside the action's own request, whose path is `/dev/fake-google/gmail`. The browser
+sends the `crm_gmail_oauth` cookie (path `/settings/gmail`, set by `startGmailConnect`) only to `/settings/gmail/*`,
+so the callback finds no cookie and `connectFromCallback` answers `not_connected`. The integration test called the
+action and then the callback by hand with the cookie jar, so it never went through the browser's cookie path rule.
+
+**Fix (option A, recommended):** the two consent buttons post a plain HTML form to a route handler
+`src/app/dev/fake-google/gmail/answer/route.ts` (`POST`). It runs the same checks as today (404 unless
+`isFakeAllowed()` and Gmail mode `fake`; 404 unless `redirect_uri` is exactly `${appBaseUrl()}/settings/gmail/callback`),
+reads the button pressed (`decision=allow` or `decision=cancel`), makes the fake code (allow) or sets
+`error=access_denied` (cancel), adds `state`, and answers **303** with `Location:` the callback address. The browser
+then loads the callback as a full navigation, exactly as after real Google, and sends the cookie. The page keeps its
+look and its fields; only the forms change (`action="/dev/fake-google/gmail/answer" method="post"`, one form with
+two submit buttons `name="decision"`, or two forms each with a hidden `decision`). `actions.ts` is deleted. No change
+to the cookie, to the callback or to the real Google flow.
+
+Options not chosen:
+- B: set the `crm_gmail_oauth` cookie on path `/`. It would work, but widens the cookie of the real flow to every
+  page only to suit a development screen.
+- C: make the callback accept a missing cookie in fake mode. It removes the check that the return belongs to the
+  request the same user started (FR-002) from the very flow the tests run.
+
+**Files:** `src/app/dev/fake-google/gmail/answer/route.ts` (new), `src/app/dev/fake-google/gmail/page.tsx`,
+`src/app/dev/fake-google/gmail/actions.ts` (deleted), `tests/integration/gmail-dev-fake.test.ts`, `AGENTS.md` (the
+fake consent screen line, if it names the actions).
+
+**Test (first):** in `tests/integration/gmail-dev-fake.test.ts`, the tester's run goes through what the browser
+does: the rendered consent page's forms post to `/dev/fake-google/gmail/answer` with `method="post"` (no server
+action); a `POST` of the form to the route answers 303 whose `Location` is the callback with `code` and `state`
+(allow) or `error=access_denied` and `state` (cancel); the callback, given only the cookies a browser sends to that
+`Location` path (the `crm_gmail_oauth` cookie included because the path is `/settings/gmail/callback`), connects
+Linus. Also: 404 from the route outside fake mode and for another `redirect_uri`; an unticked box and another
+account reach the callback and give `missing_scopes` / `wrong_account`. It fails now (no route, the forms use a
+server action) and passes after the fix. No new spec scenario: US1 scenarios 2-5, US4 scenario 3 and Edge case 10
+already cover it and the AI review runs them by clicking `[ ALLOW ]`.
+
+**Not changed (review note, not blocking):** when Gmail's history is gone, the catch-up lists from one hour before
+the last successful sync (`CATCH_UP_MARGIN_MS`), so a message skipped in that hour because its sender was not yet a
+CRM person can be copied then. The margin protects against losing mail Gmail dated just before the last sync but
+had not yet reported; losing mail is worse than copying one extra conversation that the later "Fetch past emails"
+would copy anyway. It only happens on the rare history-gone path. Kept as is.
+
 ## Outside services
 
 - Gmail API, scopes `gmail.modify` and `gmail.send` (users.getProfile, watch, stop, history.list, messages.list/get/send, threads.get): schema https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json

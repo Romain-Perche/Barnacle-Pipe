@@ -619,6 +619,31 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
   - `## Schemas`: the URLs of `oauth2-api.json`, `storage_v0_openapi.json`, `gmail-api.json` and `pubsub-api.json`
     at their commits.
 
+## Fix round 1 (AI review: the fake consent screen never connects)
+
+- [ ] T045 Test first, in `tests/integration/gmail-dev-fake.test.ts` (`// covers SF-118 FR-018, FR-002, US1 scenarios
+  2-5, US4 scenario 3, plan.md Fix round 1`): render the consent page and check both buttons submit a plain form to
+  `/dev/fake-google/gmail/answer` with `method="post"` (no server action); `POST` the allow form (as
+  `application/x-www-form-urlencoded`) to the route's handler and check 303 with `Location` = the callback with
+  `code` and the same `state`; then call the callback with only the cookies a browser sends to that path (the
+  `crm_gmail_oauth` cookie set by `startGmailConnect`, path `/settings/gmail`, so sent) and check Linus is connected
+  and the answer goes to `/settings` with the connected notice. Also: cancel → 303 with `error=access_denied` →
+  `?gmail=not_connected`; one box unticked → the callback gives the missing-permissions notice; another account →
+  the wrong-account notice; the route answers 404 outside fake mode and for any other `redirect_uri`. Replace the
+  calls to `allowFakeGmail` / `cancelFakeGmail`. See it fail before T046.
+- [ ] T046 Add `src/app/dev/fake-google/gmail/answer/route.ts` (`POST`, `dynamic = "force-dynamic"`): the checks of
+  today's `callback()` (404 unless `isFakeAllowed()` and `gmailConfig().mode === "fake"`, 404 unless `redirect_uri`
+  is exactly `${appBaseUrl()}/settings/gmail/callback`); `decision=allow` → `fakeGmail().consent(...)` with the same
+  fields as today and `code` on the callback; `decision=cancel` → `error=access_denied`; any other decision → 404;
+  `state` added in both; answer `NextResponse.redirect(url, 303)`. Point the two forms of
+  `src/app/dev/fake-google/gmail/page.tsx` at it (`action="/dev/fake-google/gmail/answer" method="post"`, the button
+  pressed as `decision`), keep the page's text and fields, and delete `src/app/dev/fake-google/gmail/actions.ts`.
+  Update the fake consent screen line in `AGENTS.md` if it names the actions.
+- [ ] T047 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
+  `DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; then, with `npm run dev`, press `[ CONNECT GMAIL ]` and
+  `[ ALLOW ]` in a browser and see "Gmail connected." on Settings. Update `.factory/test-env.md` only if it names the
+  consent screen's actions.
+
 ---
 
 ## Dependencies & Execution Order
@@ -634,6 +659,7 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
 - **US4 (T034-T037)**: after US1 and US2 (the reconnect scenarios use sync) and US3 (a send that finds the key
   refused).
 - **Polish (T038-T044)**: after all the stories. T044 is the last task.
+- **Fix round 1 (T045-T047)**: T045 → T046 → T047.
 
 ## Parallel examples
 
