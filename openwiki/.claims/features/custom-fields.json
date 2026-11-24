@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:8cb80b068002b0de4496b4d0a6a9de7486f0260546fb2313aac44bd2c97d757e",
+  "claims": [
+    {
+      "id": "claim_b914ea270c6048c9861ba992bb3d50ca",
+      "statement": "Custom fields have eight types and values are saved as one custom_values row per field and record; changes raise custom_set, custom_changed or custom_cleared timeline events.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0010_custom_fields.sql",
+          "version": "repo-file-v1:sha256:5d7bbcd858d035ca2c12a316586200ebb3971dd2a82478a7b8b7abefc2b1ce3d"
+        },
+        {
+          "resource": "repo://src/server/custom-fields/rules.ts",
+          "version": "repo-file-v1:sha256:95f499fe0b5cc801b2aee093d6e2d52a2ee51ff24df177dfd203194978766d77"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-24T11:28:51.796Z"
+  }
+}
