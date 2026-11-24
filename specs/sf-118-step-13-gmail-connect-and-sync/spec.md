@@ -16,6 +16,14 @@
 - Q: What happens to a user's copied emails when they disconnect Gmail or are deactivated? → A: They are kept: they are the team's history with the contact (A).
 - Q: What runs the 15-minute check and the daily renewal? → A: Vercel scheduled jobs (cron), on the Vercel Pro plan (A).
 
+### Plan 2026-11-24
+
+- Q: Which Google permissions stand for "read, send, and change labels"? → A: The narrowest three: `gmail.readonly` (read), `gmail.send` (send as the user) and `gmail.labels` ("See and edit your email labels"); not `gmail.modify`, which also allows trashing and changing messages. A later Inbox that marks mail read or archives it will need `gmail.modify` and every user to reconnect once (decided by the factory, to confirm)
+- Q: When a user disconnects and later connects again, is the mail of the gap copied? → A: No: copying starts again from the new connection; the gap is for "Fetch past emails" (a later issue). Conversations copied before stay counted. After a reconnect from "needs reconnecting", sync carries on from the last successful sync, so nothing in between is lost (decided by the factory, to confirm)
+- Q: What date decides "from the moment the account is connected"? → A: The time Gmail received or sent the message (Gmail's own date), not the Date line the sender wrote, which can be anything (decided by the factory, to confirm)
+- Q: When a user is deactivated, is their access also cancelled at Google? → A: Yes: as on disconnect, the CRM stops Gmail's notices and asks Google to cancel the key, then forgets it; if Google cannot be reached the key is still forgotten (decided by the factory, to confirm)
+- Q: Are the 15-minute check and the daily renewal one scheduled job or two? → A: One Vercel scheduled job every 15 minutes that checks every connection and renews each one's Gmail notices once a day; a failed renewal is retried 15 minutes later instead of the next day (decided by the factory, to confirm)
+
 
 ## User Scenarios & Testing *(mandatory)*
 
