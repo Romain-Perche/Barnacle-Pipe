@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,8 +31,7 @@
 
 ## Notes
 
-- 3 [NEEDS CLARIFICATION] markers remain, waiting for the user's answers: (1) People / Organisations when Deals, Notes,
-  Activities or Files is ticked (Edge Cases, FR-002); (2) non-admin imports creating pipelines and stages, against the
-  SF-93 decision (Edge Cases, FR-004); (3) Pipedrive activity types the CRM has no type for (US3 scenario 2, FR-011).
+- The 3 [NEEDS CLARIFICATION] markers were answered in clarify (2026-11-24: 1 A, 2 A, 3 A) and are recorded in the spec's
+  Clarifications, FR-002, FR-004, FR-011, User Story 3 scenario 2 and Edge Cases.
 - The spec names the CRM's own fixed limits (25 MB, 255 / 200 / 100 / 500 / 10,000 / 100,000 characters) and the UK
   time rule because they are product rules from earlier steps, not implementation choices.

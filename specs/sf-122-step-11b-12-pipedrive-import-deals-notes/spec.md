@@ -8,13 +8,21 @@
 
 **Input**: User description: "Step 11b/12 - Pipedrive import: deals, notes, activities and files. The second half of the Pipedrive import (`docs/PRODUCT.md` sections 1, 2 and 5, the kickoff lines on the import in `docs/DECISIONS.md`), on the import started in the previous issue: deals (pipelines and stages matched by name and created when missing, value, owner, main person, other linked people, organisation, labels, won or lost with the lost reason, custom fields), notes, activities (calls, meetings and tasks with their due dates, done or not, assignee) and files, each on the deal, person or organisation it belongs to in Pipedrive. A deal, note, activity or file whose record was not imported is skipped and listed in the report. Files over 25 MB are skipped and listed. Pipedrive emails are not imported: email comes with the Gmail issues."
 
+## Clarifications
+
+### Session 2026-11-24
+
+- Q: When Deals, Notes, Activities or Files is ticked, how do people and organisations come in? → A: People and Organisations are ticked with them and cannot be unticked; a record is skipped only when its person or organisation could not be imported.
+- Q: The team rule says only admins create pipelines and stages. Can any user's import create missing ones? → A: Yes: any import creates missing pipelines and stages, never renames, reorders or deletes them, and the report lists them; `docs/DECISIONS.md` records this exception.
+- Q: What happens to Pipedrive activities of a type the CRM does not have (deadline, email, lunch, custom types)? → A: They come in as tasks; the report counts them per Pipedrive type.
+
 ## User Scenarios & Testing *(mandatory)*
 
 Builds on SF-117 part a (the Pipedrive connection, the import page with its step bar CHOOSE · IMPORTING · REPORT, the import in parts with progress, pause, continue and stop, owner matching by email, owner-only records made private with their owner as creator, custom fields matched by name and type, the Pipedrive link that stops a record being imported twice, the report). It also builds on SF-93 / SF-95 (pipelines, stages, deals, won / lost with a free-text lost reason, deal labels, other linked people, followers, days per stage), SF-102 (notes on the timeline), SF-109 (activities, Last contacted), SF-115 (custom fields on deals) and SF-116 (files, 25 MB limit, the file store). The kickoff decisions on the Pipedrive import in `docs/DECISIONS.md` still apply: any user can import, each imported record keeps its Pipedrive ID, an already imported record is left as it is, each ticked type comes with all the information the CRM uses for it, unmatched custom fields are listed in the report, and everything is built and tested against a fake Pipedrive only.
 
 ### User Story 1 - Import deals into the right pipelines and stages (Priority: P1)
 
-A connected user opens "Import from Pipedrive", ticks Deals (with People and Organisations, see FR-002) and presses `[ IMPORT ]`. Every deal their token can read in Pipedrive comes into the CRM in the pipeline and stage of the same name, with its value, owner, main person, other linked people, organisation, labels, followers, expected close date, status (open, won, or lost with its reason), privacy and matched custom fields. Pipelines and stages the CRM does not have yet are created so that the boards look like Pipedrive's.
+A connected user opens "Import from Pipedrive", ticks Deals (which ticks People and Organisations too, see FR-002) and presses `[ IMPORT ]`. Every deal their token can read in Pipedrive comes into the CRM in the pipeline and stage of the same name, with its value, owner, main person, other linked people, organisation, labels, followers, expected close date, status (open, won, or lost with its reason), privacy and matched custom fields. Pipelines and stages the CRM does not have yet are created so that the boards look like Pipedrive's.
 
 **Why this priority**: Deals in lots of pipelines are the core of the CRM (`docs/PRODUCT.md` §1); without them the team cannot leave Pipedrive.
 
@@ -65,7 +73,7 @@ Every Pipedrive call, meeting and task comes into the CRM with its subject, due 
 **Acceptance Scenarios**:
 
 1. **Given** a Pipedrive activity of type call, meeting or task, **When** imported, **Then** the CRM activity has the same type, subject, due date, due time (shown in UK time), duration, note (as plain text, as in User Story 2), deal, person and organisation, and its assignee is the CRM user matched to the Pipedrive assignee by email, or the importing user when none (counted in that owner's report line).
-2. **Given** a Pipedrive activity of another type (deadline, email, lunch, or a type the account added), **When** imported, **Then** [NEEDS CLARIFICATION: activity types the CRM does not have — imported as a task (and counted in the report per type), or not imported and listed?].
+2. **Given** a Pipedrive activity of another type (deadline, email, lunch, or a type the account added), **When** imported, **Then** the CRM activity is a task with all the other values of scenario 1, and the report has one line per Pipedrive type ("14 'deadline' activities imported as tasks.").
 3. **Given** a done Pipedrive activity, **When** imported, **Then** the CRM activity is done, marked done at Pipedrive's done date and time by its assignee, and shows on the record's timeline there; a done call or meeting raises its person's Last contacted by the SF-109 rule (never lowering it).
 4. **Given** a planned Pipedrive activity, **When** imported, **Then** it shows on the Activities list as Overdue, Today or planned by its due date, and the deal's board card shows its next date instead of "⚠ No next activity".
 5. **Given** a Pipedrive activity linked to a deal, person or organisation the import did not bring into the CRM, **When** Activities is imported, **Then** the activity is not imported and the report lists it with its subject and the reason; an activity linked to nothing in Pipedrive is imported with no link.
@@ -111,8 +119,8 @@ The progress screen and the report count deals, notes, activities and files like
 
 ### Edge Cases
 
-- Deals, Notes, Activities or Files ticked without People or Organisations: [NEEDS CLARIFICATION: when Deals, Notes, Activities or Files is ticked, are People and Organisations ticked with them (records then skipped only when they truly could not be imported), are only the people and organisations they need brought in (as an organisation comes with its person in SF-117), or are they imported only onto records already brought in by an earlier import, the rest skipped?]
-- A user who is not an admin imports deals whose Pipedrive pipelines or stages are missing from the CRM: [NEEDS CLARIFICATION: `docs/DECISIONS.md` (SF-93) says only admins create pipelines and stages; may any importing user's import create them, or only an admin's (others' deals in missing pipelines or stages then skipped and listed)?]
+- The user ticks Deals, Notes, Activities or Files: People and Organisations become ticked and cannot be unticked while one of those four is ticked (the consent choice then shows); when the user unticks all four, People and Organisations stay ticked and can be unticked again. If the page is sent without People or Organisations while one of the four is ticked, the server ticks them itself, and the progress screen shows lines for Organisations and People.
+- A user who is not an admin imports deals whose Pipedrive pipelines or stages are missing from the CRM: the import creates them exactly as for an admin; the Pipelines admin page then shows them, and the report lists each one added. The user still cannot add, rename, reorder or delete pipelines or stages on the Pipelines admin page.
 - Two Pipedrive pipelines whose names differ only in case or spaces: both pipelines' deals are on the one CRM pipeline's board; two such stages of one pipeline likewise share one CRM stage; the report warns once ("Pipedrive pipelines 'Sales' and 'sales ' were imported into one pipeline.").
 - A Pipedrive pipeline or stage name the CRM form would refuse (longer than 100 characters): the pipeline or stage is not created, its deals are not imported, and the report says why.
 - A deal title the deal form would refuse (empty, longer than 200 characters): not imported with the form's message. A value over the CRM's limit, a negative value or an invalid expected close date: left out with a warning; the deal is still imported.
@@ -134,13 +142,13 @@ The progress screen and the report count deals, notes, activities and files like
 
 **Choosing**
 
-- **FR-001**: The "1 CHOOSE" step MUST offer six checkboxes, all unticked: People, Organisations, Deals, Notes, Activities, Files, and MUST say that Pipedrive emails are not imported. The consent choice of SF-117 MUST show only while People is ticked (including when ticked by FR-002).
-- **FR-002**: Deals, Notes, Activities and Files MUST be imported only onto CRM records brought in by an import (imported or linked); how People and Organisations are brought in when one of them is ticked follows the clarification in Edge Cases.
+- **FR-001**: The "1 CHOOSE" step MUST offer six checkboxes, all unticked: People, Organisations, Deals, Notes, Activities, Files, and MUST say that Pipedrive emails are not imported. The consent choice of SF-117 MUST show only while People is ticked.
+- **FR-002**: Ticking Deals, Notes, Activities or Files MUST tick People and Organisations, which MUST stay ticked while one of those four is ticked (the server MUST enforce it too). Deals, notes, activities and files MUST be attached only to CRM records brought in by an import (imported or linked); one whose record could not be brought in is skipped and listed.
 - **FR-003**: Ticking Files MUST NOT start an import while the file store is not set up or cannot be reached; the fixed message of SF-116 MUST be shown.
 
 **Deals**
 
-- **FR-004**: Each Pipedrive pipeline and stage MUST be matched to the CRM pipeline, and the stage within it, of the same name (ignoring case and surrounding spaces). Missing ones MUST be created (pipelines at the end of the list, stages at the end of their pipeline, in Pipedrive's order), subject to the clarification in Edge Cases, and listed in the report. An import MUST NOT rename, reorder or delete a CRM pipeline or stage.
+- **FR-004**: Each Pipedrive pipeline and stage MUST be matched to the CRM pipeline, and the stage within it, of the same name (ignoring case and surrounding spaces). Missing ones MUST be created (pipelines at the end of the list, stages at the end of their pipeline, in Pipedrive's order), by any importing user, admin or not (an exception to the SF-93 rule that only admins create pipelines and stages, recorded in `docs/DECISIONS.md`), and listed in the report. An import MUST NOT rename, reorder or delete a CRM pipeline or stage.
 - **FR-005**: A Pipedrive deal MUST be imported with: title, value (GBP only; another currency left out with a warning), stage, owner (matched by email as in SF-117), main person, organisation, other linked people (its participants brought into the CRM), followers (active CRM users matched by email), labels (matched to deal labels still offered, never added; unmatched listed once with a count), expected close date, status (open, Won with Pipedrive's won date, Lost with Pipedrive's lost date and reason or "No reason given in Pipedrive."), Date added, archived or not, privacy, and matched deal custom fields under the SF-117 custom field rules.
 - **FR-006**: A deal MUST NOT be imported when its Pipedrive main person or organisation was not brought into the CRM; the report MUST list it with the reason. A missing participant MUST only be left out with a warning.
 - **FR-007**: A Pipedrive deal visible only to its owner MUST be private in the CRM with its CRM owner as creator (the importing user when the owner has no CRM user); every other deal MUST be shared with the importing user as creator. The report MUST count, not name, private deals the importing user cannot see.
@@ -153,7 +161,7 @@ The progress screen and the report count deals, notes, activities and files like
 
 **Activities**
 
-- **FR-011**: Each Pipedrive call, meeting and task MUST be imported with: type, subject, due date, due time (converted to UK time), duration, note (plain text), deal, person and organisation, assignee (matched by email, else the importing user), done or not with Pipedrive's done date and time. Other Pipedrive activity types follow the clarification in User Story 3, scenario 2.
+- **FR-011**: Each Pipedrive call, meeting and task MUST be imported with: type, subject, due date, due time (converted to UK time), duration, note (plain text), deal, person and organisation, assignee (matched by email, else the importing user), done or not with Pipedrive's done date and time. An activity of any other Pipedrive type MUST be imported as a task, and the report MUST count these per Pipedrive type.
 - **FR-012**: An activity linked in Pipedrive to a deal, person or organisation not brought into the CRM MUST NOT be imported and MUST be listed; an activity linked to nothing MUST be imported unlinked.
 - **FR-013**: A done imported call or meeting MUST raise its person's Last contacted by the SF-109 rule. An import MUST NOT create any notification (assignment or mention).
 
