@@ -18,7 +18,7 @@ import {
   type DealValues,
   type StageMap,
 } from "@/server/pipedrive/deal-rules";
-import { Counter, ownerOf, toItem, type ChoiceMiss, type ListMiss, type OwnerMiss, type PdUsers, type RecordKind, type ReportItem } from "@/server/pipedrive/page";
+import { Counter, itemFor, ownerOf, toItem, type ChoiceMiss, type ListMiss, type OwnerMiss, type PdUsers, type RecordKind, type ReportItem } from "@/server/pipedrive/page";
 import { parseAddTime, type FieldNotImported, type FieldsPlan, type Problem } from "@/server/pipedrive/rules";
 import type { CustomValue } from "@/server/custom-fields/rules";
 
@@ -211,7 +211,9 @@ export function planDealPage(items: PdDeal[], l: DealLookups): DealPlan {
       plan.owners[id] ??= { ...o, records: 0 };
       plan.owners[id].records += o.records;
     }
-    const warn = (p: Problem) => plan.warnings.push(toItem("deal", d.id, r.label, p));
+    // FR-021: a deal private to another owner is never named in the importer's report.
+    const hidden = r.deal.private && r.deal.ownerId !== l.importerId ? ("deal" as const) : null;
+    const warn = (p: Problem) => plan.warnings.push(itemFor("deal", d.id, r.label, p, hidden));
     r.warnings.forEach(warn);
     const otherPeople: number[] = [];
     for (const p of l.participants.get(d.id) ?? []) {
@@ -256,6 +258,8 @@ export type NotePlan = RecordsPlanBase & { adds: NoteAdd[] };
 
 const isHidden = (t: CrmTarget, hidden: Set<string>) =>
   (t.dealId !== null && hidden.has(`deal:${t.dealId}`)) || (t.personId !== null && hidden.has(`person:${t.personId}`));
+// FR-021: what is put on a record the importer cannot see is never named in the report.
+const hiddenAs = <K extends "note" | "activity" | "file">(kind: K, t: CrmTarget, hidden: Set<string>): K | null => (isHidden(t, hidden) ? kind : null);
 
 export function planNotePage(items: PdNote[], l: RecordLookups): NotePlan {
   const plan: NotePlan = { ...base(), elsewhere: [], privateOn: 0, adds: [] };
@@ -282,7 +286,7 @@ export function planNotePage(items: PdNote[], l: RecordLookups): NotePlan {
     }
     const target = crmTarget(t.kind, r.id);
     if (!text.ok) {
-      plan.notImported.push(toItem("note", n.id, label, onRecord(text.problem, target)));
+      plan.notImported.push(itemFor("note", n.id, label, onRecord(text.problem, target), hiddenAs("note", target, l.hidden)));
       continue;
     }
     if (isHidden(target, l.hidden)) plan.privateOn += 1;
@@ -341,20 +345,21 @@ export function planActivityPage(items: PdActivity[], l: ActivityLookups): Activ
     }
     const owners: Record<string, OwnerMiss> = {};
     const r = activityFromPipedrive(a, { importerId: l.importerId, users: l.users, pdUsers: l.pdUsers, owners, types: l.types, now: l.now });
+    const hidden = hiddenAs("activity", target, l.hidden);
     if (!r.ok) {
-      plan.notImported.push(toItem("activity", a.id, r.label, target.dealId ?? target.personId ?? target.organisationId ? onRecord(r.problem, target) : r.problem));
+      plan.notImported.push(itemFor("activity", a.id, r.label, target.dealId ?? target.personId ?? target.organisationId ? onRecord(r.problem, target) : r.problem, hidden));
       continue;
     }
     for (const [id, o] of Object.entries(owners)) {
       plan.owners[id] ??= { ...o, records: 0 };
       plan.owners[id].records += o.records;
     }
-    for (const w of r.warnings) plan.warnings.push(toItem("activity", a.id, r.label, w));
+    for (const w of r.warnings) plan.warnings.push(itemFor("activity", a.id, r.label, w, hidden));
     if (r.otherType) {
       const t = r.otherType;
       types.add(t.type, () => ({ type: t.type, name: t.name }));
     }
-    if (isHidden(target, l.hidden)) plan.privateOn += 1;
+    if (hidden) plan.privateOn += 1;
     plan.adds.push({ pipedriveId: a.id, value: r.value, target });
   }
   plan.elsewhere = elsewhere.list();
@@ -378,14 +383,19 @@ export function planFileItem(f: PdFile, l: RecordLookups, owners: Record<string,
   if (l.linked.has(f.id)) return { kind: "already" };
   if ("elsewhere" in check) return { kind: "elsewhere", on: check.elsewhere };
   const label = f.name.trim() || `#${f.id}`;
-  if ("problem" in check) return { kind: "notImported", item: toItem("file", f.id, label, check.problem) };
   const t = targetOf(f);
-  if (t.kind === "lead" || t.kind === "project") return { kind: "elsewhere", on: t.kind };
+  // The target first, so that a file refused for itself on a record the importer cannot see is not named (FR-021).
+  if (t.kind === "lead" || t.kind === "project") {
+    if ("problem" in check) return { kind: "notImported", item: toItem("file", f.id, label, check.problem) };
+    return { kind: "elsewhere", on: t.kind };
+  }
   const r = resolve(t.kind, t.id, l.links, l.names);
-  if ("problem" in r) return { kind: "notImported", item: toItem("file", f.id, label, r.problem) };
-  const target = crmTarget(t.kind, r.id);
+  const target = "id" in r ? crmTarget(t.kind, r.id) : null;
+  const hidden = target === null ? null : hiddenAs("file", target, l.hidden);
+  if ("problem" in check) return { kind: "notImported", item: itemFor("file", f.id, label, check.problem, hidden) };
+  if (target === null) return { kind: "notImported", item: toItem("file", f.id, label, (r as { problem: Problem }).problem) };
   const uploaderId = ownerOf(f.userId, l.users, l.pdUsers, l.importerId, owners);
-  return { kind: "copy", target, uploaderId, addedAt: parseAddTime(f.addTime) ?? l.now, hidden: isHidden(target, l.hidden) };
+  return { kind: "copy", target, uploaderId, addedAt: parseAddTime(f.addTime) ?? l.now, hidden: hidden !== null };
 }
 
 export type { RecordKind };

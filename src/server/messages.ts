@@ -196,6 +196,9 @@ export const messages = {
   pipedrive_stage_missing: "Its stage is not in Pipedrive any more.",
   pipedrive_private_deal: "a private deal",
   pipedrive_private_person: "a private person",
+  pipedrive_private_note: "a private note",
+  pipedrive_private_activity: "a private activity",
+  pipedrive_private_file: "a private file",
 } as const;
 
 // SF-117: Pipedrive's field types in words (contracts/routes.md § Messages); any other type is "other".

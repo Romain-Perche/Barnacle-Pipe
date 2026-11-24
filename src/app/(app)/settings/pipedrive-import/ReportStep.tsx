@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { messages, templates } from "@/server/messages";
 import type { ImportView } from "@/server/pipedrive/imports";
-import { itemText, pipelineLines, reportLines, warningLines, type Names } from "@/server/pipedrive/report";
+import { itemLabel, itemText, pipelineLines, reportLines, warningLines, type Names } from "@/server/pipedrive/report";
 import { Counts } from "./Counts";
 import { KindCounts } from "./KindCounts";
 
@@ -55,7 +55,7 @@ export function ReportStep({ view, names }: { view: ImportView; names: Names }) 
               {view.report.notImported.map((r) => (
                 <tr key={`${r.kind}:${r.pipedriveId}`}>
                   <td>
-                    {KIND_WORD[r.kind]} · {r.label}
+                    {KIND_WORD[r.kind]} · {itemLabel(r)}
                   </td>
                   <td>{itemText(r, names)}</td>
                 </tr>

@@ -53,7 +53,7 @@ import {
 } from "@/server/pipedrive/api";
 import { tokenFor } from "@/server/pipedrive/connection";
 import { formatMb, type StageMap } from "@/server/pipedrive/deal-rules";
-import { Counter, planOrganisationPage, planPersonPage, toItem, type LinkedItem, type OwnerMiss, type PdUsers, type ReportItem } from "@/server/pipedrive/page";
+import { Counter, itemFor, planOrganisationPage, planPersonPage, type LinkedItem, type OwnerMiss, type PdUsers, type ReportItem } from "@/server/pipedrive/page";
 import {
   planActivityPage,
   planDealPage,
@@ -1006,7 +1006,7 @@ async function runFilesPart(userId: number, row: Row, token: string): Promise<Pa
         const dl = await downloadFile(token, f.id, MAX_FILE_BYTES);
         if (dl === "gone" || dl === "too_large" || dl.bytes.length === 0) {
           const code = dl === "gone" ? { code: "pipedrive_file_gone" } : dl === "too_large" ? { code: "pipedrive_file_too_large", args: { mb: formatMb(Math.max(f.size ?? 0, MAX_FILE_BYTES + 1)) } } : { code: "pipedrive_file_empty" };
-          batch.notImported.push(toItem("file", f.id, label, code));
+          batch.notImported.push(itemFor("file", f.id, label, code, plan.hidden ? "file" : null));
           continue;
         }
         const bytes = dl.bytes;
@@ -1031,7 +1031,7 @@ async function runFilesPart(userId: number, row: Row, token: string): Promise<Pa
             : t.personId !== null ? await db`select 1 from persons where id = ${t.personId}` : await db`select 1 from organisations where id = ${t.organisationId}`;
           if (taken) batch.already += 1;
           else if (!exists) {
-            batch.notImported.push(toItem("file", f.id, label, { code: "pipedrive_target_deleted", args: { kind: t.dealId !== null ? "deal" : t.personId !== null ? "person" : "organisation" } }));
+            batch.notImported.push(itemFor("file", f.id, label, { code: "pipedrive_target_deleted", args: { kind: t.dealId !== null ? "deal" : t.personId !== null ? "person" : "organisation" } }, plan.hidden ? "file" : null));
           } else {
             const target = t.dealId !== null ? { dealId: t.dealId } : t.personId !== null ? { personId: t.personId } : { organisationId: t.organisationId! };
             const kind = fileKind({ head: bytes.subarray(0, 16), name: f.name, storedType: uploadContentType(f.name) });

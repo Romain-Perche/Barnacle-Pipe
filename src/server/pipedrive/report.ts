@@ -215,8 +215,9 @@ function codeText(item: { code: string; args?: Args }, names: Names): string {
     case "pipedrive_duration_left_out":
       return templates.pipedrive_duration_left_out(s(a, "text"));
     case "file_name_too_long":
-      return templates.file_name_too_long(s(a, "name"));
+      return templates.file_name_too_long(a?.privateKind !== undefined ? itemLabel({ label: "", args: a }) : s(a, "name"));
     case "pipedrive_email_other_person": {
+      if (a?.privatePerson !== undefined) return messageFor("pipedrive_email_other_hidden") ?? "";
       if (a?.personId !== undefined) {
         const name = names.people.get(Number(a.personId));
         return name === undefined ? (messageFor("pipedrive_email_other_hidden") ?? "") : templates.pipedrive_email_other_person(name);
@@ -298,5 +299,12 @@ export function reportLines(report: Report, names: Names): Line[] {
 
 // A warning on one record: "<Kind> · <Pipedrive name>: <text>" parts, kept apart so the page shows the name as data.
 export function warningLines(report: Report, names: Names): { kind: RecordKind; label: string; text: string }[] {
-  return report.warnings.map((w) => ({ kind: w.kind, label: w.label, text: itemText(w, names) }));
+  return report.warnings.map((w) => ({ kind: w.kind, label: itemLabel(w), text: itemText(w, names) }));
+}
+
+// The name a report item shows: its Pipedrive name, or "a private deal / person / note / activity / file" for a record
+// private to another owner or put on a record the viewer cannot see (FR-021).
+export function itemLabel(item: { label: string; args?: Args }): string {
+  const k = item.args?.privateKind;
+  return k === undefined ? item.label : (messageFor(`pipedrive_private_${k}`) ?? "");
 }
