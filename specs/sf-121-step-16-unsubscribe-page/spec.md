@@ -8,6 +8,13 @@
 
 **Input**: User description: "Step 16 - Unsubscribe page. Unsubscribing from campaigns (`docs/PRODUCT.md` section 4, last line, needed for UK GDPR and PECR): a public page, with no sign-in, opened from a link unique to one person that cannot be guessed or changed. It shows an Unsubscribe button; pressing it marks the person Unsubscribed and adds a line to their timeline. Mail apps' one-click unsubscribe (the List-Unsubscribe and List-Unsubscribe-Post headers) does the same without the page. Unsubscribing twice is harmless; a link for a deleted person shows a neutral message. A server function makes the link and the headers for the campaign sending issue. Only a teammate can subscribe a person again, by changing their consent. Not in this issue: putting the link in campaigns (a later issue)."
 
+## Clarifications
+
+### Session 2026-11-24
+
+- Q: Which design for the public unsubscribe page? → A: Design: A, a twin of the sign-in page: cream page, wordmark, "// EMAIL PREFERENCES" label, "Unsubscribe" heading, orange `[ UNSUBSCRIBE ]` button; the done message in the blue notice box, the link-not-valid message in the orange error box (see `design-options.html`).
+- Q: When a contact unsubscribes, is anyone on the team told? → A: No (A): the person's Consent and the timeline line are the only record; no notification and no sidebar count.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A contact unsubscribes from the unsubscribe page (Priority: P1)
@@ -21,7 +28,7 @@ A person in the CRM receives a campaign email and clicks its unsubscribe link. T
 **Acceptance Scenarios**:
 
 1. **Given** the unsubscribe link of a subscribed person, **When** it is opened in a browser that is not signed in, **Then** the unsubscribe page is shown (never the sign-in page) with the heading "Unsubscribe", the line "Stop receiving campaign emails from Barnacle Labs." and an `[ UNSUBSCRIBE ]` button; the person's page in the CRM still shows Consent "Subscribed".
-2. **Given** the unsubscribe page of a subscribed person, **When** `[ UNSUBSCRIBE ]` is pressed, **Then** the page shows "You're unsubscribed. You won't get any more campaign emails from us.", the person's page shows Consent "Unsubscribed", and one CHANGE line "Unsubscribed from campaigns through the unsubscribe link" is added to their timeline with the time, and no teammate's name.
+2. **Given** the unsubscribe page of a subscribed person, **When** `[ UNSUBSCRIBE ]` is pressed, **Then** the page shows "You're unsubscribed. You won't get any more campaign emails from us." in the blue notice box with no button, the person's page shows Consent "Unsubscribed", the owner's Notifications page and sidebar count are unchanged, and one CHANGE line "Unsubscribed from campaigns through the unsubscribe link" is added to their timeline with the time, and no teammate's name.
 3. **Given** the unsubscribe link is opened (a GET) but the button is never pressed — for example by a mail app or a security scanner that opens every link in an email — **Then** the person's page still shows Consent "Subscribed" and their timeline has no unsubscribe line.
 4. **Given** the unsubscribe page, **When** it is shown, **Then** it shows neither the person's name nor any of their email addresses nor any other CRM data, and has no link into the signed-in app.
 5. **Given** a teammate who is signed in opens a person's unsubscribe link, **When** they press `[ UNSUBSCRIBE ]`, **Then** the page shows "You're unsubscribed. You won't get any more campaign emails from us.", the person of the link (not the teammate) shows Consent "Unsubscribed", and the timeline line names no teammate.
@@ -124,7 +131,8 @@ A later issue (campaign sending) needs, for each recipient, the unsubscribe link
 - **FR-013**: All text on the page MUST come from the app's message list; nothing taken from the address is ever shown.
 - **FR-014**: Any secret used to make links unforgeable MUST be a setting outside the repo, listed in `.env.example` and the README; tests and development MUST work with no real secret.
 - **FR-015**: Two unsubscribes of the same person at the same moment MUST leave one timeline line.
-- **FR-016**: The page MUST follow the project's look (`docs/DESIGN.md`) as a public page without the signed-in sidebar.
+- **FR-016**: The page MUST use design A: the sign-in page's layout (cream page, wordmark, "// EMAIL PREFERENCES" label, heading "Unsubscribe", orange `[ UNSUBSCRIBE ]` button), the done message in the blue notice box and the link-not-valid and error messages in the orange error box, with no signed-in sidebar.
+- **FR-018**: Unsubscribing MUST NOT notify any teammate: no Notifications page entry and no change to the sidebar count.
 - **FR-017**: In development and test only, a development page MUST list the people in the CRM with what FR-012's function returns for each (page link, List-Unsubscribe and List-Unsubscribe-Post values), so the page can be tried by hand; everywhere else that page MUST answer "page not found".
 
 ### Key Entities
@@ -148,7 +156,7 @@ A later issue (campaign sending) needs, for each recipient, the unsubscribe link
 
 - Unsubscribing stops campaign emails only; teammates can still write to the person one-to-one (consent is about mass email, PRODUCT §2 and §4). Unsubscribed people are already left out of campaigns by the campaign issues.
 - The link is per person, not per email address or per campaign, because consent is stored per person.
-- No teammate is notified when someone unsubscribes; the timeline line and the Consent value are the record.
+- No teammate is notified when someone unsubscribes (Clarifications); the timeline line and the Consent value are the record.
 - No mailto: List-Unsubscribe address: campaigns go out through the sender's Gmail and the CRM serves one-click unsubscribe itself (DECISIONS 2026-11-24); a web address is enough for RFC 8058.
 - The page has no "why are you leaving" question and no preference choices; one button only.
 - A person deleted for good loses their link; a person merged or re-imported is a new person with a new link.
