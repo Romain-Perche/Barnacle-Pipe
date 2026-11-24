@@ -25,10 +25,13 @@ const { listFiles } = await import("@/server/files/files");
 const { FLASH_COOKIE } = await import("@/server/records/flash-cookie");
 const actions = await import("@/app/(app)/records/file-actions");
 const Unavailable = (await import("@/app/(app)/files/unavailable/page")).default;
+const { FileOverlays } = await import("@/app/(app)/records/FileOverlays");
+const { deleteFile } = await import("@/server/files/files");
+const { useStorageFetchForTests } = await import("@/server/files/storage");
 const { StorageFake } = await import("../fakes/storage");
 const { makeDeal, makePipeline } = await import("./deal-helpers");
 const { makeUser, resetDb } = await import("./db-helpers");
-const { PDF, uploadFile } = await import("./file-helpers");
+const { PDF, PNG, uploadFile } = await import("./file-helpers");
 
 const fake = new StorageFake();
 let ada: { id: number }, grace: { id: number }, dealId: number, privateId: number;
@@ -118,5 +121,39 @@ describe("/files/unavailable", () => {
     const odd = await page("<script>alert(1)</script>");
     expect(odd).toContain("This file doesn&#x27;t exist or you can&#x27;t see it.");
     expect(odd).not.toContain("script");
+  });
+});
+
+describe("FileOverlays", () => {
+  const overlay = async (viewerId: number, target: { dealId: number }, query: { file?: string; deleteFile?: string }, archived = false) =>
+    renderToStaticMarkup(await FileOverlays({ viewerId, target, archived, back: `/deals/${target.dealId}`, query }));
+  const redirected = async (p: Promise<string>) => redirectOf(p);
+
+  // covers SF-116 US5 scenario 2 (fix round 1)
+  it("?delete-file= of a file already deleted goes back with file_gone; hidden or unknown ids with file_not_found", async () => {
+    const id = await uploadFile(fake, ada.id, { dealId }, "a.pdf", PDF);
+    const secret = await uploadFile(fake, ada.id, { dealId: privateId }, "contract.pdf", PDF);
+    expect(await overlay(grace.id, { dealId }, { deleteFile: String(id) })).toContain("[ DELETE ]");
+    expect((await deleteFile(ada.id, { dealId }, id)).status).toBe("ok");
+    expect(await redirected(overlay(grace.id, { dealId }, { deleteFile: String(id) }))).toBe(`/deals/${dealId}?error=file_gone`);
+    expect(await redirected(overlay(grace.id, { dealId: privateId }, { deleteFile: String(secret) }))).toBe(`/deals/${privateId}?error=file_not_found`);
+    expect(await redirected(overlay(grace.id, { dealId }, { deleteFile: "999999" }))).toBe(`/deals/${dealId}?error=file_not_found`);
+    expect(await redirected(overlay(grace.id, { dealId }, { deleteFile: "abc" }))).toBe(`/deals/${dealId}?error=file_not_found`);
+    expect(await overlay(grace.id, { dealId }, { deleteFile: String(id) }, true)).toBe("");
+  });
+
+  // covers SF-116 Edge case 8 (fix round 1)
+  it("?file= of an image makes the read address first: Storage down → back with files_unreachable, no box", async () => {
+    const id = await uploadFile(fake, ada.id, { dealId }, "photo.png", PNG);
+    const html = await overlay(ada.id, { dealId }, { file: String(id) });
+    const src = /<img[^>]*src="([^"]+)"/.exec(html)?.[1] ?? "";
+    expect(src).toMatch(/\/object\/sign\/[^/]+\/files\/[0-9a-f-]+\?token=/);
+    expect(html).toMatch(/<img[^>]*referrerpolicy="no-referrer"/i);
+    useStorageFetchForTests(() => Promise.reject(new TypeError("fetch failed")));
+    try {
+      expect(await redirected(overlay(ada.id, { dealId }, { file: String(id) }))).toBe(`/deals/${dealId}?error=files_unreachable`);
+    } finally {
+      fake.install();
+    }
   });
 });

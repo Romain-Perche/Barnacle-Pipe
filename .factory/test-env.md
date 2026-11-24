@@ -196,8 +196,8 @@
     `PORT=3001 SKIP_BUILD=1 SKIP_SEED=1 SUPABASE_URL=http://localhost:9 SUPABASE_SECRET_KEY=fake-storage-key bash .factory/run/start-app.sh`
     (Storage unreachable, edge 8) and `MODE=fail-deletes node .factory/run/storage-proxy.js &` then
     `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 SUPABASE_URL=http://localhost:54321 SUPABASE_SECRET_KEY=fake-storage-key bash .factory/run/start-app.sh`
-    (a Storage that fails every delete, edge 9). Known: Next's proxy (`src/proxy.ts` matcher) cuts request bodies at 10 MB
-    (`proxyClientMaxBodySize`), so an upload over 10 MB to `/dev/fake-storage` fails in the running app; headless Chromium
+    (a Storage that fails every delete, edge 9). Known: Next's proxy cuts request bodies at 10 MB (`proxyClientMaxBodySize`), so the
+    `src/proxy.ts` matcher leaves out `/dev/fake-storage/` (fix round 1) and 25 MB uploads reach the fake; headless Chromium
     here names every download with a non-ASCII name "download" (read `content-disposition` instead); a file on disk whose
     name has a backslash is dropped by `setInputFiles` (pass `{ name, mimeType, buffer }`). Not re-runnable without a reset.
   - CSV import scenarios (SF-103): the fake files are in `tests/fixtures/csv/` (people-20.csv: rows 4 and 15 use
