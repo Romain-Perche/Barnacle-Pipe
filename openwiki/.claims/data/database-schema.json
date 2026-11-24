@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d5e18e3e3fae7eb8266961ce621cda2b6a2e9d583abd9d3752e052ff69698964",
+  "pageVersion": "sha256:18c022d1f64e6e19b22756a1ed6e5af4502ffa8816180dc8c9487284178741e3",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -171,10 +171,20 @@
           "version": "repo-file-v1:sha256:ab720ea93a23250ae361ccb698fe75dbcd3eee99d6c27c0c4b415cef940407d4"
         }
       ]
+    },
+    {
+      "id": "claim_e78f128a76654f9db28c22608a2baf00",
+      "statement": "Migration 0013 adds a unique 64-hex persons.unsubscribe_token and the timeline kinds unsubscribed_link, unsubscribed_mail_app and consent_changed.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0013_unsubscribe.sql",
+          "version": "repo-file-v1:sha256:c98191351b0608fdbb5cd6f4aa295969d75120a705b24ffd2bf41ac6e9a3d7bc"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T14:34:59.724Z"
+    "at": "2026-11-24T17:28:35.066Z"
   }
 }

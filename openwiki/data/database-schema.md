@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T14:34:59.724Z
+    at: 2026-11-24T17:28:35.066Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -31,13 +31,15 @@ sources:
     resource: repo://migrations/0011_files.sql
   - id: openwiki-source-dc1f2867de00af07970a260d
     resource: repo://migrations/0012_pipedrive.sql
+  - id: openwiki-source-7159795c4e4172d1472292a6
+    resource: repo://migrations/0013_unsubscribe.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T14:34:59.724Z" }
+generated: { by: "claude-code", at: "2026-11-24T17:28:35.066Z" }
 ---
 
 # Database schema and access
@@ -189,6 +191,13 @@ counts, consent and the report; a unique index allows one open run per user) and
 Pipedrive id as the primary key, so a Pipedrive record never leads to two CRM records; a deleted CRM record keeps its
 link row). Row level security is on all three with no policy, and the `timeline_events` kind list gains
 `pipedrive_imported` and `pipedrive_unsubscribed`. See [Pipedrive import](../features/pipedrive-import.md).
+
+### Unsubscribe (migration 0013)
+
+`0013_unsubscribe.sql` adds `persons.unsubscribe_token` (64 hex characters, random default, unique; no new table) and
+widens the `timeline_events` kind list with `unsubscribed_link`, `unsubscribed_mail_app` (both on a person, no actor)
+and `consent_changed` (old and new consent labels, with a teammate). See
+[People and organisations](../features/people-and-organisations.md).
 
 ## Row level security
 

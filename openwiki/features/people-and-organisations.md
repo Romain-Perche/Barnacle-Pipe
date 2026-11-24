@@ -26,10 +26,12 @@ sources:
     resource: repo://src/server/records/handover.ts
   - id: openwiki-source-615b00ed02d4d38087bb7a47
     resource: repo://src/server/records/notes.ts
+  - id: openwiki-source-cbb494df26569f891ee27134
+    resource: repo://src/server/records/unsubscribe.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T18:05:22.701Z
-generated: { by: "claude-code", at: "2026-11-23T18:05:22.701Z" }
+    at: 2026-11-24T17:28:35.066Z
+generated: { by: "claude-code", at: "2026-11-24T17:28:35.066Z" }
 ---
 
 # People and organisations
@@ -62,7 +64,7 @@ the user first (see [Sessions and access control](../auth/sessions-and-access-co
 ## Rules worth knowing
 
 - **Private people**: a private person is visible only to their creator and their current owner, admins
-  included. Every read of `persons` goes through `visiblePerson()` in `visibility.ts`.
+  included. Every read of `persons` goes through `visiblePerson()` in `visibility.ts`, except the token-based unsubscribe reads (see Unsubscribe below).
 - **Duplicate emails** are refused; names of organisations are unique ignoring case. Typing a new organisation
   name in a person form creates or matches it.
 - **Archive and restore** are available to staff; **delete is admin only** and is re-checked inside the
@@ -108,6 +110,17 @@ person and organisation rules (`rows.ts`) and plans the result: duplicates, orga
 consent (`plan.ts`, texts in `text.ts`). `runImport` does the whole import in one transaction and writes an
 `imported` timeline event. Example files come from `example/route.ts` on each import route. See
 [Database schema](../data/database-schema.md) and [`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md).
+
+## Unsubscribe (SF-121)
+
+Each person has an unguessable `unsubscribe_token`. The public page `/unsubscribe/<token>` (a GET that never writes),
+its `confirm` route and the RFC 8058 `one-click` route (both POST) are listed in `PUBLIC` in `src/proxy.ts`.
+`src/server/records/unsubscribe.ts` sets Consent to unsubscribed by token, writes one `unsubscribed_link` or
+`unsubscribed_mail_app` timeline line per real change and is repeat-safe. These are the only `persons` reads and writes
+that skip `visiblePerson()`: the token is the authority, so archived and private people can unsubscribe too. Pure
+helpers (token shape, link building, one-click body check) are in `unsubscribe-rules.ts`. A teammate's Consent edit on
+the person form writes a `consent_changed` line only when the Consent field was changed on that form. See
+[`dataflow/DATAFLOW.md`](../../dataflow/DATAFLOW.md) and [Database schema](../data/database-schema.md).
 
 ## Fake data
 
