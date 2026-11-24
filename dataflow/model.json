@@ -20,6 +20,10 @@
     {
       "id": "google",
       "label": "Google (third party)"
+    },
+    {
+      "id": "supabase",
+      "label": "Supabase Storage"
     }
   ],
   "groups": [
@@ -62,6 +66,11 @@
       "id": "deals-database",
       "label": "Deals database",
       "description": "The Postgres tables for pipelines, stages, deals, their stage time, labels, linked people and followers."
+    },
+    {
+      "id": "files",
+      "label": "Files",
+      "description": "Files on deals, people and organisations: upload, download and preview through signed Storage addresses."
     }
   ],
   "actors": [
@@ -81,6 +90,11 @@
       "id": "google-oauth-api",
       "label": "Google OAuth and userinfo API",
       "zone": "google"
+    },
+    {
+      "id": "supabase-storage",
+      "label": "Supabase Storage",
+      "zone": "supabase"
     }
   ],
   "processes": [
@@ -298,6 +312,36 @@
         "src/server/records/ambassadors.ts",
         "src/server/records/referral-rules.ts"
       ]
+    },
+    {
+      "id": "files",
+      "label": "Files section and routes",
+      "zone": "app",
+      "group": "files",
+      "sources": [
+        "src/server/files/files.ts",
+        "src/app/(app)/records/file-actions.ts",
+        "src/app/(app)/files"
+      ]
+    },
+    {
+      "id": "storage-client",
+      "label": "Storage client",
+      "zone": "app",
+      "group": "files",
+      "sources": [
+        "src/server/files/storage.ts"
+      ]
+    },
+    {
+      "id": "fake-storage",
+      "label": "Fake Storage (dev and tests)",
+      "zone": "app",
+      "group": "files",
+      "sources": [
+        "src/server/files/fake-storage.ts",
+        "src/app/dev/fake-storage"
+      ]
     }
   ],
   "stores": [
@@ -488,6 +532,15 @@
       "group": "database",
       "sources": [
         "migrations/0008_activities.sql"
+      ]
+    },
+    {
+      "id": "files-tables",
+      "label": "Postgres files, file_uploads, file_cleanup",
+      "zone": "postgres",
+      "group": "database",
+      "sources": [
+        "migrations/0011_files.sql"
       ]
     }
   ],
@@ -1782,6 +1835,119 @@
       "data": "fake ambassadors and referrals",
       "sources": [
         "src/seed/ambassadors.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "files",
+      "data": "signed-in user check",
+      "sources": [
+        "src/app/(app)/records/file-actions.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "files",
+      "data": "file to add, delete and download requests",
+      "sources": [
+        "src/app/(app)/records/file-actions.ts",
+        "src/app/(app)/files"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "staff",
+      "data": "file list, 303 to a 60-second Storage address",
+      "sources": [
+        "src/app/(app)/files/file-route.ts"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "files-tables",
+      "data": "file rows, upload records, cleanup queue",
+      "sources": [
+        "src/server/files/files.ts"
+      ]
+    },
+    {
+      "from": "files-tables",
+      "to": "files",
+      "data": "visible files",
+      "sources": [
+        "src/server/files/files.ts"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "timeline-table",
+      "data": "file added and deleted events",
+      "sources": [
+        "src/server/files/files.ts"
+      ]
+    },
+    {
+      "from": "files",
+      "to": "storage-client",
+      "data": "upload, read and delete requests",
+      "sources": [
+        "src/server/files/files.ts"
+      ]
+    },
+    {
+      "from": "storage-client",
+      "to": "supabase-storage",
+      "data": "signed upload address, info, first bytes, deletes",
+      "sources": [
+        "src/server/files/storage.ts"
+      ]
+    },
+    {
+      "from": "supabase-storage",
+      "to": "storage-client",
+      "data": "signed addresses, file info and first bytes",
+      "sources": [
+        "src/server/files/storage.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "supabase-storage",
+      "data": "file bytes (PUT to signed address)",
+      "sources": [
+        "src/app/(app)/records/AddFiles.tsx"
+      ]
+    },
+    {
+      "from": "storage-client",
+      "to": "fake-storage",
+      "data": "same calls when no Supabase is set",
+      "sources": [
+        "src/server/files/fake-storage.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "storage-client",
+      "data": "SUPABASE_URL and key",
+      "sources": [
+        "src/server/env.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "files-tables",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0011_files.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "files-tables",
+      "data": "fake files",
+      "sources": [
+        "src/seed/files.ts"
       ]
     }
   ]

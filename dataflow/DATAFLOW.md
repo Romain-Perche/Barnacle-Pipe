@@ -18,71 +18,86 @@ flowchart LR
     n2[["Database commands"]]
     n3[["Deals"]]
     n4[["Deals database"]]
-    n5[["People and organisations"]]
-    n6[["Settings"]]
-    n7[["Sign-in and sessions"]]
-    n8[["Signed-in app and user admin"]]
-    n9["Barnacle admin"]
-    n10["Developer or Vercel build"]
-    n11["Barnacle staff user"]
+    n5[["Files"]]
+    n6[["People and organisations"]]
+    n7[["Settings"]]
+    n8[["Sign-in and sessions"]]
+    n9[["Signed-in app and user admin"]]
+    n10["Barnacle admin"]
+    n11["Developer or Vercel build"]
+    n12["Barnacle staff user"]
     subgraph z1["GOOGLE (THIRD PARTY)"]
-        n12["Google OAuth and userinfo API"]
+        n13["Google OAuth and userinfo API"]
     end
-    n5 -->|"14 flows"| n1
-    n5 -->|"7 flows"| n11
-    n1 -->|"10 flows"| n5
+    subgraph z2["SUPABASE STORAGE"]
+        n14["Supabase Storage"]
+    end
+    n6 -->|"14 flows"| n1
+    n6 -->|"7 flows"| n12
+    n1 -->|"10 flows"| n6
     n1 -->|"next activity per deal"| n3
-    n9 -->|"new, renamed and removed lead sources and labels"| n5
-    n9 -->|"pipeline and stage changes"| n3
-    n9 -->|"new user email, role and status changes"| n8
-    n8 -->|"2 flows"| n5
-    n8 -->|"sidebar and signed-in pages"| n11
-    n5 -->|"label changes seen on deals"| n4
-    n7 -->|"4 flows"| n1
+    n10 -->|"new, renamed and removed lead sources and labels"| n6
+    n10 -->|"pipeline and stage changes"| n3
+    n10 -->|"new user email, role and status changes"| n9
+    n9 -->|"2 flows"| n6
+    n9 -->|"sidebar and signed-in pages"| n12
+    n6 -->|"label changes seen on deals"| n4
+    n8 -->|"4 flows"| n1
     n4 -->|"7 flows"| n3
     n3 -->|"9 flows"| n4
     n3 -->|"4 flows"| n1
-    n3 -->|"board, deal drawer and forms"| n11
-    n4 -->|"visible referred deals and totals"| n5
-    n10 -->|"migrate command / seed command"| n2
-    n6 -->|"3 flows"| n7
-    n6 -->|"2 flows"| n2
-    n7 -->|"auth code, PKCE verifier, client id and secret"| n12
-    n7 -->|"2 flows"| n11
-    n12 -->|"access token, then email, domain and name"| n7
-    n2 -->|"10 flows"| n1
+    n3 -->|"board, deal drawer and forms"| n12
+    n4 -->|"visible referred deals and totals"| n6
+    n11 -->|"migrate command / seed command"| n2
+    n7 -->|"3 flows"| n8
+    n7 -->|"2 flows"| n2
+    n7 -->|"SUPABASE_URL and key"| n5
+    n5 -->|"2 flows"| n1
+    n5 -->|"file list, 303 to a 60-second Storage address"| n12
+    n1 -->|"visible files"| n5
+    n8 -->|"auth code, PKCE verifier, client id and secret"| n13
+    n8 -->|"2 flows"| n12
+    n13 -->|"access token, then email, domain and name"| n8
+    n2 -->|"11 flows"| n1
     n2 -->|"fake deals / table definitions"| n4
-    n2 -->|"schema"| n5
-    n5 -->|"current unread count"| n8
-    n5 -->|"crm_flash cookie"| n7
-    n7 -->|"3 flows"| n5
-    n7 -->|"2 flows"| n8
-    n7 -->|"admin check / signed-in user and admin check"| n3
-    n1 -->|"4 flows"| n7
-    n11 -->|"7 flows"| n5
-    n11 -->|"deal form fields, board drags"| n3
-    n11 -->|"4 flows"| n7
-    n8 -->|"users table and error messages"| n9
-    n8 -->|"private deals handed to a new owner"| n4
-    n8 -->|"6 flows"| n1
-    n1 -->|"user list"| n8
+    n2 -->|"schema"| n6
+    n6 -->|"current unread count"| n9
+    n6 -->|"crm_flash cookie"| n8
+    n8 -->|"3 flows"| n6
+    n8 -->|"2 flows"| n9
+    n8 -->|"admin check / signed-in user and admin check"| n3
+    n8 -->|"signed-in user check"| n5
+    n1 -->|"4 flows"| n8
+    n12 -->|"7 flows"| n6
+    n12 -->|"deal form fields, board drags"| n3
+    n12 -->|"4 flows"| n8
+    n12 -->|"file to add, delete and download requests"| n5
+    n12 -->|"file bytes (PUT to signed address)"| n14
+    n5 -->|"signed upload address, info, first bytes, deletes"| n14
+    n14 -->|"signed addresses, file info and first bytes"| n5
+    n9 -->|"users table and error messages"| n10
+    n9 -->|"private deals handed to a new owner"| n4
+    n9 -->|"6 flows"| n1
+    n1 -->|"user list"| n9
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n9,n10,n11,n12 actor
-    class n1,n2,n3,n4,n5,n6,n7,n8 group
+    class n10,n11,n12,n13,n14 actor
+    class n1,n2,n3,n4,n5,n6,n7,n8,n9 group
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
+    style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
 ```
 
 | Subsystem | What it does | Parts |
 |---|---|---|
-| Database | The Postgres tables every part reads and writes: users, sessions, the user change log and applied migrations. | Postgres activities, lead_sources and labels tables, organisations table, persons, emails, phones and person_labels tables, schema_migrations table, sessions table (token hashes), timeline_events table, user_changes log, users table |
+| Database | The Postgres tables every part reads and writes: users, sessions, the user change log and applied migrations. | Postgres activities, lead_sources and labels tables, Postgres files, file_uploads, file_cleanup, organisations table, persons, emails, phones and person_labels tables, schema_migrations table, sessions table (token hashes), timeline_events table, user_changes log, users table |
 | Database commands | Command-line tools that apply SQL migrations and load fake data into Postgres. | db:migrate command, SQL migration files, db:seed command (fake data) |
 | Deals | Pipelines, stages and the deal board, with deals kept private by their person. | Deals board and deal pages, Pipelines admin |
 | Deals database | The Postgres tables for pipelines, stages, deals, their stage time, labels, linked people and followers. | Postgres deal followers, Postgres deal labels and label links, Postgres deal people, Postgres deal stage periods, Postgres deals, Postgres pipelines, Postgres stages |
+| Files | Files on deals, people and organisations: upload, download and preview through signed Storage addresses. | Fake Storage (dev and tests), Files section and routes, Storage client |
 | People and organisations | Staff list, search, create, edit, archive and delete people and organisations, with a timeline and shared lead sources and labels. | Activities (calls, meetings, tasks), Ambassadors and referrals, Lead sources and labels admin, CSV import, Postgres csv_imports, Postgres note mentions, Notes and @mentions, Notifications page, Organisation pages and actions, People pages and actions, One-shot delete notice |
 | Settings | Environment variables (.env.local or Vercel settings) that hold secrets and switch features on or off. | Environment settings (.env.local / Vercel) |
 | Sign-in and sessions | Signs barnacle.ai staff in with Google (or the fake login), keeps their session cookie and checks it on every page. | Browser cookies (crm_session, crm_oauth), Sign-in rules and session creation, Fake Google login (dev and test only), Google sign-in routes, Request proxy (cookie gate), Session check, end and sign-out, Sign-in page |
@@ -110,21 +125,27 @@ flowchart LR
     subgraph z1["GOOGLE (THIRD PARTY)"]
         n10["Google OAuth and userinfo API"]
     end
-    n1 -->|"40 flows"| n4
-    n1 -->|"11 flows"| n9
-    n4 -->|"25 flows"| n1
+    subgraph z2["SUPABASE STORAGE"]
+        n11["Supabase Storage"]
+    end
+    n1 -->|"42 flows"| n4
+    n1 -->|"12 flows"| n9
+    n4 -->|"26 flows"| n1
     n5 -->|"3 flows"| n1
     n2 -->|"3 flows"| n1
     n6 -->|"migrate command / seed command"| n3
-    n7 -->|"3 flows"| n1
+    n7 -->|"4 flows"| n1
     n7 -->|"2 flows"| n3
     n1 -->|"5 flows"| n2
     n1 -->|"auth code, PKCE verifier, client id and secret"| n10
     n10 -->|"access token, then email, domain and name"| n1
-    n3 -->|"11 flows"| n4
+    n3 -->|"12 flows"| n4
     n3 -->|"schema"| n1
     n8 -->|"SQL migration text"| n3
-    n9 -->|"12 flows"| n1
+    n9 -->|"13 flows"| n1
+    n9 -->|"file bytes (PUT to signed address)"| n11
+    n1 -->|"signed upload address, info, first bytes, deletes"| n11
+    n11 -->|"signed addresses, file info and first bytes"| n1
     n1 -->|"users table and error messages"| n5
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -132,10 +153,11 @@ flowchart LR
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n5,n6,n9,n10 actor
+    class n5,n6,n9,n10,n11 actor
     class n7,n8 store
     class n1,n2,n3,n4 zone
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
+    style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
 ```
 
 ## Each subsystem
@@ -153,60 +175,66 @@ flowchart LR
     subgraph z1["POSTGRES (SUPABASE OR LOCAL)"]
         n1[("Postgres activities")]
         n2[("lead_sources and labels tables")]
-        n3[("organisations table")]
-        n4[("persons, emails, phones and person_labels tables")]
-        n5[("schema_migrations table")]
-        n6[("sessions table (token hashes)")]
-        n7[("timeline_events table")]
-        n8[("user_changes log")]
-        n9[("users table")]
+        n3[("Postgres files, file_uploads, file_cleanup")]
+        n4[("organisations table")]
+        n5[("persons, emails, phones and person_labels tables")]
+        n6[("schema_migrations table")]
+        n7[("sessions table (token hashes)")]
+        n8[("timeline_events table")]
+        n9[("user_changes log")]
+        n10[("users table")]
     end
-    n10[["Database commands"]]
-    n11[["Deals"]]
-    n12[["People and organisations"]]
-    n13[["Sign-in and sessions"]]
-    n14[["Signed-in app and user admin"]]
-    n12 -->|"2 flows"| n1
-    n12 -->|"4 flows"| n4
-    n1 -->|"activity rows / assignments by others"| n12
-    n1 -->|"next activity per deal"| n11
-    n1 -->|"done activities read into timelines"| n7
-    n12 -->|"lead source and label changes"| n2
-    n2 -->|"2 flows"| n12
-    n13 -->|"2 flows"| n6
-    n13 -->|"first admin added"| n8
-    n13 -->|"first admin, name, last sign-in time"| n9
-    n12 -->|"2 flows"| n3
-    n12 -->|"5 flows"| n7
-    n11 -->|"2 flows"| n4
-    n11 -->|"2 flows"| n7
-    n10 -->|"fake activities / schema"| n1
-    n10 -->|"fake organisations / table definitions"| n3
-    n10 -->|"4 flows"| n4
-    n10 -->|"applied migration names"| n5
-    n10 -->|"table definitions"| n6
-    n10 -->|"fake users added / table definitions"| n8
-    n10 -->|"fake users / table definitions"| n9
-    n3 -->|"organisations and their people"| n12
-    n4 -->|"2 flows"| n12
-    n6 -->|"session state with user role and status"| n13
-    n7 -->|"2 flows"| n12
-    n14 -->|"private people handed to a new owner"| n4
-    n14 -->|"revoked sessions of deactivated users"| n6
-    n14 -->|"2 flows"| n7
-    n14 -->|"who changed which user, and how"| n8
-    n14 -->|"added users, role and status changes"| n9
-    n9 -->|"3 flows"| n13
-    n9 -->|"active users matched as owners"| n12
-    n9 -->|"user list"| n14
+    n11[["Database commands"]]
+    n12[["Deals"]]
+    n13[["Files"]]
+    n14[["People and organisations"]]
+    n15[["Sign-in and sessions"]]
+    n16[["Signed-in app and user admin"]]
+    n14 -->|"2 flows"| n1
+    n14 -->|"4 flows"| n5
+    n1 -->|"activity rows / assignments by others"| n14
+    n1 -->|"next activity per deal"| n12
+    n1 -->|"done activities read into timelines"| n8
+    n14 -->|"lead source and label changes"| n2
+    n2 -->|"2 flows"| n14
+    n15 -->|"2 flows"| n7
+    n15 -->|"first admin added"| n9
+    n15 -->|"first admin, name, last sign-in time"| n10
+    n14 -->|"2 flows"| n4
+    n14 -->|"5 flows"| n8
+    n12 -->|"2 flows"| n5
+    n12 -->|"2 flows"| n8
+    n13 -->|"file rows, upload records, cleanup queue"| n3
+    n13 -->|"file added and deleted events"| n8
+    n3 -->|"visible files"| n13
+    n11 -->|"fake activities / schema"| n1
+    n11 -->|"fake files / table definitions"| n3
+    n11 -->|"fake organisations / table definitions"| n4
+    n11 -->|"4 flows"| n5
+    n11 -->|"applied migration names"| n6
+    n11 -->|"table definitions"| n7
+    n11 -->|"fake users added / table definitions"| n9
+    n11 -->|"fake users / table definitions"| n10
+    n4 -->|"organisations and their people"| n14
+    n5 -->|"2 flows"| n14
+    n7 -->|"session state with user role and status"| n15
+    n8 -->|"2 flows"| n14
+    n16 -->|"private people handed to a new owner"| n5
+    n16 -->|"revoked sessions of deactivated users"| n7
+    n16 -->|"2 flows"| n8
+    n16 -->|"who changed which user, and how"| n9
+    n16 -->|"added users, role and status changes"| n10
+    n10 -->|"3 flows"| n15
+    n10 -->|"active users matched as owners"| n14
+    n10 -->|"user list"| n16
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n1,n2,n3,n4,n5,n6,n7,n8,n9 store
-    class n10,n11,n12,n13,n14 stub
+    class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10 store
+    class n11,n12,n13,n14,n15,n16 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -238,7 +266,7 @@ flowchart LR
     n3 -->|"table definitions"| n6
     n3 -->|"schema"| n7
     n2 -->|"SQL migration text"| n3
-    n4 -->|"6 flows"| n5
+    n4 -->|"7 flows"| n5
     n4 -->|"fake deals"| n6
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -347,6 +375,51 @@ flowchart LR
     class n1,n2,n3,n4,n5,n6,n7 store
     class n8,n9,n10,n11 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
+```
+
+### Files
+
+Files on deals, people and organisations: upload, download and preview through signed Storage addresses.
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+    n1["Barnacle staff user"]
+    subgraph z1["NEXT.JS APP SERVER (VERCEL OR LOCAL)"]
+        n2("Fake Storage (dev and tests)")
+        n3("Files section and routes")
+        n4("Storage client")
+    end
+    subgraph z2["SUPABASE STORAGE"]
+        n5["Supabase Storage"]
+    end
+    n6[["Database"]]
+    n7[["Settings"]]
+    n8[["Sign-in and sessions"]]
+    n7 -->|"SUPABASE_URL and key"| n4
+    n3 -->|"2 flows"| n6
+    n3 -->|"file list, 303 to a 60-second Storage address"| n1
+    n3 -->|"upload, read and delete requests"| n4
+    n6 -->|"visible files"| n3
+    n8 -->|"signed-in user check"| n3
+    n1 -->|"file to add, delete and download requests"| n3
+    n4 -->|"same calls when no Supabase is set"| n2
+    n4 -->|"signed upload address, info, first bytes, deletes"| n5
+    n5 -->|"signed addresses, file info and first bytes"| n4
+    classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
+    classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
+    classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
+    classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
+    classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
+    classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
+    class n1,n5 actor
+    class n2,n3,n4 process
+    class n6,n7,n8 stub
+    style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
+    style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
 ```
 
 ### People and organisations
@@ -458,9 +531,11 @@ config:
 flowchart LR
     n1[("Environment settings (.env.local / Vercel)")]
     n2[["Database commands"]]
-    n3[["Sign-in and sessions"]]
-    n1 -->|"3 flows"| n3
+    n3[["Files"]]
+    n4[["Sign-in and sessions"]]
+    n1 -->|"3 flows"| n4
     n1 -->|"2 flows"| n2
+    n1 -->|"SUPABASE_URL and key"| n3
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -468,7 +543,7 @@ flowchart LR
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1 store
-    class n2,n3 stub
+    class n2,n3,n4 stub
 ```
 
 ### Sign-in and sessions
@@ -498,17 +573,18 @@ flowchart LR
     end
     n10[["Database"]]
     n11[["Deals"]]
-    n12[["People and organisations"]]
-    n13[["Settings"]]
-    n14[["Signed-in app and user admin"]]
+    n12[["Files"]]
+    n13[["People and organisations"]]
+    n14[["Settings"]]
+    n15[["Signed-in app and user admin"]]
     n8 -->|"OAuth state and PKCE verifier"| n4
     n8 -->|"crm_flash cookie to clear"| n5
     n8 -->|"session token"| n6
     n2 -->|"session token or refusal code"| n4
     n2 -->|"3 flows"| n10
-    n13 -->|"FIRST_ADMIN_EMAIL"| n2
-    n13 -->|"APP_ENV, VERCEL_ENV (fake login switch)"| n3
-    n13 -->|"Google client id and secret, APP_URL"| n4
+    n14 -->|"FIRST_ADMIN_EMAIL"| n2
+    n14 -->|"APP_ENV, VERCEL_ENV (fake login switch)"| n3
+    n14 -->|"Google client id and secret, APP_URL"| n4
     n3 -->|"session token cookie"| n8
     n3 -->|"fake identity (email, name)"| n2
     n4 -->|"OAuth state, PKCE verifier, session token"| n8
@@ -518,11 +594,12 @@ flowchart LR
     n9 -->|"access token, then email, domain and name"| n4
     n5 -->|"refreshed session cookie"| n8
     n5 -->|"requested path (x-pathname header)"| n6
-    n12 -->|"crm_flash cookie"| n8
-    n6 -->|"3 flows"| n12
-    n6 -->|"2 flows"| n14
+    n13 -->|"crm_flash cookie"| n8
+    n6 -->|"3 flows"| n13
+    n6 -->|"2 flows"| n15
     n6 -->|"cleared session cookie"| n8
     n6 -->|"admin check / signed-in user and admin check"| n11
+    n6 -->|"signed-in user check"| n12
     n6 -->|"extended expiry, deleted ended sessions"| n10
     n6 -->|"session still valid (skip sign-in)"| n7
     n10 -->|"session state with user role and status"| n6
@@ -543,7 +620,7 @@ flowchart LR
     class n1,n9 actor
     class n2,n3,n4,n5,n6,n7 process
     class n8 store
-    class n10,n11,n12,n13,n14 stub
+    class n10,n11,n12,n13,n14,n15 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
     style z2 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
     style z3 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
@@ -616,6 +693,9 @@ flowchart LR
 | Developer or Vercel build | actor |  |  |  |
 | Environment settings (.env.local / Vercel) | store | Settings |  | `.env.example`, `src/server/env.ts` |
 | Fake Google login (dev and test only) | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/dev/fake-google` |
+| Fake Storage (dev and tests) | process | Files | Next.js app server (Vercel or local) | `src/app/dev/fake-storage`, `src/server/files/fake-storage.ts` |
+| Files section and routes | process | Files | Next.js app server (Vercel or local) | `src/app/(app)/files`, `src/app/(app)/records/file-actions.ts`, `src/server/files/files.ts` |
+| Postgres files, file_uploads, file_cleanup | store | Database | Postgres (Supabase or local) | `migrations/0011_files.sql` |
 | Google sign-in routes | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/auth/google`, `src/server/auth/google.ts` |
 | Google OAuth and userinfo API | actor |  | Google (third party) |  |
 | db:migrate command | process | Database commands | Command line (developer machine or Vercel build) | `scripts/migrate.ts` |
@@ -638,6 +718,8 @@ flowchart LR
 | Sign-in page | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/sign-in/page.tsx`, `src/server/sign-in-page.ts` |
 | Barnacle staff user | actor |  |  |  |
 | Postgres stages | store | Deals database | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
+| Storage client | process | Files | Next.js app server (Vercel or local) | `src/server/files/storage.ts` |
+| Supabase Storage | actor |  | Supabase Storage |  |
 | timeline_events table | store | Database | Postgres (Supabase or local) | `migrations/0002_people_organisations.sql` |
 | user_changes log | store | Database | Postgres (Supabase or local) | `migrations/0001_users_sessions.sql` |
 | Users admin page and actions | process | Signed-in app and user admin | Next.js app server (Vercel or local) | `src/app/(app)/admin/users`, `src/server/users.ts` |
@@ -700,8 +782,14 @@ flowchart LR
 | Environment settings (.env.local / Vercel) | Google sign-in routes | Google client id and secret, APP_URL | `src/server/auth/google.ts`, `src/server/env.ts` |
 | Environment settings (.env.local / Vercel) | db:migrate command | DATABASE_URL | `scripts/migrate.ts`, `src/server/db.ts` |
 | Environment settings (.env.local / Vercel) | db:seed command (fake data) | APP_ENV, VERCEL_ENV, DATABASE_URL | `scripts/seed.ts`, `src/server/db.ts` |
+| Environment settings (.env.local / Vercel) | Storage client | SUPABASE_URL and key | `src/server/env.ts` |
 | Fake Google login (dev and test only) | Browser cookies (crm_session, crm_oauth) | session token cookie | `src/app/dev/fake-google/actions.ts`, `src/server/auth/session.ts` |
 | Fake Google login (dev and test only) | Sign-in rules and session creation | fake identity (email, name) | `src/app/dev/fake-google/actions.ts` |
+| Files section and routes | Postgres files, file_uploads, file_cleanup | file rows, upload records, cleanup queue | `src/server/files/files.ts` |
+| Files section and routes | Barnacle staff user | file list, 303 to a 60-second Storage address | `src/app/(app)/files/file-route.ts` |
+| Files section and routes | Storage client | upload, read and delete requests | `src/server/files/files.ts` |
+| Files section and routes | timeline_events table | file added and deleted events | `src/server/files/files.ts` |
+| Postgres files, file_uploads, file_cleanup | Files section and routes | visible files | `src/server/files/files.ts` |
 | Google sign-in routes | Browser cookies (crm_session, crm_oauth) | OAuth state, PKCE verifier, session token | `src/app/auth/google/callback/route.ts`, `src/app/auth/google/start/route.ts` |
 | Google sign-in routes | Sign-in rules and session creation | Google identity (email, verified, domain, name) | `src/app/auth/google/callback/route.ts` |
 | Google sign-in routes | Google OAuth and userinfo API | auth code, PKCE verifier, client id and secret | `src/server/auth/google.ts` |
@@ -712,6 +800,7 @@ flowchart LR
 | db:migrate command | Postgres deal labels and label links | table definitions | `migrations/0005_deal_page.sql` |
 | db:migrate command | Postgres deal people | table definitions | `migrations/0005_deal_page.sql` |
 | db:migrate command | Postgres deals | table definitions | `scripts/migrate.ts` |
+| db:migrate command | Postgres files, file_uploads, file_cleanup | table definitions | `migrations/0011_files.sql` |
 | db:migrate command | Postgres note mentions | schema | `migrations/0007_notes_mentions.sql` |
 | db:migrate command | organisations table | table definitions | `migrations/0002_people_organisations.sql`, `scripts/migrate.ts` |
 | db:migrate command | persons, emails, phones and person_labels tables | ambassador and referrer columns | `migrations/0009_ambassadors.sql` |
@@ -753,6 +842,7 @@ flowchart LR
 | One-shot delete notice | Browser cookies (crm_session, crm_oauth) | crm_flash cookie | `src/server/records/flash.ts` |
 | db:seed command (fake data) | Postgres activities | fake activities | `src/seed/activities.ts` |
 | db:seed command (fake data) | Postgres deals | fake deals | `src/seed/deals.ts` |
+| db:seed command (fake data) | Postgres files, file_uploads, file_cleanup | fake files | `src/seed/files.ts` |
 | db:seed command (fake data) | organisations table | fake organisations | `src/seed/people.ts` |
 | db:seed command (fake data) | persons, emails, phones and person_labels tables | fake ambassadors and referrals | `src/seed/ambassadors.ts` |
 | db:seed command (fake data) | persons, emails, phones and person_labels tables | fake people | `src/seed/people.ts` |
@@ -764,6 +854,7 @@ flowchart LR
 | Session check, end and sign-out | Browser cookies (crm_session, crm_oauth) | cleared session cookie | `src/app/(app)/actions.ts`, `src/app/auth/end/route.ts` |
 | Session check, end and sign-out | Lead sources and labels admin | admin check | `src/app/(app)/admin/lead-sources-and-labels/actions.ts` |
 | Session check, end and sign-out | Deals board and deal pages | signed-in user and admin check | `src/app/(app)/deals/page.tsx` |
+| Session check, end and sign-out | Files section and routes | signed-in user check | `src/app/(app)/records/file-actions.ts` |
 | Session check, end and sign-out | Notes and @mentions | signed-in user check | `src/app/(app)/records/note-actions.ts` |
 | Session check, end and sign-out | Notifications page | signed-in user check | `src/app/(app)/notifications/actions.ts` |
 | Session check, end and sign-out | Organisation pages and actions | signed-in user and admin check | `src/app/(app)/organisations/actions.ts`, `src/server/auth/session.ts` |
@@ -779,6 +870,7 @@ flowchart LR
 | Barnacle staff user | CSV import | CSV file in parts, column mapping, run request | `src/app/(app)/records/import/FileStep.tsx`, `src/app/(app)/records/import/actions.ts` |
 | Barnacle staff user | Deals board and deal pages | deal form fields, board drags | `src/app/(app)/deals/actions.ts` |
 | Barnacle staff user | Fake Google login (dev and test only) | chosen fake account email and name | `src/app/dev/fake-google/actions.ts` |
+| Barnacle staff user | Files section and routes | file to add, delete and download requests | `src/app/(app)/files`, `src/app/(app)/records/file-actions.ts` |
 | Barnacle staff user | Google sign-in routes | sign-in start, OAuth code and state | `src/app/auth/google/callback/route.ts`, `src/app/auth/google/start/route.ts` |
 | Barnacle staff user | Notes and @mentions | note text and mentions | `src/app/(app)/records/note-actions.ts` |
 | Barnacle staff user | Notifications page | open, mark all read | `src/app/(app)/notifications/actions.ts` |
@@ -786,7 +878,11 @@ flowchart LR
 | Barnacle staff user | People pages and actions | person form fields, search and filters | `src/app/(app)/people/actions.ts`, `src/server/records/list-query.ts` |
 | Barnacle staff user | Request proxy (cookie gate) | page requests with session cookie | `src/proxy.ts` |
 | Barnacle staff user | Session check, end and sign-out | sign-out request | `src/app/(app)/actions.ts` |
+| Barnacle staff user | Supabase Storage | file bytes (PUT to signed address) | `src/app/(app)/records/AddFiles.tsx` |
 | Postgres stages | Deals board and deal pages | stages for the board | `src/server/deals/deals.ts` |
+| Storage client | Fake Storage (dev and tests) | same calls when no Supabase is set | `src/server/files/fake-storage.ts` |
+| Storage client | Supabase Storage | signed upload address, info, first bytes, deletes | `src/server/files/storage.ts` |
+| Supabase Storage | Storage client | signed addresses, file info and first bytes | `src/server/files/storage.ts` |
 | timeline_events table | Ambassadors and referrals | referral events for latest updates | `src/server/records/ambassadors.ts`, `src/server/records/timeline.ts` |
 | timeline_events table | Notes and @mentions | note events | `src/server/records/notes.ts` |
 | Users admin page and actions | Barnacle admin | users table and error messages | `src/app/(app)/admin/users/page.tsx` |

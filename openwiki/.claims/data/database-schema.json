@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:596d52d0e21b370240751747bab50d7fcce24f3a964b609961824d171a5c03d1",
+  "pageVersion": "sha256:43afaab40596c8b0deece517682c663b191e4d54b9664bb00592c97ef17073d6",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L29",
-          "version": "repo-lines-v1:sha256:6830b03c6073d90e9bd99ae2bb57f771705698941597c53d3ae3479ddb5c316b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L30",
+          "version": "repo-lines-v1:sha256:a41eec1b890460ab5c772968e5280f25c9f3392cb45542679688a7e7915120d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -141,10 +141,20 @@
           "version": "repo-file-v1:sha256:cecc816defeddf88f5a99100d085dd3c5703acfc78616b6ddc5276c629b4c368"
         }
       ]
+    },
+    {
+      "id": "claim_40617599280e410e8d6331d13de3be01",
+      "statement": "Migration 0011 adds the files, file_uploads and file_cleanup tables, each with row level security enabled.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0011_files.sql",
+          "version": "repo-file-v1:sha256:cfad8a7ab2aff393afa5a996224df7562769922f5be339b113e8090c55f1ae6c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T18:05:22.701Z"
+    "at": "2026-11-24T11:23:52.677Z"
   }
 }
