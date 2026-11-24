@@ -15,6 +15,9 @@
 - Q: When Deals, Notes, Activities or Files is ticked, how do people and organisations come in? → A: People and Organisations are ticked with them and cannot be unticked; a record is skipped only when its person or organisation could not be imported.
 - Q: The team rule says only admins create pipelines and stages. Can any user's import create missing ones? → A: Yes: any import creates missing pipelines and stages, never renames, reorders or deletes them, and the report lists them; `docs/DECISIONS.md` records this exception.
 - Q: What happens to Pipedrive activities of a type the CRM does not have (deadline, email, lunch, custom types)? → A: They come in as tasks; the report counts them per Pipedrive type.
+- Q: A Pipedrive note between 10,001 and 100,000 characters is longer than the note box accepts (10,000): import it or skip it? → A: Import it whole, so no history is lost; it shows and can be deleted like any note, and editing it asks to shorten it to 10,000 characters before saving (decided by the factory, to confirm)
+- Q: A note, activity or file whose CRM record is archived (an archived deal, or a linked archived person or organisation): import it or skip it? → A: Import it onto that record, as history that belongs there, even though the forms refuse new notes and files on archived records (decided by the factory, to confirm)
+- Q: A file attached to a Pipedrive email that is also on a deal, person or organisation: import it? → A: No: email attachments never come in (FR-020); they are counted in the "on Pipedrive emails" line of the report, not listed one by one (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
