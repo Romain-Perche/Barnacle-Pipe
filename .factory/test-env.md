@@ -447,6 +447,14 @@
     - `scenarios-sf115-us5.js`: US5 1–5 (CSV import; preview needs the consent radio "Subscribed"). Import warnings list rows
       as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
 
+  - SF-121 (AI review): `node .factory/run/scenarios-sf121.js [prefix…]` (NODE_PATH=/opt/playwright/node_modules) on a
+    fresh seed (app on :3000 from start-app.sh) runs every unsubscribe scenario: tokens and consents read with psql, the
+    one-click POSTs sent by `fetch` with no cookie, a temporary person deleted through the app (`?confirm=delete`), and
+    Edge 8 stops Postgres (`pg_ctl -D /tmp/pgdata -m fast stop`) then starts it again. Page checks use the visible text and
+    the DOM without `<script>`: Next.js's router payload always carries the address (never shown). Edge 10 and the https
+    part of US5 1: a second `npx next start -p 3002` with `APP_ENV=` (production) and `APP_URL=https://crm.example.com`
+    (`node .factory/run/check-sf121-edge10.js`: 404 "Page not found."), and one on :3003 with `APP_ENV=test` and the same
+    APP_URL to see https links on /dev/unsubscribe-links. ~1 min.
 ## Smoke checks
 1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
