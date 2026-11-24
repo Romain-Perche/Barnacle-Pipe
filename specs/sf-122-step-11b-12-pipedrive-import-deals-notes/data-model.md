@@ -71,6 +71,7 @@ constraints.
 | `<kind>_total` | counted in the `count_*` steps; deals = `/deals` + `/deals/archived` |
 | `<kind>_done` | records read so far (deleted Pipedrive ones excepted), the "<done> of <total>" |
 | `cursor` | v2 steps: Pipedrive `next_cursor`; `notes`: v1 `start` as text; `files`: `"<start>:<index>"` (the position inside the page of 50) |
+| `fetched` | Fix round 1, migration 0014: `{ step, cursor, calls }`, the Pipedrive answers a part already got before Pipedrive asked to slow down; reused by the next part of the same step and cursor, cleared when they move; never the token |
 | `snapshot` | SF-117's plus `dealFields`, `pipelines`, `stages`, `activityTypes` (read in `prepare`), then `stageMap` and `pipelineNames` (written in `pipelines`) |
 
 **Steps** (a step whose kind is not ticked is skipped by `nextStep`): `prepare` → `count_organisations` →

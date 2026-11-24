@@ -729,6 +729,46 @@ half-stored, and over 25 MB left out.
 
 ---
 
+## Phase 9: Fix round 1 (AI review)
+
+See plan.md § Fix round 1. Tests first: each one fails on the current code.
+
+- [ ] T071 [Fix] Write the failing tests first, each naming what it covers:
+  - `// covers Edge case 15, FR-021`: in the files integration test, with three files on deals, use
+    `onSaveForTests` (`before` of the first per-file commit) to call `removeToken(user)`. Expect: no `files` row and
+    no `pipedrive_links` row of kind file for any file of the batch, the path of the copy due now in
+    `file_cleanup`, and the import paused with reason `token_refused`. The same test with the user deactivated
+    (`deactivate()`) instead: no file of the batch listed, and the import row no longer `running`. These fail now
+    (the reviewer saw 1 and 2 files listed).
+  - `// covers US1 scenario 8, FR-021, SC-005`: unit test of `planDealPage`: an owner-only USD deal of another CRM user
+    gives a warning with no Pipedrive title in its stored item (`JSON.stringify(plan)` does not contain the title)
+    and `args.privateDeal = 1`; the same deal owned by the importer keeps its title. Integration: Linus imports a
+    Margaret-only USD deal titled "SF122 Margaret secret USD"; the text of his report (`warningLines` /
+    `reportLines` with `namesForReport`) does not contain that title and contains "a private deal".
+  - `// covers US5 scenario 5, SC-001`: integration test with `fake.slowDownEvery(4, 1)` and, in a second case,
+    `slowDownEvery(3, 1)`, on a data set with 20 deals that each have followers and participants: drive `runPart`
+    in a loop (a `wait` answer moves the fake clock or the row's `wait_until` to now, no real waiting), with a cap
+    of 500 parts. Expect the import finished, every deal imported once with its followers and other linked people,
+    and, from the fake's call log, each followers / participants call answered with 200 at most once per deal.
+    This fails now (the cap is reached).
+- [ ] T072 [Fix] `migrations/0014_pipedrive_fetched.sql`: `alter table pipedrive_imports add column fetched jsonb;`.
+  Extend `migrate.test.ts`. (`data-model.md` already lists the column.)
+- [ ] T073 [Fix] `imports.ts`: `lockRow` checks the user is `active` and the `pipedrive_connections` row exists for
+  the import's company, both `for share`, and returns why it fails. `runFilesPart`: on that failure, set the path due
+  now, then pause (`token_refused` when the token is gone; paused when the user is not active), and return `stop`.
+  `save` does the same for the other steps.
+- [ ] T074 [Fix] `records-page.ts` `planDealPage`: warnings of a deal private to another owner get an empty label and
+  `args.privateDeal = 1`. `report.ts` / `ReportStep.tsx`: show `messageFor("pipedrive_private_deal")` as the label of
+  such an item.
+- [ ] T075 [Fix] `imports.ts`: a memo of the part's calls (keyed by call). `fetchStep` reads every call through it. On
+  `PipedriveSlowDown`, `runPart` stores the memo with its step and cursor in `fetched`, in the update that sets
+  `waiting`. The next part of the same step and cursor starts from it; `writeRow` clears it. `runFilesPart` reads
+  its page call through it.
+- [ ] T076 [Fix] `AGENTS.md`, the `pipedrive/` line: answers kept across a slow-down in `pipedrive_imports.fetched`;
+  every save re-checks the user and the token.
+- [ ] T077 [Fix] Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
+  `DATABASE_URL=postgres://postgres@localhost:5432/crm_test`. Fix every failure and keep the complete failure output.
+
 ## Dependencies & Execution Order
 
 - **Setup (T001–T004)** → **Foundational (T005–T013)** → the stories.

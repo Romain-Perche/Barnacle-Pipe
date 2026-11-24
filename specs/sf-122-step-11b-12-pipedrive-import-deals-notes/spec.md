@@ -138,6 +138,7 @@ The progress screen and the report count deals, notes, activities and files like
 - Pipedrive text such as `<a href="https://evil.example">Click</a>` in a deal title, note, activity subject or file name: shown exactly as text everywhere, never as a link or markup; a note's link address is shown as plain text, never made clickable by the import. A file name is downloaded under a safe name, as in SF-116.
 - The importing user is deactivated, the token is removed or refused, or the import is stopped during a file copy: the progress screen shows the SF-117 message for that case, the file being copied is not in the record's "// FILES", and the records already imported stay (as in SF-117).
 - A user who is not signed in or is deactivated sends an import request: refused; nothing is imported.
+- Pipedrive asks the CRM to slow down every third or fourth call during an import with deals that have followers and other linked people: the import still moves on and finishes; every deal is imported once with its followers and other linked people.
 
 ## Requirements *(mandatory)*
 

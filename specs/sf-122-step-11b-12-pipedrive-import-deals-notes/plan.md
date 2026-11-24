@@ -220,6 +220,70 @@ organisations) stay as they are.
     No blueprint index in this run, so no blueprint exception and no "Departs from blueprint" line.
     `.factory/test-env.md` is left to Build and the AI review.
 
+## Fix round 1
+
+The AI review failed on three points. All three are reproduced and traced in the code.
+
+### Problem 1: files still listed after the token is removed or the user is deactivated (Edge case 15)
+
+- **Problem**: with a file copy in progress, removing the token or deactivating the user does not stop the part.
+  The file in progress and the next ones of the part are still listed in "// FILES". After a deactivation the row
+  stays `files|running`.
+- **Cause**: `runPart` checks the user's status and the token once, before the part. `lockRow` (used by every save
+  and by each per-file commit of `runFilesPart`) checks only the import row (step, cursor, state). A file part runs
+  up to 15 s, so a removal or deactivation in that window is not seen.
+- **Fix**: `lockRow` also checks, in the same transaction, that the user is `active` (`select … from users … for
+  share`) and that the user's `pipedrive_connections` row still exists for the import's company (`for share`). The
+  `for share` locks make `removeToken` / `deactivate()` wait for a commit already under way, so a file is listed only
+  when the copy ended before the removal. When a check fails, `lockRow` returns a reason: no token → the part ends
+  as stale (the path in `file_cleanup` due now) and the import is paused `token_refused`; user not active → the part
+  ends as stale and the import is paused (the row no longer stays `running`). Every step's `save` gets the same
+  check, through `lockRow`.
+
+### Problem 2: a private deal of another owner is named in the importer's report (US1 scenario 8, FR-021, SC-005)
+
+- **Problem**: Linus imports a Margaret-only USD deal. His report's warnings show "Deal · SF122 Margaret secret USD
+  Value in USD, not GBP: left out."
+- **Cause**: `planDealPage` (`records-page.ts`) builds every deal warning with the Pipedrive title as its label,
+  also for a deal that becomes private to another owner. The title is stored in the report and shown by
+  `ReportStep`.
+- **Fix**: in `planDealPage`, when the planned deal is private and its owner is not the importer, its warnings get no
+  Pipedrive title: the stored label is empty and the item carries `args.privateDeal = 1`. `ReportStep` (and
+  `itemText` / `warningLines`) show the label "a private deal" (`pipedrive_private_deal`) for such an item. The
+  title of such a deal is never written into the report. The count line "N private deals of other owners imported."
+  stays. Deals that are not imported are not CRM records, so their "// NOT IMPORTED" line keeps the Pipedrive title.
+
+### Problem 3: the import never moves on when Pipedrive slows down every few calls (US5, SC-001)
+
+- **Problem**: with the fake answering 429 on every 4th call, the deals step stays at "0 of 50" for 10 minutes. With
+  a 429 on every 3rd call, the `prepare` step stalls.
+- **Cause**: a part is repeated whole after a slow-down. A deals part needs the page call plus one call per deal with
+  followers or participants (up to about 40). `prepare` needs 5 or more calls. When a part needs more calls than
+  Pipedrive allows between two slow-downs, it never ends.
+- **Fix**: a part keeps the answers it already got. `fetchStep` reads every Pipedrive call through a memo keyed by the
+  call (for example `deals:<cursor>`, `followers:<dealId>`, `participants:<dealId>`, `fields:person:<cursor>`).
+  When `PipedriveSlowDown` is thrown, `runPart` writes the memo to the import row (new column
+  `pipedrive_imports.fetched jsonb`, with the step and cursor it belongs to) in the same update that sets `waiting`.
+  The next part of the same step and cursor starts from that memo and calls only what is missing. `writeRow` clears
+  `fetched` when the step or cursor moves. A stale memo (other step or cursor) is ignored. The memo holds Pipedrive
+  data only for the time of one part, like the page it belongs to; it never holds the token. This applies to every
+  step that `fetchStep` reads (prepare, counts, pipelines, deals, archived deals, notes, activities, organisations,
+  people). The files step already commits each file, so only its page call goes through the memo.
+- **Migration**: `migrations/0014_pipedrive_fetched.sql`: `alter table pipedrive_imports add column fetched jsonb;`
+  (0013 is kept as it is, so a development database that has it stays valid).
+
+### Files to change
+
+- `src/server/pipedrive/imports.ts` (`lockRow`, `save`, `runFilesPart`, `runPart`, `fetchStep`, `writeRow`, `Row`).
+- `src/server/pipedrive/records-page.ts` (`planDealPage` warnings of private deals of other owners).
+- `src/server/pipedrive/report.ts` and `src/app/(app)/settings/pipedrive-import/ReportStep.tsx` (label of a private deal).
+- `migrations/0014_pipedrive_fetched.sql`, `tests/integration/migrate.test.ts`, `tests/support/reset.ts` if needed.
+- Tests: `tests/unit/pipedrive-records-page.test.ts` (or the deal-page unit test file in use),
+  `tests/integration/pipedrive-resume-records.test.ts`, `tests/integration/pipedrive-files.test.ts` (or the file
+  test in use).
+- Docs: `AGENTS.md` (the `pipedrive/` line: a part keeps its answers across a slow-down in `fetched`; every save
+  re-checks the user and the token), `data-model.md` (the new column).
+
 ## Outside services
 
 - Pipedrive API v2 (deals, deals/archived, deals/{id}/followers, dealFields, pipelines, stages, activities): schema https://github.com/soenneker/soenneker.pipedrive.openapiclient/blob/77695f9076c899e2ba1e7e8eb029aabb28abed27/openapi.json
