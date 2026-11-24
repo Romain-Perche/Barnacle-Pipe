@@ -2794,6 +2794,24 @@
       "scope": "excluded",
       "type": "library",
       "version": "3.2.1"
+    },
+    {
+      "bom-ref": "pkg:npm/yaml@2.9.1",
+      "name": "yaml",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "yaml@2.9.1"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "npm"
+        }
+      ],
+      "purl": "pkg:npm/yaml@2.9.1",
+      "scope": "excluded",
+      "type": "library",
+      "version": "2.9.1"
     }
   ],
   "dependencies": [
@@ -2809,7 +2827,8 @@
         "pkg:npm/react@19.3.1",
         "pkg:npm/tsx@4.23.15",
         "pkg:npm/typescript@6.0.3",
-        "pkg:npm/vitest@5.1.0"
+        "pkg:npm/vitest@5.1.0",
+        "pkg:npm/yaml@2.9.1"
       ],
       "ref": "lockfile:package-lock.json"
     },
@@ -3618,7 +3637,8 @@
         "pkg:npm/postcss@8.5.32",
         "pkg:npm/rolldown@1.2.19",
         "pkg:npm/tinyglobby@0.2.17",
-        "pkg:npm/tsx@4.23.15"
+        "pkg:npm/tsx@4.23.15",
+        "pkg:npm/yaml@2.9.1"
       ],
       "ref": "pkg:npm/vite@8.3.8"
     },
@@ -3645,6 +3665,10 @@
     {
       "dependsOn": [],
       "ref": "pkg:npm/why-is-node-running@3.2.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/yaml@2.9.1"
     },
     {
       "dependsOn": [

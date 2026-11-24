@@ -5,7 +5,7 @@ description: How npm run db:migrate applies migrations/*.sql safely through Supa
 tags: [migrations, seed, database, operations, fake-data]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T17:34:42.245Z
+    at: 2026-11-23T18:05:22.701Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -19,7 +19,7 @@ sources:
     resource: repo://src/seed/index.ts
   - id: openwiki-source-010903950424d10f20cb451d
     resource: repo://src/seed/users.ts
-generated: { by: "claude-code", at: "2026-11-24T17:34:42.245Z" }
+generated: { by: "claude-code", at: "2026-11-23T18:05:22.701Z" }
 ---
 
 # Migrations and fake data
@@ -53,7 +53,7 @@ and otherwise prints "Fake data can only be loaded when APP_ENV is development o
 (see [Configuration and environments](./configuration-and-environments.md)).
 
 It then runs `runSeeders()` from `src/seed/index.ts`, the **seeder registry**: an ordered list of
-`{ name, run(sql) }` entries, each returning lines to print. Today it holds nine seeders (users, people, deals, notes, activities, ambassadors, files, custom fields, campaigns). The first,
+`{ name, run(sql) }` entries, each returning lines to print. Today it holds six seeders. The first,
 `src/seed/users.ts`, inserts five clearly fake `@barnacle.ai` users — Ada Fake and Grace Fake
 (admins), Linus Fake and Margaret Fake (users), Alan Fake (deactivated) — each with a `user_changes`
 `added` row, in its own transaction and with `on conflict (email) do nothing`. Seeders must be
@@ -73,11 +73,9 @@ The fifth, `src/seed/activities.ts`, adds clearly fake [activities](../features/
 dates relative to the UK day of the run (one overdue, two due today, later ones, three done), including one on a
 private deal and one on a private person and two assignment notifications (one unread, one read). It is
 re-runnable: an activity is found by its exact subject. Migration `0008_activities.sql` creates the table.
-The sixth, `src/seed/ambassadors.ts`, runs after the activities: it adds clearly fake ambassadors (one shared, one private, one former) with
+The sixth, `src/seed/ambassadors.ts`, runs last: it adds clearly fake ambassadors (one shared, one private, one former) with
 the people and deals they referred and two notes on referred records. It is re-runnable: people are found by email,
 deals by title. Migration `0009_ambassadors.sql` creates the columns.
-
-The last, `src/seed/campaigns.ts`, runs after the files and custom fields seeders: it adds clearly fake [campaign drafts](../features/campaigns.md) (one per layout and one pasted HTML email), only when no campaign has the same name.
 
 Later features append their seeder to the registry; see [Adding a feature](../workflows/adding-a-feature.md).
 Fake data never uses the real team's names.

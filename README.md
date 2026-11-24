@@ -28,6 +28,7 @@ and fake data stand in for them.
 ```bash
 npm install
 cp .env.example .env.local          # APP_ENV=development, DATABASE_URL=…/crm_dev, FIRST_ADMIN_EMAIL=ada@barnacle.ai
+                                    # (Pipedrive import: also PIPEDRIVE_TOKEN_KEY=$(openssl rand -base64 32))
 npm run db:migrate                  # update the database structure
 npm run db:seed                     # load fake data (fake users, people, organisations, pipelines, deals, notes, ambassadors and custom fields)
 npm run dev                         # http://localhost:3000
@@ -80,6 +81,8 @@ Event and Ambassador, and no labels.
 | `/notifications` | everyone | Your @mentions in notes, newest first, 50 at a time (`?shown=100`): "<name> mentioned you in a note on <record>", the date and the start of the note; pressing one opens the record and marks it read; `[ MARK ALL AS READ ]`. The sidebar shows "Notifications" with the unread count, up to date on every page you open (links, forms, back and forward). In the app only, no email; a mention on a record you can no longer see is hidden. SF-109: also "<name> assigned you a <call|meeting|task>: <subject>" with "Due <date>" when someone else assigns you an activity (it goes when you are no longer the assignee); opening one goes to its deal, else person, else organisation, else the Activities list |
 | `/deals/new`, `/deals/<id>/edit` | everyone (a private deal: its creator and owner) | Add a deal (`?pipeline=<id>&stage=<id>` pre-selects them), edit a deal and its deal labels (`?back=page` returns to the deal page) |
 | `/admin/pipelines`, `/admin/pipelines/<id>` | admins | Add, rename, reorder (↑/↓) and delete pipelines and their stages; deleting one that holds deals moves them to a stage you choose |
+| `/settings` | everyone | Your own settings (SF-117), linked at the bottom of the sidebar above `[ SIGN OUT ]`: "// PIPEDRIVE" with your Pipedrive API token (checked with Pipedrive before it is saved, stored encrypted, never shown again), "Connected to Pipedrive as <user> (<company>)." with the date saved, `[ REPLACE TOKEN ]` (`?replace=1`), `[ REMOVE TOKEN ]` (`?remove-token=1`, confirmed), `[ IMPORT FROM PIPEDRIVE ]`, and the line of an open import |
+| `/settings/pipedrive-import` | everyone with a saved token | The Pipedrive import (SF-117, design B): step bar 1 CHOOSE · 2 IMPORTING · 3 REPORT. Choose People and/or Organisations (and the consent of people with no status in Pipedrive), watch the progress (counts, bars, waits, pause, `[ CONTINUE ]`, `[ STOP IMPORT ]` with `?stop=1`), then the report (`[ NEW IMPORT ]` with `?new=1`). See "Pipedrive import" below |
 | `/admin/custom-fields` | admins | Custom fields of people, organisations and deals (a tab per kind, `?kind=people\|organisations\|deals`): add (`?field=new`), rename, reorder (↑/↓), "Show in list" (at most 8 per kind), choices of choice fields, delete after a confirmation that counts the records with a value (`?delete=<id>`). Eight types: text, long text, number, money (£), date, single choice, multiple choice, yes/no; the type never changes. Values are filled in under "// MORE DETAILS" on the add and edit forms, shown on record pages and the deal drawer, logged on the timeline, shown as columns and filters of the lists (`?cf<id>=…`, `?cf<id>_from=…&cf<id>_to=…`, `?sort=cf<id>`) and can be mapped in the CSV import |
 
 ## Tests
@@ -94,9 +97,10 @@ npm run typecheck    # TypeScript
 
 The test database is emptied and reloaded by the tests: never point `DATABASE_URL` at a database you care about.
 
-The first `npm test` downloads the Google userinfo schema the fake Google sign-in is checked against, and Supabase
-Storage's OpenAPI file the fake file storage is checked against (`npm run test:schemas`, pinned files from GitHub,
-into the git-ignored `.factory/schemas/`): it needs network access once.
+The first `npm test` downloads the Google userinfo schema the fake Google sign-in is checked against, Supabase
+Storage's OpenAPI file the fake file storage is checked against, and Pipedrive's v2 (JSON) and v1 (YAML) OpenAPI files
+the fake Pipedrive is checked against (`npm run test:schemas`, pinned files from GitHub, into the git-ignored
+`.factory/schemas/`): it needs network access once.
 
 ## Commands
 
@@ -108,7 +112,7 @@ into the git-ignored `.factory/schemas/`): it needs network access once.
 | `npm run db:migrate` | Apply the pending `migrations/*.sql`. Prints each one applied, or "Database is up to date.". Safe to run twice, or twice at once. |
 | `npm run db:seed` | Load fake data. Only when `APP_ENV` is exactly `development` or `test` and `VERCEL_ENV` is not `production`/`preview`; otherwise prints "Fake data can only be loaded when APP_ENV is development or test." and exits 1. Safe to run again. |
 | `npm test` | Unit and integration tests (runs `test:schemas` first). |
-| `npm run test:schemas` | Download the pinned Google and Supabase Storage schemas into `.factory/schemas/` when missing; does nothing otherwise. |
+| `npm run test:schemas` | Download the pinned Google, Supabase Storage and Pipedrive (v2 and v1) schemas into `.factory/schemas/` when missing; does nothing otherwise. |
 | `npm run typecheck` | `tsc --noEmit`. |
 
 ## Settings
@@ -123,10 +127,12 @@ Environment variables. `.env.example` lists them all, with no secret values. Sec
 | `FIRST_ADMIN_EMAIL` | production | barnacle.ai address of the first admin. Their first sign-in creates them as an admin. Empty with no users: the sign-in page says the CRM isn't set up yet. |
 | `GOOGLE_CLIENT_ID` | real Google sign-in | From the Internal OAuth app in the barnacle.ai Google Workspace. |
 | `GOOGLE_CLIENT_SECRET` | real Google sign-in | Secret. |
-| `APP_URL` | real Google sign-in | Public base URL, e.g. `http://localhost:3000`. The OAuth redirect URI is `${APP_URL}/auth/google/callback`. Also anchors the check of the return path after sign-in (`http://localhost:3000` when unset). |
+| `APP_URL` | real Google sign-in | Public base URL, e.g. `http://localhost:3000`. The OAuth redirect URI is `${APP_URL}/auth/google/callback`. Also anchors the check of the return path after sign-in (`http://localhost:3000` when unset), and is also the base of unsubscribe links (https in production). |
 | `SUPABASE_URL` | production (files) | `https://<project>.supabase.co`. Empty with `APP_ENV` `development`/`test`: the fake file storage is used. Empty otherwise: every file action answers "Files can't be reached right now. Try again in a minute."; the rest of the app works. |
 | `SUPABASE_SECRET_KEY` | with `SUPABASE_URL` | Supabase secret key (or the legacy `service_role` key). Secret, server only, never sent to the browser. |
 | `FILES_BUCKET` | optional | The private Storage bucket of file contents. Default `crm-files`. |
+| `PIPEDRIVE_TOKEN_KEY` | to use the Pipedrive import | 32 random bytes in base64 (`openssl rand -base64 32`). Secret, server only. It encrypts the Pipedrive tokens users save (AES-256-GCM). Empty or not 32 bytes: Settings says "The Pipedrive import isn't set up yet." and no token can be saved; there is no built-in key, also locally. Changing it makes saved tokens unreadable: users save them again. |
+| `PIPEDRIVE_URL` | optional | Base address of Pipedrive's API. Empty with `APP_ENV` `development`/`test`: the fake Pipedrive (in process) is used. Empty otherwise: `https://api.pipedrive.com`. |
 | `VERCEL_ENV` | set by Vercel | `preview`: sign-in off, no database. `production`: `vercel-build` migrates. `production` or `preview`: the fake login and fake data are refused, whatever `APP_ENV` says. |
 
 There is no session secret: session tokens are random and only their SHA-256 is stored.
@@ -166,6 +172,57 @@ private rules on every request and then redirect to a Storage address valid for 
   in `.fake-storage/` (git-ignored), tests keep them in memory. The fake data command adds a few fake files.
 - **Clean-up**: contents of deleted files and records are removed from Storage right away, or by a later file action
   when Storage did not answer (table `file_cleanup`; there is no cron).
+
+## Pipedrive import
+
+Any signed-in user can bring their Pipedrive people and organisations into the CRM (deals, notes, activities and files
+come in a later step).
+
+- **The token**: each user pastes their own API token (Pipedrive: Personal preferences → API) on `/settings`. The app
+  checks it with `GET /v1/users/me` before saving it, stores it encrypted with `PIPEDRIVE_TOKEN_KEY` (bound to its
+  user), sends it to Pipedrive in the `x-api-token` header only (never in an address or a log) and never shows it again.
+  Removing it, or deactivating the user, deletes it. Nobody, admins included, can see or use another user's token.
+- **What is imported**: people with their names, every email address and phone number (primary first; work → Work,
+  home and mobile → Personal, others → Other), organisation, role ("Job title"/"Role"), lead source ("Lead
+  source"/"Source"), LinkedIn ("LinkedIn", "LinkedIn profile", "LinkedIn URL"), labels, owner, consent, privacy and Date
+  added; organisations with their website, industry (sector), number of employees (size band), address (location) and
+  owner; custom fields that match a CRM custom field of the same name and a compatible type. Values a form would refuse
+  are left out with a warning, never cut. Lists are matched, never added to. Owners are matched by email to active CRM
+  users, else the importing user gets the record. An "Owner only" person is private, owned and created by its owner;
+  organisations are always shared. People without a consent status in Pipedrive get the consent the user chooses.
+- **Matching and linking**: a person whose email address one CRM person already has, or an organisation whose name a
+  CRM organisation already has, is linked to it and left as it is (only a Subscribed person unsubscribed in Pipedrive
+  becomes Unsubscribed). Every record imported or linked keeps its Pipedrive company and ID (`pipedrive_links`), so a
+  Pipedrive record never leads to two CRM records, whether imports are repeated, resumed or run by two users at once; a
+  record deleted in the CRM is not added back.
+- **Parts, waits and pauses**: the import runs in parts of up to 100 records while its page is open (one part about
+  every second; no background job). When Pipedrive answers "too many requests" the page waits the time Pipedrive asks
+  for (at most 5 minutes) and carries on. Closing the page pauses the import (after 30 seconds without a part);
+  `[ CONTINUE ]` carries on from where it stopped; a failed part saves nothing and pauses with the reason.
+- **The report**: counts (imported, linked, already imported, not imported), every record not imported with why, the
+  owners without a CRM user, list values, custom fields and choices left out, and the other warnings. The latest report
+  stays on the import page until the user starts another import.
+- **Locally and in tests**: leave `PIPEDRIVE_URL` empty and set a `PIPEDRIVE_TOKEN_KEY`. The fake Pipedrive
+  (`src/server/pipedrive/fake-pipedrive.ts`, nothing to seed) accepts `fake-pipedrive-token` ("Fake Person", "Fakeco
+  Pipedrive": 60 organisations, 300 people; its owners match the fake users ada@ and margaret@, plus "Jane Fake" who has
+  no CRM user) and `fake-pipedrive-other` ("Otherco Pipedrive"); any other token is refused.
+
+## Unsubscribe
+
+Every person has a random unsubscribe token (64 hex characters, `persons.unsubscribe_token`, made by the database, no
+expiry). The addresses need no sign-in; the token is the only authority:
+
+- `/unsubscribe/<token>`: the page. Opening it changes nothing; `[ UNSUBSCRIBE ]` posts to `/unsubscribe/<token>/confirm`,
+  which sets Consent to Unsubscribed and adds "Unsubscribed from campaigns through the unsubscribe link" to the person's
+  timeline (no actor, nobody notified).
+- `/unsubscribe/<token>/one-click`: RFC 8058 one-click for mail apps (`POST` with `List-Unsubscribe=One-Click`; answers
+  `200`, `400`, `404` or `503` in plain text).
+- Campaign sending takes the page link and both headers (`List-Unsubscribe`, `List-Unsubscribe-Post`) from
+  `unsubscribeLinksFor(personId)` in `src/server/records/unsubscribe.ts`, built on `APP_URL`.
+- `/dev/unsubscribe-links` (development and test only) lists every person's link and headers.
+
+There is no setting. Only a teammate can subscribe a person again, from the edit form ("Consent: Unsubscribed →
+Subscribed by <name>"); the form changes Consent only when the field was changed on it.
 
 ## Production notes
 

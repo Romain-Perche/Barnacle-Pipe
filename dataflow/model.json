@@ -24,6 +24,10 @@
     {
       "id": "supabase",
       "label": "Supabase Storage (third party)"
+    },
+    {
+      "id": "pipedrive",
+      "label": "Pipedrive (third party)"
     }
   ],
   "groups": [
@@ -73,9 +77,14 @@
       "description": "Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage."
     },
     {
-      "id": "campaigns",
-      "label": "Campaigns",
-      "description": "Team-shared email campaign drafts with merge tags, layouts and a sandboxed preview."
+      "id": "pipedrive",
+      "label": "Pipedrive import",
+      "description": "Connects a Pipedrive token and imports people, organisations and deals page by page, never twice."
+    },
+    {
+      "id": "unsubscribe",
+      "label": "Unsubscribe",
+      "description": "Lets an email recipient withdraw consent through a token link or RFC 8058 one-click."
     }
   ],
   "actors": [
@@ -100,6 +109,15 @@
       "id": "supabase-storage",
       "label": "Supabase Storage",
       "zone": "supabase"
+    },
+    {
+      "id": "pipedrive-api",
+      "label": "Pipedrive API",
+      "zone": "pipedrive"
+    },
+    {
+      "id": "email-recipient",
+      "label": "Email recipient / mail app"
     }
   ],
   "processes": [
@@ -344,14 +362,28 @@
       ]
     },
     {
-      "id": "campaigns",
-      "label": "Campaign drafts",
+      "id": "pipedrive-import",
+      "label": "Pipedrive import",
       "zone": "app",
-      "group": "campaigns",
+      "group": "pipedrive",
       "sources": [
-        "src/app/(app)/campaigns",
-        "src/server/campaigns/campaigns.ts",
-        "src/server/campaigns/preview.ts"
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/api.ts",
+        "src/server/pipedrive/connection.ts",
+        "src/server/pipedrive/crypto.ts",
+        "src/app/(app)/settings/pipedrive-import",
+        "src/app/(app)/settings/actions.ts"
+      ]
+    },
+    {
+      "id": "unsubscribe",
+      "label": "Unsubscribe page and one-click",
+      "zone": "app",
+      "group": "unsubscribe",
+      "sources": [
+        "src/app/unsubscribe",
+        "src/server/records/unsubscribe.ts",
+        "src/server/records/unsubscribe-rules.ts"
       ]
     }
   ],
@@ -573,12 +605,21 @@
       ]
     },
     {
-      "id": "campaigns-table",
-      "label": "Campaigns",
+      "id": "pipedrive-connections-table",
+      "label": "Sealed Pipedrive tokens",
       "zone": "postgres",
-      "group": "campaigns",
+      "group": "pipedrive",
       "sources": [
-        "migrations/0012_campaigns.sql"
+        "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "id": "pipedrive-imports-table",
+      "label": "Pipedrive imports and links",
+      "zone": "postgres",
+      "group": "pipedrive",
+      "sources": [
+        "migrations/0012_pipedrive.sql"
       ]
     }
   ],
@@ -2101,67 +2142,176 @@
       ]
     },
     {
-      "from": "staff",
-      "to": "campaigns",
-      "data": "draft edits, pasted HTML",
-      "sources": [
-        "src/app/(app)/campaigns/actions.ts"
-      ]
-    },
-    {
       "from": "session-guard",
-      "to": "campaigns",
+      "to": "pipedrive-import",
       "data": "signed-in user",
       "sources": [
-        "src/server/auth/session.ts"
+        "src/server/pipedrive/imports.ts"
       ]
     },
     {
-      "from": "campaigns",
-      "to": "campaigns-table",
-      "data": "draft details and content",
+      "from": "staff",
+      "to": "pipedrive-import",
+      "data": "API token, import choices",
       "sources": [
-        "src/server/campaigns/campaigns.ts"
+        "src/app/(app)/settings/actions.ts"
       ]
     },
     {
-      "from": "campaigns-table",
-      "to": "campaigns",
-      "data": "drafts for list and editor",
+      "from": "pipedrive-import",
+      "to": "staff",
+      "data": "progress and report",
       "sources": [
-        "src/server/campaigns/campaigns.ts"
+        "src/app/(app)/settings/pipedrive-import/page.tsx"
       ]
     },
     {
-      "from": "persons-table",
-      "to": "campaigns",
-      "data": "visible person merge values for preview",
+      "from": "pipedrive-import",
+      "to": "pipedrive-api",
+      "data": "token header, page requests",
       "sources": [
-        "src/server/campaigns/preview.ts"
+        "src/server/pipedrive/api.ts"
       ]
     },
     {
-      "from": "custom-fields-table",
-      "to": "campaigns",
-      "data": "people custom field names for merge tags",
+      "from": "pipedrive-api",
+      "to": "pipedrive-import",
+      "data": "people, organisations, deals, fields",
       "sources": [
-        "src/server/campaigns/campaigns.ts"
+        "src/server/pipedrive/api.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "pipedrive-connections-table",
+      "data": "token sealed with AES-256-GCM",
+      "sources": [
+        "src/server/pipedrive/connection.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-connections-table",
+      "to": "pipedrive-import",
+      "data": "sealed token",
+      "sources": [
+        "src/server/pipedrive/connection.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "pipedrive-import",
+      "data": "PIPEDRIVE_URL, token key",
+      "sources": [
+        "src/server/env.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "pipedrive-imports-table",
+      "data": "run state, links",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-imports-table",
+      "to": "pipedrive-import",
+      "data": "cursor, links",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "persons-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "organisations-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "custom-values-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "timeline-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
       ]
     },
     {
       "from": "migrate",
-      "to": "campaigns-table",
-      "data": "table definitions",
+      "to": "pipedrive-connections-table",
+      "data": "schema",
       "sources": [
-        "migrations/0012_campaigns.sql"
+        "migrations/0012_pipedrive.sql"
       ]
     },
     {
-      "from": "seed",
-      "to": "campaigns-table",
-      "data": "fake campaign drafts",
+      "from": "migrate",
+      "to": "pipedrive-imports-table",
+      "data": "schema",
       "sources": [
-        "src/seed/campaigns.ts"
+        "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "from": "email-recipient",
+      "to": "unsubscribe",
+      "data": "unsubscribe token, confirm or one-click POST",
+      "sources": [
+        "src/app/unsubscribe/[token]/confirm/route.ts",
+        "src/app/unsubscribe/[token]/one-click/route.ts"
+      ]
+    },
+    {
+      "from": "unsubscribe",
+      "to": "email-recipient",
+      "data": "unsubscribe confirmation page",
+      "sources": [
+        "src/app/unsubscribe/[token]/page.tsx"
+      ]
+    },
+    {
+      "from": "unsubscribe",
+      "to": "persons-table",
+      "data": "consent set to unsubscribed by token",
+      "sources": [
+        "src/server/records/unsubscribe.ts"
+      ]
+    },
+    {
+      "from": "unsubscribe",
+      "to": "timeline-table",
+      "data": "unsubscribed_link / unsubscribed_mail_app events",
+      "sources": [
+        "src/server/records/unsubscribe.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "persons-table",
+      "data": "unsubscribe token column",
+      "sources": [
+        "migrations/0013_unsubscribe.sql"
       ]
     }
   ]

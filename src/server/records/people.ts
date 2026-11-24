@@ -23,6 +23,7 @@ import type { CustomField } from "@/server/custom-fields/rules";
 import { organisationExistsAfterRace, resolveOrganisation } from "@/server/records/organisations";
 import {
   changedPersonFields,
+  CONSENT_LABELS,
   escapeLike,
   normaliseEmail,
   validatePerson,
@@ -305,7 +306,11 @@ export async function updatePerson(actorId: number, id: number, version: number,
         private: current.createdBy === actorId || current.owner.id === actorId ? value.private : current.private,
         ambassador: current.archived ? before.ambassador : value.ambassador,
         referredById,
+        // SF-121 FR-019: only a Consent changed on this form is saved; otherwise the stored value stays (a form opened
+        // before the person unsubscribed through their link never subscribes them again).
+        consent: form.consent !== "" && (form.consentShown ?? "") !== "" && form.consent !== form.consentShown ? value.consent : current.consent,
       };
+      const consentChanged = before.consent !== after.consent;
       const referrerChanged = before.referredById !== after.referredById;
       await db`
         update persons set first_name = ${after.firstName}, last_name = ${after.lastName}, organisation_id = ${after.organisationId},
@@ -316,10 +321,17 @@ export async function updatePerson(actorId: number, id: number, version: number,
                version = version + 1
         where id = ${id}`;
       await writeChildren(db, id, after);
-      const fields = changedPersonFields(before, after);
+      // SF-121 FR-011: a Consent change is its own line ("Consent: <old> → <new>"), not part of "Edited".
+      const fields = changedPersonFields(before, after).filter((f) => !(consentChanged && f === "Consent"));
       // SF-115: before this save's other events, so a refused custom value leaves nothing written.
       await saveCustomValues(db, actorId, { personId: id }, form.custom, { archived: current.archived });
       if (fields.length > 0) await recordEvent(db, { personId: id, kind: "edited", actorId, fields });
+      if (consentChanged) {
+        await recordEvent(db, {
+          personId: id, kind: "consent_changed", actorId,
+          oldValue: CONSENT_LABELS[before.consent], newValue: CONSENT_LABELS[after.consent],
+        });
+      }
       if (before.ambassador !== after.ambassador) {
         await recordEvent(db, { personId: id, kind: after.ambassador ? "ambassador_added" : "ambassador_removed", actorId });
       }

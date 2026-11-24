@@ -6,7 +6,7 @@ Local Postgres as in `README.md`; `npm install` done.
 
 ```bash
 export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test
-npm run db:migrate          # applies 0012_campaigns.sql
+npm run db:migrate          # applies 0014_campaigns.sql
 npm test && npm run typecheck
 ```
 

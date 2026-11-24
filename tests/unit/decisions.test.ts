@@ -83,6 +83,16 @@ describe("docs/DECISIONS.md (SF-115)", () => {
   });
 });
 
+// covers SF-117 spec.md § Clarifications (Session 2026-11-24): the three choices people made are recorded
+describe("docs/DECISIONS.md (SF-117)", () => {
+  const sf117 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-117)"));
+  it("records the design, the owner-only rule and the unsubscribe rule", () => {
+    expect(sf117.some((l) => l.includes("Pipedrive import uses design B"))).toBe(true);
+    expect(sf117.some((l) => l.includes("visible only to its owner is private in the CRM and its owner is its creator"))).toBe(true);
+    expect(sf117.some((l) => l.includes("becomes Unsubscribed on import") && l.includes("never makes anyone Subscribed"))).toBe(true);
+  });
+});
+
 // covers SF-119 spec.md § Clarifications (Session 2026-11-24): the three choices people made, one line each; the
 // factory's "Plan 2026-11-24" choices are not recorded until a person confirms them
 describe("docs/DECISIONS.md (SF-119)", () => {

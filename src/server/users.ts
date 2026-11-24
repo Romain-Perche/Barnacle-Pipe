@@ -4,6 +4,7 @@
 import { isBarnacleEmail, normalizeEmail } from "@/server/auth/rules";
 import { revokeAllSessions } from "@/server/auth/session";
 import { sql, type Sql } from "@/server/db";
+import { deleteConnection } from "@/server/pipedrive/connection";
 
 export type UserRow = {
   id: number;
@@ -99,6 +100,8 @@ export function deactivate(actorId: number, userId: number): Promise<ChangeResul
     if (userId === actorId) throw new Refused("self_deactivate");
     await update(db, userId, { status: "deactivated" });
     await revokeAllSessions(userId, db);
+    // SF-117 FR-003: users are never deleted, so their Pipedrive token is (nobody else may use it).
+    await deleteConnection(db, userId);
     await record(db, userId, actorId, "deactivated");
   });
 }

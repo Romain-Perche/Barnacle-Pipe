@@ -31,7 +31,7 @@ describe("personFormFromData", () => {
       ],
       phones: [{ value: "+44 1", kind: "work" }],
       organisationId: "3", newOrganisationName: "", role: "COO", leadSourceId: "2", linkedin: "linkedin.com/in/ada",
-      ownerId: "1", labelIds: ["4", "5"], consent: "unsubscribed", private: true, ambassador: false, referredBy: "",
+      ownerId: "1", labelIds: ["4", "5"], consent: "unsubscribed", consentShown: "", private: true, ambassador: false, referredBy: "",
     });
   });
   it("treats missing fields as empty, an unticked Private as false, and keeps at most 50 rows", () => {
@@ -41,6 +41,11 @@ describe("personFormFromData", () => {
     expect(form.private).toBe(false);
     expect(form.emails).toHaveLength(50);
     expect(form.emails[0]).toEqual({ value: "x0@example.com", kind: "work" });
+  });
+  // covers SF-121 FR-019 (T028): the Consent value the edit form was opened with
+  it("reads consentShown, empty when absent", () => {
+    expect(personFormFromData(data([["consent", "subscribed"], ["consentShown", "unsubscribed"]])).consentShown).toBe("unsubscribed");
+    expect(personFormFromData(data([["consent", "subscribed"]])).consentShown).toBe("");
   });
 });
 

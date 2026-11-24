@@ -47,6 +47,13 @@ OAuth code flow and database sessions.
   `file_uploads`), `deleteFile`, `cleanupPathsFor` (used by the three record deletes), `sweepFileCleanup` (table
   `file_cleanup`, swept after every file action: no cron)). No Storage call inside a transaction. `visibleFile()` in
   `records/visibility.ts`: every `files` read uses it. FILE timeline entries: kinds `file_added` / `file_deleted`.
+- SF-121 unsubscribe: `src/server/records/unsubscribe-rules.ts` (pure: `isTokenShape`, `unsubscribeLinks`, `isOneClickBody`)
+  and `src/server/records/unsubscribe.ts` (`unsubscribeByToken`, `unsubscribePageState`, `unsubscribeLinksFor` — the one
+  function campaign sending uses — and `listUnsubscribeLinks`; the only `persons` reads without `visiblePerson()`: the
+  token is the authority). Public pages: `src/app/unsubscribe/[token]/` (the page, `confirm/` and `one-click/` route
+  handlers, listed in `PUBLIC` in `src/proxy.ts`) and `src/app/dev/unsubscribe-links/` (development and test only).
+  Timeline kinds `unsubscribed_link`, `unsubscribed_mail_app` (no actor) and `consent_changed` (a teammate's Consent edit;
+  the person form sends `consentShown` and a save changes Consent only when the field was changed on that form).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
   `records/import/`: the CSV import screens shared by `/people/import` and `/organisations/import` (`ImportPages.tsx`:
   the four steps; `FileStep.tsx`: the only client part, sends the file in 512 KiB parts; `actions.ts`; `example.ts`).
@@ -99,11 +106,32 @@ OAuth code flow and database sessions.
   checks, example files), `rows.ts` (a row through `validatePerson`/`validateOrganisation`), `plan.ts` (what an import
   will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
   (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
-  `person_emails`, bulk inserts).
+  `person_emails`, bulk inserts through `bulk.ts`: `newIds`, `inChunks`, `col`, `insertCustomValues`, shared with the
+  Pipedrive import).
+- `src/server/pipedrive/` — the Pipedrive import (SF-117): `crypto.ts` (`sealToken` / `openToken`: AES-256-GCM, key
+  `PIPEDRIVE_TOKEN_KEY` from `pipedriveConfig()` in `env.ts`, bound to the user), `api.ts` (the six GET calls by plain
+  `fetch`, token in the `x-api-token` header only, 10 s time-out, `PipedriveRefused` / `PipedriveSlowDown` /
+  `PipedriveBadRequest` / `PipedriveUnreachable`, `retrySeconds`, `usePipedriveFetchForTests`), `fake-pipedrive.ts`
+  (`FakePipedrive`, `fakePipedrive()` the development instance: tokens `fake-pipedrive-token` / `fake-pipedrive-other`),
+  `connection.ts` (`getConnection`, `saveToken`, `removeToken`, `deleteConnection` used by `deactivate()`; `tokenFor` is
+  the ONLY place a token is opened, for `imports.ts`), `rules.ts` and `page.ts` (pure: field mapping, custom types,
+  consent, privacy; the plan of one page: already / linked / added / not imported), `imports.ts` (`startImport`,
+  `runPart`, `continueImport`, `stopImport`, `getImportView`: the Pipedrive calls of a part come BEFORE its
+  `sql.begin()`, never inside; each page transaction locks the row `for update`, checks the step and cursor, then
+  `lock table organisations, person_emails, pipedrive_links in share row exclusive mode`), `report.ts` (`mergeReport`,
+  `reportLines`, `namesForReport` through `visiblePerson()`). `pipedrive_links` (company + kind + Pipedrive id) is the
+  "never twice" key; `pipedrive_imports` holds one run per user (one open at a time), `pipedrive_connections` one sealed
+  token per user. Timeline kinds `pipedrive_imported` / `pipedrive_unsubscribed`.
+- `src/app/(app)/settings/` (SF-117) — Settings (`page.tsx`, `PipedriveSection.tsx`, `RemoveTokenConfirm.tsx`,
+  `actions.ts`), linked by `footerNav` in `nav.ts` at the bottom of the sidebar; `settings/pipedrive-import/` — the import
+  page (`page.tsx`, `maxDuration = 60`; `ChooseStep.tsx`, `ProgressStep.tsx`, `ReportStep.tsx`, `Counts.tsx`,
+  `StopConfirm.tsx`, `actions.ts`) and `ImportRunner.tsx` (client: one part, `router.refresh()`, the next part a second
+  later or after Pipedrive's wait). `records/import/StepBar.tsx` takes a `steps` prop.
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
-  files, custom fields: `custom-fields.ts`, campaigns: `campaigns.ts`).
+  files, custom fields: `custom-fields.ts`, campaigns: `campaigns.ts`). The fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
-- `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google and Supabase Storage schemas).
+- `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage and Pipedrive
+  v2 / v1 schemas).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),
   `tests/support/reset.ts` (empties every app table; lead sources back to the six starting ones).
 
@@ -129,7 +157,9 @@ npm test && npm run typecheck
 
 Each test names what it covers (`// covers FR-003, US1 scenario 2`). Fakes only for outside services
 (Google Sign-In: `tests/fakes/google.ts`; Supabase Storage: `tests/fakes/storage.ts`, checked against
-`storage_v0_openapi.json`; each checked against its schema; see `.factory/test-env.md`).
+`storage_v0_openapi.json`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
+`pipedrive_v2_openapi.json` and `pipedrive_v1_openapi.yml` by `tests/fakes/pipedrive-schema.ts`; each checked against
+its schema; see `.factory/test-env.md`).
 
 <!-- OPENWIKI:START -->
 

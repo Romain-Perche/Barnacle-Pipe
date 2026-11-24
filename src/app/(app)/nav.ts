@@ -1,5 +1,6 @@
 // REGISTRY of the sidebar links. A later feature adds one line here for its page:
-// mainNav for everyone, adminNav for the "// Admin" group (shown to admins only).
+// mainNav for everyone, adminNav for the "// Admin" group (shown to admins only), footerNav at the bottom of the
+// sidebar beside the user's name, above [ SIGN OUT ] (SF-117).
 export type NavItem = { href: string; label: string };
 
 export const mainNav: NavItem[] = [
@@ -24,3 +25,6 @@ export const adminNav: NavItem[] = [
   // SF-115: custom fields of people, organisations and deals.
   { href: "/admin/custom-fields", label: "Custom fields" },
 ];
+
+// SF-117: the user's own Settings (the Pipedrive token and import).
+export const footerNav: NavItem[] = [{ href: "/settings", label: "Settings" }];
