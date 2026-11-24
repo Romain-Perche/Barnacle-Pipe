@@ -188,7 +188,7 @@
     on a won deal, X1 on an archived deal, L1 archived+unsubscribed+no address, L2 unsubscribed+no address, L3 no address,
     M1 only person of "Rv D9", G1 private (Grace), V1 on Grace's private deal, O1 at "Old Fakeco Archive", AL owned by
     deactivated Alan Fake, Z1 at "Rv TempOrg" with the person Yes/No field "Rv Opted (fake)"). Expected for Ada: RA open 3,
-    all 5; RevPipe open 4 (left out 1/1/1); RB open 2, 1 after moving Rv D9 to RA. Runs all 23 SF-120 scenarios.
+    all 5; RevPipe open 4 (left out 1/1/1); RB open 2, 1 after moving Rv D9 to RA. Runs all 23 SF-120 scenarios (~1 min; all pass, re-run in a second AI review).
     SF-117: `PIPEDRIVE_TOKEN_KEY` defaults to a key made once into /tmp/pipedrive-token-key (`PIPEDRIVE_TOKEN_KEY=` for
     "The Pipedrive import isn't set up yet."); `PIPEDRIVE_URL` empty → the in-process fake Pipedrive.
   - `bash .factory/run/reset-db.sh [db]` — empties every app table (users, sessions, people, organisations,
