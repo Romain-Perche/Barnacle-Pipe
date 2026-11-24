@@ -71,10 +71,12 @@ flowchart LR
     n2 -->|"schema"| n6
     n2 -->|"schema"| n7
     n6 -->|"current unread count"| n10
-    n15 -->|"people, organisations, deals, fields"| n7
-    n7 -->|"imported records"| n1
+    n15 -->|"2 flows"| n7
+    n7 -->|"4 flows"| n1
+    n7 -->|"2 flows"| n4
     n7 -->|"token header, page requests"| n15
     n7 -->|"progress and report"| n13
+    n7 -->|"copied Pipedrive files"| n16
     n6 -->|"crm_flash cookie"| n9
     n9 -->|"4 flows"| n6
     n9 -->|"2 flows"| n10
@@ -147,7 +149,7 @@ flowchart LR
     subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
         n12["Supabase Storage"]
     end
-    n1 -->|"48 flows"| n4
+    n1 -->|"53 flows"| n4
     n1 -->|"13 flows"| n9
     n4 -->|"30 flows"| n1
     n5 -->|"4 flows"| n1
@@ -156,13 +158,13 @@ flowchart LR
     n7 -->|"4 flows"| n1
     n7 -->|"2 flows"| n3
     n1 -->|"5 flows"| n2
-    n1 -->|"signed upload address, info, delete requests"| n12
+    n1 -->|"2 flows"| n12
     n1 -->|"auth code, PKCE verifier, client id and secret"| n10
     n10 -->|"access token, then email, domain and name"| n1
     n3 -->|"13 flows"| n4
     n3 -->|"schema"| n1
     n8 -->|"SQL migration text"| n3
-    n11 -->|"people, organisations, deals, fields"| n1
+    n11 -->|"2 flows"| n1
     n1 -->|"token header, page requests"| n11
     n9 -->|"14 flows"| n1
     n9 -->|"file contents (PUT to signed address)"| n12
@@ -248,10 +250,12 @@ flowchart LR
     n13 -->|"fake users / table definitions"| n12
     n6 -->|"organisations and their people"| n17
     n7 -->|"2 flows"| n17
+    n16 -->|"imported activities"| n1
     n16 -->|"imported records"| n4
+    n16 -->|"imported file rows"| n5
     n16 -->|"imported records"| n6
     n16 -->|"imported records"| n7
-    n16 -->|"imported records"| n10
+    n16 -->|"imported notes / imported records"| n10
     n9 -->|"session state with user role and status"| n18
     n10 -->|"2 flows"| n17
     n19 -->|"private people handed to a new owner"| n7
@@ -385,9 +389,10 @@ flowchart LR
     end
     n8[["Database commands"]]
     n9[["Deals"]]
-    n10[["People and organisations"]]
-    n11[["Signed-in app and user admin"]]
-    n10 -->|"label changes seen on deals"| n2
+    n10[["Pipedrive import"]]
+    n11[["People and organisations"]]
+    n12[["Signed-in app and user admin"]]
+    n11 -->|"label changes seen on deals"| n2
     n1 -->|"followers"| n9
     n2 -->|"deal labels for the list and page"| n9
     n3 -->|"other linked people"| n9
@@ -396,17 +401,19 @@ flowchart LR
     n9 -->|"other linked people"| n3
     n9 -->|"time spent in each stage"| n4
     n9 -->|"3 flows"| n5
-    n5 -->|"visible referred deals and totals"| n10
+    n5 -->|"visible referred deals and totals"| n11
     n5 -->|"2 flows"| n9
     n8 -->|"table definitions"| n1
     n8 -->|"table definitions"| n2
     n8 -->|"table definitions"| n3
     n8 -->|"fake deals / table definitions"| n5
+    n10 -->|"imported deals"| n5
+    n10 -->|"matched or created pipelines and stages"| n6
     n9 -->|"pipeline changes"| n6
     n9 -->|"stage changes"| n7
     n6 -->|"pipelines for the board"| n9
     n7 -->|"stages for the board"| n9
-    n11 -->|"private deals handed to a new owner"| n5
+    n12 -->|"private deals handed to a new owner"| n5
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -414,7 +421,7 @@ flowchart LR
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1,n2,n3,n4,n5,n6,n7 store
-    class n8,n9,n10,n11 stub
+    class n8,n9,n10,n11,n12 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -592,22 +599,29 @@ flowchart LR
         n4[("Sealed Pipedrive tokens")]
         n5[("Pipedrive imports and links")]
     end
-    n6[["Database"]]
-    n7[["Database commands"]]
-    n8[["Settings"]]
-    n9[["Sign-in and sessions"]]
-    n8 -->|"PIPEDRIVE_URL, token key"| n2
-    n7 -->|"schema"| n4
-    n7 -->|"schema"| n5
+    subgraph z4["SUPABASE STORAGE (THIRD PARTY)"]
+        n6["Supabase Storage"]
+    end
+    n7[["Database"]]
+    n8[["Database commands"]]
+    n9[["Deals database"]]
+    n10[["Settings"]]
+    n11[["Sign-in and sessions"]]
+    n10 -->|"PIPEDRIVE_URL, token key"| n2
+    n8 -->|"schema"| n4
+    n8 -->|"schema"| n5
     n3 -->|"people, organisations, deals, fields"| n2
+    n3 -->|"pipelines, deals, notes, activities, files"| n2
     n4 -->|"sealed token"| n2
-    n2 -->|"imported records"| n6
+    n2 -->|"4 flows"| n7
+    n2 -->|"2 flows"| n9
     n2 -->|"token header, page requests"| n3
     n2 -->|"token sealed with AES-256-GCM"| n4
     n2 -->|"run state, links"| n5
     n2 -->|"progress and report"| n1
+    n2 -->|"copied Pipedrive files"| n6
     n5 -->|"cursor, links"| n2
-    n9 -->|"signed-in user"| n2
+    n11 -->|"signed-in user"| n2
     n1 -->|"API token, import choices"| n2
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -615,13 +629,14 @@ flowchart LR
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n1,n3 actor
+    class n1,n3,n6 actor
     class n2 process
     class n4,n5 store
-    class n6,n7,n8,n9 stub
+    class n7,n8,n9,n10,n11 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
     style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
     style z3 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
+    style z4 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
 ```
 
 ### Settings
@@ -818,7 +833,7 @@ flowchart LR
 | persons, emails, phones and person_labels tables | store | Database | Postgres (Supabase or local) | `migrations/0002_people_organisations.sql` |
 | Pipedrive API | actor |  | Pipedrive (third party) |  |
 | Sealed Pipedrive tokens | store | Pipedrive import | Postgres (Supabase or local) | `migrations/0012_pipedrive.sql` |
-| Pipedrive import | process | Pipedrive import | Next.js app server (Vercel or local) | `src/app/(app)/settings/actions.ts`, `src/app/(app)/settings/pipedrive-import`, `src/server/pipedrive/api.ts`, `src/server/pipedrive/connection.ts`, `src/server/pipedrive/crypto.ts`, `src/server/pipedrive/imports.ts` |
+| Pipedrive import | process | Pipedrive import | Next.js app server (Vercel or local) | `src/app/(app)/settings/actions.ts`, `src/app/(app)/settings/pipedrive-import`, `src/server/pipedrive/api.ts`, `src/server/pipedrive/connection.ts`, `src/server/pipedrive/crypto.ts`, `src/server/pipedrive/deal-rules.ts`, `src/server/pipedrive/imports.ts`, `src/server/pipedrive/records-page.ts` |
 | Pipedrive imports and links | store | Pipedrive import | Postgres (Supabase or local) | `migrations/0012_pipedrive.sql` |
 | Pipelines admin | process | Deals | Next.js app server (Vercel or local) | `src/app/(app)/admin/pipelines`, `src/server/deals/pipelines.ts` |
 | Postgres pipelines | store | Deals database | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
@@ -962,14 +977,21 @@ flowchart LR
 | persons, emails, phones and person_labels tables | Ambassadors and referrals | visible ambassadors and referred people | `src/server/records/ambassadors.ts` |
 | persons, emails, phones and person_labels tables | People pages and actions | visible persons (private ones hidden) | `src/server/records/people.ts`, `src/server/records/visibility.ts` |
 | Pipedrive API | Pipedrive import | people, organisations, deals, fields | `src/server/pipedrive/api.ts` |
+| Pipedrive API | Pipedrive import | pipelines, deals, notes, activities, files | `src/server/pipedrive/api.ts` |
 | Sealed Pipedrive tokens | Pipedrive import | sealed token | `src/server/pipedrive/connection.ts` |
+| Pipedrive import | Postgres activities | imported activities | `src/server/pipedrive/imports.ts` |
 | Pipedrive import | Custom values | imported records | `src/server/imports/bulk.ts`, `src/server/pipedrive/imports.ts` |
+| Pipedrive import | Postgres deals | imported deals | `src/server/pipedrive/imports.ts` |
+| Pipedrive import | File rows, uploads and cleanup | imported file rows | `src/server/pipedrive/imports.ts` |
 | Pipedrive import | organisations table | imported records | `src/server/imports/bulk.ts`, `src/server/pipedrive/imports.ts` |
 | Pipedrive import | persons, emails, phones and person_labels tables | imported records | `src/server/imports/bulk.ts`, `src/server/pipedrive/imports.ts` |
 | Pipedrive import | Pipedrive API | token header, page requests | `src/server/pipedrive/api.ts` |
 | Pipedrive import | Sealed Pipedrive tokens | token sealed with AES-256-GCM | `src/server/pipedrive/connection.ts` |
 | Pipedrive import | Pipedrive imports and links | run state, links | `src/server/pipedrive/imports.ts` |
+| Pipedrive import | Postgres pipelines | matched or created pipelines and stages | `src/server/pipedrive/imports.ts` |
 | Pipedrive import | Barnacle staff user | progress and report | `src/app/(app)/settings/pipedrive-import/page.tsx` |
+| Pipedrive import | Supabase Storage | copied Pipedrive files | `src/server/files/storage.ts`, `src/server/pipedrive/imports.ts` |
+| Pipedrive import | timeline_events table | imported notes | `src/server/pipedrive/imports.ts` |
 | Pipedrive import | timeline_events table | imported records | `src/server/imports/bulk.ts`, `src/server/pipedrive/imports.ts` |
 | Pipedrive imports and links | Pipedrive import | cursor, links | `src/server/pipedrive/imports.ts` |
 | Pipelines admin | Postgres deals | deals moved when a stage is removed | `src/server/deals/pipelines.ts` |

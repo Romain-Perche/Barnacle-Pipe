@@ -363,7 +363,9 @@
         "src/server/pipedrive/connection.ts",
         "src/server/pipedrive/crypto.ts",
         "src/app/(app)/settings/pipedrive-import",
-        "src/app/(app)/settings/actions.ts"
+        "src/app/(app)/settings/actions.ts",
+        "src/server/pipedrive/records-page.ts",
+        "src/server/pipedrive/deal-rules.ts"
       ]
     }
   ],
@@ -2251,6 +2253,63 @@
       "data": "schema",
       "sources": [
         "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "deals-table",
+      "data": "imported deals",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "pipelines-table",
+      "data": "matched or created pipelines and stages",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "activities-table",
+      "data": "imported activities",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "files-tables",
+      "data": "imported file rows",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "supabase-storage",
+      "data": "copied Pipedrive files",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/files/storage.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "timeline-table",
+      "data": "imported notes",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-api",
+      "to": "pipedrive-import",
+      "data": "pipelines, deals, notes, activities, files",
+      "sources": [
+        "src/server/pipedrive/api.ts"
       ]
     }
   ]
