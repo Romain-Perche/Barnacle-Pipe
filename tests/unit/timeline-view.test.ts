@@ -65,3 +65,21 @@ describe("entryTag for files", () => {
     expect(entryTag({ kind: "file_added", deal: null, person: { id: 2, name: "Ben", archived: false } })).toBe("PERSON");
   });
 });
+
+// covers SF-117 FR-026, US2 scenarios 14 and 16: the two Pipedrive lines, tagged CHANGE
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { Line } from "@/app/(app)/records/Timeline";
+import type { TimelineEvent } from "@/server/records/timeline";
+describe("Pipedrive timeline lines (SF-117)", () => {
+  const event = (kind: TimelineEvent["kind"]): TimelineEvent => ({
+    id: 1, kind, actorName: "Linus Fake", fields: null, relatedPerson: null, fromPerson: null, relatedUserName: null, fromStage: null, toStage: null,
+    cause: null, reason: null, fieldName: null, oldValue: null, newValue: null, createdAt: new Date(),
+  });
+  it("reads Imported from Pipedrive by <name> / Unsubscribed by the Pipedrive import of <name>", () => {
+    expect(renderToStaticMarkup(createElement(Line, { e: event("pipedrive_imported"), onDeal: false }))).toBe("Imported from Pipedrive by Linus Fake");
+    expect(renderToStaticMarkup(createElement(Line, { e: event("pipedrive_unsubscribed"), onDeal: false }))).toBe("Unsubscribed by the Pipedrive import of Linus Fake");
+    expect(entryTag({ kind: "pipedrive_imported", deal: null })).toBe("CHANGE");
+    expect(entryTag({ kind: "pipedrive_unsubscribed", deal: null })).toBe("CHANGE");
+  });
+});

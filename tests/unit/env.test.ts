@@ -82,3 +82,36 @@ describe("storageConfig", () => {
     expect(storageConfig()).toEqual({ mode: "off" });
   });
 });
+
+// covers SF-117 FR-030, FR-003, Clarifications "no token encryption key" (contracts/pipedrive-api.md § Settings)
+import { pipedriveConfig } from "@/server/env";
+describe("pipedriveConfig", () => {
+  const key32 = Buffer.alloc(32, 7).toString("base64");
+  it.each(["development", "test"])("uses the fake with APP_ENV=%s and no PIPEDRIVE_URL", (appEnv) => {
+    withEnv({ APP_ENV: appEnv, VERCEL_ENV: undefined, PIPEDRIVE_URL: "", PIPEDRIVE_TOKEN_KEY: key32 });
+    const c = pipedriveConfig();
+    expect(c.mode).toBe("fake");
+    expect(c.baseUrl).toBe("https://fake.pipedrive.invalid");
+    expect(c.key?.equals(Buffer.alloc(32, 7))).toBe(true);
+  });
+  it("uses the real Pipedrive when fakes are refused (VERCEL_ENV=production), whatever APP_ENV says", () => {
+    withEnv({ APP_ENV: "development", VERCEL_ENV: "production", PIPEDRIVE_URL: undefined, PIPEDRIVE_TOKEN_KEY: key32 });
+    expect(pipedriveConfig()).toMatchObject({ mode: "real", baseUrl: "https://api.pipedrive.com" });
+    withEnv({ APP_ENV: "production", PIPEDRIVE_URL: undefined });
+    expect(pipedriveConfig()).toMatchObject({ mode: "real", baseUrl: "https://api.pipedrive.com" });
+  });
+  it("uses PIPEDRIVE_URL when set (trimmed, without a trailing slash), even where fakes are allowed", () => {
+    withEnv({ APP_ENV: "test", PIPEDRIVE_URL: " http://localhost:9999/ ", PIPEDRIVE_TOKEN_KEY: key32 });
+    expect(pipedriveConfig()).toMatchObject({ mode: "real", baseUrl: "http://localhost:9999" });
+  });
+  it.each([
+    ["empty", ""],
+    ["unset", undefined],
+    ["31 bytes", Buffer.alloc(31, 1).toString("base64")],
+    ["33 bytes", Buffer.alloc(33, 1).toString("base64")],
+    ["not base64", "not a key at all, really not!!"],
+  ])("has no key when PIPEDRIVE_TOKEN_KEY is %s", (_what, value) => {
+    withEnv({ APP_ENV: "test", PIPEDRIVE_URL: "", PIPEDRIVE_TOKEN_KEY: value });
+    expect(pipedriveConfig().key).toBeNull();
+  });
+});

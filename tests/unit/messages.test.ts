@@ -383,3 +383,67 @@ describe("custom field messages (SF-115)", () => {
     expect(missing).toEqual([]);
   });
 });
+
+// covers SF-117 FR-028, contracts/routes.md § Messages: every Pipedrive message and template, Pipedrive values in quotes
+describe("Pipedrive import messages (SF-117)", () => {
+  it("has the fixed texts", () => {
+    const expected: Record<string, string> = {
+      pipedrive_not_set_up: "The Pipedrive import isn't set up yet.",
+      pipedrive_token_required: "Paste your Pipedrive API token.",
+      pipedrive_token_refused: "Pipedrive did not accept this token. Copy it again from Pipedrive and try again.",
+      pipedrive_unreachable: "Pipedrive can't be reached right now. Try again in a minute.",
+      pipedrive_token_note: "In Pipedrive: Personal preferences → API.",
+      pipedrive_tick_something: "Tick what to import.",
+      pipedrive_consent_required: "Choose the email consent of people with no consent status in Pipedrive.",
+      pipedrive_existing_note:
+        "Records already in the CRM (a person with the same email address, an organisation with the same name) are linked to the Pipedrive record and left as they are.",
+      pipedrive_keep_open: "Keep this page open: the import moves on while it is open. Closing it pauses the import.",
+      pipedrive_stopped_unreachable: "The import stopped: Pipedrive can't be reached right now.",
+      pipedrive_token_no_longer: "Pipedrive no longer accepts your token. Save a new token in Settings, then continue.",
+      pipedrive_other_company: "This import is from another Pipedrive company. Stop it, or save the token of that company again.",
+      pipedrive_stopped_by_you: "Stopped by you before the end.",
+      pipedrive_no_name: "No name.",
+      pipedrive_email_many_people: "Its email addresses belong to more than one person in the CRM.",
+      pipedrive_linked_hidden: "A person already in the CRM has this email address: linked, not changed.",
+      pipedrive_unsubscribed_hidden: "A person already in the CRM is unsubscribed in Pipedrive: now Unsubscribed in the CRM.",
+    };
+    for (const [code, text] of Object.entries(expected)) expect(messageFor(code), code).toBe(text);
+    for (const code of ["pipedrive_saved", "pipedrive_removed", "pipedrive_remove_confirm", "pipedrive_stop_confirm", "pipedrive_running"]) {
+      expect(messageFor(code), code).toMatch(/\S/);
+    }
+  });
+  it("builds the templates, Pipedrive values only inside quotes", () => {
+    expect(templates.pipedrive_connected("Fake Person", "Fakeco Pipedrive")).toBe("Connected to Pipedrive as Fake Person (Fakeco Pipedrive).");
+    expect(templates.pipedrive_saved_on("24 Nov 2026")).toBe("Token saved on 24 Nov 2026.");
+    expect(templates.pipedrive_slow_down(8)).toBe("Pipedrive asked us to slow down. Carrying on in 8 seconds.");
+    expect(templates.pipedrive_paused([{ kind: "organisations", done: 800, total: 800 }, { kind: "people", done: 1200, total: 3000 }])).toBe(
+      "Import paused: Organisations 800 of 800, People 1,200 of 3,000.",
+    );
+    expect(templates.pipedrive_progress("people", 1200, 3000)).toBe("People · 1,200 of 3,000");
+    expect(templates.pipedrive_owner_missing("Jane Fake", "jane@fake.example", 12)).toBe(
+      "Owner 'Jane Fake' (jane@fake.example) has no CRM user: 12 records given to you.",
+    );
+    expect(templates.pipedrive_private_others(3)).toBe("3 private people of other owners imported.");
+    expect(templates.pipedrive_owner_only_orgs(2)).toBe("2 owner-only organisations imported as shared.");
+    expect(templates.pipedrive_list_missing("lead_source", "Webinar", 4)).toBe("Lead source not on the list: 'Webinar' (4 people)");
+    expect(templates.pipedrive_list_missing("label", "Cold", 7)).toBe("Label not on the list: 'Cold' (7 people)");
+    expect(templates.pipedrive_choice_missing("Colour", "Teal", 3)).toBe("'Teal' is not a choice of 'Colour': left out (3 records).");
+    expect(templates.pipedrive_field_no_match("Favourite colour")).toBe("No CRM field named 'Favourite colour'.");
+    expect(templates.pipedrive_field_type_mismatch("Budget", "varchar", "number")).toBe("'Budget' is a text field in Pipedrive and a number field in the CRM.");
+    expect(templates.pipedrive_field_unsupported("Region", "address")).toBe("'Region' is an address field in Pipedrive: not imported.");
+    expect(templates.pipedrive_field_unsupported("Odd", "json")).toBe("'Odd' is an other field in Pipedrive: not imported.");
+    expect(templates.pipedrive_linked("Ada Example")).toBe("Ada Example was already in the CRM: linked, not changed.");
+    expect(templates.pipedrive_unsubscribed("Ada Example")).toBe("Ada Example is unsubscribed in Pipedrive: now Unsubscribed in the CRM.");
+    expect(templates.pipedrive_email_other_person("Ada Example")).toBe("Another Pipedrive person, 'Ada Example', has the same email address.");
+    expect(templates.pipedrive_value_invalid("email address", "ada@")).toBe("Email address 'ada@' is not valid: left out.");
+    expect(templates.pipedrive_value_too_long("role", 200)).toBe("Role longer than 200 characters: left out.");
+    expect(templates.pipedrive_org_archived("Fakeco Ltd")).toBe("Fakeco Ltd is archived.");
+    expect(templates.pipedrive_org_not_imported("Sample Studios Fake")).toBe("Its organisation 'Sample Studios Fake' was not imported: imported without an organisation.");
+    expect(templates.pipedrive_currency("Budget", "EUR")).toBe("'Budget': amount in EUR, not GBP: left out.");
+    expect(templates.pipedrive_imported_by("Linus Fake")).toBe("Imported from Pipedrive by Linus Fake");
+    expect(templates.pipedrive_unsubscribed_by("Linus Fake")).toBe("Unsubscribed by the Pipedrive import of Linus Fake");
+  });
+  it("never answers a Pipedrive template from a URL code", () => {
+    for (const code of ["pipedrive_connected", "pipedrive_linked", "pipedrive_field_no_match"]) expect(messageFor(code), code).toBeUndefined();
+  });
+});
