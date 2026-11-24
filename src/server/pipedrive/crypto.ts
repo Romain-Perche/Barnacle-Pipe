@@ -19,7 +19,7 @@ const aad = (userId: number) => Buffer.from(`pipedrive-token:${userId}`);
 
 export function sealToken(key: Buffer, userId: number, token: string): Buffer {
   const iv = randomBytes(IV);
-  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const cipher = createCipheriv("aes-256-gcm", key, iv, { authTagLength: TAG });
   cipher.setAAD(aad(userId));
   const body = Buffer.concat([cipher.update(token, "utf8"), cipher.final()]);
   return Buffer.concat([Buffer.from([VERSION]), iv, cipher.getAuthTag(), body]);
@@ -28,7 +28,7 @@ export function sealToken(key: Buffer, userId: number, token: string): Buffer {
 export function openToken(key: Buffer, userId: number, sealed: Buffer): string {
   if (sealed.length <= 1 + IV + TAG || sealed[0] !== VERSION) throw new TokenUnreadable();
   try {
-    const decipher = createDecipheriv("aes-256-gcm", key, sealed.subarray(1, 1 + IV));
+    const decipher = createDecipheriv("aes-256-gcm", key, sealed.subarray(1, 1 + IV), { authTagLength: TAG });
     decipher.setAAD(aad(userId));
     decipher.setAuthTag(sealed.subarray(1 + IV, 1 + IV + TAG));
     return Buffer.concat([decipher.update(sealed.subarray(1 + IV + TAG)), decipher.final()]).toString("utf8");
