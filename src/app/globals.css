@@ -495,6 +495,52 @@ table.files-table .facts .btn { margin-left: 6px; }
 .more-details .wide { grid-column: 1 / -1; }
 .money-input { display: flex; align-items: center; gap: 6px; }
 .money-input .input { flex: 1; }
+/* SF-119 campaigns (design A): the table's DRAFT tag; the edit page in two columns (≥ 1200 px), block cards, the layout
+   chooser, the merge tag menu and the preview pane with a white email area. */
+.status { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--orange); border: 0.5px solid var(--orange); padding: 2px 6px; }
+.label .status { font-size: 10px; }
+table.campaigns-list .acts form + a { margin-left: 14px; }
+.campaign-notes p { margin: 0 0 10px; }
+.campaign-notes .em, .campaign-preview .em { color: var(--muted); font-size: 14px; }
+.campaign-two { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (min-width: 1200px) {
+  .campaign-two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .campaign-preview { position: sticky; top: 16px; }
+}
+.campaign-form { display: flex; flex-direction: column; gap: 12px; }
+.campaign-form .label.sect, .campaign-preview .label.sect { margin: 12px 0 0; }
+.f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .f2 { grid-template-columns: 1fr; } }
+.field-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); }
+.content-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.content-head .btn.link { font-size: 11px; letter-spacing: 0.25em; color: var(--muted); }
+.content-head .btn.link.on { color: var(--blue); }
+.tagmenu { position: relative; display: inline-block; letter-spacing: normal; text-transform: none; }
+.tagmenu-box { position: absolute; right: 0; z-index: 6; width: 280px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--panel); border: 0.5px solid var(--line); border-radius: 8px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12); }
+.tagmenu-list { display: flex; flex-direction: column; max-height: 260px; overflow-y: auto; }
+.tagmenu-list button { all: unset; box-sizing: border-box; padding: 6px 8px; cursor: pointer; font-family: var(--sans); font-size: 14px; color: var(--ink); }
+.tagmenu-list button:hover, .tagmenu-list button:focus-visible { background: var(--wash); }
+.chooser { display: flex; flex-wrap: wrap; gap: 8px; border: 0.5px dashed var(--line); padding: 16px; }
+.blocks { display: flex; flex-direction: column; gap: 10px; }
+.blk { border: 0.5px solid var(--line); background: var(--panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.blk.bad { border-left: 4px solid var(--danger); }
+.blk .bh { display: flex; justify-content: space-between; align-items: center; }
+.blk .bt { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; color: var(--muted); }
+.blk .bacts { display: flex; gap: 12px; }
+.blk textarea, .html-box { resize: vertical; white-space: pre-wrap; }
+.html-box { font-family: var(--mono); font-size: 12px; min-height: 360px; }
+.addblock { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.addblock-types { display: flex; flex-wrap: wrap; gap: 6px; }
+.preview-picker { margin-bottom: 8px; }
+.picker-none { padding: 8px 12px; font-size: 14px; color: var(--muted); }
+.mail { border: 0.5px solid var(--line); background: var(--panel); margin-top: 8px; }
+.mail-head { padding: 12px 16px; border-bottom: 0.5px solid var(--line-soft); font-size: 14px; }
+.mail-head p { margin: 0; }
+.mail-from { color: var(--muted); font-size: 13px; }
+.mail-subject { font-weight: 700; }
+.mail-pre { color: var(--muted); }
+.mail-frame { display: block; width: 100%; height: 640px; border: 0; background: #fff; }
+.mail > .ferr { padding: 0 16px 12px; }
 
 /* SF-120 segments (design C): the form's condition rows and chips, the count block, the broken note. Existing tokens only. */
 .segform .addrow { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-top: 8px; }

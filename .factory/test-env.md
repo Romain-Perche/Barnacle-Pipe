@@ -154,6 +154,14 @@
   `old_value`/`new_value` or actor, an unsubscribe kind with an actor; 23505: a duplicate token). Mail apps' RFC 8058
   one-click POSTs are not an outside service: the tests call the route handler straight with RFC 8058's body
   (`List-Unsubscribe=One-Click`, urlencoded and multipart).
+  SF-119 (campaign drafts) keeps to the same pooler limits in `src/server/campaigns/` (no `set`/`listen`/session advisory
+  lock; each change one `sql.begin()`, the save locking its row `for update`); its table comes from
+  `migrations/0015_campaigns.sql` (`campaigns`: drafts with a `version`, `content_kind` blocks/html, `blocks` jsonb,
+  `html`, `merge_links` jsonb), applied on a fresh database by `tests/integration/migrate.test.ts`, which also checks
+  Postgres's own 23514 refusals (a 101-character or untrimmed name, status `sent`, blocks with html, html kind without
+  html, html with no kind, `[]` or 51 blocks, 500,001 characters of HTML, `merge_links` `{}`, a 256-character subject)
+  and that the pure files (`merge.ts`, `content.ts`, `rules.ts`) import nothing server-only. No new outside service:
+  images or styles named in pasted HTML are fetched by the user's browser inside the sandboxed preview, never by the app.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -289,6 +297,23 @@
     answer 303 (follow with `maxRedirects: 0` to read the Location); `/files/unavailable?reason=…` shows the message.
     `reset-db.sh` also empties `files`, `file_uploads`, `file_cleanup` (run `npm run db:migrate` first on an older
     crm_dev, else the truncate fails and nothing is seeded); `.fake-storage/` keeps old contents (harmless).
+  - Campaigns (SF-119). The seed (seeder "campaigns", last) adds five drafts, each only when no campaign has its name:
+    "Exec dinner – March (fake)" (Ada Fake; Text with a button; `{{First name | there}}`, `{{Organisation | your team}}`,
+    button https://example.test/dinner), "Welcome note (fake)" (Grace Fake; Blank), "Event recap (fake)" (Linus Fake; Text;
+    `{{Diet (fake) | not given}}` with its `merge_links` entry; skipped when the field is missing), "Newsletter – winter
+    (fake)" (Margaret Fake; Newsletter, image https://example.test/winter.png) and "Pasted HTML sample (fake)" (Ada Fake;
+    HTML with `<script>document.title='Changed (fake)'</script>`, an `onerror` image, a form posting to /campaigns and a
+    link to https://example.test/). Selectors: the edit page's subject `#campaign-subject`, the form `#campaign-form` (posted
+    by the header "[ SAVE ]" through `form=`), notices `.campaign-notes` ("Draft saved.", "Still empty: …", "Unknown merge
+    tags: …"), block cards `.blk` (buttons "↑" / "↓" named "Move <Block> up|down", "[ REMOVE ]"), the layout chooser
+    `.chooser`, the HTML box `textarea.html-box`, the merge tag menu buttons "[ INSERT MERGE TAG ]" (fields as `listitem`
+    buttons, input "If empty, show"), the picker `.preview-picker input` (results `.picker-list button`), the preview
+    `.mail-subject`, `.mail-from` and `iframe.mail-frame` (`frameLocator`). The switch boxes are `alertdialog`s with
+    "[ SWITCH ]" / "[ CANCEL ]"; the delete confirmation an `alertdialog` with "[ DELETE FOR GOOD ]". Checking the sandbox in
+    a browser (quickstart.md § By hand, step 4): open "Pasted HTML sample (fake)": the console shows "Blocked script
+    execution in 'about:srcdoc'…", `page.title()` stays "Barnacle CRM", the frame's links carry `target="_blank"`, its form
+    button sends nothing (no request to /campaigns), and the sidebar keeps its colours. Note: `start-app.sh` uses the
+    `DATABASE_URL` already set in the shell (crm_test when the test variables are exported).
   - SF-116 AI review scripts (each on fresh data: `bash .factory/run/reset-db.sh` first; helpers in `sf116-lib.js`, which
     makes the test files in `$TMPDIR/sf116-files`): `scenarios-sf116-a.js` (US1, US2), `scenarios-sf116-b.js` (US3; waits
     61 s for a read address to expire; US3-7 moves a file onto Alan Fake's private deal/person by SQL, then hands over to
@@ -458,6 +483,24 @@
     - `scenarios-sf115-edge7.js`: edge 7 (`cf<id>=empty` on a Text / Long text filter is text; "Empty" only on Single choice / Yes/No).
     - `scenarios-sf115-us5.js`: US5 1–5 (CSV import; preview needs the consent radio "Subscribed"). Import warnings list rows
       as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
+
+  - SF-119 AI-review scenario scripts (all 41, :3000/crm_dev on fresh fake data, ~6 min together; helpers `sf119-lib.js`:
+    `newCampaign`, `save` (waits for [ SAVE ] to be enabled again, not for networkidle: a server-action POST can stay open),
+    `frameText`/`frameHtml` of `iframe.mail-frame`, `choosePerson`, `pickerNames`, `chooseLayout`, `camp(id)` row):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf119-a.js` (US1 1–5,
+    US5-7, US6 1–3, edge cases 1, 9–12) then `node .factory/run/scenarios-sf119-b.js` (US2–US5, edge cases 2–8; `ONLY="US4
+    scenario 2,…"` for a subset; it first removes the "SF119 …" people, fields and drafts of an earlier run). Notes: column
+    headers, block labels and the merge tag list are upper-cased by CSS (compare case-insensitively); an image block saves only
+    with an `https://` address (a `data:` image is refused), so the scripts use https://example.test/… there (not loaded
+    offline) and a `data:` PNG only in pasted HTML. Fix round 1 scenarios: Edge case 13 (rename then delete, no save in
+    between) is in `scenarios-sf119-b.js` (run with US2 4/5); it deletes the field through the admin page
+    (`/admin/custom-fields?kind=people&delete=<id>`, the `alertdialog`'s submit button), never by SQL: `deleteField` writes the
+    `last` name onto `campaigns.merge_links`, which a SQL delete skips. Edge case 14 (Reply-to "not-an-email" through the normal
+    form shows the app's message: `#campaign-form` has `noValidate`) is checked inside US1 scenario 4 of `scenarios-sf119-a.js`.
+    All 43 SF-119 scenarios pass (a then b after one reset; re-run after the merge with main that renumbered the migration
+    to 0014: still all pass, schemas by `npm run -s test:schemas`, app by `start-app.sh`; re-run again with the
+    migration at 0015 after the SF-120 merge: all 43 pass, ~7 min; fix round 2 (AGENTS.md only) review: the 3 smoke checks pass, `start-app.sh` then a then b after
+    one `reset-db.sh`: all 43 pass).
 
   - SF-121 (AI review): `node .factory/run/scenarios-sf121.js [prefix…]` (NODE_PATH=/opt/playwright/node_modules) on a
     fresh seed (app on :3000 from start-app.sh) runs every unsubscribe scenario: tokens and consents read with psql, the

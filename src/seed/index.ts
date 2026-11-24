@@ -5,6 +5,7 @@
 import type { Sql } from "@/server/db";
 import { seedActivities } from "@/seed/activities";
 import { seedAmbassadors } from "@/seed/ambassadors";
+import { seedCampaigns } from "@/seed/campaigns";
 import { seedCustomFields } from "@/seed/custom-fields";
 import { seedDeals } from "@/seed/deals";
 import { seedFiles } from "@/seed/files";
@@ -27,6 +28,8 @@ export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] =
   { name: "files", run: seedFiles },
   // SF-115: custom fields of every type and values on fake records (after the people, organisations and deals).
   { name: "custom-fields", run: seedCustomFields },
+  // SF-119: campaign drafts, one per layout and one pasted HTML email (after the custom fields: one links "Diet (fake)").
+  { name: "campaigns", run: seedCampaigns },
   // SF-120: saved segments of each kind (after the pipelines, lead sources, users and custom fields they refer to).
   { name: "segments", run: seedSegments },
 ];

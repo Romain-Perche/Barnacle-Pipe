@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626;
+    --wash: rgba(43,0,255,.05); --panel: #FFFFFF; --page: #EDE7DF; --note: rgba(255,66,0,.06);
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --panel: #232323; --page: #0E0E0E; --note: rgba(255,66,0,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(620px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+
+  .app { display: grid; grid-template-columns: 140px 1fr; height: 640px; border: .5px solid var(--line); overflow: hidden; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 9px; margin-bottom: 22px; }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .nav .cnt { background: var(--orange); color: #fff; padding: 0 4px; margin-left: 4px; }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 16px; overflow: hidden; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 10px; margin-bottom: 8px; gap: 8px; }
+  .ph h2 { margin: 3px 0 0; font-size: 20px; font-weight: 700; }
+  .ph .sub { font-size: 11px; color: var(--muted); }
+  .kind { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 5px 8px; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.link { border: 0; padding: 2px 0; color: var(--muted); }
+  .btn.red { color: var(--danger); }
+  .acts { display: flex; gap: 4px; }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 10px 0 6px; border-top: .5px solid var(--line); padding-top: 8px; }
+  .dl { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+  .k { font-family: var(--mono); font-size: 8px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .v { font-size: 11px; margin-bottom: 6px; border-bottom: .5px solid var(--line-list); padding-bottom: 4px; }
+  .lk { color: var(--blue); }
+  .mention { color: var(--blue); background: var(--wash); font-weight: 600; padding: 0 2px; }
+  .when { font-family: var(--mono); font-size: 8px; color: var(--muted); white-space: nowrap; }
+  .ta { border: .5px solid var(--line); background: var(--panel); padding: 7px 8px; font-size: 11px; min-height: 46px; position: relative; }
+  .ta .caret { border-left: 1px solid var(--ink); margin-left: 1px; }
+  .pick { position: absolute; left: 120px; top: 30px; width: 150px; background: var(--panel); border: .5px solid var(--line); border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,.18); padding: 3px 0; font-size: 10px; z-index: 2; }
+  .pick div { padding: 4px 8px; }
+  .pick .on { background: var(--wash); }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; }
+  .on-deal { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .on-deal a, .on-deal span.d { color: var(--blue); }
+  .ntext { font-size: 11px; line-height: 1.45; margin: 3px 0; white-space: pre-wrap; }
+  .edited { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+
+  
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { font-family: var(--mono); font-size: 8px; letter-spacing: .2em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 4px; border-bottom: .5px solid var(--line-soft); white-space: nowrap; }
+  td { padding: 4px; border-bottom: .5px solid var(--line-list); vertical-align: top; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .strip { display: flex; border: .5px solid var(--line-soft); background: var(--panel); margin: 6px 0 4px; }
+  .strip > div { flex: 1 1 0; padding: 5px 7px; border-right: .5px solid var(--line-soft); }
+  .strip > div:last-child { border-right: 0; }
+  .strip .k { font-size: 7px; }
+  .strip .n { font-size: 13px; font-weight: 600; }
+  .won { color: #16A34A; } .lost { color: var(--danger); }
+  .badge { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; border: .5px solid var(--blue); color: var(--blue); padding: 1px 4px; margin-left: 6px; vertical-align: middle; }
+  .badge.amb { background: var(--orange); border-color: var(--orange); color: #fff; }
+  .new { outline: 2px dashed var(--orange); outline-offset: 2px; }
+  .day { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 7px 0 2px; }
+  .ent { display: grid; grid-template-columns: 46px 1fr auto; gap: 7px; padding: 4px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; align-items: start; }
+  .kd { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; border: .5px solid var(--line); padding: 1px 3px; text-align: center; }
+  .kd.note { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .kd.deal { color: var(--blue); border-color: var(--blue); }
+  .notebody { border-left: 3px solid var(--orange); background: var(--note); padding: 3px 6px; border-radius: 0 6px 6px 0; }
+  .more { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; color: var(--muted); margin-top: 4px; }
+  .C .cols { display: grid; grid-template-columns: 1fr 210px; gap: 12px; }
+  .C .feed { border-left: .5px solid var(--line); padding-left: 10px; }
+  .C .item { padding: 5px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; }
+  .C .item .top { display: flex; justify-content: space-between; gap: 6px; }
+  .legend { font-size: 13px; color: var(--muted); margin: 4px 32px 0; }
+  .legend span { outline: 2px dashed var(--orange); outline-offset: 2px; padding: 0 4px; }
+  .app.short { height: 300px; margin-top: 8px; }
+  .app { height: 560px; }
+  .tabs { display: flex; gap: 0; border-bottom: .5px solid var(--line); margin: 6px 0 8px; }
+  .tabs span { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 5px 10px; color: var(--muted); }
+  .tabs span.on { color: var(--blue); border-bottom: 2px solid var(--blue); }
+  .in { border: .5px solid var(--line); background: var(--panel); padding: 4px 6px; font-size: 10px; display: inline-block; min-width: 60px; }
+  .sel::after { content: " ▾"; color: var(--muted); }
+  .addrow { display: flex; gap: 4px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .typ { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .chips { font-size: 9px; color: var(--muted); }
+  .tick { font-family: var(--mono); font-size: 9px; }
+  .box { position: absolute; left: 50%; top: 70px; transform: translateX(-50%); width: 300px; background: var(--panel); border: .5px solid var(--line); border-radius: 10px; box-shadow: 0 16px 40px rgba(0,0,0,.28); padding: 12px; z-index: 3; }
+  .box h3 { margin: 2px 0 8px; font-size: 14px; }
+  .box .f { margin-bottom: 7px; }
+  .box .f .k { margin-bottom: 2px; }
+  .shade { position: absolute; inset: 0; background: rgba(0,0,0,.25); z-index: 2; }
+  .main.rel { position: relative; }
+  .ch { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 3px 0; border-bottom: .5px solid var(--line-list); }
+  .split { display: grid; grid-template-columns: 170px 1fr; gap: 10px; }
+  .fl { border-right: .5px solid var(--line); padding-right: 8px; }
+  .fl .it { padding: 4px 6px; font-size: 10px; border-bottom: .5px solid var(--line-list); display: flex; justify-content: space-between; gap: 4px; }
+  .fl .it.on { background: var(--wash); }
+  .fl .h { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 8px 0 3px; }
+  .warn { border: .5px solid var(--danger); padding: 7px; font-size: 10px; margin-top: 8px; }
+  .warn b { color: var(--danger); }
+  .filters { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+  .mini { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .2em; color: var(--muted); margin: 4px 0; }
+  .grid4 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+  .grid { grid-template-columns: repeat(3, minmax(660px, 1fr)); }
+  .app { height: 600px; }
+  .app.short { height: 220px; }
+  .f2 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; }
+  .fld { margin-bottom: 6px; }
+  .fld .k { margin-bottom: 2px; }
+  .fld .in { width: 100%; }
+  .tagm { color: var(--blue); background: var(--wash); font-family: var(--mono); font-size: 9px; padding: 0 2px; }
+  .blk { border: .5px solid var(--line-soft); background: var(--panel); padding: 5px 6px; margin-bottom: 5px; font-size: 10px; }
+  .blk .bh { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .blk .bt { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .2em; color: var(--muted); }
+  .mail { background: #fff; color: #111827; border: .5px solid var(--line); font-size: 10px; }
+  .mail .hd { padding: 6px 8px; border-bottom: .5px solid #ddd; font-size: 9px; line-height: 1.5; }
+  .mail .hd b { font-size: 11px; }
+  .mail .bd { padding: 10px 12px; line-height: 1.45; }
+  .mail .bd h4 { margin: 0 0 6px; font-size: 14px; }
+  .mail .cta { display: inline-block; background: #2B00FF; color: #fff; padding: 5px 10px; font-size: 10px; margin: 6px 0; }
+  .mail .uns { border-top: .5px solid #ddd; padding: 6px 12px; font-size: 8px; color: #6b7280; }
+  .mail .uns u { color: #6b7280; }
+  .fb { background: rgba(255,66,0,.12); }
+  .unk { border-left: 3px solid var(--orange); background: var(--note); padding: 4px 6px; font-size: 9px; border-radius: 0 6px 6px 0; margin: 6px 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .steps { display: flex; gap: 0; margin: 6px 0 10px; }
+  .steps span { flex: 1; font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; padding: 5px 6px; border: .5px solid var(--line); margin-right: -0.5px; color: var(--muted); }
+  .steps span.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .steps span.done { color: var(--ink); }
+  .status { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .15em; border: .5px solid var(--line); padding: 1px 4px; }
+  .todo { font-size: 9px; color: var(--muted); margin: 2px 0 6px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-119 · CAMPAIGNS: WRITING THE CONTENT · DESIGN OPTIONS</div>
+  <h1>How a user writes a campaign draft and previews it for a person</h1>
+  <p>All three show the draft "Exec dinner – March (fake)" built from the "Text with a button" layout, previewed for Fakey McFake (no organisation), so <span class="tagm">{{Organisation | your team}}</span> shows "your team". User: Ada Fake. Top: the edit page. Bottom: the Campaigns page (the same in all three).</p>
+</header>
+<p class="legend"><span>Dashed orange</span> = new in this issue. Orange tint in the preview = an "If empty, show" text.</p>
+<div class="grid">
+
+<!-- ============ A ============ -->
+<figure>
+  <div class="tag"><b>A</b>One page: the draft on the left, the live preview on the right</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span class="new on">Campaigns</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="kind">CAMPAIGN · <span class="status">DRAFT</span></div>
+      <div class="ph"><div><h2>Exec dinner – March (fake)</h2><div class="sub">Last edited by Ada Fake · 24 Nov 2026 14:05</div></div><div class="acts"><span class="btn solid">[ SAVE ]</span><span class="btn">[ DUPLICATE ]</span><span class="btn red">[ DELETE ]</span></div></div>
+      <div class="two">
+        <div>
+          <div class="sect"><span class="c">//</span> DETAILS</div>
+          <div class="f2">
+            <div class="fld"><div class="k">Name</div><span class="in">Exec dinner – March (fake)</span></div>
+            <div class="fld"><div class="k">Sender name</div><span class="in">Ada Fake</span></div>
+          </div>
+          <div class="fld"><div class="k">Reply-to</div><span class="in">ada.fake@barnacle.ai</span></div>
+          <div class="fld"><div class="k">Subject <span class="btn link">[ INSERT MERGE TAG ]</span></div><span class="in"><span class="tagm">{{First name}}</span>, a seat for <span class="tagm">{{Organisation | your team}}</span>?</span></div>
+          <div class="fld"><div class="k">Preview text</div><span class="in">Thursday 12 March, 7pm, London (fake)</span></div>
+          <div class="sect"><span class="c">//</span> CONTENT · <span class="btn link">LAYOUT</span> / <span class="btn link">PASTE HTML</span></div>
+          <div class="blk"><div class="bh"><span class="bt">HEADING</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>Our March exec dinner</div>
+          <div class="blk"><div class="bh"><span class="bt">TEXT</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>Hi <span class="tagm">{{First name | there}}</span>, we are hosting ten leaders for dinner…</div>
+          <div class="blk"><div class="bh"><span class="bt">BUTTON</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>Book a seat → https://example.test/dinner</div>
+          <span class="btn link">[ + ADD BLOCK ]</span>
+        </div>
+        <div>
+          <div class="sect"><span class="c">//</span> PREVIEW FOR <span class="in sel" style="min-width:110px">Fakey McFake</span></div>
+          <div class="mail">
+            <div class="hd">From: Ada Fake · Reply-to: ada.fake@barnacle.ai<br><b>Fakey, a seat for <span class="fb">your team</span>?</b><br><span style="color:#6b7280">Thursday 12 March, 7pm, London (fake)</span></div>
+            <div class="bd"><h4>Our March exec dinner</h4>Hi Fakey, we are hosting ten leaders for dinner…<br><span class="cta">Book a seat</span></div>
+            <div class="uns">Don't want these emails? <u>Unsubscribe</u></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="app short">
+    <aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div><div class="nav"><span>Activities</span><span class="on">Campaigns</span><span>Notifications</span></div></aside>
+    <div class="main new">
+      <div class="ph"><div><h2>Campaigns</h2></div><span class="btn solid">[ NEW CAMPAIGN ]</span></div>
+      <table><thead><tr><th>Name</th><th>Subject</th><th>Status</th><th>Created by</th><th>Last edited</th></tr></thead><tbody>
+        <tr><td class="lk">Exec dinner – March (fake)</td><td>{{First name}}, a seat for…</td><td><span class="status">DRAFT</span></td><td>Ada Fake</td><td>Ada Fake · 24 Nov 14:05</td></tr>
+        <tr><td class="lk">Newsletter – winter (fake)</td><td>—</td><td><span class="status">DRAFT</span></td><td>Bob Sample</td><td>Bob Sample · 22 Nov 09:12</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <figcaption><b>A</b> — Good for seeing each change in the email at once while writing; needs a wide screen.</figcaption>
+</figure>
+
+<!-- ============ B ============ -->
+<figure>
+  <div class="tag"><b>B</b>One-column page with tabs: Details, Content, Preview</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span class="new on">Campaigns</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="kind">CAMPAIGN · <span class="status">DRAFT</span></div>
+      <div class="ph"><div><h2>Exec dinner – March (fake)</h2><div class="sub">Last edited by Ada Fake · 24 Nov 2026 14:05</div></div><div class="acts"><span class="btn solid">[ SAVE ]</span><span class="btn">[ DUPLICATE ]</span><span class="btn red">[ DELETE ]</span></div></div>
+      <div class="tabs"><span>Details</span><span>Content</span><span class="on">Preview</span></div>
+      <div class="fld"><div class="k">Preview for</div><span class="in sel" style="min-width:200px">Fakey McFake</span></div>
+      <div class="mail" style="max-width:420px;margin:8px auto 0">
+        <div class="hd">From: Ada Fake · Reply-to: ada.fake@barnacle.ai<br><b>Fakey, a seat for <span class="fb">your team</span>?</b><br><span style="color:#6b7280">Thursday 12 March, 7pm, London (fake)</span></div>
+        <div class="bd"><h4>Our March exec dinner</h4>Hi Fakey, we are hosting ten leaders for dinner at a fake venue in London. Each guest brings one question about AI in their business…<br><span class="cta">Book a seat</span><br>See you there,<br>Ada</div>
+        <div class="uns">Don't want these emails? <u>Unsubscribe</u></div>
+      </div>
+      <div class="mini" style="margin-top:10px">THE DETAILS TAB: NAME, SENDER NAME, REPLY-TO, SUBJECT, PREVIEW TEXT · THE CONTENT TAB: LAYOUT BLOCKS OR PASTE HTML</div>
+    </div>
+  </div>
+  <div class="app short">
+    <aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div><div class="nav"><span>Activities</span><span class="on">Campaigns</span><span>Notifications</span></div></aside>
+    <div class="main new">
+      <div class="ph"><div><h2>Campaigns</h2></div><span class="btn solid">[ NEW CAMPAIGN ]</span></div>
+      <table><thead><tr><th>Name</th><th>Subject</th><th>Status</th><th>Created by</th><th>Last edited</th></tr></thead><tbody>
+        <tr><td class="lk">Exec dinner – March (fake)</td><td>{{First name}}, a seat for…</td><td><span class="status">DRAFT</span></td><td>Ada Fake</td><td>Ada Fake · 24 Nov 14:05</td></tr>
+        <tr><td class="lk">Newsletter – winter (fake)</td><td>—</td><td><span class="status">DRAFT</span></td><td>Bob Sample</td><td>Bob Sample · 22 Nov 09:12</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <figcaption><b>B</b> — Good for a calm page that fits any screen and leaves room for the Recipients tab of the later issue; the preview is one click away.</figcaption>
+</figure>
+
+<!-- ============ C ============ -->
+<figure>
+  <div class="tag"><b>C</b>Steps with a step bar, like the CSV import</div>
+  <div class="app">
+    <aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span>Deals</span><span>People</span><span>Organisations</span><span>Ambassadors</span><span>Activities</span><span class="new on">Campaigns</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="grp">// ADMIN</div>
+      <div class="nav"><span>Users</span><span>Lead sources and labels</span><span>Pipelines</span><span>Custom fields</span></div>
+      <div class="me"><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main new">
+      <div class="kind">CAMPAIGN · <span class="status">DRAFT</span></div>
+      <div class="ph"><div><h2>Exec dinner – March (fake)</h2></div><div class="acts"><span class="btn">[ DUPLICATE ]</span><span class="btn red">[ DELETE ]</span></div></div>
+      <div class="steps"><span class="done">01 Details ✓</span><span class="on">02 Content</span><span>03 Preview</span></div>
+      <div class="sect"><span class="c">//</span> CHOOSE A LAYOUT</div>
+      <div class="filters"><span class="in">Blank</span><span class="in">Text</span><span class="in" style="outline:1px solid var(--blue)">Text with a button</span><span class="in">Newsletter</span><span class="in">Paste HTML</span></div>
+      <div class="sect"><span class="c">//</span> BLOCKS <span class="btn link">[ INSERT MERGE TAG ]</span></div>
+      <div class="blk"><div class="bh"><span class="bt">HEADING</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>Our March exec dinner</div>
+      <div class="blk"><div class="bh"><span class="bt">TEXT</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>Hi <span class="tagm">{{First name | there}}</span>, we are hosting ten leaders for dinner at a fake venue in London…</div>
+      <div class="blk"><div class="bh"><span class="bt">BUTTON</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>Book a seat → https://example.test/dinner</div>
+      <div class="blk"><div class="bh"><span class="bt">TEXT</span><span class="btn link">↑ ↓ [ REMOVE ]</span></div>See you there, Ada</div>
+      <div class="unk">Unknown merge tags: {{Favourite colour}}</div>
+      <div class="acts" style="justify-content:space-between"><span class="btn">[ BACK ]</span><span class="btn solid">[ SAVE AND PREVIEW ]</span></div>
+    </div>
+  </div>
+  <div class="app short">
+    <aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div><div class="nav"><span>Activities</span><span class="on">Campaigns</span><span>Notifications</span></div></aside>
+    <div class="main new">
+      <div class="ph"><div><h2>Campaigns</h2></div><span class="btn solid">[ NEW CAMPAIGN ]</span></div>
+      <table><thead><tr><th>Name</th><th>Subject</th><th>Status</th><th>Created by</th><th>Last edited</th></tr></thead><tbody>
+        <tr><td class="lk">Exec dinner – March (fake)</td><td>{{First name}}, a seat for…</td><td><span class="status">DRAFT</span></td><td>Ada Fake</td><td>Ada Fake · 24 Nov 14:05</td></tr>
+        <tr><td class="lk">Newsletter – winter (fake)</td><td>—</td><td><span class="status">DRAFT</span></td><td>Bob Sample</td><td>Bob Sample · 22 Nov 09:12</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <figcaption><b>C</b> — Good for guiding a user through a first campaign in order, as the CSV import does; later steps (recipients, send) can be added to the bar.</figcaption>
+</figure>
+
+</div>
+</body>
+</html>

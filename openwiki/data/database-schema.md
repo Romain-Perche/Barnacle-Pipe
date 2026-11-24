@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T17:52:29.768Z
+    at: 2026-11-24T18:25:19.853Z
 sources:
   - id: sf120-src-migration
     resource: repo://migrations/0014_segments.sql
@@ -35,13 +35,15 @@ sources:
     resource: repo://migrations/0012_pipedrive.sql
   - id: openwiki-source-7159795c4e4172d1472292a6
     resource: repo://migrations/0013_unsubscribe.sql
+  - id: openwiki-source-e456f59e22568cd1a9f5ca48
+    resource: repo://migrations/0015_campaigns.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T17:52:29.768Z" }
+generated: { by: "claude-code", at: "2026-11-24T18:25:19.853Z" }
 ---
 
 # Database schema and access
@@ -208,6 +210,14 @@ and `consent_changed` (old and new consent labels, with a teammate). See
 `version`) and the partial index `deals_stage_live_idx` on non-archived deals. Pipeline, stage and condition ids have no
 foreign keys on purpose, so a deleted target shows as "(deleted)" and matches nobody. Row level security is enabled.
 See [Segments](../features/segments.md).
+
+### Campaigns (migration 0015)
+
+`0015_campaigns.sql` adds `campaigns`, the team-shared drafts: `name` (1 to 100 characters), `sender_name`, `reply_to`,
+`subject`, `preview_text`, `content_kind` (`blocks` or `html`, or null while empty), `blocks` (jsonb array of 1 to 50) or
+`html` (at most 500000 characters) with a check that only the chosen one is set, `merge_links` (jsonb, custom field tags
+with no foreign key so a deleted field reads as unknown), `status` (only `draft` for now), `created_by`/`updated_by`
+and `version`. Row level security is enabled. See [Campaigns](../features/campaigns.md).
 
 ## Row level security
 
