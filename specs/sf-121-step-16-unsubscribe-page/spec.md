@@ -14,6 +14,9 @@
 
 - Q: Which design for the public unsubscribe page? → A: Design: A, a twin of the sign-in page: cream page, wordmark, "// EMAIL PREFERENCES" label, "Unsubscribe" heading, orange `[ UNSUBSCRIBE ]` button; the done message in the blue notice box, the link-not-valid message in the orange error box (see `design-options.html`).
 - Q: When a contact unsubscribes, is anyone on the team told? → A: No (A): the person's Consent and the timeline line are the only record; no notification and no sidebar count.
+- Q: How is a link made impossible to guess or forge: a random token kept for each person in the CRM, or a signed link that needs a new secret setting? → A: A random 64-character token per person, stored in the CRM, that never changes and never expires; no secret setting, so changing settings can never break links already sent; deleting the person removes it (decided by the factory, to confirm)
+- Q: What line does a teammate's change of Consent on the edit form add to the timeline? → A: "Consent: Unsubscribed → Subscribed by <name>" (or the other way round), in place of today's "Edited by <name>: Consent", for every Consent change made on the form (decided by the factory, to confirm)
+- Q: Who can open the development links page, which lists every person (private ones too) with their links? → A: Anyone, without signing in, but only where APP_ENV is development or test (like the fake Google login); everywhere else it answers "page not found" (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
