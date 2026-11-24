@@ -8,11 +8,19 @@
 
 **Input**: User description: "step 7 - Custom fields. Custom fields (`docs/PRODUCT.md` sections 2 and 7): admins add their own fields to people, organisations and deals, and rename, reorder and delete them. Field types: text, long text, number, money (GBP), date, single choice and multiple choice from a list the admin edits, and yes/no. Custom fields show on the record page and in its add and edit forms, can be shown as columns in the People, Organisations and Deals lists, and can filter those lists. Changes to them show on the timeline like other field changes. The CSV import can map a column to a custom field (SF-103 left this out because custom fields did not exist yet). A custom field's values follow the record's private rules. Deleting a field deletes its values, after a confirmation that says how many records have a value."
 
+## Clarifications
+
+### Session 2026-11-24
+
+- Q: Which design? → A: Design: B, one tab per kind (People, Organisations, Deals) with a table of fields, adding and editing a field in a box over the page; custom values in their own "// MORE DETAILS" section of the record page (see `design-options.html`).
+- Q: Who chooses which custom fields show as list columns and filters? → A: An admin ticks "Show in list" on a field; it is the same for every user (at most 8 per list).
+- Q: Can an admin change the type of a field after it has values? → A: No: the type is fixed; to change it, the admin deletes the field and adds a new one.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Admins manage custom fields (Priority: P1)
 
-An admin opens a "Custom fields" page in the "// Admin" group of the sidebar. It has one section per record kind (People, Organisations, Deals). In each section the admin adds a field by giving it a name and a type, renames it, moves it up or down, and deletes it. For single choice and multiple choice fields the admin edits the list of choices: add, rename, reorder and remove.
+An admin opens a "Custom fields" page in the "// Admin" group of the sidebar. It has one tab per record kind ("People · 3", "Organisations · 0", "Deals · 1", with the number of fields) and, under the chosen tab, a table of that kind's fields (Order ↑ ↓, Name, Type, Choices, In list, `[ EDIT ]`, `[ DELETE ]`). `[ ADD FIELD ]` opens a box over the page to give a new field a name and a type; `[ EDIT ]` opens the same box to rename the field and tick "Show in the <kind> list"; ↑ ↓ move it. For single choice and multiple choice fields the admin edits the list of choices: add, rename, reorder and remove.
 
 **Why this priority**: Nothing else in this feature works until a field exists; PRODUCT section 7 says admins manage custom fields.
 
@@ -20,13 +28,13 @@ An admin opens a "Custom fields" page in the "// Admin" group of the sidebar. It
 
 **Acceptance Scenarios**:
 
-1. **Given** an admin on the Custom fields page, **When** they add a field with a name, a record kind and one of the eight types (Text, Long text, Number, Money (£), Date, Single choice, Multiple choice, Yes/No), **Then** the field is listed last in that kind's section with its type.
+1. **Given** an admin on a tab of the Custom fields page, **When** they press `[ ADD FIELD ]` and save the box with a name and one of the eight types (Text, Long text, Number, Money (£), Date, Single choice, Multiple choice, Yes/No), **Then** the box closes and the field is the last row of that tab's table, with its type, and the tab's number goes up by one.
 2. **Given** the add form, **When** the name is empty, longer than 60 characters, or the same as another custom field or built-in field of the same record kind (ignoring case and spaces at either end), **Then** the field is not added and the message says "Give the field a name.", "A field name can be at most 60 characters." or "There is already a field called <name>."
 3. **Given** a Single choice or Multiple choice field being added, **When** it has no choices, **Then** it is not added and the message says "Add at least one choice."; two choices of one field cannot have the same name (ignoring case), and a choice name is at most 60 characters.
 4. **Given** an existing field, **When** the admin renames it, **Then** the new name shows everywhere the field shows (forms, record pages, list columns, filters, import mapping); the name rules of scenario 2 apply.
 5. **Given** a kind's fields, **When** the admin moves a field up or down, **Then** that order is used on the record page, the add and edit forms, the list columns and the filters.
-6. **Given** a choice field, **When** the admin renames a choice, **Then** every record that has it shows the new name; **When** they reorder choices, **Then** forms and filters use the new order; **When** they remove a choice, **Then** it stays on the records that already have it and in the list filter, and is no longer offered on add and edit forms (as removed labels, SF-95).
-7. **Given** a field, **When** the admin looks at it, **Then** its type is shown and cannot be changed; to change type the admin deletes the field and adds a new one.
+6. **Given** a choice field's edit box (choices listed with ↑ ↓, `[ RENAME ]` and `[ REMOVE ]`, and a "New choice" input with `[ ADD ]`), **When** the admin renames a choice and saves, **Then** every record that has it shows the new name; **When** they reorder choices, **Then** forms and filters use the new order; **When** they remove a choice, **Then** it stays on the records that already have it and in the list filter, and is no longer offered on add and edit forms (as removed labels, SF-95).
+7. **Given** a field's edit box, **When** it is shown, **Then** it shows the type as text with "(can't be changed)" and has no type input; to change type the admin deletes the field and adds a new one.
 8. **Given** a user who is not an admin, **When** they open the page or send any custom field change directly, **Then** they get the existing "admins only" page or refusal, and nothing changes.
 
 ---
@@ -41,9 +49,9 @@ A team member adds or edits a person, organisation or deal and fills in its cust
 
 **Acceptance Scenarios**:
 
-1. **Given** custom fields for a record kind, **When** a user opens the add or edit form of such a record, **Then** each field is shown in the admin's order, after the built-in fields, with an input matching its type: one line of text; several lines; a number; a pound amount; a date picker; a choice list with an empty option; tick boxes for each choice; a Yes/No choice with an empty option. Every custom field is optional.
+1. **Given** custom fields for a record kind, **When** a user opens the add or edit form of such a record, **Then** each field is shown in the admin's order, after the built-in fields, under a "// MORE DETAILS" heading, with an input matching its type: one line of text; several lines; a number; a pound amount; a date picker; a choice list with an empty option; tick boxes for each choice; a Yes/No choice with an empty option. Every custom field is optional.
 2. **Given** a form with custom values, **When** it is saved with a value that does not fit the type (text over 255 characters, long text over 10,000, a number that is not a number or has more than 4 decimal places or is beyond ±1,000,000,000,000, a money amount the deal value would refuse, a date that is not a real date, a choice that is not offered), **Then** nothing is saved, the form keeps what was typed, and the message names the field, e.g. "Birthday: enter a real date.", "Head count: enter a number.", "Notes: at most 10,000 characters."
-3. **Given** a record with custom values, **When** its page is shown (and the deal drawer for deals), **Then** the details list each custom field with a value, in order, formatted like the app's other values: money as £ with pence only when not whole, dates as "24 Nov 2026", multiple choices joined by commas in choice order, Yes/No as "Yes" or "No", long text keeping its line breaks; fields with no value are shown with "—".
+3. **Given** a record with custom values, **When** its page is shown (and the deal drawer for deals), **Then** a "// MORE DETAILS" section below "// DETAILS" lists each custom field of the kind, in the admin's order, two columns as in // DETAILS, with its value formatted like the app's other values: money as £ with pence only when not whole, dates as "24 Nov 2026", multiple choices joined by commas in choice order, Yes/No as "Yes" or "No", long text keeping its line breaks; fields with no value are shown with "—". A kind with no custom fields shows no "// MORE DETAILS" section.
 4. **Given** a custom value is set, changed or cleared on save, **When** the timeline is shown, **Then** it has a CHANGE entry per changed field — "<Field> set to <value>", "<Field> changed from <old> to <new>" or "<Field> cleared" — with who and when, in the same look as other field changes; a long text change says "<Field> changed" without the text.
 5. **Given** a save that changes no custom value, **When** the timeline is shown, **Then** no custom field entry is added.
 6. **Given** a removed choice on a record, **When** its edit form is opened and saved without touching that field, **Then** the value is kept; once the user unticks or changes it and saves, the edit form no longer offers that choice.
@@ -79,7 +87,7 @@ An admin deletes a custom field they no longer need. Before anything is deleted,
 
 **Acceptance Scenarios**:
 
-1. **Given** a field, **When** the admin presses `[ DELETE ]`, **Then** a confirmation shows the field name and the number of records of that kind that have a value in it (archived records included, private records included in the count only — no names), e.g. "3 people have a value in Diet. Deleting the field deletes these values for good.", with `[ DELETE FIELD ]` and `[ CANCEL ]`; with no values it says "No record has a value in Diet."
+1. **Given** a field, **When** the admin presses `[ DELETE ]`, **Then** a box over the page shows the field name and the number of records of that kind that have a value in it (archived records included, private records included in the count only — no names), e.g. "3 people have a value in Diet. Deleting the field deletes these values for good.", with `[ DELETE FIELD ]` and `[ CANCEL ]`; with no values it says "No record has a value in Diet."
 2. **Given** the confirmation, **When** the admin confirms, **Then** the field and all its values are deleted at once, it disappears from every form, page, list column, filter and import mapping, and the notice says "Diet deleted." (the field's name).
 3. **Given** the confirmation, **When** the admin cancels, **Then** nothing changes.
 4. **Given** a deleted field, **When** a record's timeline is shown, **Then** the earlier change entries about it are kept, with the name the field had; no new timeline entry is added on each record for the delete.
@@ -128,14 +136,13 @@ A custom value is part of its record: whoever cannot see a private person or dea
 - An admin adds a field while a user has an edit form open: after the user saves, the record page shows what they typed and "—" for the new field.
 - Two admins rename the same field one after the other from pages opened at the same time: after reloading, the page shows the name saved last, the field is listed once, and the fields are still listed in a single order with no field missing.
 - An archived record: its page shows its custom values; it cannot be edited (as today), and a direct request to change them is refused with the existing archived-record message.
-- Deleting a person, organisation or deal (admin, for good): its custom values are deleted with it.
+- Deleting a person, organisation or deal (admin, for good): its custom values are deleted with it, and the delete confirmation of each field it had a value in counts one record fewer.
 - A Number of 0, a Money of £0 and Yes/No set to "No" are values, shown as "0", "£0" and "No", counted in the delete confirmation and matched by filters; only an empty field is "—".
 - A Multiple choice field with all its ticks removed on save: the value is cleared and the timeline says "<Field> cleared".
 - Text with markup such as "<b>Fake</b>", in a field name, a choice name or a value: shown as plain text everywhere.
-- A Money custom field on a deal is not added to the deal's value, board totals or the deal list total; only the deal value counts there.
-- The hand-over of a deactivated user's private people and deals (SF-92, SF-97) hands over their custom values with them, unchanged.
+- A Money custom field on a deal: the deal's value, the board column totals and the deal list total stay the same when it is set; only the deal value counts there.
+- The hand-over of a deactivated user's private people and deals (SF-92, SF-97): the new owner's record pages show the same custom values as before the hand-over.
 - The People, Organisations and Deals lists with no custom field shown: they look exactly as today.
-- The Pipedrive import is not part of this issue; DECISIONS already says Pipedrive custom fields with no matching CRM field are listed in its report.
 
 ## Requirements *(mandatory)*
 
@@ -153,7 +160,7 @@ A custom value is part of its record: whoever cannot see a private person or dea
 
 - **FR-006**: The add and edit forms of people, organisations and deals MUST show the kind's custom fields, after the built-in fields, in the admin's order, with an input per type; every custom field is optional.
 - **FR-007**: Values MUST be checked on every save: Text ≤ 255 characters, Long text ≤ 10,000, Number with at most 4 decimal places within ±1,000,000,000,000, Money with the same rules as the deal value (pounds and pence, not negative), Date a real calendar date, choices only from the offered list (or the removed choice the record already has); a failed check saves nothing and names the field.
-- **FR-008**: The person page, organisation page, deal page and deal drawer MUST show every custom field of the kind with its value, or "—" when empty, formatted as in User Story 2.
+- **FR-008**: The person page, organisation page, deal page and deal drawer MUST show every custom field of the kind with its value, or "—" when empty, in a "// MORE DETAILS" section below "// DETAILS" (none when the kind has no custom field), formatted as in User Story 2.
 - **FR-009**: Setting, changing or clearing a custom value MUST add a CHANGE entry to the record's timeline with the field's name at the time, the old and new values (long text: just "changed"), who and when; renaming or deleting a field MUST NOT rewrite earlier entries.
 
 **Lists**
@@ -171,7 +178,7 @@ A custom value is part of its record: whoever cannot see a private person or dea
 - **FR-014**: Every Custom fields page and action MUST require a signed-in admin, checked on every request; filling in values MUST be open to anyone who can edit the record.
 - **FR-015**: Custom values MUST follow the private person (SF-92) and private deal (SF-93) rules everywhere — pages, drawer, forms, lists, columns, filters, sorts, counts and totals, import steps and direct requests: nothing hidden from a user may be shown, counted or used to find records for them.
 - **FR-016**: Every message shown MUST be one of the app's fixed messages (with field and choice names from the database as the only inserted text); text from the page address MUST never be shown.
-- **FR-017**: The Custom fields page MUST follow `docs/DESIGN.md` and the existing admin pages (Lead sources and labels, Pipelines), and sit in the sidebar's "// Admin" group; record pages, forms and lists MUST show custom fields in the same look as their built-in fields.
+- **FR-017**: The Custom fields page MUST follow design B in `design-options.html` and `docs/DESIGN.md`: "Custom fields" last in the sidebar's "// Admin" group, `[ ADD FIELD ]` in the page header, one tab per kind with its field count, a table of fields, and the add/edit form and the delete confirmation in a box over the page (like the activity box, SF-109). Record pages, the deal drawer and the add and edit forms MUST show custom fields in a "// MORE DETAILS" section in the same look as // DETAILS; list columns and filters MUST look like the built-in ones.
 
 **Fake data**
 
@@ -198,9 +205,9 @@ A custom value is part of its record: whoever cannot see a private person or dea
 
 ## Assumptions
 
-- "Show in list" is set by an admin for everyone (decided by the factory, to confirm): columns and filters are the same for every user, and per-user column choices are not part of this issue.
+- "Show in list" is set by an admin for everyone (clarified 2026-11-24): columns and filters are the same for every user, and per-user column choices are not part of this issue.
 - Every custom field is optional; required custom fields, default values, help text and per-pipeline deal fields are not part of this issue.
-- A field's type cannot be changed (decided by the factory, to confirm): converting values between types is error-prone, and delete-and-add covers the rare case.
+- A field's type cannot be changed (clarified 2026-11-24): converting values between types is error-prone, and delete-and-add covers the rare case.
 - A removed choice behaves like a removed label (DECISIONS SF-95); renaming a choice changes it everywhere, as renaming a label does.
 - Deleting a field is permanent (no undo or archive) and writes no entry on each record's timeline; earlier change entries about it stay as history.
 - Money custom fields are in GBP only (DECISIONS) and never add to deal values or totals.
