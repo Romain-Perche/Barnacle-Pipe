@@ -157,7 +157,49 @@ export const messages = {
   files_archived: "Restore this record before changing its files.",
   files_unreachable: "Files can't be reached right now. Try again in a minute.",
   no_files: "No files yet.",
+  // SF-117: the Pipedrive import (contracts/routes.md § Messages)
+  pipedrive_not_set_up: "The Pipedrive import isn't set up yet.",
+  pipedrive_token_required: "Paste your Pipedrive API token.",
+  pipedrive_token_refused: "Pipedrive did not accept this token. Copy it again from Pipedrive and try again.",
+  pipedrive_unreachable: "Pipedrive can't be reached right now. Try again in a minute.",
+  pipedrive_token_note: "In Pipedrive: Personal preferences → API.",
+  pipedrive_tick_something: "Tick what to import.",
+  pipedrive_consent_required: "Choose the email consent of people with no consent status in Pipedrive.",
+  pipedrive_existing_note:
+    "Records already in the CRM (a person with the same email address, an organisation with the same name) are linked to the Pipedrive record and left as they are.",
+  pipedrive_keep_open: "Keep this page open: the import moves on while it is open. Closing it pauses the import.",
+  pipedrive_stopped_unreachable: "The import stopped: Pipedrive can't be reached right now.",
+  pipedrive_token_no_longer: "Pipedrive no longer accepts your token. Save a new token in Settings, then continue.",
+  pipedrive_other_company: "This import is from another Pipedrive company. Stop it, or save the token of that company again.",
+  pipedrive_stopped_by_you: "Stopped by you before the end.",
+  pipedrive_no_name: "No name.",
+  pipedrive_email_many_people: "Its email addresses belong to more than one person in the CRM.",
+  pipedrive_linked_hidden: "A person already in the CRM has this email address: linked, not changed.",
+  pipedrive_unsubscribed_hidden: "A person already in the CRM is unsubscribed in Pipedrive: now Unsubscribed in the CRM.",
+  pipedrive_saved: "Pipedrive token saved.",
+  pipedrive_removed: "Pipedrive token removed.",
+  pipedrive_remove_confirm: "Remove your Pipedrive token? An import you have running stops.",
+  pipedrive_stop_confirm: "Stop this import? The records already imported stay.",
+  pipedrive_running: "Import running.",
+  pipedrive_not_connected: "Save your Pipedrive token first.",
+  pipedrive_org_name_required: "The organisation has no name.",
 } as const;
+
+// SF-117: Pipedrive's field types in words (contracts/routes.md § Messages); any other type is "other".
+export const PIPEDRIVE_TYPE_WORDS: Record<string, string> = {
+  varchar: "text", varchar_auto: "text", text: "large text", double: "numerical", int: "numerical", monetary: "monetary",
+  date: "date", enum: "single option", set: "multiple options", address: "address", user: "user", org: "organisation",
+  people: "person", phone: "phone", time: "time", timerange: "time range", daterange: "date range",
+};
+const pdType = (type: string) => PIPEDRIVE_TYPE_WORDS[type] ?? "other";
+const article = (word: string) => (/^[aeiou]/.test(word) ? `an ${word}` : `a ${word}`);
+const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+const grouped = (n: number) => n.toLocaleString("en-GB");
+const PIPEDRIVE_KIND_WORDS = { organisations: "Organisations", people: "People" } as const;
+const CRM_TYPE_WORDS: Record<string, string> = {
+  text: "text", long_text: "long text", number: "number", money: "money", date: "date",
+  single_choice: "single choice", multiple_choice: "multiple choice", yes_no: "yes / no",
+};
 
 const privatePeople = (n: number) => (n === 1 ? "1 private person" : `${n} private people`);
 const privateDeals = (n: number) => (n === 1 ? "1 private deal" : `${n} private deals`);
@@ -264,6 +306,36 @@ export const templates = {
   import_custom_choice_unknown: (field: string, value: string, rows: number[]) => `${field}: "${value}" is not one of its choices and was not set. ${rowsNote(rows)}`,
   import_custom_unreadable: (field: string, value: string, rows: number[]) => `${field}: "${value}" could not be read and was left empty. ${rowsNote(rows)}`,
   import_custom_field_gone: (name: string) => `${name} was deleted before the import ran: its column was not imported.`,
+  // SF-117: the Pipedrive import. Values read from Pipedrive appear only inside quotes; names of CRM records come from
+  // the database (and are given only when the viewer can see the person).
+  pipedrive_connected: (user: string, company: string) => `Connected to Pipedrive as ${user} (${company}).`,
+  pipedrive_saved_on: (date: string) => `Token saved on ${date}.`,
+  pipedrive_slow_down: (n: number) => `Pipedrive asked us to slow down. Carrying on in ${n} ${n === 1 ? "second" : "seconds"}.`,
+  pipedrive_paused: (parts: { kind: "organisations" | "people"; done: number; total: number }[]) =>
+    `Import paused: ${parts.map((p) => `${PIPEDRIVE_KIND_WORDS[p.kind]} ${grouped(p.done)} of ${grouped(p.total)}`).join(", ")}.`,
+  pipedrive_progress: (kind: "organisations" | "people", done: number, total: number) => `${PIPEDRIVE_KIND_WORDS[kind]} · ${grouped(done)} of ${grouped(total)}`,
+  pipedrive_owner_missing: (name: string, email: string, n: number) =>
+    `Owner '${name}' (${email}) has no CRM user: ${counted(n, "record", "records")} given to you.`,
+  pipedrive_private_others: (n: number) => `${n} private ${n === 1 ? "person" : "people"} of other owners imported.`,
+  pipedrive_owner_only_orgs: (n: number) => `${counted(n, "owner-only organisation", "owner-only organisations")} imported as shared.`,
+  pipedrive_list_missing: (list: "lead_source" | "label", value: string, n: number) =>
+    `${list === "lead_source" ? "Lead source" : "Label"} not on the list: '${value}' (${counted(n, "person", "people")})`,
+  pipedrive_choice_missing: (field: string, value: string, n: number) => `'${value}' is not a choice of '${field}': left out (${counted(n, "record", "records")}).`,
+  pipedrive_field_no_match: (name: string) => `No CRM field named '${name}'.`,
+  pipedrive_field_type_mismatch: (name: string, pd: string, crm: string) =>
+    `'${name}' is ${article(pdType(pd))} field in Pipedrive and ${article(CRM_TYPE_WORDS[crm] ?? crm)} field in the CRM.`,
+  pipedrive_field_unsupported: (name: string, pd: string) => `'${name}' is ${article(pdType(pd))} field in Pipedrive: not imported.`,
+  pipedrive_linked: (name: string) => `${name} was already in the CRM: linked, not changed.`,
+  pipedrive_unsubscribed: (name: string) => `${name} is unsubscribed in Pipedrive: now Unsubscribed in the CRM.`,
+  pipedrive_email_other_person: (name: string) => `Another Pipedrive person, '${name}', has the same email address.`,
+  pipedrive_value_invalid: (field: string, value: string) => `${capital(field)} '${value}' is not valid: left out.`,
+  pipedrive_value_too_long: (field: string, max: number) => `${capital(field)} longer than ${max} characters: left out.`,
+  pipedrive_org_archived: (name: string) => `${name} is archived.`,
+  pipedrive_org_not_imported: (name: string) => `Its organisation '${name}' was not imported: imported without an organisation.`,
+  pipedrive_currency: (field: string, currency: string) => `'${field}': amount in ${currency}, not GBP: left out.`,
+  pipedrive_imported_by: (name: string) => `Imported from Pipedrive by ${name}`,
+  pipedrive_unsubscribed_by: (name: string) => `Unsubscribed by the Pipedrive import of ${name}`,
+  pipedrive_already: (n: number) => `Already imported: ${n}`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

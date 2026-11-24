@@ -1,6 +1,7 @@
 // `npm run test:schemas` (also run before `npm test`): downloads the schemas the test fakes of outside services are
 // checked against, each pinned to one commit and checked by sha256: Google's userinfo (tests/fakes/google.ts) and
-// Supabase Storage's OpenAPI file (SF-116, tests/fakes/storage.ts). A file already there is skipped. The files stay
+// Supabase Storage's OpenAPI file (SF-116, tests/fakes/storage.ts) and Pipedrive's v2 (JSON) and v1 (YAML) OpenAPI
+// files (SF-117, tests/fakes/pipedrive.ts). A file already there is skipped. The files stay
 // out of git (.factory/schemas/ is ignored).
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -16,6 +17,16 @@ const SCHEMAS = [
     file: "storage_v0_openapi.json",
     url: "https://raw.githubusercontent.com/supabase/supabase/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json",
     sha256: "bd435bab4b3b2ef87e3e61f2e948092c30db204f881a4d72d4234a032a356311",
+  },
+  {
+    file: "pipedrive_v2_openapi.json",
+    url: "https://raw.githubusercontent.com/soenneker/soenneker.pipedrive.openapiclient/77695f9076c899e2ba1e7e8eb029aabb28abed27/openapi.json",
+    sha256: "0974486d220a6462ea2e7f03acc440f5e6cba215ec875551544c83de685807c2",
+  },
+  {
+    file: "pipedrive_v1_openapi.yml",
+    url: "https://raw.githubusercontent.com/Zenika/zenpipe/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml",
+    sha256: "9d309b9bf5f520b5f4d5ca95baad2660cd8705404b8940b20ab9d6bbba662e01",
   },
 ];
 
