@@ -1,9 +1,10 @@
 // SF-115 helpers for the AI review's scenario scripts (NODE_PATH=/opt/playwright/node_modules).
 const L = require("./lib.js");
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const B = process.env.BASE || "http://localhost:3000";
 const DB = process.env.DB || "crm_dev";
-function q(sql) { return execSync(`/usr/lib/postgresql/17/bin/psql -h localhost -U postgres -d ${DB} -tA -F '|' -c ${JSON.stringify(sql)}`).toString().trim(); }
+// psql with an argument list (no shell): the SQL is one argument.
+function q(sql) { return execFileSync("/usr/lib/postgresql/17/bin/psql", ["-h", "localhost", "-U", "postgres", "-d", DB, "-tA", "-F", "|", "-c", sql]).toString().trim(); }
 async function go(p, url) { await p.goto(B + url); await p.waitForLoadState("networkidle"); }
 async function submit(p, locator) { await Promise.all([p.waitForLoadState("networkidle"), locator.click()]); await p.waitForTimeout(600); await p.waitForLoadState("networkidle"); }
 const main = (p) => p.innerText("main");
