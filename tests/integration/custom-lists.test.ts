@@ -87,6 +87,7 @@ describe("people list", () => {
     const diet = await makeField({ kind: "person", name: "Diet", type: "single_choice", inList: true, choices: ["Vegan", "Other"] });
     const topics = await makeField({ kind: "person", name: "Topics", type: "multiple_choice", inList: true, choices: ["AI", "Events"] });
     const y = await makeField({ kind: "person", name: "Y", type: "yes_no", inList: true });
+    const t2 = await makeField({ kind: "person", name: "T2", type: "text", inList: true });
     const p1 = await makePerson({ createdBy: ada.id, firstName: "One" });
     const p2 = await makePerson({ createdBy: ada.id, ownerId: linus.id, firstName: "Two" });
     await makePerson({ createdBy: ada.id, firstName: "Zero" });
@@ -107,6 +108,12 @@ describe("people list", () => {
     expect(await first({ [`cf${t.id}`]: "LIKES" })).toEqual(["One", "Two"]);
     expect(await first({ [`cf${t.id}`]: "100%" })).toEqual(["One"]);
     expect(await first({ [`cf${t.id}`]: "n_w" })).toEqual(["One"]);
+    // covers SF-115 fix round 1: "empty" in a text filter is ordinary text; for a number it filters nothing (FR-012).
+    expect(await first({ [`cf${t.id}`]: "empty" })).toEqual([]);
+    await setValue(t2.id, { personId: p2 }, "text_value", "An Empty shell");
+    expect(await first({ [`cf${t2.id}`]: "empty" })).toEqual(["Two"]);
+    expect(await first({ [`cf${t2.id}`]: "EMPTY" })).toEqual(["Two"]);
+    expect(await first({ [`cf${n.id}`]: "empty" })).toEqual(["One", "Two", "Zero"]);
     expect(await first({ [`cf${n.id}_from`]: "0", [`cf${n.id}_to`]: "0" })).toEqual(["One"]);
     expect(await first({ [`cf${n.id}_from`]: "1,234.5" })).toEqual(["Two"]);
     expect(await first({ [`cf${m.id}_to`]: "0" })).toEqual(["One"]);

@@ -186,7 +186,9 @@ describe("CSV cells", () => {
     expect(readImportCell(diet, " vegan ")).toEqual({ value: 13 });
     expect(readImportCell(diet, "Pescatarian")).toEqual({ unreadable: true });
     expect(readImportCell(topics, "hiring; ai, Events")).toEqual({ value: [21, 22, 23] });
-    expect(readImportCell(topics, "AI, Cooking")).toEqual({ unreadable: true });
+    // covers SF-115 fix round 1 (US5 scenario 2): known parts are set, each unknown part reported on its own.
+    expect(readImportCell(topics, "AI, Cooking")).toEqual({ value: [21], unknown: ["Cooking"] });
+    expect(readImportCell(topics, "Cooking; Nope")).toEqual({ value: null, unknown: ["Cooking", "Nope"] });
     expect(readImportCell(diet, "")).toEqual({ value: null });
   });
   it("yes/no words", () => {

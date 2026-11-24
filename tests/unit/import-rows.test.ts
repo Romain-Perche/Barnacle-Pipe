@@ -164,9 +164,19 @@ describe("custom columns of a row", () => {
     const r = personRow(["Ada", "vegan", "Addy", "24/11/1990"], mapping, [diet, nick, born]);
     expect(r).toMatchObject({ ok: true, value: { custom: [{ fieldId: 1, value: 11 }, { fieldId: 2, value: "Addy" }, { fieldId: 3, value: "1990-11-24" }], unreadable: [] } });
     const bad = personRow(["Ada", "Pescatarian", "", "soon"], mapping, [diet, nick, born]);
-    expect(bad).toMatchObject({ ok: true, value: { custom: [], unreadable: [{ field: "Diet", value: "Pescatarian" }, { field: "Born", value: "soon" }] } });
+    expect(bad).toMatchObject({ ok: true, value: { custom: [], unreadable: [{ field: "Diet", value: "Pescatarian", code: "import_custom_choice_unknown" }, { field: "Born", value: "soon", code: "import_custom_unreadable" }] } });
     // A removed choice is not set from a file.
     expect(personRow(["Ada", "Old", "", ""], mapping, [diet, nick, born])).toMatchObject({ ok: true, value: { unreadable: [{ field: "Diet", value: "Old" }] } });
+  });
+  // covers SF-115 fix round 1 (US5 scenario 2): a multiple choice cell keeps its known parts and warns per unknown part
+  it("keeps the known parts of a multiple choice cell and lists each unknown part", () => {
+    const topics: CF = { id: 5, kind: "person", name: "Topics", type: "multiple_choice", position: 5, inList: false,
+      choices: [{ id: 51, name: "AI", position: 1, removed: false }, { id: 52, name: "Events", position: 2, removed: false }] };
+    const m = { columns: [{ index: 0, heading: "First", field: "first_name" as const }, { index: 1, heading: "Topics", field: "custom:5" as const }] };
+    expect(personRow(["Ada", "AI, Nope"], m, [topics])).toMatchObject({ ok: true, value: {
+      custom: [{ fieldId: 5, value: [51] }], unreadable: [{ field: "Topics", value: "Nope", code: "import_custom_choice_unknown" }] } });
+    expect(personRow(["Ada", "Nope; Other"], m, [topics])).toMatchObject({ ok: true, value: { custom: [], unreadable: [
+      { field: "Topics", value: "Nope", code: "import_custom_choice_unknown" }, { field: "Topics", value: "Other", code: "import_custom_choice_unknown" }] } });
   });
   it("refuses a row whose text is over its limit", () => {
     expect(personRow(["Ada", "", "x".repeat(256), ""], mapping, [diet, nick, born])).toMatchObject({ ok: false, error: { code: "import_too_long", args: { field: "Nick", max: 255 } } });

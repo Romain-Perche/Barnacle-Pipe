@@ -275,6 +275,10 @@ describe("custom fields in list addresses", () => {
     expect(knownCustomQuery(q, shown).custom).toEqual({ cf1: "12", cf2: "vegan", cf3_from: "1,000", cf4_from: "£10", cf5_from: "2026-01-01", cf7: "empty", cf8: "81" });
     expect(knownCustomQuery(parsePeopleQuery({ cf1: "99" }), shown).custom).toEqual({});
     expect(knownCustomQuery(parsePeopleQuery({ cf1: "empty", cf6: "no" }), shown).custom).toEqual({ cf1: "empty", cf6: "no" });
+    // covers SF-115 fix round 1 (US3 scenario 3, FR-012): "empty" means "no value" only for Single choice and Yes/No;
+    // for text it is ordinary text, for number, money, date and multiple choice it is dropped.
+    expect(knownCustomQuery(parsePeopleQuery({ cf2: "empty", cf3: "empty", cf4: "empty", cf5: "empty", cf6: "empty", cf8: "empty" }), shown).custom)
+      .toEqual({ cf2: "empty", cf6: "empty" });
     // A field not shown in the list (or of another kind) is dropped.
     expect(knownCustomQuery(parsePeopleQuery({ cf2: "a" }), shown.filter((x) => x.id !== 2)).custom).toEqual({});
   });

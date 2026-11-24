@@ -29,7 +29,7 @@ export function emptyLookups(importerId: number): Lookups {
 // Spreadsheet row number and the name or email from the row (data the user uploaded).
 export type RowRef = { row: number; label: string };
 export type Skip = RowRef & RowError & { personId?: number; organisationId?: number };
-// `field`: the custom field's name of an import_custom_unreadable warning (SF-115).
+// `field`: the custom field's name of an import_custom_unreadable or import_custom_choice_unknown warning (SF-115).
 export type Warning = { code: string; value?: string; rows: number[]; organisationId?: number; field?: string };
 export type CustomToAdd = { fieldId: number; value: CustomValue }[];
 
@@ -157,7 +157,7 @@ export function planPeople(rows: CsvRow[], mapping: ColumnMapping, lookups: Look
       consent: r.value.consent,
       custom: r.value.custom,
     });
-    for (const u of r.value.unreadable) warnings.add("import_custom_unreadable", u.value, row, { field: u.field });
+    for (const u of r.value.unreadable) warnings.add(u.code, u.value, row, { field: u.field });
   }
   return {
     adds,
@@ -193,7 +193,7 @@ export function planOrganisations(rows: CsvRow[], mapping: ColumnMapping, lookup
     nameRows.set(key, row);
     if (r.value.sizeUnknown !== null) warnings.add("import_size_unknown", r.value.sizeUnknown, row);
     adds.push({ row, label: r.label, fields: { ...r.value.fields, ownerId: resolveOwner(r.value.owner, row, lookups, warnings) }, custom: r.value.custom });
-    for (const u of r.value.unreadable) warnings.add("import_custom_unreadable", u.value, row, { field: u.field });
+    for (const u of r.value.unreadable) warnings.add(u.code, u.value, row, { field: u.field });
   }
   return { adds, newOrganisations: [], skipped, warnings: warnings.list(), withoutEmail: 0, needsConsent: 0 };
 }

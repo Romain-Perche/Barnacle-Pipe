@@ -304,7 +304,8 @@ export function parseImportDate(raw: string): string | null {
   return parsed.ok ? parsed.date : null;
 }
 
-export type ImportCell = { value: CustomValue } | { unreadable: true } | { tooLong: true };
+// `unknown`: the parts of a Multiple choice cell that name no current choice (not set, each reported).
+export type ImportCell = { value: CustomValue; unknown?: string[] } | { unreadable: true } | { tooLong: true };
 
 // One CSV cell for a custom field (research.md §14). Empty = no value; choices by current name ignoring case.
 export function readImportCell(field: CustomField, cell: string): ImportCell {
@@ -338,13 +339,15 @@ export function readImportCell(field: CustomField, cell: string): ImportCell {
     }
     case "multiple_choice": {
       const ids = new Set<number>();
+      const unknown: string[] = [];
       for (const part of text.split(/[,;]/).map((p) => p.trim()).filter((p) => p !== "")) {
         const choice = field.choices.find((c) => !c.removed && key(c.name) === key(part));
-        if (!choice) return { unreadable: true };
-        ids.add(choice.id);
+        if (choice) ids.add(choice.id);
+        else if (!unknown.includes(part)) unknown.push(part);
       }
       const value = choicesInOrder(field).filter((c) => ids.has(c.id)).map((c) => c.id);
-      return { value: value.length > 0 ? value : null };
+      const read = { value: value.length > 0 ? value : null };
+      return unknown.length > 0 ? { ...read, unknown } : read;
     }
   }
 }

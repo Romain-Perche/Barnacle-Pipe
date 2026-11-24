@@ -241,6 +241,7 @@ export const templates = {
   custom_changed_event: (field: string, from: string, to: string) => `${field} changed from ${from} to ${to}`,
   custom_changed_plain: (field: string) => `${field} changed`,
   custom_cleared_event: (field: string) => `${field} cleared`,
+  import_custom_choice_unknown: (field: string, value: string, rows: number[]) => `${field}: "${value}" is not one of its choices and was not set. ${rowsNote(rows)}`,
   import_custom_unreadable: (field: string, value: string, rows: number[]) => `${field}: "${value}" could not be read and was left empty. ${rowsNote(rows)}`,
   import_custom_field_gone: (name: string) => `${name} was deleted before the import ran: its column was not imported.`,
 } as const;

@@ -42,6 +42,8 @@ export function warningText(w: Warning): Reason {
       return { text: templates.import_owner_unknown(value, w.rows) };
     case "import_size_unknown":
       return { text: templates.import_size_unknown(value, w.rows) };
+    case "import_custom_choice_unknown":
+      return { text: templates.import_custom_choice_unknown(w.field ?? "", value, w.rows) };
     case "import_custom_unreadable":
       return { text: templates.import_custom_unreadable(w.field ?? "", value, w.rows) };
     case "import_organisation_archived":

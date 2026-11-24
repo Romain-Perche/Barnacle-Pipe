@@ -56,7 +56,7 @@ CSV import actions: `saveColumns` accepts `custom:<id>` targets (`toField(kind, 
 - `parseNumber(raw)`, `formatNumber(text)`, `formatDay("YYYY-MM-DD")`.
 - `validateCustomValues(fields, raw, current)` → typed values or `FieldErrors` keyed `cf.<id>`.
 - `formatValue(field, value)` (record page, timeline text), `listText(field, value)` (long text cut at 80 + "…").
-- `readImportCell(field, cell)` → `{ value } | { unreadable } | { tooLong }`; `parseImportDate`, `parseYesNo`.
+- `readImportCell(field, cell)` → `{ value, unknown? } | { unreadable } | { tooLong }` (`unknown`: the parts of a Multiple choice cell naming no current choice); `parseImportDate`, `parseYesNo`.
 - `customEvent(field, before, after)` → the timeline row to write, or null.
 
 `src/server/custom-fields/fields.ts`: `listFields(kind)` (with offered and removed choices), `fieldCounts()`,
@@ -106,6 +106,7 @@ archived })`, `customListParts(db, kind, alias, fields, query)`, `customColumns(
 - `custom_changed_event(field, old, new)`: "<field> changed from <old> to <new>"
 - `custom_changed_plain(field)`: "<field> changed"
 - `custom_cleared_event(field)`: "<field> cleared"
+- `import_custom_choice_unknown(field, value, rows)`: "<field>: \"<value>\" is not one of its choices and was not set. <rows note>" (Single and Multiple choice, one per unknown value)
 - `import_custom_unreadable(field, value, rows)`: "<field>: \"<value>\" could not be read and was left empty. <rows note>"
 - `import_custom_field_gone(name)`: "<name> was deleted before the import ran: its column was not imported."
 

@@ -338,6 +338,8 @@ describe("custom field messages (SF-115)", () => {
     expect(templates.custom_changed_event("Diet", "Vegan", "Vegetarian")).toBe("Diet changed from Vegan to Vegetarian");
     expect(templates.custom_changed_plain("Notes")).toBe("Notes changed");
     expect(templates.custom_cleared_event("Diet")).toBe("Diet cleared");
+    // covers SF-115 fix round 1: an unknown choice value of a CSV cell
+    expect(templates.import_custom_choice_unknown("Topics", "Nope", [2])).toBe('Topics: "Nope" is not one of its choices and was not set. (row 2)');
     expect(templates.import_custom_field_gone("Diet")).toBe("Diet was deleted before the import ran: its column was not imported.");
     expect(messageFor("custom_field_exists")).toBeUndefined();
     expect(messageFor("custom_set_event")).toBeUndefined();

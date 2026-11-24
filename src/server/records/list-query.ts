@@ -224,7 +224,7 @@ export function knownPeopleQuery(query: PeopleQuery, options: { referrers: reado
 }
 
 // SF-115 (FR-012): only filters of fields shown in the list with a value valid for the type are kept (a choice of
-// the field, removed ones included; "empty"; yes / no; a number, an amount or a day that reads); a sort on a field that
+// the field, removed ones included; "empty" for a single choice or yes / no; yes / no; a number, an amount or a day that reads); a sort on a field that
 // is not shown or not sortable falls back to the list's default. Nothing else from the address is used.
 export function knownCustomQuery<Q extends PeopleQuery | OrganisationsQuery | DealsQuery>(query: Q, shown: readonly CustomField[]): Q {
   const custom: CustomQuery = {};
@@ -237,11 +237,12 @@ export function knownCustomQuery<Q extends PeopleQuery | OrganisationsQuery | De
         if (v !== undefined && check(v)) custom[key + end] = v;
       }
     };
-    if (raw === "empty") custom[key] = raw;
+    // "empty" (no value) is offered only for Single choice and Yes/No; for Text and Long text it is ordinary text.
+    if (raw === "empty" && (field.type === "single_choice" || field.type === "yes_no")) custom[key] = raw;
     switch (field.type) {
       case "text":
       case "long_text":
-        if (raw !== undefined && raw !== "empty") custom[key] = raw;
+        if (raw !== undefined) custom[key] = raw;
         break;
       case "number":
         range((v) => { const n = parseNumber(v); return n.ok && n.value !== null; });

@@ -18,7 +18,9 @@ export type RowError = { code: string; args?: Record<string, string | number> };
 type FromRow<T> = { ok: true; value: T; label: string } | { ok: false; error: RowError; label: string };
 
 // SF-115: the custom values a row gives (readable ones), and the cells that could not be read (left empty, warned about).
-export type CustomCells = { custom: { fieldId: number; value: CustomValue }[]; unreadable: { field: string; value: string }[] };
+export type CustomCells = { custom: { fieldId: number; value: CustomValue }[]; unreadable: { field: string; value: string; code: CustomWarningCode }[] };
+// A choice value naming no current choice, or another value that could not be read (SF-115 fix round 1).
+export type CustomWarningCode = "import_custom_choice_unknown" | "import_custom_unreadable";
 
 export type PersonFromRow = CustomCells & {
   fields: PersonFields;
@@ -92,8 +94,13 @@ export function customFromRow(values: string[], mapping: ColumnMapping, fields: 
     const cell = values[c.index] ?? "";
     const read = readImportCell(field, cell);
     if ("tooLong" in read) return { ok: false, error: { code: "import_too_long", args: { field: field.name, max: field.type === "text" ? MAX_TEXT : MAX_LONG_TEXT } } };
-    if ("unreadable" in read) cells.unreadable.push({ field: field.name, value: cell.trim() });
-    else if (read.value !== null) cells.custom.push({ fieldId: field.id, value: read.value });
+    const code = field.type === "single_choice" || field.type === "multiple_choice" ? "import_custom_choice_unknown" : "import_custom_unreadable";
+    if ("unreadable" in read) {
+      cells.unreadable.push({ field: field.name, value: cell.trim(), code });
+      continue;
+    }
+    if (read.value !== null) cells.custom.push({ fieldId: field.id, value: read.value });
+    for (const part of read.unknown ?? []) cells.unreadable.push({ field: field.name, value: part, code });
   }
   return { ok: true, cells };
 }

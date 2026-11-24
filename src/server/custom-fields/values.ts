@@ -194,7 +194,8 @@ export function customListParts(
     const to = query.custom[`cf${field.id}_to`];
     const probe = (cond: Fragment) =>
       db`exists (select 1 from custom_values cv where cv.field_id = ${field.id} and cv.${db(col)} = ${rec}.id and ${cond})`;
-    if (raw === "empty") {
+    // "empty" means "no value" only for the types whose filter offers it (US3 scenario 3); for text it is text.
+    if (raw === "empty" && (field.type === "single_choice" || field.type === "yes_no")) {
       conditions.push(db`not exists (select 1 from custom_values cv where cv.field_id = ${field.id} and cv.${db(col)} = ${rec}.id)`);
       continue;
     }

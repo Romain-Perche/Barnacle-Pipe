@@ -7,6 +7,7 @@ import { getColumns, getImport, previewImport, runImport, saveColumns } from "@/
 import { makeUser, resetDb, type TestUser } from "./db-helpers";
 import { makeField } from "./custom-helpers";
 import { uploaded, utf8 } from "./import-helpers";
+import { warningText } from "@/server/imports/text";
 
 let ada: TestUser;
 beforeEach(async () => {
@@ -34,7 +35,7 @@ describe("people import with custom columns", () => {
     expect(preview.sample.columns.slice(-3)).toEqual(["Diet", "Birthday", "Budget"]);
     expect(preview.sample.rows[0].slice(-3)).toEqual(["Vegetarian", "24 Nov 1990", "£4,000.50"]);
     expect(preview.warnings).toEqual([
-      { code: "import_custom_unreadable", field: "Diet", value: "Pescatarian", rows: [8] },
+      { code: "import_custom_choice_unknown", field: "Diet", value: "Pescatarian", rows: [8] },
       { code: "import_custom_unreadable", field: "Birthday", value: "someday", rows: [10, 11] },
     ]);
     expect(await runImport(ada.id, id, "subscribed")).toEqual({ status: "done" });
@@ -60,6 +61,23 @@ describe("people import with custom columns", () => {
     expect(await runImport(ada.id, id, "subscribed")).toEqual({ status: "done" });
     expect((await getImport(ada.id, id))!.report).toMatchObject({ imported: 1, goneFields: ["Diet"] });
     expect(await sql`select field_id::int as field_id, text_value from custom_values`).toEqual([{ field_id: nick.id, text_value: "Addy" }]);
+  });
+
+  // covers SF-115 fix round 1 (US5 scenario 2): "AI, Nope" sets AI and warns about "Nope" alone
+  it("sets the known parts of a multiple choice cell and warns once per unknown part", async () => {
+    const topics = await makeField({ kind: "person", name: "Topics", type: "multiple_choice", choices: ["AI", "Events"] });
+    const id = await uploaded(ada.id, "people", utf8(`First name,Topics\nAda,"AI, Nope"\nGrace,Nope; Other\nLinus,events\n`));
+    const preview = await previewImport(ada.id, id);
+    if (!("warnings" in preview)) throw new Error("no preview");
+    expect(preview.warnings).toEqual([
+      { code: "import_custom_choice_unknown", field: "Topics", value: "Nope", rows: [2, 3] },
+      { code: "import_custom_choice_unknown", field: "Topics", value: "Other", rows: [3] },
+    ]);
+    expect(warningText(preview.warnings[0]).text).toBe('Topics: "Nope" is not one of its choices and was not set. (rows 2, 3)');
+    expect(await runImport(ada.id, id, "subscribed")).toEqual({ status: "done" });
+    const rows = await sql<{ first_name: string; ids: number[] | null }[]>`
+      select p.first_name, cv.choice_ids::int[] as ids from persons p left join custom_values cv on cv.person_id = p.id order by p.first_name`;
+    expect(rows).toEqual([{ first_name: "Ada", ids: [topics.choices.AI] }, { first_name: "Grace", ids: null }, { first_name: "Linus", ids: [topics.choices.Events] }]);
   });
 
   it("refuses a row with text over its limit, with the too long reason", async () => {
