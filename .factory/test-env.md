@@ -221,6 +221,9 @@
     `src/proxy.ts` matcher leaves out `/dev/fake-storage/` (fix round 1) and 25 MB uploads reach the fake; headless Chromium
     here names every download with a non-ASCII name "download" (read `content-disposition` instead); a file on disk whose
     name has a backslash is dropped by `setInputFiles` (pass `{ name, mimeType, buffer }`). Not re-runnable without a reset.
+    `check-edge8-box.js` (with :3001 up, after a seed): `?file=<png>` on the Storage-down app goes back to the page with
+    `?error=files_unreachable` and the message, no dialog (fix round 1; `NODE_PATH=/opt/playwright/node_modules node .factory/run/check-edge8-box.js`).
+    All 37 SF-116 scenarios pass with a, b, c in a row (reset before each; ~3, ~2 and ~4 min).
   - CSV import scenarios (SF-103): the fake files are in `tests/fixtures/csv/` (people-20.csv: rows 4 and 15 use
     `dup.one@`/`DUP.TWO@fakeco.example`, which a scenario puts
     in the CRM first, row 9 has an invalid address; organisations-10.csv: "FAKECO LTD" matches the seeded Fakeco Ltd, size
