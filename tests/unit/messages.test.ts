@@ -1,6 +1,6 @@
 // covers FR-025 (messages only from messages.ts; templates never reachable from a URL code), contracts/routes.md § Messages
 import { describe, expect, it } from "vitest";
-import { fieldMessage, messageFor, templates } from "@/server/messages";
+import { fieldMessage, messageFor, messages, templates } from "@/server/messages";
 
 describe("record messages", () => {
   it("has the fixed texts of contracts/routes.md", () => {
@@ -384,6 +384,103 @@ describe("custom field messages (SF-115)", () => {
   });
 });
 
+// covers SF-119 FR-019, contracts/routes.md § Messages (T004): every campaign code, and the templates' exact texts
+describe("campaign messages (SF-119)", () => {
+  it("has the fixed texts of contracts/routes.md", () => {
+    const expected: Record<string, string> = {
+      campaigns_empty: "No campaigns yet.",
+      campaign_saved: "Draft saved.",
+      campaign_gone: "This campaign no longer exists.",
+      campaign_name_required: "Give the campaign a name.",
+      campaign_name_too_long: "A campaign name can be at most 100 characters.",
+      campaign_sender_too_long: "Sender name: at most 100 characters.",
+      campaign_reply_to_invalid: "Reply-to: enter one valid email address.",
+      campaign_subject_too_long: "Subject: at most 255 characters.",
+      campaign_preview_text_too_long: "Preview text: at most 255 characters.",
+      campaign_fallback_too_long: "If empty, show: at most 100 characters.",
+      campaign_html_too_long: "The HTML can be at most 500,000 characters.",
+      campaign_blocks_limit: "A campaign can have at most 50 blocks.",
+      campaign_content_invalid: "The content couldn't be read. Reload and try again.",
+      campaign_still_empty: "Still empty: ",
+      campaign_unknown_tags: "Unknown merge tags: ",
+      campaign_preview_choose: "Choose a person to preview.",
+      campaign_unsubscribe_line: "Don't want these emails?",
+      campaign_unsubscribe: "Unsubscribe",
+      campaign_switch_to_html: "Switch to Paste HTML? The HTML box will start with this content as HTML.",
+      campaign_switch_to_layout: "Switch to a layout? The pasted HTML will be replaced by the layout's blocks.",
+      campaign_new: "[ NEW CAMPAIGN ]",
+      campaign_save: "[ SAVE ]",
+      campaign_duplicate: "[ DUPLICATE ]",
+      campaign_delete: "[ DELETE ]",
+      campaign_insert_tag: "[ INSERT MERGE TAG ]",
+      campaign_if_empty: "If empty, show",
+      campaign_add_block: "[ + ADD BLOCK ]",
+      campaign_layout_blank: "Blank",
+      campaign_layout_text: "Text",
+      campaign_layout_text_button: "Text with a button",
+      campaign_layout_newsletter: "Newsletter",
+      campaign_paste_html: "Paste HTML",
+      campaign_block_heading: "Heading",
+      campaign_block_text: "Text",
+      campaign_block_button: "Button",
+      campaign_block_image: "Image",
+      campaign_block_divider: "Divider",
+      campaign_col_name: "Name",
+      campaign_col_subject: "Subject",
+      campaign_col_status: "Status",
+      campaign_col_created_by: "Created by",
+      campaign_col_last_edited: "Last edited",
+    };
+    for (const [code, text] of Object.entries(expected)) expect(messageFor(code), code).toBe(text);
+  });
+  it("builds the templates from names read from the database", () => {
+    expect(templates.campaign_deleted("Exec dinner (fake)")).toBe('Campaign "Exec dinner (fake)" deleted.');
+    expect(templates.campaign_delete_confirm("Exec dinner (fake)")).toBe(`Delete the campaign "Exec dinner (fake)" for good? This can't be undone.`);
+    expect(templates.campaign_edit_conflict("Ada Fake")).toBe("Ada Fake changed this campaign since you opened it. Reload to see their changes.");
+    expect(templates.campaign_button_url("Button")).toBe("Button: enter a web address starting with https://.");
+    expect(templates.campaign_image_url("Image")).toBe("Image: enter a web address starting with https://.");
+    expect(templates.campaign_block_too_long("Text", 10_000)).toBe("Text: at most 10,000 characters.");
+    expect(templates.campaign_copy_name("Exec dinner (fake)")).toBe("Copy of Exec dinner (fake)");
+    for (const code of ["campaign_deleted", "campaign_delete_confirm", "campaign_edit_conflict", "campaign_copy_name"]) {
+      expect(messageFor(code), code).toBeUndefined();
+    }
+  });
+});
+
+// covers SF-120 FR-011, FR-014 (T004): every segment message of contracts/routes.md § Messages, templates in singular and plural
+describe("segment messages (SF-120)", () => {
+  it("has the fixed texts", () => {
+    expect(messageFor("segment_name_required")).toBe("Give the segment a name.");
+    expect(messageFor("segment_name_too_long")).toBe("A segment name can be at most 100 characters.");
+    expect(messageFor("segment_pipeline_required")).toBe("Choose a pipeline.");
+    expect(messageFor("segment_stage_required")).toBe("Choose a stage.");
+    expect(messageFor("segment_conditions_limit")).toBe("A segment can have at most 20 conditions.");
+    expect(messageFor("segment_changed")).toBe("Someone else changed this segment. Open it again to see their changes.");
+    expect(messageFor("segment_not_found")).toBe("This segment no longer exists.");
+    expect(messageFor("segment_count_note")).toBe("Recipients are worked out when the campaign is sent, so this number can change.");
+    expect(messageFor("segment_broken")).toBe("This segment refers to something that was deleted. Edit it before using it.");
+    expect(messageFor("segments_none")).toBe("No segments yet.");
+    expect(messageFor("segment_who_everyone")).toBe("Everyone in the CRM");
+    expect(messageFor("segment_who_pipeline")).toBe("People on the deals of a pipeline");
+    expect(messageFor("segment_who_stage")).toBe("People on the deals of a stage");
+    expect(["open", "won", "lost", "all"].map((s) => messageFor(`segment_status_${s}`))).toEqual(["Open deals", "Won deals", "Lost deals", "All deals"]);
+  });
+  it("renders the templates with the names as given", () => {
+    expect(templates.segment_name_exists("<b>Test</b>")).toBe("There is already a segment called <b>Test</b>.");
+    expect(templates.segment_deleted("Sales — Proposal")).toBe("Segment Sales — Proposal deleted.");
+    expect(templates.segment_delete_confirm("Old list")).toBe("Delete the segment Old list? It is deleted for the whole team.");
+    expect(templates.segment_reaches(1)).toBe("Reaches 1 person now");
+    expect(templates.segment_reaches(0)).toBe("Reaches 0 people now");
+    expect(templates.segment_reaches(42)).toBe("Reaches 42 people now");
+    expect(templates.segment_left_out(3, 5, 2)).toBe("Left out: 3 archived · 5 unsubscribed · 2 with no email address");
+    expect(templates.segment_more_conditions(1)).toBe("+ 1 condition");
+    expect(templates.segment_more_conditions(3)).toBe("+ 3 conditions");
+    expect(templates.segment_last_changed("Ada Fake", "24 Nov 2026 10:12")).toBe("Last changed by Ada Fake · 24 Nov 2026 10:12");
+    expect(templates.segment_condition_required("Lead source", "choose")).toBe("Lead source: choose at least one.");
+    for (const code of ["segment_name_exists", "segment_deleted", "segment_reaches", "segment_left_out"]) expect(messageFor(code)).toBeUndefined();
+  });
+});
+
 // covers SF-117 FR-028, contracts/routes.md § Messages: every Pipedrive message and template, Pipedrive values in quotes
 describe("Pipedrive import messages (SF-117)", () => {
   it("has the fixed texts", () => {
@@ -478,5 +575,20 @@ describe("Gmail messages (SF-118)", () => {
     expect(templates.gmail_last_sync("Not synced yet")).toBe("Last sync: Not synced yet");
     expect(templates.gmail_copying_since("24 Nov 2026, 10:00")).toBe("Copying since 24 Nov 2026, 10:00");
     for (const code of ["gmail_connected_as", "gmail_wrong_account", "gmail_needs_reconnect", "gmail_test_sent"]) expect(messageFor(code)).toBeUndefined();
+  });
+});
+
+// covers SF-121 T002: the unsubscribe page's texts and the three timeline lines
+describe("unsubscribe messages (SF-121)", () => {
+  it("has the exact texts", () => {
+    expect(messages.unsubscribe_lead).toBe("Stop receiving campaign emails from Barnacle Labs.");
+    expect(messages.unsubscribe_done).toBe("You're unsubscribed. You won't get any more campaign emails from us.");
+    expect(messages.unsubscribe_invalid).toBe(
+      "This unsubscribe link isn't valid any more. If you still get emails from us, reply to one and ask to be removed.",
+    );
+    expect(messages.unsubscribe_error).toBe("Something went wrong. Try again in a minute.");
+    expect(templates.unsubscribed_link_event).toBe("Unsubscribed from campaigns through the unsubscribe link");
+    expect(templates.unsubscribed_mail_app_event).toBe("Unsubscribed from campaigns through their mail app");
+    expect(templates.consent_changed_event("Unsubscribed", "Subscribed")).toBe("Consent: Unsubscribed → Subscribed");
   });
 });

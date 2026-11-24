@@ -4,7 +4,8 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { runSeeders } from "@/seed";
 import { listUsers } from "@/server/users";
-import { count, resetDb } from "./db-helpers";
+import { count, getUser, resetDb } from "./db-helpers";
+import { listSegments } from "@/server/segments/segments";
 
 beforeEach(resetDb);
 afterAll(closeDb);
@@ -553,5 +554,52 @@ describe("fake Gmail (SF-118)", () => {
     vi.stubEnv("CRON_SECRET", "a-cron-secret-of-16+");
     expect(await runSeeders(sql)).toContain("Gmail fake data skipped (real Gmail settings).");
     expect((await sql`select 1 from gmail_connections`).length).toBe(0);
+  });
+});
+
+// covers SF-119 FR-021 (T050): five fake drafts, once: one per layout, one pasted HTML email with a script, one linked to
+// the people custom field "Diet (fake)"
+describe("fake campaigns (SF-119)", () => {
+  beforeEach(resetDb);
+  it("adds the five drafts once", async () => {
+    await runSeeders(sql);
+    const rows = async () =>
+      [...(await sql<{ name: string; content_kind: string; types: string | null; html: string | null; merge_links: { name: string }[] }[]>`
+        select name, content_kind, (select string_agg(b->>'type', ',' order by o) from jsonb_array_elements(blocks) with ordinality as x(b, o)) as types,
+               html, merge_links
+        from campaigns order by name`)];
+    const first = await rows();
+    expect(first.map((r) => r.name)).toEqual([
+      "Event recap (fake)", "Exec dinner – March (fake)", "Newsletter – winter (fake)", "Pasted HTML sample (fake)", "Welcome note (fake)",
+    ]);
+    expect(first.map((r) => r.types).sort()).toEqual(
+      [null, "heading,text", "heading,text,button", "image,heading,text,button,divider,text", "text"].sort(),
+    );
+    expect(first.find((r) => r.content_kind === "html")?.html).toContain("<script>");
+    expect(first.find((r) => r.name === "Event recap (fake)")?.merge_links).toEqual([expect.objectContaining({ name: "Diet (fake)" })]);
+    const again = await runSeeders(sql);
+    expect(again.filter((l) => l.includes("campaign"))).toEqual(["already there campaigns"]);
+    expect(await rows()).toEqual(first);
+  });
+});
+
+// covers SF-120 FR-015 (T031): four fake segments, one of each kind of choice, with a count; a second run adds none
+describe("fake segments (SF-120)", () => {
+  beforeEach(resetDb);
+  it("adds the four fake segments once, each reaching people for Ada", async () => {
+    await runSeeders(sql);
+    const rows = await listSegments((await getUser("ada@barnacle.ai")).id);
+    expect(rows.map((r) => [r.name, r.summary, r.broken])).toEqual([
+      ["Fake — everyone", "Everyone in the CRM", false],
+      ["Fake — Exec Dinner, all deals", "People on all deals of Exec Dinner", false],
+      ["Fake — Inbound owned by Ada Fake", "Everyone in the CRM + 3 conditions", false],
+      ["Fake — Sales Proposal, open deals", "People on open deals of Sales · Proposal + 1 condition", false],
+    ]);
+    expect(rows[0].reaches).toBeGreaterThan(0);
+    expect(rows[1].reaches).toBeGreaterThan(0);
+    expect(rows.every((r) => r.updatedBy === "Ada Fake")).toBe(true);
+    const again = await runSeeders(sql);
+    expect(again.filter((l) => l.includes("segment")).sort()).toEqual(rows.map((r) => `already there segment ${r.name}`).sort());
+    expect((await listSegments((await getUser("ada@barnacle.ai")).id)).length).toBe(4);
   });
 });

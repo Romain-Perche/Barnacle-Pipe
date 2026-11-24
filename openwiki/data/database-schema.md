@@ -5,8 +5,10 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T18:41:40.383Z
+    at: 2026-11-24T18:25:19.853Z
 sources:
+  - id: sf120-src-migration
+    resource: repo://migrations/0014_segments.sql
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
   - id: sf102-src-migration
@@ -31,15 +33,17 @@ sources:
     resource: repo://migrations/0011_files.sql
   - id: openwiki-source-dc1f2867de00af07970a260d
     resource: repo://migrations/0012_pipedrive.sql
-  - id: openwiki-source-c317c3c9a820cd1fcd6bd0cf
-    resource: repo://migrations/0013_gmail.sql
+  - id: openwiki-source-7159795c4e4172d1472292a6
+    resource: repo://migrations/0013_unsubscribe.sql
+  - id: openwiki-source-e456f59e22568cd1a9f5ca48
+    resource: repo://migrations/0015_campaigns.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T18:41:40.383Z" }
+generated: { by: "claude-code", at: "2026-11-24T18:25:19.853Z" }
 ---
 
 # Database schema and access
@@ -192,13 +196,28 @@ Pipedrive id as the primary key, so a Pipedrive record never leads to two CRM re
 link row). Row level security is on all three with no policy, and the `timeline_events` kind list gains
 `pipedrive_imported` and `pipedrive_unsubscribed`. See [Pipedrive import](../features/pipedrive-import.md).
 
-### Gmail (migration 0013)
+### Unsubscribe (migration 0013)
 
-`0013_gmail.sql` adds `gmail_connections` (one per user, kept after disconnect: the address, a `state` of `working`,
-`needs_reconnect` or `disconnected`, the token sealed in `token_cipher` (null only when disconnected), granted scopes,
-Gmail `history_id`, watch dates and a sync lease), `email_threads`, `email_messages` (one row per message and account,
-direction `sent` or `received`) and `email_attachments` (names and sizes only). Row level security is on all four with
-no policy. See [Gmail connect and sync](../features/gmail-connect-and-sync.md).
+`0013_unsubscribe.sql` adds `persons.unsubscribe_token` (64 hex characters, random default, unique; no new table) and
+widens the `timeline_events` kind list with `unsubscribed_link`, `unsubscribed_mail_app` (both on a person, no actor)
+and `consent_changed` (old and new consent labels, with a teammate). See
+[People and organisations](../features/people-and-organisations.md).
+
+### Segments (migration 0014)
+
+`0014_segments.sql` adds `segments` (name unique ignoring case, `who` of everyone / pipeline / stage, optional
+`pipeline_id`, `stage_id` and `deal_status`, `conditions` as a jsonb array of at most 20, `created_by`/`updated_by`,
+`version`) and the partial index `deals_stage_live_idx` on non-archived deals. Pipeline, stage and condition ids have no
+foreign keys on purpose, so a deleted target shows as "(deleted)" and matches nobody. Row level security is enabled.
+See [Segments](../features/segments.md).
+
+### Campaigns (migration 0015)
+
+`0015_campaigns.sql` adds `campaigns`, the team-shared drafts: `name` (1 to 100 characters), `sender_name`, `reply_to`,
+`subject`, `preview_text`, `content_kind` (`blocks` or `html`, or null while empty), `blocks` (jsonb array of 1 to 50) or
+`html` (at most 500000 characters) with a check that only the chosen one is set, `merge_links` (jsonb, custom field tags
+with no foreign key so a deleted field reads as unknown), `status` (only `draft` for now), `created_by`/`updated_by`
+and `version`. Row level security is enabled. See [Campaigns](../features/campaigns.md).
 
 ## Row level security
 

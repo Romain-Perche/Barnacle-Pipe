@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:aa10b027f33d526c09b0af3a745daf1ad5104f7c7126eca2355ec2a0a7948c3d",
+  "pageVersion": "sha256:05f122407a78aab0ecd5fa32af627baf90ebbd5cb322b29ff7cac0cf76a4b8a1",
   "claims": [
     {
       "id": "claim_13428ba51be747709f2744c129d2c44d",
@@ -54,17 +54,17 @@
     },
     {
       "id": "claim_72530cfd0b4a4c75b838827e31f18101",
-      "statement": ".env.example lists APP_ENV, DATABASE_URL, FIRST_ADMIN_EMAIL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_URL, SUPABASE_URL, SUPABASE_SECRET_KEY, FILES_BUCKET, PIPEDRIVE_TOKEN_KEY, PIPEDRIVE_URL and the Gmail settings (GMAIL_PUBSUB_TOPIC, GMAIL_TOKEN_KEY, GMAIL_PUSH_*, CRON_SECRET) without real secrets.",
+      "statement": ".env.example lists APP_ENV, DATABASE_URL, FIRST_ADMIN_EMAIL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_URL, SUPABASE_URL, SUPABASE_SECRET_KEY, FILES_BUCKET, PIPEDRIVE_TOKEN_KEY and PIPEDRIVE_URL without real secrets.",
       "evidence": [
         {
           "resource": "repo://.env.example",
-          "version": "repo-file-v1:sha256:f80ef08514d34d02edba4f96f8584af0b7a6d833865c66986b3e48c67fd3708a"
+          "version": "repo-file-v1:sha256:8a1c694dce0f85b30f562f6e1b7fe127eb3fb4bfcff208b1a7dab790fbc23969"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T18:41:40.383Z"
+    "at": "2026-11-24T14:34:59.724Z"
   }
 }

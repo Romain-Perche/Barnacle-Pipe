@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4eed157d6706acf9e88713e540cab36b4c97292d98a8c20a8c1aec89149e5c17",
+  "pageVersion": "sha256:c9b023a8902841b912aac0765c74ce4821348c36e8fd5488a31f67fbefa1ce3e",
   "claims": [
     {
       "id": "claim_d55389c642f14a80ae944375add69edd",
       "statement": "Pipedrive tokens are sealed with AES-256-GCM and sent only in the x-api-token header.",
       "evidence": [
         {
-          "resource": "repo://src/server/crypto/seal.ts",
-          "version": "repo-file-v1:sha256:37f70887203566e9ed07c68e45e9c773d0b3636e30ab65124e0ef697b3c6cc0a"
-        },
-        {
           "resource": "repo://src/server/pipedrive/api.ts",
           "version": "repo-file-v1:sha256:273a81723a576789f0e1fd655911c5273e4d9c47f81cf9fea086c7624c5cb92a"
+        },
+        {
+          "resource": "repo://src/server/pipedrive/crypto.ts",
+          "version": "repo-file-v1:sha256:95172e1ab5186b62070b89b7dbb1b3c61ad6c6f828f0715a28b0f902e23deacf"
         }
       ]
     },
@@ -29,6 +29,6 @@
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T18:41:40.383Z"
+    "at": "2026-11-24T14:34:59.724Z"
   }
 }

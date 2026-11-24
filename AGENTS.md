@@ -47,6 +47,13 @@ OAuth code flow and database sessions.
   `file_uploads`), `deleteFile`, `cleanupPathsFor` (used by the three record deletes), `sweepFileCleanup` (table
   `file_cleanup`, swept after every file action: no cron)). No Storage call inside a transaction. `visibleFile()` in
   `records/visibility.ts`: every `files` read uses it. FILE timeline entries: kinds `file_added` / `file_deleted`.
+- SF-121 unsubscribe: `src/server/records/unsubscribe-rules.ts` (pure: `isTokenShape`, `unsubscribeLinks`, `isOneClickBody`)
+  and `src/server/records/unsubscribe.ts` (`unsubscribeByToken`, `unsubscribePageState`, `unsubscribeLinksFor` — the one
+  function campaign sending uses — and `listUnsubscribeLinks`; the only `persons` reads without `visiblePerson()`: the
+  token is the authority). Public pages: `src/app/unsubscribe/[token]/` (the page, `confirm/` and `one-click/` route
+  handlers, listed in `PUBLIC` in `src/proxy.ts`) and `src/app/dev/unsubscribe-links/` (development and test only).
+  Timeline kinds `unsubscribed_link`, `unsubscribed_mail_app` (no actor) and `consent_changed` (a teammate's Consent edit;
+  the person form sends `consentShown` and a save changes Consent only when the field was changed on that form).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
   `records/import/`: the CSV import screens shared by `/people/import` and `/organisations/import` (`ImportPages.tsx`:
   the four steps; `FileStep.tsx`: the only client part, sends the file in 512 KiB parts; `actions.ts`; `example.ts`).
@@ -80,6 +87,34 @@ OAuth code flow and database sessions.
 - `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms, `list/` (the deal
   list), `[id]/` (the deal page: `StageBar.tsx`, `LostBox.tsx`, `not-found.tsx`), `ViewSwitch.tsx` (Board / List);
   `src/app/(app)/admin/pipelines/` — the Pipelines admin pages.
+- `src/server/campaigns/` — campaign drafts (SF-119), shared by the whole team (no visibility rule): `merge.ts` (pure and
+  client-safe: the tag grammar `{{<name> | <if empty>}}`, the 11 built-in merge fields then people custom fields `cf:<id>`,
+  `resolveTag` link → built-in → custom → unknown, `rewriteNames` (custom field tags follow renames through `merge_links`),
+  `unknownTags`, `linksToStore`, `fillText` / `fillHtml` / `blockFill` with values HTML-escaped), `content.ts` (pure and
+  client-safe: blocks, `LAYOUTS`, `validateContent`, `blocksToHtml`, `frameDocument`: the preview's CSP and `<base
+  target="_blank">` first), `rules.ts` (pure and client-safe: limits in code points, `validateDraft`, `stillEmpty`,
+  `copyName`), `campaigns.ts` (list, open with renamed tags, create, save with the version check, duplicate, delete),
+  `preview.ts` (the picker search and a person's merge values, through `visiblePerson` / `getPerson`, never archived).
+  The pure files never import `@/server/db` or anything server-only: the editor imports them.
+- `src/app/(app)/campaigns/` (SF-119) — the Campaigns page (`page.tsx`, design A table, `?new=1` `NewCampaignBox.tsx`,
+  `?delete=<id>` `CampaignDeleteConfirm.tsx`), `[id]/` the edit page (`?delete=1`, `not-found.tsx`), `actions.ts`, and the
+  client parts: `CampaignEditor.tsx` (details, content, the live preview's filling), `BlockList.tsx`, `MergeTagMenu.tsx`,
+  `PreviewPersonPicker.tsx`, `CampaignPreview.tsx` (the email only inside `<iframe sandbox="allow-popups
+  allow-popups-to-escape-sandbox" srcDoc>`; never `dangerouslySetInnerHTML`). `next.config.ts` raises the server action
+  body limit to 4 MB for pasted HTML.
+- `src/server/segments/` (SF-120) — saved segments, shared by the whole team: `rules.ts` (pure: `Condition` / `Definition` /
+  `Reach` types, `readSegmentForm`, `validateSegmentForm` (ids kept only when among the form options), `readConditions`,
+  `describeSegment` (summary, // WHO and // CONDITIONS lines, "(deleted)", `broken`), `formToValues`), `reach.ts` (`reachWhere` on
+  `persons p` with `visiblePerson` and the deals through `visibleDeal`, archived deals never; `countReach`: one query, left out
+  archived → unsubscribed → no email; `reachedPeople`: person and first email, for the later campaign issue), `segments.ts`
+  (`listSegments`, `getSegment`, `segmentFormOptions`, `createSegment` / `updateSegment` (version check) / `deleteSegment`,
+  `countDefinition`). Table `segments` (conditions as jsonb, no foreign keys to things that can be deleted). Counts are worked
+  out at each read, never stored. `customProbe` in `custom-fields/values.ts` is the custom value test shared by the People
+  list filters and the segment reach.
+- `src/app/(app)/segments/` (SF-120) — the Segments table (`page.tsx`), `[id]/` the segment page (count strip, // WHO,
+  // CONDITIONS, `?confirm=delete` → `SegmentDeleteConfirm.tsx`), `new/` and `[id]/edit/` (the form on its own page),
+  `SegmentForm.tsx` (client: who, condition rows, [ COUNT AGAIN ]), `MultiPicker.tsx` (client: filtering multi-select with
+  chips), `ReachBlock.tsx`, `actions.ts`.
 - `src/server/imports/` — CSV import (SF-103): `csv.ts` (reading the file), `columns.ts` (fields, suggestions, mapping
   checks, example files), `rows.ts` (a row through `validatePerson`/`validateOrganisation`), `plan.ts` (what an import
   will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
@@ -130,8 +165,8 @@ OAuth code flow and database sessions.
   `CRON_SECRET`), scheduled by `vercel.json` (SF-118); `src/app/dev/fake-google/gmail` (the fake consent screen; its buttons post a plain form to `answer/route.ts`, a 303 to the callback) and
   `src/app/dev/fake-gmail` (the fake mailbox page), 404 unless the Gmail mode is `fake`.
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, gmail (SF-118: Ada Fake's fake Gmail
-  connection and three conversations), notes, activities, ambassadors, files, custom fields: `custom-fields.ts`). The
-  fake Pipedrive needs no seeding.
+  connection and three conversations), notes, activities, ambassadors, files, custom fields: `custom-fields.ts`,
+  campaigns: `campaigns.ts`, segments: `segments.ts`). The fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage, Pipedrive
   v2 / v1, Gmail and Pub/Sub schemas).

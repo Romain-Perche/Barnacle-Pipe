@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4e7830e270c5f237befd2bcdc210aec21495b757c3492aee88557afa237b426d",
+  "pageVersion": "sha256:aa0ccdc8547def8b616d4907f522eac89a184f41bd67196f1e7de828f14dbaba",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L34",
-          "version": "repo-lines-v1:sha256:46a80f119a36bc732fdd08345691d77420ea4869d35efcb0c7fa0afe25195a17:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L38",
+          "version": "repo-lines-v1:sha256:b9ee549b9745b704972c9be9a8be10920441ae8a7e3e936cf52975aef8c96d95:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -173,18 +173,38 @@
       ]
     },
     {
-      "id": "claim_c3e1386f455f451cbf2d0e27a2669533",
-      "statement": "Migration 0013 adds gmail_connections, email_threads, email_messages and email_attachments, each with row level security enabled and no policy.",
+      "id": "claim_e78f128a76654f9db28c22608a2baf00",
+      "statement": "Migration 0013 adds a unique 64-hex persons.unsubscribe_token and the timeline kinds unsubscribed_link, unsubscribed_mail_app and consent_changed.",
       "evidence": [
         {
-          "resource": "repo://migrations/0013_gmail.sql",
-          "version": "repo-file-v1:sha256:533c33c4d730356df860dc6037c24c9de2d7f90e95eb795bb725ea1b70c89207"
+          "resource": "repo://migrations/0013_unsubscribe.sql",
+          "version": "repo-file-v1:sha256:c98191351b0608fdbb5cd6f4aa295969d75120a705b24ffd2bf41ac6e9a3d7bc"
+        }
+      ]
+    },
+    {
+      "id": "claim_cf0e4184834c4b6a9450e676a244bf07",
+      "statement": "The segments table stores conditions as a jsonb array of at most 20 and has no foreign keys on pipeline, stage or condition ids.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0014_segments.sql#L1-L21",
+          "version": "repo-lines-v1:sha256:ab4771419af5747a34d333cf9dde0230bb18979cf2f3a240b0daa0f551ca79ae:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyZjY3Y2MxZmY0M2EwZjQyZGIxOGI1MTVlMjI3YWRiNDlmZjAxMzE1NjMxZGVjNGI5YTI3ODVjMmVhMDBmMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiOTNmNGUwMTljMTkyZDY2ZDM0NjBhMmRjNTlmYzBmOTk3NDAxOGUwNTY0Mzk1Y2Q3NzBmN2EyNzBjNjBmOTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2NWM2MmZlY2E2MWQ3YTQyN2ZiMTUwNTg4OWIwOTA5NmMxYzFhMzQ4YWVlZjQ4ODcyYWViZDgwMDQ3OWQ4M2QifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7930de9e0bec43ef8cdce04b0cc84053",
+      "statement": "The campaigns table holds team-shared drafts with content_kind blocks or html, merge_links without foreign keys, and status limited to draft.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0015_campaigns.sql",
+          "version": "repo-file-v1:sha256:b9501f21293c65e117eaf1d73d2ca573a6021a5e1753bd37e91aa9f6e5bdc430"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T18:41:40.383Z"
+    "at": "2026-11-24T18:25:19.853Z"
   }
 }

@@ -170,6 +170,14 @@ export async function deleteField(actorId: number, id: number): Promise<FieldRes
     const field = await fieldRow(db, id);
     const ids = (await lockKind(db, field.kind)).map((r) => r.id);
     await db`delete from custom_fields where id = ${id}`;
+    // Campaign drafts keep the field's last name for its tags (SF-119 FR-009a); not an edit of the draft.
+    if (field.kind === "person") {
+      await db`
+        update campaigns set merge_links = (
+          select jsonb_agg(case when e->>'field' = ${String(id)} then e || jsonb_build_object('last', ${field.name}::text) else e end)
+          from jsonb_array_elements(merge_links) e)
+        where merge_links @> jsonb_build_array(jsonb_build_object('field', ${id}::int))`;
+    }
     await renumber(db, "custom_fields", ids.filter((x) => x !== id));
     return done(field);
   });

@@ -11,15 +11,15 @@ sources:
   - id: sf117-src-connection
     resource: repo://src/server/pipedrive/connection.ts
   - id: sf117-src-crypto
-    resource: repo://src/server/crypto/seal.ts
+    resource: repo://src/server/pipedrive/crypto.ts
   - id: sf117-src-env
     resource: repo://src/server/env.ts
   - id: sf117-src-migration
     resource: repo://migrations/0012_pipedrive.sql
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T18:41:40.383Z
-generated: { by: "claude-code", at: "2026-11-24T18:41:40.383Z" }
+    at: 2026-11-24T14:34:59.724Z
+generated: { by: "claude-code", at: "2026-11-24T14:34:59.724Z" }
 ---
 
 # Pipedrive import
@@ -31,7 +31,7 @@ in [dataflow/DATAFLOW.md](../../dataflow/DATAFLOW.md).
 
 ## Connection
 
-`src/server/pipedrive/connection.ts` saves, reads and removes one token per user. `src/server/crypto/seal.ts` (shared with Gmail) seals it with
+`src/server/pipedrive/connection.ts` saves, reads and removes one token per user. `crypto.ts` seals it with
 AES-256-GCM using the key `PIPEDRIVE_TOKEN_KEY` (32 bytes in base64, bound to the user); without a valid key the
 connection is "not set up yet". `tokenFor` is the only place a token is opened, for the import engine. Deactivating a
 user deletes their connection.

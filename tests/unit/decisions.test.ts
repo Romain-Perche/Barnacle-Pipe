@@ -83,6 +83,22 @@ describe("docs/DECISIONS.md (SF-115)", () => {
   });
 });
 
+// covers SF-120 plan.md Build step 10: the people's choices recorded as theirs, the factory's marked "to confirm"
+describe("docs/DECISIONS.md (SF-120)", () => {
+  const lines = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.includes("(SF-120"));
+  it("records design C, the deal statuses, once per person and deleted references as decided", () => {
+    const decided = lines.filter((l) => l.endsWith("(SF-120)"));
+    expect(decided.length).toBe(4);
+    expect(decided.some((l) => l.includes("Segments use design C"))).toBe(true);
+    expect(decided.some((l) => l.includes("Open, Won, Lost or All deals"))).toBe(true);
+    expect(decided.some((l) => l.includes("first email address"))).toBe(true);
+    expect(decided.some((l) => l.includes("(deleted)"))).toBe(true);
+  });
+  it("marks the factory's five choices to confirm", () => {
+    expect(lines.filter((l) => l.endsWith("(SF-120, decided by the factory, to confirm)")).length).toBe(5);
+  });
+});
+
 // covers SF-117 spec.md § Clarifications (Session 2026-11-24): the three choices people made are recorded
 describe("docs/DECISIONS.md (SF-117)", () => {
   const sf117 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-117)"));
@@ -107,5 +123,19 @@ describe("docs/DECISIONS.md (SF-118)", () => {
     expect(has("the time Gmail received or sent a message, not the sender's Date line")).toBe(true);
     expect(has("Deactivating a user also cancels their Gmail access at Google")).toBe(true);
     expect(sf118).toHaveLength(8);
+  });
+});
+
+// covers SF-119 spec.md § Clarifications (Session 2026-11-24): the three choices people made, one line each; the
+// factory's "Plan 2026-11-24" choices are not recorded until a person confirms them
+describe("docs/DECISIONS.md (SF-119)", () => {
+  const sf119 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-119)"));
+  it("records design A, shared drafts and tags that follow renames", () => {
+    expect(sf119).toEqual([
+      "- Campaigns use design A: the Campaigns page is a table; a draft's edit page has the draft (// DETAILS, // CONTENT) on the left and a live preview for a chosen person on the right (SF-119)",
+      "- Campaign drafts are shared by the whole team: everyone can edit, duplicate and delete every draft (SF-119)",
+      "- Merge tags of a people custom field follow the field's renames, in the subject, preview text, layout blocks and pasted HTML; a tag typed by hand is matched to its field when the draft is saved (SF-119)",
+    ]);
+    expect(sf119.some((l) => /Departs from blueprint/.test(l))).toBe(false);
   });
 });

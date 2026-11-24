@@ -16,6 +16,10 @@ const PUBLIC = [
   /^\/dev\/fake-gmail\/?$/,
   /^\/gmail\/push\/?$/,
   /^\/cron\/gmail\/?$/,
+  // SF-121: public by design, the token in the address is the authority (the page, its button, RFC 8058 one-click);
+  // the development links page answers 404 outside development and test.
+  /^\/unsubscribe\/[^/]+(\/(confirm|one-click))?\/?$/,
+  /^\/dev\/unsubscribe-links\/?$/,
 ];
 
 export function proxy(req: NextRequest) {

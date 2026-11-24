@@ -56,7 +56,10 @@ and the private person Pat Privatefake, and (SF-109) twelve fake activities (sub
 "Fake task:"), dated from the day the seed runs: Ada Fake's call overdue on "Fakeco website", her task and meeting due today,
 later ones, a task with no link, three done ones on timelines (one sets a person's Last contacted), one on the private deal
 "Fake secret project" and one on the private person Gus Lorem, a meeting Ada Fake assigned to Grace Fake (an unread
-notification), her task next week on Bob Placeholder and a call Grace Fake assigned to Ada Fake (read); most open deals keep no planned activity. A fresh
+notification), her task next week on Bob Placeholder and a call Grace Fake assigned to Ada Fake (read); most open deals keep no planned activity. SF-119 adds five fake campaign drafts:
+"Exec dinner – March (fake)" (Text with a button), "Welcome note (fake)" (Blank), "Event recap (fake)" (Text, a "Diet (fake)" merge
+tag), "Newsletter – winter (fake)" (Newsletter) and "Pasted HTML sample (fake)", whose HTML holds a harmless script, an
+`onerror` image and a form that do nothing in the preview. A fresh
 database (no fake data) starts with the six lead sources Duncan's LinkedIn, Referral, Exec dinner, Inbound,
 Event and Ambassador, and no labels.
 
@@ -72,6 +75,8 @@ Event and Ambassador, and no labels.
 | `/deals/<id>`, `/people/<id>`, `/organisations/<id>`, the deal drawer | as the record | SF-109: "// NEXT ACTIVITIES" above the timeline: the record's planned activities, earliest first, with a box to mark one done (then "Schedule a follow-up?" opens with the same links, `?followup=<id>`), `[ SCHEDULE ACTIVITY ]` (pre-fills the deal, its person and organisation, or the person and their organisation), `[ EDIT ]`, `[ DELETE ]`; done ones are ACTIVITY entries on the timeline. Not on archived records. A done call or meeting sets the person's Last contacted. Board cards end with "⚠ No next activity" or "Next: 25 Nov · Call" |
 | `/deals/<id>` | everyone (a private deal: its creator and owner) | The deal page: `[ WON ]`, `[ LOST ]` (asks why), `[ REOPEN ]`; the stage bar with whole days per stage (press a stage to move an open deal); edit, archive, delete (admins), `[ RESTORE ]` for an archived deal; other linked people, labels, follow/unfollow and the // TIMELINE with notes (as on people). Won and lost deals leave the board |
 | `/activities` | everyone | The Activities list (SF-109): your planned calls, meetings and tasks, overdue first (red edge, "Overdue") then by due date and time, 50 per page with "// <n> ACTIVITIES"; quick filters Overdue / Today / This week (UK Monday–Sunday) / Planned / Done (`?when=`), Assignee (`?assignee=<id>` or `all`) and Type (`?type=`), all in the address; tick the box to mark one done; `[ SCHEDULE ACTIVITY ]` (`?activity=new`), `[ EDIT ]` (`?activity=<id>`) and `[ DELETE ]` (`?delete-activity=<id>`) open a box over the page. Activities linked to a record you cannot see are never shown or counted |
+| `/campaigns` | everyone | Campaign drafts (SF-119), shared by the whole team, most recently edited first: Name, Subject ("—" when empty), Status DRAFT, Created by, Last edited; `[ NEW CAMPAIGN ]` (`?new=1`) asks for a name and opens the new draft; per row `[ DUPLICATE ]` ("Copy of <name>") and `[ DELETE ]` (`?delete=<id>`, confirmed in a box) |
+| `/campaigns/<id>` | everyone | The draft's edit page: `[ SAVE ]` `[ DUPLICATE ]` `[ DELETE ]` (`?delete=1`); // DETAILS (name, sender name, reply-to, subject, preview text), // CONTENT built from a layout (Blank, Text, Text with a button, Newsletter; heading, text, button, image and divider blocks, at most 50) or pasted HTML (up to 500,000 characters, kept as pasted); merge tags `{{First name}}` / `{{First name \| there}}` from `[ INSERT MERGE TAG ]` (person fields and people custom fields; custom field tags follow renames); "Still empty: …" and "Unknown merge tags: …"; // PREVIEW FOR a person you can see (not archived): the email filled with their values, live as you type, inside a sandboxed frame where pasted HTML cannot run scripts, send forms or reach the app. A save made from an older version is refused. Sending comes later |
 | `/ambassadors` | everyone | Every ambassador you can see (people with the "Ambassador" tick on their form), A–Z: organisation, people and deals they referred, open and won totals (£), latest referral; archived ones marked "Archived". "Referred by" is set on the person and deal forms (only active ambassadors you can see are offered; the add deal form fills it from the main person) and filters the People list and the deal list (`?ref=<id>`) |
 | `/ambassadors/<id>` | everyone (a private ambassador: their creator and owner) | The ambassador page: `[ PERSON PAGE ]`, contact details, a summary strip (people referred, deals referred, Open £, Won £, Lost), the people and deals they referred (50 at a time, `?people=` / `?deals=`) and the latest updates on them and what they referred (20 at a time, `?updates=`). Private records are never listed or counted for anyone they are hidden from |
 | `/notifications` | everyone | Your @mentions in notes, newest first, 50 at a time (`?shown=100`): "<name> mentioned you in a note on <record>", the date and the start of the note; pressing one opens the record and marks it read; `[ MARK ALL AS READ ]`. The sidebar shows "Notifications" with the unread count, up to date on every page you open (links, forms, back and forward). In the app only, no email; a mention on a record you can no longer see is hidden. SF-109: also "<name> assigned you a <call|meeting|task>: <subject>" with "Due <date>" when someone else assigns you an activity (it goes when you are no longer the assignee); opening one goes to its deal, else person, else organisation, else the Activities list |
@@ -125,7 +130,7 @@ Environment variables. `.env.example` lists them all, with no secret values. Sec
 | `FIRST_ADMIN_EMAIL` | production | barnacle.ai address of the first admin. Their first sign-in creates them as an admin. Empty with no users: the sign-in page says the CRM isn't set up yet. |
 | `GOOGLE_CLIENT_ID` | real Google sign-in | From the Internal OAuth app in the barnacle.ai Google Workspace. |
 | `GOOGLE_CLIENT_SECRET` | real Google sign-in | Secret. |
-| `APP_URL` | real Google sign-in | Public base URL, e.g. `http://localhost:3000`. The OAuth redirect URI is `${APP_URL}/auth/google/callback`. Also anchors the check of the return path after sign-in (`http://localhost:3000` when unset). |
+| `APP_URL` | real Google sign-in | Public base URL, e.g. `http://localhost:3000`. The OAuth redirect URI is `${APP_URL}/auth/google/callback`. Also anchors the check of the return path after sign-in (`http://localhost:3000` when unset), and is also the base of unsubscribe links (https in production). |
 | `SUPABASE_URL` | production (files) | `https://<project>.supabase.co`. Empty with `APP_ENV` `development`/`test`: the fake file storage is used. Empty otherwise: every file action answers "Files can't be reached right now. Try again in a minute."; the rest of the app works. |
 | `SUPABASE_SECRET_KEY` | with `SUPABASE_URL` | Supabase secret key (or the legacy `service_role` key). Secret, server only, never sent to the browser. |
 | `FILES_BUCKET` | optional | The private Storage bucket of file contents. Default `crm-files`. |
@@ -241,6 +246,23 @@ not the user's sign-in address. Only the refresh key is stored, sealed with `GMA
   mailbox (with or without delivering its notice), runs the 15-minute check, refuses the key, fails renewals and forgets
   Gmail's history. `npm run db:seed` connects Ada Fake with three copied conversations. The tests set their own key.
 
+## Unsubscribe
+
+Every person has a random unsubscribe token (64 hex characters, `persons.unsubscribe_token`, made by the database, no
+expiry). The addresses need no sign-in; the token is the only authority:
+
+- `/unsubscribe/<token>`: the page. Opening it changes nothing; `[ UNSUBSCRIBE ]` posts to `/unsubscribe/<token>/confirm`,
+  which sets Consent to Unsubscribed and adds "Unsubscribed from campaigns through the unsubscribe link" to the person's
+  timeline (no actor, nobody notified).
+- `/unsubscribe/<token>/one-click`: RFC 8058 one-click for mail apps (`POST` with `List-Unsubscribe=One-Click`; answers
+  `200`, `400`, `404` or `503` in plain text).
+- Campaign sending takes the page link and both headers (`List-Unsubscribe`, `List-Unsubscribe-Post`) from
+  `unsubscribeLinksFor(personId)` in `src/server/records/unsubscribe.ts`, built on `APP_URL`.
+- `/dev/unsubscribe-links` (development and test only) lists every person's link and headers.
+
+There is no setting. Only a teammate can subscribe a person again, from the edit form ("Consent: Unsubscribed →
+Subscribed by <name>"); the form changes Consent only when the field was changed on it.
+
 ## Production notes
 
 - **Vercel production**: `vercel-build` runs `npm run db:migrate` before `next build`. A failed migration fails the deploy.
@@ -251,6 +273,8 @@ not the user's sign-in address. Only the refresh key is stored, sealed with `GMA
   cannot read or write app data. The app's own database user owns the tables and is not affected.
 - **Previews** only build the app: no `DATABASE_URL`, nobody can sign in, the sign-in page says so.
 - **Fake login and fake data** are never available on Vercel production or preview deployments.
+- **Request size**: `next.config.ts` raises the server action body limit to 4 MB (`experimental.serverActions.bodySizeLimit`):
+  a campaign draft's pasted HTML (500,000 characters) can be up to 2 MB as UTF-8. It stays under Vercel's 4.5 MB request limit.
 - **First admin**: set `FIRST_ADMIN_EMAIL`; that person signs in once and then adds the team on the Users page.
 - **Google**: create an Internal OAuth client in the barnacle.ai Workspace with the redirect URI
   `${APP_URL}/auth/google/callback`, and set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `APP_URL`.
