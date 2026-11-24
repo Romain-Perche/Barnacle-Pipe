@@ -145,6 +145,12 @@
 - pipedrive_v2_openapi.json: https://github.com/soenneker/soenneker.pipedrive.openapiclient/blob/77695f9076c899e2ba1e7e8eb029aabb28abed27/openapi.json
 - pipedrive_v1_openapi.yml: https://github.com/Zenika/zenpipe/blob/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml
 
+- Pipedrive stand-in over HTTP (AI review, SF-117): `.factory/run/pipedrive-server.ts` serves Build's `FakePipedrive`
+  (`buildDevFake()`, the same data as the in-process fake) on :9400 (`npx tsx .factory/run/pipedrive-server.ts`), for a second
+  app started with `PIPEDRIVE_URL=http://localhost:9400`. `POST /__control` `{op, args}` calls the fake's switches
+  (`slowDownEvery`, `failNext`, `hangNext`, `refuseToken`, `addCompany`, `addPerson`, `addOrganization`, `addField`, `addUser`,
+  `deletePerson`, …), `{op:"reset"}`, `{op:"down", args:[true]}` (every call a network error), `{op:"requests"}`.
+
 ## Docker images
 - none (PostgreSQL comes from Debian's apt repository, see below)
 
@@ -221,6 +227,16 @@
     Ben Referredfake (the removed choice Pescatarian, Head count 12), Dee Referredfake (Hiring), Sample Studios Fake
     (FAKE-001, £25,000), "Fake referral · website" (31 Mar 2027, NDA Yes) and the private "… · audit" (15 Jan 2027, NDA No),
     each with a "<Field> set to <value>" timeline entry by the record's creator.
+  - SF-117 AI review (Pipedrive import). Start, after the build on :3000: `nohup npx tsx .factory/run/pipedrive-server.ts >/tmp/pd.log 2>&1 &`,
+    `PORT=3001 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_URL=http://localhost:9400 bash .factory/run/start-app.sh` and (edge 18)
+    `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_TOKEN_KEY= bash .factory/run/start-app.sh`. Then, each on fresh data
+    (`bash .factory/run/reset-db.sh` first; helpers in `sf117-lib.js`): `NODE_PATH=/opt/playwright/node_modules node
+    .factory/run/scenarios-sf117-a.js` (US1, US2, edge 1, 3–8, 10–15, 18; ~1.5 min) and `… scenarios-sf117-b.js` (US3, edge 2, 9,
+    16, 17; adds company 2001 with 800 organisations / 3,000 people (token big-fake-token, Grace), 3001 (mid-a / mid-b, Linus and
+    Margaret), marg-token (Margaret on 1001); ~6 min; pass name prefixes to run a subset). Notes: the dev fake's people have
+    Pipedrive ids 61–360 (person i = id i+60: organisations 1–60 take the first ids); "Owner 'Jane Fake' (…)" and
+    "Another Pipedrive person, 'Person001 Fake', …" quote the Pipedrive name (FR-028). All 48 scenarios pass except US2 16
+    (round 1: the report shows only the three totals, not people / organisations imported and linked per kind).
   - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
     1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
