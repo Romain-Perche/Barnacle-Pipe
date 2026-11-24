@@ -139,6 +139,13 @@
     background (log `/tmp/app-$PORT.log`). Env: `PORT` (3000), `APP_ENV` (development; `APP_ENV=` for empty),
     `DATABASE_URL` (crm_dev), `FIRST_ADMIN_EMAIL` (ada@barnacle.ai; `FIRST_ADMIN_EMAIL=` for none), `VERCEL_ENV`,
     `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
+  - SF-120 segments: `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf120.js` (app on :3000 from
+    `start-app.sh`). It resets crm_dev itself (`reset-db.sh` + seed) and loads `.factory/run/sf120-setup.sql`: pipelines
+    RevPipe (stages RA, RB) and DelPipe (DA), 15 people "Rv …" (A1 on two deals with two addresses, A2 linked person, W1/W2
+    on a won deal, X1 on an archived deal, L1 archived+unsubscribed+no address, L2 unsubscribed+no address, L3 no address,
+    M1 only person of "Rv D9", G1 private (Grace), V1 on Grace's private deal, O1 at "Old Fakeco Archive", AL owned by
+    deactivated Alan Fake, Z1 at "Rv TempOrg" with the person Yes/No field "Rv Opted (fake)"). Expected for Ada: RA open 3,
+    all 5; RevPipe open 4 (left out 1/1/1); RB open 2, 1 after moving Rv D9 to RA. Runs all 23 SF-120 scenarios.
   - `bash .factory/run/reset-db.sh [db]` — empties every app table (users, sessions, people, organisations,
     labels, timeline, pipelines, stages, deals, stage periods, activities…), puts back the six starting lead sources, and seeds
     again (`NO_SEED=1`: empty). Run `npm run db:migrate` first on a database created before a new migration (the
@@ -385,6 +392,6 @@
       as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
 
 ## Smoke checks
-1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json
+1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in
