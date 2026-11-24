@@ -15,6 +15,10 @@
 - Q: Which design? → A: Design: A, a "// FILES" table above the timeline (name, kind, size, added by, date, `[ PREVIEW ]` / `[ DOWNLOAD ]` / `[ DELETE ]`, `[ ADD FILE ]` in the section heading), the image preview in a box over the page with `[ DOWNLOAD ]` and `[ CLOSE ]`, FILE entries on the timeline (see `design-options.html`).
 - Q: Who can delete a file? → A: Anyone who can see the record, as with notes (SF-102).
 - Q: Which files does a person or organisation page list under "// FILES"? → A: Only the files added to that person or organisation; their deals' files show only as FILE entries on the timeline.
+- Q: A 25 MB file cannot pass through the app on Vercel (4.5 MB limit), so the browser uploads it straight to storage through an address the app makes after its checks. Supabase decides how long that upload address lasts (up to 2 hours), not the 5 minutes of FR-010. Is that acceptable? → A: Yes: the upload address can only write one new file at a random place, cannot replace a file and never reads one; the app lists the file only after reading it back, and refuses to finish an upload more than 2 hours after it started. Every address that reads a file is valid for 60 seconds and made after the privacy check (decided by the factory, to confirm)
+- Q: Where does a PDF preview open? → A: In a new browser tab, in the browser's own PDF viewer, so the record page stays open (decided by the factory, to confirm)
+- Q: What does the Kind column show? → A: JPG, PNG, GIF, WEBP or PDF for files that can be previewed; otherwise the name's extension in capitals (XLSX, DOCX, CSV) when it is 1 to 5 letters or digits, else FILE (decided by the factory, to confirm)
+- Q: When the app has no storage set up (no Supabase settings outside development and test), what happens? → A: Every file action and address shows "Files can't be reached right now. Try again in a minute."; the rest of the record page works and nothing is stored anywhere else (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
