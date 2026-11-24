@@ -182,7 +182,7 @@ export const messages = {
   pipedrive_stop_confirm: "Stop this import? The records already imported stay.",
   pipedrive_running: "Import running.",
   pipedrive_not_connected: "Save your Pipedrive token first.",
-  pipedrive_org_name_required: "The organisation has no name.",
+  pipedrive_email_other_hidden: "Another Pipedrive person has the same email address.",
 } as const;
 
 // SF-117: Pipedrive's field types in words (contracts/routes.md § Messages); any other type is "other".

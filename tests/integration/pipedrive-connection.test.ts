@@ -67,6 +67,12 @@ async function redirectOf(p: Promise<unknown>): Promise<string> {
   }
   throw new Error("no redirect");
 }
+// The whole token, and every 6-character slice of its own part (after the shared "test-token-" prefix).
+function expectNoPart(html: string) {
+  expect(html).not.toContain(TOKEN);
+  const own = TOKEN.slice("test-token-".length);
+  for (let i = 0; i + 6 <= own.length; i++) expect(html, own.slice(i, i + 6)).not.toContain(own.slice(i, i + 6));
+}
 async function page(query: Record<string, string> = {}) {
   return renderToStaticMarkup(await SettingsPage({ searchParams: Promise.resolve(query) }));
 }
@@ -167,7 +173,7 @@ describe("the Settings page and its actions", () => {
     expect(html).toContain("Settings");
     expect(html).toContain("PIPEDRIVE");
     expect(html).toMatch(/<input[^>]*type="password"[^>]*name="token"|<input[^>]*name="token"[^>]*type="password"/);
-    expect(html).toMatch(/autocomplete="off"/);
+    expect(html).toMatch(/autocomplete="off"/i);
     expect(html).toContain("In Pipedrive: Personal preferences → API.");
     expect(html).toContain("[ SAVE TOKEN ]");
   });
@@ -179,12 +185,12 @@ describe("the Settings page and its actions", () => {
     expect(html).toMatch(/Token saved on \d{1,2} [A-Z][a-z]{2} \d{4}\./);
     for (const b of ["[ REPLACE TOKEN ]", "[ REMOVE TOKEN ]", "[ IMPORT FROM PIPEDRIVE ]"]) expect(html).toContain(b);
     expect(html).toContain("Pipedrive token saved.");
-    for (let i = 0; i + 6 <= TOKEN.length; i++) expect(html).not.toContain(TOKEN.slice(i, i + 6));
+    expectNoPart(html);
     expect(html).not.toContain('name="token"');
     // [ REPLACE TOKEN ] shows the empty form again.
     const replace = await page({ replace: "1" });
     expect(replace).toContain('name="token"');
-    for (let i = 0; i + 6 <= TOKEN.length; i++) expect(replace).not.toContain(TOKEN.slice(i, i + 6));
+    expectNoPart(replace);
   });
   it("shows a refused token's message from a fixed code, never text from the address (US1-3, FR-028)", async () => {
     await as(linus.id);

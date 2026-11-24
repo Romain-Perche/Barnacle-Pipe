@@ -495,3 +495,22 @@ table.files-table .facts .btn { margin-left: 6px; }
 .more-details .wide { grid-column: 1 / -1; }
 .money-input { display: flex; align-items: center; gap: 6px; }
 .money-input .input { flex: 1; }
+
+/* SF-117: Settings and the Pipedrive import (design B): the sidebar's Settings link, the token form, the choose step
+   (consent radios only when People is ticked, CSS :has()), progress bars with the state chip. */
+.side .me-nav { margin: 0 0 8px; }
+.side .me-nav a { padding: 4px 0; font-size: 11px; }
+.pd-section { max-width: 760px; }
+.pd-token { display: flex; flex-direction: column; gap: 8px; max-width: 520px; margin-top: 8px; }
+.pd-token .hint { margin: 0; }
+.pd-choose fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.pd-choose legend { width: 100%; padding: 12px 0 0; }
+.pd-choose .pd-consent { display: none; }
+.pd-choose:has(input[name="people"]:checked) .pd-consent { display: block; }
+.pd-state { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.2em; color: var(--blue); }
+.pd-bar { max-width: 1100px; margin: 0 0 12px; }
+.pd-bar .k { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); }
+.pd-bar progress { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 10px; margin-top: 4px; border: 0.5px solid var(--line); background: var(--panel); color: var(--blue); }
+.pd-bar progress::-webkit-progress-bar { background: var(--panel); }
+.pd-bar progress::-webkit-progress-value { background: var(--blue); }
+.pd-bar progress::-moz-progress-bar { background: var(--blue); }
