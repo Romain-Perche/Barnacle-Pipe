@@ -1,10 +1,11 @@
 // SF-116 helpers for the AI review's file scenarios (run with NODE_PATH=/opt/playwright/node_modules).
 const fs = require("fs"), os = require("os"), path = require("path"), crypto = require("crypto");
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const BASE = process.env.BASE || "http://localhost:3000";
 const DB = process.env.DB || "crm_dev";
 const DIR = path.join(os.tmpdir(), "sf116-files");
-function sql(q) { return execSync(`/usr/lib/postgresql/17/bin/psql -h localhost -U postgres -d ${DB} -tAc ${JSON.stringify(q)}`).toString().trim(); }
+// No shell: psql gets the query as one argument.
+function sql(q) { return execFileSync("/usr/lib/postgresql/17/bin/psql", ["-h", "localhost", "-U", "postgres", "-d", DB, "-tAc", q]).toString().trim(); }
 const sha = (b) => crypto.createHash("sha256").update(b).digest("hex");
 // Test files made once in $TMPDIR/sf116-files.
 function makeFiles() {
