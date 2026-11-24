@@ -14,87 +14,93 @@ config:
   layout: elk
 ---
 flowchart LR
-    n1[["Database"]]
-    n2[["Database commands"]]
-    n3[["Deals"]]
-    n4[["Deals database"]]
-    n5[["Files"]]
-    n6[["People and organisations"]]
-    n7[["Settings"]]
-    n8[["Sign-in and sessions"]]
-    n9[["Signed-in app and user admin"]]
-    n10["Barnacle admin"]
-    n11["Developer or Vercel build"]
-    n12["Barnacle staff user"]
+    n1[["Campaigns"]]
+    n2[["Database"]]
+    n3[["Database commands"]]
+    n4[["Deals"]]
+    n5[["Deals database"]]
+    n6[["Files"]]
+    n7[["People and organisations"]]
+    n8[["Settings"]]
+    n9[["Sign-in and sessions"]]
+    n10[["Signed-in app and user admin"]]
+    n11["Barnacle admin"]
+    n12["Developer or Vercel build"]
+    n13["Barnacle staff user"]
     subgraph z1["GOOGLE (THIRD PARTY)"]
-        n13["Google OAuth and userinfo API"]
+        n14["Google OAuth and userinfo API"]
     end
     subgraph z2["SUPABASE STORAGE (THIRD PARTY)"]
-        n14["Supabase Storage"]
+        n15["Supabase Storage"]
     end
-    n6 -->|"17 flows"| n1
-    n6 -->|"7 flows"| n12
-    n1 -->|"12 flows"| n6
-    n1 -->|"next activity per deal"| n3
-    n10 -->|"2 flows"| n6
-    n10 -->|"pipeline and stage changes"| n3
-    n10 -->|"new user email, role and status changes"| n9
-    n9 -->|"2 flows"| n6
-    n9 -->|"sidebar and signed-in pages"| n12
-    n6 -->|"label changes seen on deals"| n4
-    n8 -->|"4 flows"| n1
-    n6 -->|"custom inputs, values, filters"| n3
-    n4 -->|"7 flows"| n3
-    n3 -->|"9 flows"| n4
-    n3 -->|"4 flows"| n1
-    n3 -->|"board, deal drawer and forms"| n12
-    n4 -->|"visible referred deals and totals"| n6
-    n11 -->|"migrate command / seed command"| n2
-    n7 -->|"3 flows"| n8
-    n7 -->|"2 flows"| n2
-    n5 -->|"files section"| n3
-    n5 -->|"2 flows"| n1
-    n5 -->|"files section"| n6
-    n5 -->|"303 to a 60-second read address"| n12
-    n5 -->|"signed upload address, info, delete requests"| n14
-    n1 -->|"file rows visible to the user"| n5
-    n8 -->|"auth code, PKCE verifier, client id and secret"| n13
-    n8 -->|"2 flows"| n12
-    n13 -->|"access token, then email, domain and name"| n8
-    n2 -->|"12 flows"| n1
-    n2 -->|"fake deals / table definitions"| n4
-    n2 -->|"schema"| n6
-    n6 -->|"current unread count"| n9
-    n6 -->|"crm_flash cookie"| n8
-    n8 -->|"4 flows"| n6
-    n8 -->|"2 flows"| n9
-    n8 -->|"admin check / signed-in user and admin check"| n3
-    n8 -->|"signed-in user"| n5
-    n1 -->|"4 flows"| n8
-    n12 -->|"7 flows"| n6
-    n12 -->|"deal form fields, board drags"| n3
-    n12 -->|"4 flows"| n8
-    n12 -->|"files to add, delete, download, preview"| n5
-    n12 -->|"file contents (PUT to signed address)"| n14
-    n14 -->|"object info and first bytes"| n5
-    n9 -->|"users table and error messages"| n10
-    n9 -->|"private deals handed to a new owner"| n4
-    n9 -->|"6 flows"| n1
-    n1 -->|"user list"| n9
+    n7 -->|"17 flows"| n2
+    n7 -->|"7 flows"| n13
+    n2 -->|"12 flows"| n7
+    n2 -->|"next activity per deal"| n4
+    n11 -->|"2 flows"| n7
+    n11 -->|"pipeline and stage changes"| n4
+    n11 -->|"new user email, role and status changes"| n10
+    n10 -->|"2 flows"| n7
+    n10 -->|"sidebar and signed-in pages"| n13
+    n7 -->|"label changes seen on deals"| n5
+    n9 -->|"4 flows"| n2
+    n7 -->|"custom inputs, values, filters"| n4
+    n2 -->|"2 flows"| n1
+    n5 -->|"7 flows"| n4
+    n4 -->|"9 flows"| n5
+    n4 -->|"4 flows"| n2
+    n4 -->|"board, deal drawer and forms"| n13
+    n5 -->|"visible referred deals and totals"| n7
+    n12 -->|"migrate command / seed command"| n3
+    n8 -->|"3 flows"| n9
+    n8 -->|"2 flows"| n3
+    n6 -->|"files section"| n4
+    n6 -->|"2 flows"| n2
+    n6 -->|"files section"| n7
+    n6 -->|"303 to a 60-second read address"| n13
+    n6 -->|"signed upload address, info, delete requests"| n15
+    n2 -->|"file rows visible to the user"| n6
+    n9 -->|"auth code, PKCE verifier, client id and secret"| n14
+    n9 -->|"2 flows"| n13
+    n14 -->|"access token, then email, domain and name"| n9
+    n3 -->|"12 flows"| n2
+    n3 -->|"fake campaign drafts / table definitions"| n1
+    n3 -->|"fake deals / table definitions"| n5
+    n3 -->|"schema"| n7
+    n7 -->|"current unread count"| n10
+    n7 -->|"crm_flash cookie"| n9
+    n9 -->|"4 flows"| n7
+    n9 -->|"2 flows"| n10
+    n9 -->|"signed-in user"| n1
+    n9 -->|"admin check / signed-in user and admin check"| n4
+    n9 -->|"signed-in user"| n6
+    n2 -->|"4 flows"| n9
+    n13 -->|"7 flows"| n7
+    n13 -->|"draft edits, pasted HTML"| n1
+    n13 -->|"deal form fields, board drags"| n4
+    n13 -->|"4 flows"| n9
+    n13 -->|"files to add, delete, download, preview"| n6
+    n13 -->|"file contents (PUT to signed address)"| n15
+    n15 -->|"object info and first bytes"| n6
+    n10 -->|"users table and error messages"| n11
+    n10 -->|"private deals handed to a new owner"| n5
+    n10 -->|"6 flows"| n2
+    n2 -->|"user list"| n10
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n10,n11,n12,n13,n14 actor
-    class n1,n2,n3,n4,n5,n6,n7,n8,n9 group
+    class n11,n12,n13,n14,n15 actor
+    class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10 group
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
     style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
 ```
 
 | Subsystem | What it does | Parts |
 |---|---|---|
+| Campaigns | Team-shared email campaign drafts with merge tags, layouts and a sandboxed preview. | Campaign drafts, Campaigns |
 | Database | The Postgres tables every part reads and writes: users, sessions, the user change log and applied migrations. | Postgres activities, lead_sources and labels tables, Custom fields and choices, Custom values, File rows, uploads and cleanup, organisations table, persons, emails, phones and person_labels tables, schema_migrations table, sessions table (token hashes), timeline_events table, user_changes log, users table |
 | Database commands | Command-line tools that apply SQL migrations and load fake data into Postgres. | db:migrate command, SQL migration files, db:seed command (fake data) |
 | Deals | Pipelines, stages and the deal board, with deals kept private by their person. | Deals board and deal pages, Pipelines admin |
@@ -130,9 +136,9 @@ flowchart LR
     subgraph z2["SUPABASE STORAGE (THIRD PARTY)"]
         n11["Supabase Storage"]
     end
-    n1 -->|"45 flows"| n4
+    n1 -->|"46 flows"| n4
     n1 -->|"12 flows"| n9
-    n4 -->|"28 flows"| n1
+    n4 -->|"31 flows"| n1
     n5 -->|"4 flows"| n1
     n2 -->|"3 flows"| n1
     n6 -->|"migrate command / seed command"| n3
@@ -142,10 +148,10 @@ flowchart LR
     n1 -->|"signed upload address, info, delete requests"| n11
     n1 -->|"auth code, PKCE verifier, client id and secret"| n10
     n10 -->|"access token, then email, domain and name"| n1
-    n3 -->|"13 flows"| n4
+    n3 -->|"14 flows"| n4
     n3 -->|"schema"| n1
     n8 -->|"SQL migration text"| n3
-    n9 -->|"13 flows"| n1
+    n9 -->|"14 flows"| n1
     n9 -->|"file contents (PUT to signed address)"| n11
     n11 -->|"object info and first bytes"| n1
     n1 -->|"users table and error messages"| n5
@@ -163,6 +169,46 @@ flowchart LR
 ```
 
 ## Each subsystem
+
+### Campaigns
+
+Team-shared email campaign drafts with merge tags, layouts and a sandboxed preview.
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+    n1["Barnacle staff user"]
+    subgraph z1["NEXT.JS APP SERVER (VERCEL OR LOCAL)"]
+        n2("Campaign drafts")
+    end
+    subgraph z2["POSTGRES (SUPABASE OR LOCAL)"]
+        n3[("Campaigns")]
+    end
+    n4[["Database"]]
+    n5[["Database commands"]]
+    n6[["Sign-in and sessions"]]
+    n2 -->|"draft details and content"| n3
+    n3 -->|"drafts for list and editor"| n2
+    n4 -->|"2 flows"| n2
+    n5 -->|"fake campaign drafts / table definitions"| n3
+    n6 -->|"signed-in user"| n2
+    n1 -->|"draft edits, pasted HTML"| n2
+    classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
+    classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
+    classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
+    classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
+    classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
+    classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
+    class n1 actor
+    class n2 process
+    class n3 store
+    class n4,n5,n6 stub
+    style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
+    style z2 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
+```
 
 ### Database
 
@@ -188,55 +234,58 @@ flowchart LR
         n11[("user_changes log")]
         n12[("users table")]
     end
-    n13[["Database commands"]]
-    n14[["Deals"]]
-    n15[["Files"]]
-    n16[["People and organisations"]]
-    n17[["Sign-in and sessions"]]
-    n18[["Signed-in app and user admin"]]
-    n16 -->|"2 flows"| n1
-    n16 -->|"4 flows"| n7
-    n1 -->|"activity rows / assignments by others"| n16
-    n1 -->|"next activity per deal"| n14
+    n13[["Campaigns"]]
+    n14[["Database commands"]]
+    n15[["Deals"]]
+    n16[["Files"]]
+    n17[["People and organisations"]]
+    n18[["Sign-in and sessions"]]
+    n19[["Signed-in app and user admin"]]
+    n17 -->|"2 flows"| n1
+    n17 -->|"4 flows"| n7
+    n1 -->|"activity rows / assignments by others"| n17
+    n1 -->|"next activity per deal"| n15
     n1 -->|"done activities read into timelines"| n10
-    n16 -->|"lead source and label changes"| n2
-    n2 -->|"2 flows"| n16
-    n17 -->|"2 flows"| n9
-    n17 -->|"first admin added"| n11
-    n17 -->|"first admin, name, last sign-in time"| n12
-    n16 -->|"2 flows"| n6
-    n16 -->|"6 flows"| n10
-    n16 -->|"field and choice definitions"| n3
-    n16 -->|"saved record values"| n4
-    n3 -->|"field definitions for forms and lists"| n16
-    n4 -->|"record values, list columns and filters"| n16
-    n14 -->|"2 flows"| n7
-    n14 -->|"2 flows"| n10
-    n15 -->|"file rows, upload and cleanup records"| n5
-    n15 -->|"file added and deleted events"| n10
-    n5 -->|"file rows visible to the user"| n15
-    n13 -->|"fake activities / schema"| n1
-    n13 -->|"2 flows"| n3
-    n13 -->|"table definitions"| n4
-    n13 -->|"fake files / table definitions"| n5
-    n13 -->|"fake organisations / table definitions"| n6
-    n13 -->|"4 flows"| n7
-    n13 -->|"applied migration names"| n8
-    n13 -->|"table definitions"| n9
-    n13 -->|"fake users added / table definitions"| n11
-    n13 -->|"fake users / table definitions"| n12
-    n6 -->|"organisations and their people"| n16
-    n7 -->|"2 flows"| n16
-    n9 -->|"session state with user role and status"| n17
-    n10 -->|"2 flows"| n16
-    n18 -->|"private people handed to a new owner"| n7
-    n18 -->|"revoked sessions of deactivated users"| n9
-    n18 -->|"2 flows"| n10
-    n18 -->|"who changed which user, and how"| n11
-    n18 -->|"added users, role and status changes"| n12
-    n12 -->|"3 flows"| n17
-    n12 -->|"active users matched as owners"| n16
-    n12 -->|"user list"| n18
+    n17 -->|"lead source and label changes"| n2
+    n2 -->|"2 flows"| n17
+    n18 -->|"2 flows"| n9
+    n18 -->|"first admin added"| n11
+    n18 -->|"first admin, name, last sign-in time"| n12
+    n17 -->|"2 flows"| n6
+    n17 -->|"6 flows"| n10
+    n17 -->|"field and choice definitions"| n3
+    n17 -->|"saved record values"| n4
+    n3 -->|"people custom field names for merge tags"| n13
+    n3 -->|"field definitions for forms and lists"| n17
+    n4 -->|"record values, list columns and filters"| n17
+    n15 -->|"2 flows"| n7
+    n15 -->|"2 flows"| n10
+    n16 -->|"file rows, upload and cleanup records"| n5
+    n16 -->|"file added and deleted events"| n10
+    n5 -->|"file rows visible to the user"| n16
+    n14 -->|"fake activities / schema"| n1
+    n14 -->|"2 flows"| n3
+    n14 -->|"table definitions"| n4
+    n14 -->|"fake files / table definitions"| n5
+    n14 -->|"fake organisations / table definitions"| n6
+    n14 -->|"4 flows"| n7
+    n14 -->|"applied migration names"| n8
+    n14 -->|"table definitions"| n9
+    n14 -->|"fake users added / table definitions"| n11
+    n14 -->|"fake users / table definitions"| n12
+    n6 -->|"organisations and their people"| n17
+    n7 -->|"2 flows"| n17
+    n7 -->|"visible person merge values for preview"| n13
+    n9 -->|"session state with user role and status"| n18
+    n10 -->|"2 flows"| n17
+    n19 -->|"private people handed to a new owner"| n7
+    n19 -->|"revoked sessions of deactivated users"| n9
+    n19 -->|"2 flows"| n10
+    n19 -->|"who changed which user, and how"| n11
+    n19 -->|"added users, role and status changes"| n12
+    n12 -->|"3 flows"| n18
+    n12 -->|"active users matched as owners"| n17
+    n12 -->|"user list"| n19
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -244,7 +293,7 @@ flowchart LR
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11,n12 store
-    class n13,n14,n15,n16,n17,n18 stub
+    class n13,n14,n15,n16,n17,n18,n19 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -264,20 +313,23 @@ flowchart LR
         n3("db:migrate command")
         n4("db:seed command (fake data)")
     end
-    n5[["Database"]]
-    n6[["Deals database"]]
-    n7[["People and organisations"]]
-    n8[["Settings"]]
+    n5[["Campaigns"]]
+    n6[["Database"]]
+    n7[["Deals database"]]
+    n8[["People and organisations"]]
+    n9[["Settings"]]
     n1 -->|"migrate command"| n3
     n1 -->|"seed command"| n4
-    n8 -->|"DATABASE_URL"| n3
-    n8 -->|"APP_ENV, VERCEL_ENV, DATABASE_URL"| n4
-    n3 -->|"4 flows"| n5
-    n3 -->|"table definitions"| n6
-    n3 -->|"schema"| n7
+    n9 -->|"DATABASE_URL"| n3
+    n9 -->|"APP_ENV, VERCEL_ENV, DATABASE_URL"| n4
+    n3 -->|"4 flows"| n6
+    n3 -->|"table definitions"| n5
+    n3 -->|"table definitions"| n7
+    n3 -->|"schema"| n8
     n2 -->|"SQL migration text"| n3
-    n4 -->|"8 flows"| n5
-    n4 -->|"fake deals"| n6
+    n4 -->|"8 flows"| n6
+    n4 -->|"fake campaign drafts"| n5
+    n4 -->|"fake deals"| n7
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -287,7 +339,7 @@ flowchart LR
     class n1 actor
     class n3,n4 process
     class n2 store
-    class n5,n6,n7,n8 stub
+    class n5,n6,n7,n8,n9 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -594,20 +646,21 @@ flowchart LR
     subgraph z3["GOOGLE (THIRD PARTY)"]
         n9["Google OAuth and userinfo API"]
     end
-    n10[["Database"]]
-    n11[["Deals"]]
-    n12[["Files"]]
-    n13[["People and organisations"]]
-    n14[["Settings"]]
-    n15[["Signed-in app and user admin"]]
+    n10[["Campaigns"]]
+    n11[["Database"]]
+    n12[["Deals"]]
+    n13[["Files"]]
+    n14[["People and organisations"]]
+    n15[["Settings"]]
+    n16[["Signed-in app and user admin"]]
     n8 -->|"OAuth state and PKCE verifier"| n4
     n8 -->|"crm_flash cookie to clear"| n5
     n8 -->|"session token"| n6
     n2 -->|"session token or refusal code"| n4
-    n2 -->|"3 flows"| n10
-    n14 -->|"FIRST_ADMIN_EMAIL"| n2
-    n14 -->|"APP_ENV, VERCEL_ENV (fake login switch)"| n3
-    n14 -->|"Google client id and secret, APP_URL"| n4
+    n2 -->|"3 flows"| n11
+    n15 -->|"FIRST_ADMIN_EMAIL"| n2
+    n15 -->|"APP_ENV, VERCEL_ENV (fake login switch)"| n3
+    n15 -->|"Google client id and secret, APP_URL"| n4
     n3 -->|"session token cookie"| n8
     n3 -->|"fake identity (email, name)"| n2
     n4 -->|"OAuth state, PKCE verifier, session token"| n8
@@ -617,23 +670,24 @@ flowchart LR
     n9 -->|"access token, then email, domain and name"| n4
     n5 -->|"refreshed session cookie"| n8
     n5 -->|"requested path (x-pathname header)"| n6
-    n13 -->|"crm_flash cookie"| n8
-    n6 -->|"4 flows"| n13
-    n6 -->|"2 flows"| n15
+    n14 -->|"crm_flash cookie"| n8
+    n6 -->|"4 flows"| n14
+    n6 -->|"2 flows"| n16
     n6 -->|"cleared session cookie"| n8
-    n6 -->|"admin check / signed-in user and admin check"| n11
-    n6 -->|"signed-in user"| n12
-    n6 -->|"extended expiry, deleted ended sessions"| n10
+    n6 -->|"signed-in user"| n10
+    n6 -->|"admin check / signed-in user and admin check"| n12
+    n6 -->|"signed-in user"| n13
+    n6 -->|"extended expiry, deleted ended sessions"| n11
     n6 -->|"session still valid (skip sign-in)"| n7
-    n10 -->|"session state with user role and status"| n6
+    n11 -->|"session state with user role and status"| n6
     n7 -->|"sign-in form, error messages"| n1
     n1 -->|"chosen fake account email and name"| n3
     n1 -->|"sign-in start, OAuth code and state"| n4
     n1 -->|"page requests with session cookie"| n5
     n1 -->|"sign-out request"| n6
-    n10 -->|"existing user role and status"| n2
-    n10 -->|"accounts to choose from"| n3
-    n10 -->|"user count (first-run setup notice)"| n7
+    n11 -->|"existing user role and status"| n2
+    n11 -->|"accounts to choose from"| n3
+    n11 -->|"user count (first-run setup notice)"| n7
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -643,7 +697,7 @@ flowchart LR
     class n1,n9 actor
     class n2,n3,n4,n5,n6,n7 process
     class n8 store
-    class n10,n11,n12,n13,n14,n15 stub
+    class n10,n11,n12,n13,n14,n15,n16 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
     style z2 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
     style z3 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
@@ -702,6 +756,8 @@ flowchart LR
 | Ambassadors and referrals | process | People and organisations | Next.js app server (Vercel or local) | `src/app/(app)/ambassadors`, `src/server/records/ambassadors.ts`, `src/server/records/referral-rules.ts` |
 | Signed-in layout and sidebar | process | Signed-in app and user admin | Next.js app server (Vercel or local) | `src/app/(app)/layout.tsx`, `src/app/(app)/nav.ts` |
 | Browser cookies (crm_session, crm_oauth) | store | Sign-in and sessions | Staff browser | `src/server/auth/cookie.ts` |
+| Campaign drafts | process | Campaigns | Next.js app server (Vercel or local) | `src/app/(app)/campaigns`, `src/server/campaigns/campaigns.ts`, `src/server/campaigns/preview.ts` |
+| Campaigns | store | Campaigns | Postgres (Supabase or local) | `migrations/0012_campaigns.sql` |
 | Lead sources and labels admin | process | People and organisations | Next.js app server (Vercel or local) | `src/app/(app)/admin/lead-sources-and-labels`, `src/server/records/choices.ts` |
 | lead_sources and labels tables | store | Database | Postgres (Supabase or local) | `migrations/0002_people_organisations.sql` |
 | Sign-in rules and session creation | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/server/auth/rules.ts`, `src/server/auth/sign-in.ts` |
@@ -770,6 +826,8 @@ flowchart LR
 | Browser cookies (crm_session, crm_oauth) | Google sign-in routes | OAuth state and PKCE verifier | `src/app/auth/google/callback/route.ts` |
 | Browser cookies (crm_session, crm_oauth) | Request proxy (cookie gate) | crm_flash cookie to clear | `src/proxy.ts` |
 | Browser cookies (crm_session, crm_oauth) | Session check, end and sign-out | session token | `src/app/auth/end/route.ts`, `src/server/auth/session.ts` |
+| Campaign drafts | Campaigns | draft details and content | `src/server/campaigns/campaigns.ts` |
+| Campaigns | Campaign drafts | drafts for list and editor | `src/server/campaigns/campaigns.ts` |
 | Lead sources and labels admin | lead_sources and labels tables | lead source and label changes | `src/server/records/choices.ts` |
 | Lead sources and labels admin | Postgres deal labels and label links | label changes seen on deals | `src/server/records/choices.ts` |
 | lead_sources and labels tables | CSV import | lead sources and labels to match | `src/server/imports/imports.ts` |
@@ -791,6 +849,7 @@ flowchart LR
 | Custom fields | Organisation pages and actions | custom inputs, values, filters | `src/app/(app)/records/CustomInputs.tsx` |
 | Custom fields | People pages and actions | custom inputs, values, filters | `src/app/(app)/records/CustomInputs.tsx` |
 | Custom fields | timeline_events table | custom field set, changed, cleared events | `src/server/custom-fields/values.ts` |
+| Custom fields and choices | Campaign drafts | people custom field names for merge tags | `src/server/campaigns/campaigns.ts` |
 | Custom fields and choices | Custom fields | field definitions for forms and lists | `src/server/custom-fields/values.ts` |
 | Custom values | Custom fields | record values, list columns and filters | `src/server/custom-fields/values.ts` |
 | Postgres deal followers | Deals board and deal pages | followers | `src/server/deals/links.ts` |
@@ -832,6 +891,7 @@ flowchart LR
 | Google sign-in routes | Barnacle staff user | redirect to Google account chooser | `src/app/auth/google/start/route.ts`, `src/server/auth/google.ts` |
 | Google OAuth and userinfo API | Google sign-in routes | access token, then email, domain and name | `src/server/auth/google.ts` |
 | db:migrate command | Postgres activities | schema | `migrations/0008_activities.sql` |
+| db:migrate command | Campaigns | table definitions | `migrations/0012_campaigns.sql` |
 | db:migrate command | Custom fields and choices | table definitions | `migrations/0010_custom_fields.sql` |
 | db:migrate command | Custom values | table definitions | `migrations/0010_custom_fields.sql` |
 | db:migrate command | Postgres deal followers | table definitions | `migrations/0005_deal_page.sql` |
@@ -869,6 +929,7 @@ flowchart LR
 | People pages and actions | timeline_events table | ambassador and referrer events | `src/server/records/people.ts`, `src/server/records/referral-rules.ts` |
 | People pages and actions | timeline_events table | person timeline events | `src/server/records/timeline.ts` |
 | persons, emails, phones and person_labels tables | Ambassadors and referrals | visible ambassadors and referred people | `src/server/records/ambassadors.ts` |
+| persons, emails, phones and person_labels tables | Campaign drafts | visible person merge values for preview | `src/server/campaigns/preview.ts` |
 | persons, emails, phones and person_labels tables | People pages and actions | visible persons (private ones hidden) | `src/server/records/people.ts`, `src/server/records/visibility.ts` |
 | Pipelines admin | Postgres deals | deals moved when a stage is removed | `src/server/deals/pipelines.ts` |
 | Pipelines admin | Postgres pipelines | pipeline changes | `src/server/deals/pipelines.ts` |
@@ -879,6 +940,7 @@ flowchart LR
 | Request proxy (cookie gate) | Session check, end and sign-out | requested path (x-pathname header) | `src/proxy.ts`, `src/server/auth/session.ts` |
 | One-shot delete notice | Browser cookies (crm_session, crm_oauth) | crm_flash cookie | `src/server/records/flash.ts` |
 | db:seed command (fake data) | Postgres activities | fake activities | `src/seed/activities.ts` |
+| db:seed command (fake data) | Campaigns | fake campaign drafts | `src/seed/campaigns.ts` |
 | db:seed command (fake data) | Custom fields and choices | fake custom fields and values | `src/seed/custom-fields.ts` |
 | db:seed command (fake data) | Postgres deals | fake deals | `src/seed/deals.ts` |
 | db:seed command (fake data) | File rows, uploads and cleanup | fake files | `src/seed/files.ts` |
@@ -891,6 +953,7 @@ flowchart LR
 | Session check, end and sign-out | Ambassadors and referrals | signed-in user check | `src/app/(app)/ambassadors/page.tsx` |
 | Session check, end and sign-out | Signed-in layout and sidebar | signed-in user (name, role) | `src/app/(app)/layout.tsx`, `src/server/auth/session.ts` |
 | Session check, end and sign-out | Browser cookies (crm_session, crm_oauth) | cleared session cookie | `src/app/(app)/actions.ts`, `src/app/auth/end/route.ts` |
+| Session check, end and sign-out | Campaign drafts | signed-in user | `src/server/auth/session.ts` |
 | Session check, end and sign-out | Lead sources and labels admin | admin check | `src/app/(app)/admin/lead-sources-and-labels/actions.ts` |
 | Session check, end and sign-out | Custom fields | admin check, signed-in user | `src/server/auth/session.ts` |
 | Session check, end and sign-out | Deals board and deal pages | signed-in user and admin check | `src/app/(app)/deals/page.tsx` |
@@ -907,6 +970,7 @@ flowchart LR
 | Sign-in page | Barnacle staff user | sign-in form, error messages | `src/app/sign-in/page.tsx` |
 | Barnacle staff user | Activities (calls, meetings, tasks) | activity form, tick, delete | `src/app/(app)/activities/actions.ts` |
 | Barnacle staff user | Ambassadors and referrals | ambassador list and page requests | `src/app/(app)/ambassadors/page.tsx` |
+| Barnacle staff user | Campaign drafts | draft edits, pasted HTML | `src/app/(app)/campaigns/actions.ts` |
 | Barnacle staff user | CSV import | CSV file in parts, column mapping, run request | `src/app/(app)/records/import/FileStep.tsx`, `src/app/(app)/records/import/actions.ts` |
 | Barnacle staff user | Deals board and deal pages | deal form fields, board drags | `src/app/(app)/deals/actions.ts` |
 | Barnacle staff user | Fake Google login (dev and test only) | chosen fake account email and name | `src/app/dev/fake-google/actions.ts` |

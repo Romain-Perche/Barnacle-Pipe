@@ -71,6 +71,11 @@
       "id": "files",
       "label": "Files",
       "description": "Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage."
+    },
+    {
+      "id": "campaigns",
+      "label": "Campaigns",
+      "description": "Team-shared email campaign drafts with merge tags, layouts and a sandboxed preview."
     }
   ],
   "actors": [
@@ -337,6 +342,17 @@
         "src/app/(app)/records/file-actions.ts",
         "src/app/(app)/files"
       ]
+    },
+    {
+      "id": "campaigns",
+      "label": "Campaign drafts",
+      "zone": "app",
+      "group": "campaigns",
+      "sources": [
+        "src/app/(app)/campaigns",
+        "src/server/campaigns/campaigns.ts",
+        "src/server/campaigns/preview.ts"
+      ]
     }
   ],
   "stores": [
@@ -554,6 +570,15 @@
       "group": "database",
       "sources": [
         "migrations/0011_files.sql"
+      ]
+    },
+    {
+      "id": "campaigns-table",
+      "label": "Campaigns",
+      "zone": "postgres",
+      "group": "campaigns",
+      "sources": [
+        "migrations/0012_campaigns.sql"
       ]
     }
   ],
@@ -2073,6 +2098,70 @@
       "data": "files section",
       "sources": [
         "src/app/(app)/records/FilesSection.tsx"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "campaigns",
+      "data": "draft edits, pasted HTML",
+      "sources": [
+        "src/app/(app)/campaigns/actions.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "campaigns",
+      "data": "signed-in user",
+      "sources": [
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "campaigns",
+      "to": "campaigns-table",
+      "data": "draft details and content",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "campaigns-table",
+      "to": "campaigns",
+      "data": "drafts for list and editor",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "campaigns",
+      "data": "visible person merge values for preview",
+      "sources": [
+        "src/server/campaigns/preview.ts"
+      ]
+    },
+    {
+      "from": "custom-fields-table",
+      "to": "campaigns",
+      "data": "people custom field names for merge tags",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "campaigns-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0012_campaigns.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "campaigns-table",
+      "data": "fake campaign drafts",
+      "sources": [
+        "src/seed/campaigns.ts"
       ]
     }
   ]

@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T11:56:37.160Z
+    at: 2026-11-24T17:34:42.245Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -29,13 +29,15 @@ sources:
     resource: repo://migrations/0010_custom_fields.sql
   - id: openwiki-source-bcc466cbe055ea0c54eff37e
     resource: repo://migrations/0011_files.sql
+  - id: openwiki-source-13df34f0914bdfb262333a49
+    resource: repo://migrations/0012_campaigns.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T11:56:37.160Z" }
+generated: { by: "claude-code", at: "2026-11-24T17:34:42.245Z" }
 ---
 
 # Database schema and access
@@ -177,6 +179,14 @@ name 1–255 characters, size 1 byte to 25 MB, `kind` of `jpeg`, `png`, `gif`, `
 listed) and `file_cleanup` (Storage paths still to delete, with `due_at` and `attempts`). `timeline_events` gets
 `file_id`, `file_name`, `file_size` and `deleted_file_id` and the kinds `file_added` and `file_deleted`. See
 [Files on records](../features/files.md).
+
+### Campaigns (migration 0012)
+
+`0012_campaigns.sql` adds `campaigns`, the drafts shared by the whole team (no visibility rule): name, sender name,
+reply-to, subject, preview text, `content_kind` (`blocks` or `html`, or null while empty) with `blocks` (jsonb array of
+1 to 50) or `html` (up to 500000 characters), `merge_links` (the custom field tags of the draft with the name at the last
+save, no foreign key), `status` (only `draft`), creator and editor with times, and a `version` for the save check. A
+check keeps exactly one content column in line with `content_kind`. See [Campaigns](../features/campaigns.md).
 
 ## Row level security
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d8e7eeb57509ca764639fcb5bb0e161d1d0d22a939555dde79afb60582f9e4c2",
+  "pageVersion": "sha256:4f455e2424380a6053aec14d500adaf32208de4fc39955185565d25514e228d2",
   "claims": [
     {
       "id": "claim_42864019d2874e63b5942a7c8bb9312f",
@@ -14,11 +14,11 @@
     },
     {
       "id": "claim_2998ef322544416ea73869c298c879cb",
-      "statement": "Sidebar links come from the mainNav and adminNav registries in nav.ts; mainNav includes Ambassadors (/ambassadors) and Activities (/activities) links.",
+      "statement": "Sidebar links come from the mainNav and adminNav registries in nav.ts; mainNav includes Ambassadors, Activities and Campaigns (/campaigns) links.",
       "evidence": [
         {
           "resource": "repo://src/app/(app)/nav.ts",
-          "version": "repo-file-v1:sha256:4efd546e1ad00de0899f459b981afcc3ccf9ebf1ce650fb59feac50c50c58b2b"
+          "version": "repo-file-v1:sha256:12462c51499d394d88d7bbe2f54bb1eda01ea16ddc283fc5c2fc13dde31cd348"
         }
       ]
     },
@@ -51,8 +51,8 @@
       "statement": "All user-facing messages come from one code-to-text map, and messageFor() returns nothing for unknown codes.",
       "evidence": [
         {
-          "resource": "repo://src/server/messages.ts#L1-L271",
-          "version": "repo-lines-v1:sha256:828bf7f2c3a934c7f9a5c53a2e7dd19567ea342a403f9cc6a90dc69fbd495ac9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyMGIwZjYzZDZhNGRmZTcyYWEyYzQwYWE3MTllYmMxZmYxODk3MTBlN2QxYzcxOGU3NzFjNzc0NjI3YjViMTIwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://src/server/messages.ts#L1-L366",
+          "version": "repo-lines-v1:sha256:c11c2a3fc277aa86c0dc87b726f060fdff1994e627e0cf310c28653a9e97d7cb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzY2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyODEzNDYwYWQ4MTE3Mjg0NTU0NmJjOGM3NWNmNjFjMTY2ZWUzMGI5ODAyY2E1MDgxYTIzZTRhZWZhM2RjYTA1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -93,6 +93,6 @@
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T11:28:51.796Z"
+    "at": "2026-11-24T17:34:42.245Z"
   }
 }
