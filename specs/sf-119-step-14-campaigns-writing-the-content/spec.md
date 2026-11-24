@@ -16,6 +16,14 @@
 - Q: Who can edit and delete a campaign draft? → A: Everyone on the team can edit, duplicate and delete every draft.
 - Q: When an admin renames a people custom field, what happens to merge tags that use it? → A: The tags follow the rename and show the new name, in the subject, the preview text, layout blocks and pasted HTML; a tag typed by hand is matched to its field when the draft is saved.
 
+### Plan 2026-11-24
+
+- Q: When pasted HTML names remote images, stylesheets or fonts, may the preview load them from their own web addresses in the user's browser? → A: Yes, images, stylesheets and fonts only (sent with no referrer); nothing else in the HTML can load or connect: no scripts, frames, forms or other requests (decided by the factory, to confirm)
+- Q: What happens to a hand-typed "If empty, show" text longer than 100 characters? → A: For a tag that names a merge field the save is refused with "If empty, show: at most 100 characters."; a `{{…}}` that names no merge field is only listed as an unknown merge tag, never refused (decided by the factory, to confirm)
+- Q: Does `[ DUPLICATE ]` on the edit page copy unsaved changes? → A: No, it copies the draft as last saved; unsaved changes in the open page stay only in that page (decided by the factory, to confirm)
+- Q: What does the preview show for a chosen person who is archived after being chosen? → A: The same as for a person the user can no longer see: "Choose a person to preview." and none of their values; archived people are never offered in the picker (decided by the factory, to confirm)
+- Q: Can a link in pasted HTML that names its own target (for example `target="_self"`) open inside the preview? → A: No, every link in the preview opens in a new browser tab, whatever target the HTML gives it (decided by the factory, to confirm)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Start and save a campaign draft (Priority: P1)
