@@ -188,7 +188,7 @@
   `initdb -D /tmp/pgdata -U postgres --auth=trust && pg_ctl -D /tmp/pgdata -o "-k /tmp -c listen_addresses=localhost" -l /tmp/pg.log start`
   and `psql -h localhost -U postgres -c "create database crm_test" -c "create database crm_dev"`.
 - Schemas: `.factory/schemas/oauth2-api.json`, `.factory/schemas/storage_v0_openapi.json`,
-  `.factory/schemas/pipedrive_v2_openapi.json` and `.factory/schemas/pipedrive_v1_openapi.yml`, downloaded by
+  `.factory/schemas/pipedrive_v2_openapi.json`, `.factory/schemas/pipedrive_v1_openapi.yml` and `.factory/schemas/pipedrive_v1_full_openapi.yml`, downloaded by
   `npm run test:schemas` (run by `npm test` as `pretest`; commits above, sha256 checked).
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
@@ -290,6 +290,13 @@
     Edge 15 (a file is still listed after the token is removed (1) or the user deactivated (2) during the copy). With
     `slowDownEvery(4, 1)` the deals step never advanced in 10 min (a part with follower/participant calls restarts whole on 429);
     `slowDownEvery(25, 1)` finishes.
+    Round 2 (after fix 1): all 50 pass. New `scenarios-sf122-g.js` (fresh setup each run, app :3001): Edge 10 (a Margaret-only USD deal,
+    a 100,001-character note, a 201-character subject and a 27.4 MB file on her private deal, a Margaret-only person whose
+    organisation was not imported) and Edge 18 (8 deals with followers + participants, `slowDownEvery(SLOW, 1)` for the whole run).
+    `SLOW=3 WHO=ada` / `SLOW=4 WHO=ada`: no secret name in Ada's report ("a private deal/person/note/activity/file"), every E18 deal
+    once with 2 followers and 2 other people (~50 s); `SLOW=1000 WHO=margaret`: Margaret's own report names them. Output
+    $TMPDIR/sf122-g-<WHO>-<SLOW>.json. Mind: 25 MB = 26,214,400 bytes (a 26.2 MB decimal file is under the limit). Round 2 re-ran a–f:
+    Edge 15/16 now leave no file listed after stop, token removal or deactivation during a held upload (row paused token_refused).
   - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
     1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
