@@ -1,16 +1,23 @@
 // covers SF-109 FR-008, US3 (T036): the sidebar has "Activities" after "Organisations" (SF-114 puts "Ambassadors"
-// right after "Organisations"), just before "Notifications"
+// right after "Organisations"; SF-120 puts "Segments" between "Activities" and "Notifications")
 import { describe, expect, it } from "vitest";
 import { mainNav } from "@/app/(app)/nav";
 
 describe("mainNav", () => {
-  it("links Activities to /activities after Organisations, before Notifications", () => {
+  it("links Activities to /activities after Organisations, before Segments and Notifications", () => {
     const labels = mainNav.map((n) => n.label);
     const i = labels.indexOf("Activities");
     expect(mainNav[i]).toEqual({ href: "/activities", label: "Activities" });
     expect(labels[i - 1]).toBe("Ambassadors");
     expect(labels.indexOf("Organisations")).toBe(i - 2);
-    expect(labels[i + 1]).toBe("Notifications");
+    expect(labels[i + 2]).toBe("Notifications");
+  });
+
+  // covers SF-120 FR-001 (T013): Segments right after Activities
+  it("links Segments to /segments right after Activities", () => {
+    const i = mainNav.findIndex((n) => n.href === "/segments");
+    expect(mainNav[i]).toEqual({ href: "/segments", label: "Segments" });
+    expect(mainNav[i - 1].label).toBe("Activities");
   });
 });
 

@@ -10,6 +10,7 @@ import { seedDeals } from "@/seed/deals";
 import { seedFiles } from "@/seed/files";
 import { seedNotes } from "@/seed/notes";
 import { seedPeople } from "@/seed/people";
+import { seedSegments } from "@/seed/segments";
 import { seedUsers } from "@/seed/users";
 
 export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] = [
@@ -26,6 +27,8 @@ export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] =
   { name: "files", run: seedFiles },
   // SF-115: custom fields of every type and values on fake records (after the people, organisations and deals).
   { name: "custom-fields", run: seedCustomFields },
+  // SF-120: saved segments of each kind (after the pipelines, lead sources, users and custom fields they refer to).
+  { name: "segments", run: seedSegments },
 ];
 
 export async function runSeeders(sql: Sql): Promise<string[]> {

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:18c022d1f64e6e19b22756a1ed6e5af4502ffa8816180dc8c9487284178741e3",
+  "pageVersion": "sha256:1b6395a11e820740f141f494816c37b0c2ff15a91b2482611eb7a48a5616200f",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L34",
-          "version": "repo-lines-v1:sha256:46a80f119a36bc732fdd08345691d77420ea4869d35efcb0c7fa0afe25195a17:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L36",
+          "version": "repo-lines-v1:sha256:4381f13abecb5c2b8e46a12d259498b79af91ff9ea60358b1d4a591dce34174a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -181,10 +181,20 @@
           "version": "repo-file-v1:sha256:c98191351b0608fdbb5cd6f4aa295969d75120a705b24ffd2bf41ac6e9a3d7bc"
         }
       ]
+    },
+    {
+      "id": "claim_cf0e4184834c4b6a9450e676a244bf07",
+      "statement": "The segments table stores conditions as a jsonb array of at most 20 and has no foreign keys on pipeline, stage or condition ids.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0014_segments.sql#L1-L21",
+          "version": "repo-lines-v1:sha256:ab4771419af5747a34d333cf9dde0230bb18979cf2f3a240b0daa0f551ca79ae:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyZjY3Y2MxZmY0M2EwZjQyZGIxOGI1MTVlMjI3YWRiNDlmZjAxMzE1NjMxZGVjNGI5YTI3ODVjMmVhMDBmMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiOTNmNGUwMTljMTkyZDY2ZDM0NjBhMmRjNTlmYzBmOTk3NDAxOGUwNTY0Mzk1Y2Q3NzBmN2EyNzBjNjBmOTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2NWM2MmZlY2E2MWQ3YTQyN2ZiMTUwNTg4OWIwOTA5NmMxYzFhMzQ4YWVlZjQ4ODcyYWViZDgwMDQ3OWQ4M2QifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T17:28:35.066Z"
+    "at": "2026-11-24T17:52:29.768Z"
   }
 }

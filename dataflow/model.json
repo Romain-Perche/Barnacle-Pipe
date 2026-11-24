@@ -85,6 +85,11 @@
       "id": "unsubscribe",
       "label": "Unsubscribe",
       "description": "Lets an email recipient withdraw consent through a token link or RFC 8058 one-click."
+    },
+    {
+      "id": "segments",
+      "label": "Segments",
+      "description": "Saved, team-shared people segments and the count of people each one reaches."
     }
   ],
   "actors": [
@@ -385,6 +390,16 @@
         "src/server/records/unsubscribe.ts",
         "src/server/records/unsubscribe-rules.ts"
       ]
+    },
+    {
+      "id": "segments",
+      "label": "Saved segments and reach count",
+      "zone": "app",
+      "group": "segments",
+      "sources": [
+        "src/app/(app)/segments",
+        "src/server/segments"
+      ]
     }
   ],
   "stores": [
@@ -620,6 +635,15 @@
       "group": "pipedrive",
       "sources": [
         "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "id": "segments-table",
+      "label": "Postgres segments",
+      "zone": "postgres",
+      "group": "segments",
+      "sources": [
+        "migrations/0014_segments.sql"
       ]
     }
   ],
@@ -2312,6 +2336,54 @@
       "data": "unsubscribe token column",
       "sources": [
         "migrations/0013_unsubscribe.sql"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "segments",
+      "data": "segment forms and counts requests",
+      "sources": [
+        "src/app/(app)/segments/actions.ts"
+      ]
+    },
+    {
+      "from": "segments",
+      "to": "segments-table",
+      "data": "segment definitions",
+      "sources": [
+        "src/server/segments/segments.ts"
+      ]
+    },
+    {
+      "from": "segments-table",
+      "to": "segments",
+      "data": "saved segments",
+      "sources": [
+        "src/server/segments/segments.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "segments",
+      "data": "visible people and deals for reach counts",
+      "sources": [
+        "src/server/segments/reach.ts"
+      ]
+    },
+    {
+      "from": "custom-values-table",
+      "to": "segments",
+      "data": "custom value tests for conditions",
+      "sources": [
+        "src/server/custom-fields/values.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "segments-table",
+      "data": "table definition",
+      "sources": [
+        "migrations/0014_segments.sql"
       ]
     }
   ]
