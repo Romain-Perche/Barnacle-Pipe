@@ -247,38 +247,58 @@ Consent Unsubscribed plus one `unsubscribed_link` line with no actor.
 ## Phase 6: User Story 4 - Only a teammate can subscribe a person again (Priority: P2)
 
 **Goal**: the page never offers a way to subscribe again. A teammate's Consent edit writes
-"Consent: Unsubscribed → Subscribed by <name>".
+"Consent: Unsubscribed → Subscribed by <name>". The edit form changes Consent only when the teammate changed the field
+on that form (FR-019): a form opened before the person unsubscribed never subscribes them again.
 
 **Independent Test**:
 1. Unsubscribe a person through the link.
 2. Edit them back to Subscribed: the `consent_changed` line appears with the teammate's name.
 3. Use the old link again: the page is `ready`, and after the button there is a second unsubscribe line.
+4. Open the edit form, unsubscribe through the link, save the form with a changed Role: Consent stays Unsubscribed.
 
 ### Tests for User Story 4
 
-- [ ] T028 [P] [US4] In `tests/integration/people.test.ts`, change the assertion at line 163. A Consent-only edit now
-  writes `{ kind: "consent_changed", actorName: "Linus Fake", oldValue: "Subscribed", newValue: "Unsubscribed" }`
-  and no `edited` entry. An edit of Consent and Role writes `edited` with `fields: ["Role"]` (or the role field's
-  label) plus `consent_changed` (covers FR-011).
+- [ ] T028 [P] [US4] In `tests/integration/people.test.ts`, change the assertion at line 163. Every edit in this file
+  now sends `consentShown` (the stored value). A Consent-only edit (`consent` ≠ `consentShown`) now writes
+  `{ kind: "consent_changed", actorName: "Linus Fake", oldValue: "Subscribed", newValue: "Unsubscribed" }` and no
+  `edited` entry. An edit of Consent and Role writes `edited` with `fields: ["Role"]` (or the role field's label) plus
+  `consent_changed` (covers FR-011). Also (covers FR-019, US4 scenario 5):
+  - an unsubscribed person saved with `consent` = `consentShown` = `unsubscribed` and a changed Role keeps
+    `unsubscribed`, with no consent line;
+  - an edit with no `consentShown` and `consent` `subscribed` on an unsubscribed person keeps `unsubscribed`.
+
+  In the existing form-data unit test (or a new `tests/unit/form-data.test.ts`), check that `personFormFromData`
+  reads `consentShown`, and gives `""` when it is absent.
 - [ ] T029 [P] [US4] In `tests/integration/unsubscribe.test.ts`, run the full cycle (covers US4 scenarios 2-3, FR-003):
   1. unsubscribe through the link;
-  2. run `updatePerson` with consent `subscribed` → `consent_changed` "Unsubscribed" → "Subscribed";
+  2. run `updatePerson` with consent `subscribed` and `consentShown` `unsubscribed` → `consent_changed`
+     "Unsubscribed" → "Subscribed";
   3. `unsubscribePageState` → `"ready"`;
   4. `unsubscribeByToken` → a second `unsubscribed_link` line.
-- [ ] T030 [P] [US4] In `tests/integration/unsubscribe.test.ts`, test the stale-form edge case:
-  1. read the person's form `version`;
+- [ ] T030 [P] [US4] In `tests/integration/unsubscribe.test.ts`, test the stale-form case (covers FR-019, US4
+  scenario 4, Edge Cases):
+  1. read the subscribed person's form `version`;
   2. unsubscribe through the link;
-  3. save the edit with that old `version` and Consent Subscribed.
+  3. save the edit with that old `version`, a changed Role, Consent `subscribed` and `consentShown` `subscribed`.
 
-  Expect `status: "saved"` (no `edit_conflict`), consent `subscribed`, and the timeline order: unsubscribe line,
-  then `consent_changed` with the teammate's name.
+  Expect `status: "saved"` (no `edit_conflict`), the new Role, consent `unsubscribed`, an `edited` line with
+  `["Role"]` and no `consent_changed`. Then a save with an empty first name (refused) followed by a valid save with
+  the same `consentShown` `subscribed`: consent still `unsubscribed`, no `consent_changed`.
 - [ ] T031 [P] [US4] In `tests/integration/unsubscribe-routes.test.ts`, check that the rendered page has no form or
   link containing "subscribe" other than the `[ UNSUBSCRIBE ]` form, in states `ready`, `done` and `not_found`
   (covers US4 scenario 1).
 
 ### Implementation for User Story 4
 
-- [ ] T032 [US4] Change the update path in `src/server/records/people.ts`:
+- [ ] T032 [US4] Keep the stored Consent unless the form changed it (FR-019, contracts/routes.md § Person edit):
+  - add an optional `consentShown?: string` to `PersonForm` in `src/server/records/rules.ts` (create forms and imports leave it out);
+  - read it in `personFields` in `src/server/records/form-data.ts` (`text(fd, "consentShown")`);
+  - in `src/app/(app)/records/PersonForm.tsx`, edit mode only (`id !== undefined`), add
+    `<input type="hidden" name="consentShown" value={initial.consent} />`, from `initial`, never `state.values`;
+  - in the update path of `src/server/records/people.ts`, set `after.consent` to `value.consent` only when
+    `form.consent` and `form.consentShown` are both non-empty and differ (absent counts as empty); else `current.consent`.
+
+  Then in the same update path:
   - When `before.consent !== after.consent`, remove `"Consent"` from `fields` before the `edited` event. Write no
     `edited` event when nothing is left.
   - Then call `recordEvent(db, { personId: id, kind: "consent_changed", actorId, oldValue: CONSENT_LABELS[before.consent], newValue: CONSENT_LABELS[after.consent] })`.
@@ -342,7 +362,8 @@ test and production modes.
   - the kinds `unsubscribed_link`, `unsubscribed_mail_app` and `consent_changed`.
 - [ ] T040 [P] Add a line at the end of `docs/DECISIONS.md`: "- Unsubscribe links are a random token per person
   stored in the CRM, with no expiry; no teammate is told when someone unsubscribes; a teammate's Consent change is
-  shown as 'Consent: <old> → <new>' (SF-121)".
+  shown as 'Consent: <old> → <new>'; the edit form changes Consent only when the field was changed on that form
+  (SF-121)".
 - [ ] T041 Run `npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`
   and fix any failure. Then walk through quickstart.md § By hand.
 - [ ] T042 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its

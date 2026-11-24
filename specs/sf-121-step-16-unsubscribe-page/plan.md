@@ -18,7 +18,9 @@ A public unsubscribe page, plus RFC 8058 one-click unsubscribe, with no sign-in.
   at most one timeline line (`unsubscribed_link` / `unsubscribed_mail_app`, no actor). It is safe to repeat and safe
   when two requests arrive at once, and it never bumps `version`.
 - **Teammate edits**: a teammate's Consent edit now writes a `consent_changed` line ("Consent: Unsubscribed →
-  Subscribed by <name>").
+  Subscribed by <name>"). The edit form sends the Consent value it was opened with (`consentShown`); a save changes
+  Consent only when the field was changed on that form, so a stale form never subscribes a person again (FR-019,
+  research.md §5b).
 - **For campaign sending**: `unsubscribeLinksFor(personId)` returns the page link and both headers.
 - **Dev page**: `/dev/unsubscribe-links` shows those values, in development and test only.
 - One migration, no new dependency, no outside service.
@@ -100,7 +102,9 @@ src/server/messages.ts                               # 4 messages, 3 templates
 src/server/records/unsubscribe-rules.ts              # NEW, pure: isTokenShape, unsubscribeLinks, isOneClickBody
 src/server/records/unsubscribe.ts                    # NEW: unsubscribeByToken, unsubscribePageState, unsubscribeLinksFor, listUnsubscribeLinks
 src/server/records/timeline.ts                       # EventKind += unsubscribed_link | unsubscribed_mail_app | consent_changed
-src/server/records/people.ts                         # Consent edit → consent_changed (no "Consent" in edited fields)
+src/server/records/people.ts                         # Consent edit → consent_changed; keep stored consent unless changed on the form
+src/server/records/rules.ts, form-data.ts            # PersonForm += consentShown
+src/app/(app)/records/PersonForm.tsx                 # hidden consentShown (edit mode, from initial)
 src/app/(app)/records/Timeline.tsx                   # Lines for the three kinds
 src/app/unsubscribe/[token]/page.tsx                 # NEW: the page (design A)
 src/app/unsubscribe/[token]/confirm/route.ts         # NEW: POST (button)
@@ -111,7 +115,7 @@ tests/unit/unsubscribe-rules.test.ts                 # NEW
 tests/unit/proxy-matcher.test.ts                     # extended
 tests/integration/unsubscribe.test.ts                # NEW
 tests/integration/unsubscribe-routes.test.ts         # NEW
-tests/integration/people.test.ts                     # changed (Consent edit line)
+tests/integration/people.test.ts                     # changed (Consent edit line, consentShown)
 ```
 
 **Structure Decision**: this is the existing single Next.js project. The domain code goes in `src/server/records/`
@@ -140,9 +144,17 @@ outside `(app)`, so they get no sidebar layout. The dev page goes under `src/app
 
    `readTimeline` already selects `old_value` / `new_value`. Check that it maps them for every kind, not only for
    custom ones. The tag stays CHANGE.
-5. **Person edit** (`people.ts`, the update path): when consent changes, record `consent_changed` with
-   `CONSENT_LABELS` and drop `"Consent"` from `fields` before the `edited` event. Creating a person and the imports
-   are unchanged. Update the existing assertion at `tests/integration/people.test.ts:163`.
+5. **Person edit** (FR-019, research.md §5b, contracts/routes.md § Person edit):
+   - add an optional `consentShown?: string` to `PersonForm` (`rules.ts`) and read it in `personFields` (`form-data.ts`), empty
+     when absent;
+   - `PersonForm.tsx`: in edit mode (`id !== undefined`), `<input type="hidden" name="consentShown"
+     value={initial.consent}>`, from `initial`, never from `state.values`;
+   - `people.ts` update path: `consent` = the form's value only when `consent` and `consentShown` are both set and
+     differ, else `current.consent`. When the result differs from the stored value, record `consent_changed` with
+     `CONSENT_LABELS` and drop `"Consent"` from `fields` before the `edited` event.
+
+   Creating a person and the imports are unchanged. Update the existing assertion at
+   `tests/integration/people.test.ts:163` (send `consentShown`).
 6. **Routes**:
    - `confirm/route.ts`: `export async function POST(req, { params })` → 303 as in contracts/routes.md (use
      `new URL(path, appBaseUrl())` for `Location`).
@@ -167,7 +179,7 @@ outside `(app)`, so they get no sidebar layout. The dev page goes under `src/app
     - AGENTS.md Layout: add `records/unsubscribe.ts` / `unsubscribe-rules.ts` and `src/app/unsubscribe/`.
     - `docs/DECISIONS.md`: add a line at the end, "Unsubscribe links are a random token per person stored in the
       CRM, with no expiry; no teammate is told when someone unsubscribes; a teammate's Consent change is shown as
-      'Consent: <old> → <new>' (SF-121)".
+      'Consent: <old> → <new>'; the edit form changes Consent only when the field was changed on that form (SF-121)".
 
 ## Outside services
 

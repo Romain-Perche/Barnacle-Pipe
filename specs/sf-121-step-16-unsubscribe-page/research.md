@@ -64,10 +64,9 @@ No item of the Technical Context was left as NEEDS CLARIFICATION. The points bel
 - **Rationale**: under READ COMMITTED, a second concurrent `update` waits on the row lock. It then re-checks
   `consent = 'subscribed'` against the committed row and updates nothing, so it writes no second line. No advisory
   lock is needed.
-- **`version` is not bumped**: `persons.version` guards the edit form ("Someone else changed this person…"). The spec
-  edge case wants a teammate's open form, saved with Subscribed after the person unsubscribed, to succeed and write
-  "Consent: Unsubscribed → Subscribed". The edit reads the locked row inside its transaction, so `before.consent` is
-  `unsubscribed` and the change is recorded. Bumping `version` would refuse that save instead.
+- **`version` is not bumped**: `persons.version` guards the edit form ("Someone else changed this person…"). A
+  teammate's open form, saved after the person unsubscribed, must still save its other changes (spec US4-4). Bumping
+  `version` would refuse that save. The stale form cannot subscribe the person again: §5b.
 
 ## 5. Timeline kinds and lines
 
@@ -90,6 +89,20 @@ No item of the Technical Context was left as NEEDS CLARIFICATION. The points bel
   SF-120 (`0012_segments.sql`) all plan `0012`. Build takes the next free number on `main` at build time. The file is
   `00NN_unsubscribe.sql`, written as `0012_unsubscribe.sql` in this plan. Before writing it, Build re-reads the kind
   check of the last migration on `main` and keeps every kind listed there.
+
+## 5b. The edit form never subscribes again by accident (FR-019, US4-4, US4-5)
+
+- **Decision**: the person edit form sends a hidden `consentShown` field: the Consent value the form was opened with
+  (from the page's `initial`, so a re-render after a refused save keeps the opening value). On save,
+  `consent = form.consent !== form.consentShown ? value.consent : current.consent`. A missing or unknown
+  `consentShown` counts as "not changed" (the stored value is kept). `consent_changed` is written only when the
+  result differs from the stored value. Creating a person and the imports are unchanged.
+- **Rationale**: the person's reply (Plan Review, 2026-11-24). Consent may change outside the form (the link,
+  one-click), and `version` does not move on an unsubscribe, so comparing with the stored value alone would
+  re-subscribe a person whose teammate only edited the Role. Comparing with the opening value is the same pattern as
+  `cfShown` (SF-115).
+- **Alternatives considered**: bumping `version` on unsubscribe (refuses the whole save, loses the teammate's other
+  edits); comparing with the stored value (re-subscribes by accident, the case the person ruled out).
 
 ## 6. Visibility
 

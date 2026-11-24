@@ -14,9 +14,10 @@
 
 - Q: Which design for the public unsubscribe page? → A: Design: A, a twin of the sign-in page: cream page, wordmark, "// EMAIL PREFERENCES" label, "Unsubscribe" heading, orange `[ UNSUBSCRIBE ]` button; the done message in the blue notice box, the link-not-valid message in the orange error box (see `design-options.html`).
 - Q: When a contact unsubscribes, is anyone on the team told? → A: No (A): the person's Consent and the timeline line are the only record; no notification and no sidebar count.
-- Q: How is a link made impossible to guess or forge: a random token kept for each person in the CRM, or a signed link that needs a new secret setting? → A: A random 64-character token per person, stored in the CRM, that never changes and never expires; no secret setting, so changing settings can never break links already sent; deleting the person removes it (decided by the factory, to confirm)
-- Q: What line does a teammate's change of Consent on the edit form add to the timeline? → A: "Consent: Unsubscribed → Subscribed by <name>" (or the other way round), in place of today's "Edited by <name>: Consent", for every Consent change made on the form (decided by the factory, to confirm)
-- Q: Who can open the development links page, which lists every person (private ones too) with their links? → A: Anyone, without signing in, but only where APP_ENV is development or test (like the fake Google login); everywhere else it answers "page not found" (decided by the factory, to confirm)
+- Q: How is a link made impossible to guess or forge: a random token kept for each person in the CRM, or a signed link that needs a new secret setting? → A: A random 64-character token per person, stored in the CRM, that never changes and never expires; no secret setting, so changing settings can never break links already sent; deleting the person removes it (alexis@barnacle.ai)
+- Q: What line does a teammate's change of Consent on the edit form add to the timeline? → A: "Consent: Unsubscribed → Subscribed by <name>" (or the other way round), in place of today's "Edited by <name>: Consent", for every Consent change made on the form (alexis@barnacle.ai)
+- Q: Who can open the development links page, which lists every person (private ones too) with their links? → A: Anyone, without signing in, but only where APP_ENV is development or test (like the fake Google login); everywhere else it answers "page not found" (alexis@barnacle.ai)
+- Q: Can a teammate's person edit form subscribe a person again by accident (a form opened before the person unsubscribed and saved later for another change)? → A: No. On save, Consent changes only when the teammate changed the Consent field on that form, compared with the value the form was opened with; otherwise the stored consent is kept. Such a stale form keeps the person Unsubscribed and adds no consent line (alexis@barnacle.ai)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -85,6 +86,8 @@ Once unsubscribed, a person stays unsubscribed until a teammate changes their co
 1. **Given** the unsubscribe page in each of its states (before, done, link not valid), **When** it is shown, **Then** it has no button or link to subscribe again.
 2. **Given** an unsubscribed person, **When** a teammate who can see the person changes Consent to Subscribed on the edit form, **Then** the person's page shows Consent "Subscribed" and the timeline shows the change line "Consent: Unsubscribed → Subscribed" with the teammate's name.
 3. **Given** a person subscribed again by a teammate, **When** their earlier unsubscribe link is used again, **Then** the page shows `[ UNSUBSCRIBE ]`; after it is pressed the person's page shows Consent "Unsubscribed" and the timeline has a second unsubscribe line.
+4. **Given** a teammate opened a subscribed person's edit form, and the person then unsubscribed through their link, **When** the teammate changes the Role on that form (Consent left as shown, Subscribed) and saves, **Then** the save succeeds, the person's page shows the new Role and Consent "Unsubscribed", and the timeline has the line "Edited by <name>: Role" and no "Consent: Unsubscribed → Subscribed" line.
+5. **Given** an unsubscribed person's edit form, **When** the teammate saves it with Consent left at Unsubscribed and another field changed, **Then** the person's page still shows Consent "Unsubscribed" and the timeline has no consent line.
 
 ---
 
@@ -107,7 +110,8 @@ A later issue (campaign sending) needs, for each recipient, the unsubscribe link
 
 - A link opened by a link scanner or preview (a plain page load, no button press): the person's page in the CRM still shows Consent "Subscribed" and their timeline has no unsubscribe line.
 - `[ UNSUBSCRIBE ]` pressed twice quickly, or in two tabs of the same link: both tabs show "You're unsubscribed. You won't get any more campaign emails from us." and the person's timeline shows exactly one unsubscribe line.
-- A teammate has the person's edit form open while the person unsubscribes, then saves it with Consent still set to Subscribed: the person's page shows Consent "Subscribed", and the timeline shows the unsubscribe line followed by the teammate's change line "Consent: Unsubscribed → Subscribed" with the teammate's name.
+- A teammate has the person's edit form open while the person unsubscribes, then saves it with Consent still set to Subscribed (the value it opened with): the save succeeds, the person's page shows Consent "Unsubscribed", and the timeline shows the unsubscribe line and no "Consent: Unsubscribed → Subscribed" line.
+- The save of such a form is refused for another reason (for example a missing first name), the teammate fixes it and saves again: the person's page still shows Consent "Unsubscribed" and the timeline has no consent line.
 - A person with two email addresses unsubscribes: their page shows Consent "Unsubscribed" (consent is per person, so it covers both addresses).
 - A link cut short or with extra characters (as some mail apps do): the page shows "This unsubscribe link isn't valid any more. If you still get emails from us, reply to one and ask to be removed." and no person's Consent changes.
 - The address carries extra text (for example `?next=` or `?message=`): that text does not appear anywhere on the page.
@@ -129,7 +133,8 @@ A later issue (campaign sending) needs, for each recipient, the unsubscribe link
 - **FR-008**: A link that is invalid, changed, or for a person deleted for good MUST show the neutral message "This unsubscribe link isn't valid any more. If you still get emails from us, reply to one and ask to be removed." (or the same neutral answer to a one-click request), MUST change nothing, and MUST NOT reveal whether the person ever existed.
 - **FR-009**: The page MUST NOT show the person's name, email addresses or any other CRM data, MUST NOT offer a way to subscribe again, and MUST NOT link into the signed-in app.
 - **FR-010**: Archived and private people MUST be unsubscribable through their link; the timeline line MUST follow the person's existing visibility rules.
-- **FR-011**: Only a teammate MUST be able to set a person back to Subscribed, through the existing Consent field of the person's edit form, which records the usual change line with the teammate's name.
+- **FR-011**: Only a teammate MUST be able to set a person back to Subscribed, through the existing Consent field of the person's edit form, which records the change line "Consent: Unsubscribed → Subscribed" with the teammate's name.
+- **FR-019**: Saving a person's edit form MUST change the person's Consent only when the teammate changed the Consent field on that form, compared with the value the form was opened with; otherwise the stored Consent MUST be kept and no consent line added, even when the person's Consent changed in the CRM after the form was opened.
 - **FR-012**: The system MUST provide one server function that, for a person, returns their unsubscribe page link, the List-Unsubscribe header value (the one-click address) and the List-Unsubscribe-Post header value `List-Unsubscribe=One-Click`, all built on the app's own address.
 - **FR-013**: All text on the page MUST come from the app's message list; nothing taken from the address is ever shown.
 - **FR-014**: Any secret used to make links unforgeable MUST be a setting outside the repo, listed in `.env.example` and the README; tests and development MUST work with no real secret.

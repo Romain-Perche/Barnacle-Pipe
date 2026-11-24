@@ -85,6 +85,16 @@ exported, so other methods answer `405`.
 
 ## Person edit (changed, `src/server/records/people.ts`)
 
+The edit form (`PersonForm.tsx`, edit mode only) sends a hidden `consentShown` with the Consent value of `initial`
+(the value the form was opened with; not `state.values`, so it survives a refused save). `personFormFromData` reads
+it as `consentShown` (empty when absent; the field is optional on `PersonForm`, so create and imports are unchanged). In `updatePerson`:
+
+```ts
+consent: form.consent !== "" && (form.consentShown ?? "") !== "" && form.consent !== form.consentShown
+  ? value.consent      // the teammate changed the field on this form
+  : current.consent,   // otherwise keep what is stored (FR-019)
+```
+
 When `before.consent !== after.consent`, the edit writes
 `recordEvent(db, { personId: id, kind: "consent_changed", actorId, oldValue: CONSENT_LABELS[before.consent], newValue: CONSENT_LABELS[after.consent] })`.
 "Consent" is then left out of that save's `edited` field list. When Consent was the only change, no `edited` line is

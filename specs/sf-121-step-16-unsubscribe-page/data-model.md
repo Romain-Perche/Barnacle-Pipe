@@ -63,8 +63,9 @@ alter table timeline_events add constraint timeline_events_custom_check
 ```
 subscribed ──[page button | one-click]──▶ unsubscribed      (+1 unsubscribed_link | unsubscribed_mail_app)
 unsubscribed ──[page button | one-click]──▶ unsubscribed    (no change, no line, same success)
-unsubscribed ──[teammate edit form]──▶ subscribed           (+1 consent_changed, actor = teammate)
-subscribed ──[teammate edit form]──▶ unsubscribed           (+1 consent_changed, actor = teammate)
+unsubscribed ──[teammate edit form, Consent field changed]──▶ subscribed    (+1 consent_changed, actor = teammate)
+subscribed ──[teammate edit form, Consent field changed]──▶ unsubscribed    (+1 consent_changed, actor = teammate)
+any ──[teammate edit form, Consent field as opened]──▶ unchanged           (stored value kept, no consent line; FR-019)
 ```
 
 Nothing public ever moves a person to `subscribed` (FR-011, US4-1).
