@@ -235,8 +235,10 @@
     16, 17; adds company 2001 with 800 organisations / 3,000 people (token big-fake-token, Grace), 3001 (mid-a / mid-b, Linus and
     Margaret), marg-token (Margaret on 1001); ~6 min; pass name prefixes to run a subset). Notes: the dev fake's people have
     Pipedrive ids 61–360 (person i = id i+60: organisations 1–60 take the first ids); "Owner 'Jane Fake' (…)" and
-    "Another Pipedrive person, 'Person001 Fake', …" quote the Pipedrive name (FR-028). All 48 scenarios pass except US2 16
-    (round 1: the report shows only the three totals, not people / organisations imported and linked per kind).
+    "Another Pipedrive person, 'Person001 Fake', …" quote the Pipedrive name (FR-028). All 48 scenarios pass (fix round 1
+    added the "// COUNTS" table per kind on 3 REPORT, `section[aria-label="Counts per kind"]`). `check-sf117-kindcounts.js`
+    (app on :3000, `BASE=http://localhost:3000`, fresh data) prints that table next to the `pipedrive_links` counts per kind
+    (round 2: People 298/0/0/2, Organisations 58/1/0/1, equal to the links).
   - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
     1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
