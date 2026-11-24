@@ -80,6 +80,11 @@
       "id": "pipedrive",
       "label": "Pipedrive import",
       "description": "Connects a Pipedrive token and imports people, organisations and deals page by page, never twice."
+    },
+    {
+      "id": "unsubscribe",
+      "label": "Unsubscribe",
+      "description": "Lets an email recipient withdraw consent through a token link or RFC 8058 one-click."
     }
   ],
   "actors": [
@@ -109,6 +114,10 @@
       "id": "pipedrive-api",
       "label": "Pipedrive API",
       "zone": "pipedrive"
+    },
+    {
+      "id": "email-recipient",
+      "label": "Email recipient / mail app"
     }
   ],
   "processes": [
@@ -364,6 +373,17 @@
         "src/server/pipedrive/crypto.ts",
         "src/app/(app)/settings/pipedrive-import",
         "src/app/(app)/settings/actions.ts"
+      ]
+    },
+    {
+      "id": "unsubscribe",
+      "label": "Unsubscribe page and one-click",
+      "zone": "app",
+      "group": "unsubscribe",
+      "sources": [
+        "src/app/unsubscribe",
+        "src/server/records/unsubscribe.ts",
+        "src/server/records/unsubscribe-rules.ts"
       ]
     }
   ],
@@ -2251,6 +2271,47 @@
       "data": "schema",
       "sources": [
         "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "from": "email-recipient",
+      "to": "unsubscribe",
+      "data": "unsubscribe token, confirm or one-click POST",
+      "sources": [
+        "src/app/unsubscribe/[token]/confirm/route.ts",
+        "src/app/unsubscribe/[token]/one-click/route.ts"
+      ]
+    },
+    {
+      "from": "unsubscribe",
+      "to": "email-recipient",
+      "data": "unsubscribe confirmation page",
+      "sources": [
+        "src/app/unsubscribe/[token]/page.tsx"
+      ]
+    },
+    {
+      "from": "unsubscribe",
+      "to": "persons-table",
+      "data": "consent set to unsubscribed by token",
+      "sources": [
+        "src/server/records/unsubscribe.ts"
+      ]
+    },
+    {
+      "from": "unsubscribe",
+      "to": "timeline-table",
+      "data": "unsubscribed_link / unsubscribed_mail_app events",
+      "sources": [
+        "src/server/records/unsubscribe.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "persons-table",
+      "data": "unsubscribe token column",
+      "sources": [
+        "migrations/0013_unsubscribe.sql"
       ]
     }
   ]

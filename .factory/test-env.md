@@ -138,6 +138,17 @@
   check), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a
   second open import, paused without a reason, People without consent, nothing ticked, a person link with an
   organisation id, `how = 'copied'`, a 256-character company name).
+  The unsubscribe code (SF-121: `src/server/records/unsubscribe.ts`) keeps to the same pooler limits: no fake, the real
+  local PostgreSQL 17, no public schema; no session state, each unsubscribe one `sql.begin()` with a conditional
+  `update persons … where unsubscribe_token = $1 and consent = 'subscribed' returning id` (Read Committed re-checks the
+  `where` after the row lock, so two requests at once write one line; `tests/integration/unsubscribe.test.ts` runs them
+  with `Promise.all`). Its column and kinds come from `migrations/0013_unsubscribe.sql` (`persons.unsubscribe_token`, a
+  64-hex `gen_random_uuid()` default per row, unique; kinds `unsubscribed_link`, `unsubscribed_mail_app`,
+  `consent_changed`), applied on a fresh database by `migrate.test.ts`, which also checks existing rows each get a
+  distinct token and Postgres's own refusals (23514: token `'abc'` or uppercase hex, `consent_changed` without
+  `old_value`/`new_value` or actor, an unsubscribe kind with an actor; 23505: a duplicate token). Mail apps' RFC 8058
+  one-click POSTs are not an outside service: the tests call the route handler straight with RFC 8058's body
+  (`List-Unsubscribe=One-Click`, urlencoded and multipart).
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -436,6 +447,14 @@
     - `scenarios-sf115-us5.js`: US5 1–5 (CSV import; preview needs the consent radio "Subscribed"). Import warnings list rows
       as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
 
+  - SF-121 (AI review): `node .factory/run/scenarios-sf121.js [prefix…]` (NODE_PATH=/opt/playwright/node_modules) on a
+    fresh seed (app on :3000 from start-app.sh) runs every unsubscribe scenario: tokens and consents read with psql, the
+    one-click POSTs sent by `fetch` with no cookie, a temporary person deleted through the app (`?confirm=delete`), and
+    Edge 8 stops Postgres (`pg_ctl -D /tmp/pgdata -m fast stop`) then starts it again. Page checks use the visible text and
+    the DOM without `<script>`: Next.js's router payload always carries the address (never shown). Edge 10 and the https
+    part of US5 1: a second `npx next start -p 3002` with `APP_ENV=` (production) and `APP_URL=https://crm.example.com`
+    (`node .factory/run/check-sf121-edge10.js`: 404 "Page not found."), and one on :3003 with `APP_ENV=test` and the same
+    APP_URL to see https links on /dev/unsubscribe-links. ~1 min.
 ## Smoke checks
 1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432

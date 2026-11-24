@@ -336,6 +336,63 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-121 T004, FR-002, FR-003: 0013_unsubscribe.sql on a fresh database: a distinct 64-hex token for every
+  // person (existing rows included), Postgres's own refusals, the three kinds and their checks, other kinds kept
+  it("applies 0013_unsubscribe.sql: a distinct token per person, token checks, unsubscribe and consent kinds", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0013_unsubscribe.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      // Rows already there when the column is added: drop it, add people, run the migration's persons statements again.
+      await c`alter table persons drop column unsubscribe_token`;
+      for (const name of ["Cara", "Dev", "Eve"]) await c`insert into persons (first_name, owner_id, created_by) values (${name}, ${u.id}, ${u.id})`;
+      const migration = readFileSync("migrations/0013_unsubscribe.sql", "utf8");
+      const personsPart = migration.slice(0, migration.indexOf("alter table timeline_events"));
+      await c.unsafe(personsPart);
+      const [p] = await c`insert into persons (first_name, owner_id, created_by) values ('Fay', ${u.id}, ${u.id}) returning id, unsubscribe_token`;
+      const tokens = (await c`select unsubscribe_token from persons`).map((r) => r.unsubscribe_token as string);
+      expect(tokens).toHaveLength(4);
+      expect(new Set(tokens).size).toBe(4);
+      for (const t of tokens) expect(t).toMatch(/^[0-9a-f]{64}$/);
+      expect(await code(c`update persons set unsubscribe_token = 'abc' where id = ${p.id}`)).toBe("23514");
+      expect(await code(c`update persons set unsubscribe_token = ${"AB".repeat(32)} where id = ${p.id}`)).toBe("23514");
+      expect(await code(c`update persons set unsubscribe_token = ${tokens.find((t) => t !== p.unsubscribe_token)!} where id = ${p.id}`)).toBe("23505");
+      const ev = (kind: string, cols: { actor?: number | null; old?: string | null; neu?: string | null } = {}) =>
+        c`insert into timeline_events (person_id, kind, actor_id, old_value, new_value)
+          values (${p.id}, ${kind}, ${cols.actor === undefined ? u.id : cols.actor}, ${cols.old ?? null}, ${cols.neu ?? null})`;
+      expect(await code(ev("unsubscribed_link", { actor: null }))).toBe("ok");
+      expect(await code(ev("unsubscribed_mail_app", { actor: null }))).toBe("ok");
+      expect(await code(ev("unsubscribed_link"))).toBe("23514");
+      expect(await code(ev("unsubscribed_mail_app"))).toBe("23514");
+      expect(await code(ev("consent_changed", { old: "Subscribed", neu: "Unsubscribed" }))).toBe("ok");
+      expect(await code(ev("consent_changed", { neu: "Unsubscribed" }))).toBe("23514");
+      expect(await code(ev("consent_changed", { old: "Subscribed" }))).toBe("23514");
+      expect(await code(ev("consent_changed", { actor: null, old: "Subscribed", neu: "Unsubscribed" }))).toBe("23514");
+      expect(await code(ev("edited", { old: "x" }))).toBe("23514");
+      for (const kind of ["imported", "edited", "pipedrive_imported", "pipedrive_unsubscribed"]) expect(await code(ev(kind)), kind).toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, field_name, new_value) values (${p.id}, 'custom_set', ${u.id}, 'Diet', 'Vegan')`)).toBe("ok");
+      expect(await code(ev("unsubscribed_other", { actor: null }))).toBe("23514");
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-121 T004: the unsubscribe code keeps to the pooler's limits; the migration is transaction-safe, no table
+  it("keeps the unsubscribe code and 0013_unsubscribe.sql free of session state", () => {
+    for (const file of ["src/server/records/unsubscribe.ts", "src/server/records/unsubscribe-rules.ts"]) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0013_unsubscribe.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration).not.toMatch(/create table/i);
+  });
+
   // covers SF-117 T013: the Pipedrive code keeps to the pooler's limits (no session state); the migration is transaction-safe
   it("keeps the Pipedrive code and 0012_pipedrive.sql free of session state", () => {
     const dir = "src/server/pipedrive";

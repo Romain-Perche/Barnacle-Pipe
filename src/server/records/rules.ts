@@ -34,6 +34,9 @@ export type PersonForm = {
   ownerId: string;
   labelIds: string[];
   consent: string;
+  // SF-121 FR-019: the Consent value the edit form was opened with (absent on create forms and imports). A save changes
+  // Consent only when `consent` differs from it.
+  consentShown?: string;
   private: boolean;
   // SF-114: the Ambassador tick, and "Referred by": "", "<id>" or "keep" (parsed by referral-rules.ts).
   ambassador: boolean;

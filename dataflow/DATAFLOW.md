@@ -24,57 +24,60 @@ flowchart LR
     n8[["Settings"]]
     n9[["Sign-in and sessions"]]
     n10[["Signed-in app and user admin"]]
-    n11["Barnacle admin"]
-    n12["Developer or Vercel build"]
-    n13["Barnacle staff user"]
+    n11[["Unsubscribe"]]
+    n12["Barnacle admin"]
+    n13["Developer or Vercel build"]
+    n14["Email recipient / mail app"]
+    n15["Barnacle staff user"]
     subgraph z1["GOOGLE (THIRD PARTY)"]
-        n14["Google OAuth and userinfo API"]
+        n16["Google OAuth and userinfo API"]
     end
     subgraph z2["PIPEDRIVE (THIRD PARTY)"]
-        n15["Pipedrive API"]
+        n17["Pipedrive API"]
     end
     subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
-        n16["Supabase Storage"]
+        n18["Supabase Storage"]
     end
     n6 -->|"17 flows"| n1
-    n6 -->|"7 flows"| n13
+    n6 -->|"7 flows"| n15
     n1 -->|"12 flows"| n6
     n1 -->|"next activity per deal"| n3
-    n11 -->|"2 flows"| n6
-    n11 -->|"pipeline and stage changes"| n3
-    n11 -->|"new user email, role and status changes"| n10
+    n12 -->|"2 flows"| n6
+    n12 -->|"pipeline and stage changes"| n3
+    n12 -->|"new user email, role and status changes"| n10
     n10 -->|"2 flows"| n6
-    n10 -->|"sidebar and signed-in pages"| n13
+    n10 -->|"sidebar and signed-in pages"| n15
     n6 -->|"label changes seen on deals"| n4
     n9 -->|"4 flows"| n1
     n6 -->|"custom inputs, values, filters"| n3
     n4 -->|"7 flows"| n3
     n3 -->|"9 flows"| n4
     n3 -->|"4 flows"| n1
-    n3 -->|"board, deal drawer and forms"| n13
+    n3 -->|"board, deal drawer and forms"| n15
     n4 -->|"visible referred deals and totals"| n6
-    n12 -->|"migrate command / seed command"| n2
+    n13 -->|"migrate command / seed command"| n2
+    n14 -->|"unsubscribe token, confirm or one-click POST"| n11
     n8 -->|"3 flows"| n9
     n8 -->|"2 flows"| n2
     n8 -->|"PIPEDRIVE_URL, token key"| n7
     n5 -->|"files section"| n3
     n5 -->|"2 flows"| n1
     n5 -->|"files section"| n6
-    n5 -->|"303 to a 60-second read address"| n13
-    n5 -->|"signed upload address, info, delete requests"| n16
+    n5 -->|"303 to a 60-second read address"| n15
+    n5 -->|"signed upload address, info, delete requests"| n18
     n1 -->|"file rows visible to the user"| n5
-    n9 -->|"auth code, PKCE verifier, client id and secret"| n14
-    n9 -->|"2 flows"| n13
-    n14 -->|"access token, then email, domain and name"| n9
-    n2 -->|"12 flows"| n1
+    n9 -->|"auth code, PKCE verifier, client id and secret"| n16
+    n9 -->|"2 flows"| n15
+    n16 -->|"access token, then email, domain and name"| n9
+    n2 -->|"13 flows"| n1
     n2 -->|"fake deals / table definitions"| n4
     n2 -->|"schema"| n6
     n2 -->|"schema"| n7
     n6 -->|"current unread count"| n10
-    n15 -->|"people, organisations, deals, fields"| n7
+    n17 -->|"people, organisations, deals, fields"| n7
     n7 -->|"imported records"| n1
-    n7 -->|"token header, page requests"| n15
-    n7 -->|"progress and report"| n13
+    n7 -->|"token header, page requests"| n17
+    n7 -->|"progress and report"| n15
     n6 -->|"crm_flash cookie"| n9
     n9 -->|"4 flows"| n6
     n9 -->|"2 flows"| n10
@@ -82,14 +85,16 @@ flowchart LR
     n9 -->|"signed-in user"| n5
     n9 -->|"signed-in user"| n7
     n1 -->|"4 flows"| n9
-    n13 -->|"7 flows"| n6
-    n13 -->|"deal form fields, board drags"| n3
-    n13 -->|"4 flows"| n9
-    n13 -->|"files to add, delete, download, preview"| n5
-    n13 -->|"API token, import choices"| n7
-    n13 -->|"file contents (PUT to signed address)"| n16
-    n16 -->|"object info and first bytes"| n5
-    n10 -->|"users table and error messages"| n11
+    n15 -->|"7 flows"| n6
+    n15 -->|"deal form fields, board drags"| n3
+    n15 -->|"4 flows"| n9
+    n15 -->|"files to add, delete, download, preview"| n5
+    n15 -->|"API token, import choices"| n7
+    n15 -->|"file contents (PUT to signed address)"| n18
+    n18 -->|"object info and first bytes"| n5
+    n11 -->|"unsubscribe confirmation page"| n14
+    n11 -->|"2 flows"| n1
+    n10 -->|"users table and error messages"| n12
     n10 -->|"private deals handed to a new owner"| n4
     n10 -->|"6 flows"| n1
     n1 -->|"user list"| n10
@@ -99,8 +104,8 @@ flowchart LR
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n11,n12,n13,n14,n15,n16 actor
-    class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10 group
+    class n12,n13,n14,n15,n16,n17,n18 actor
+    class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11 group
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
     style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
     style z3 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
@@ -118,6 +123,7 @@ flowchart LR
 | Settings | Environment variables (.env.local or Vercel settings) that hold secrets and switch features on or off. | Environment settings (.env.local / Vercel) |
 | Sign-in and sessions | Signs barnacle.ai staff in with Google (or the fake login), keeps their session cookie and checks it on every page. | Browser cookies (crm_session, crm_oauth), Sign-in rules and session creation, Fake Google login (dev and test only), Google sign-in routes, Request proxy (cookie gate), Session check, end and sign-out, Sign-in page |
 | Signed-in app and user admin | Draws the signed-in pages and lets admins add users, change roles and deactivate accounts. | Signed-in layout and sidebar, Users admin page and actions |
+| Unsubscribe | Lets an email recipient withdraw consent through a token link or RFC 8058 one-click. | Unsubscribe page and one-click |
 
 ## Trust boundaries
 
@@ -135,38 +141,41 @@ flowchart LR
     n4[["Postgres (Supabase or local)"]]
     n5["Barnacle admin"]
     n6["Developer or Vercel build"]
-    n7[("Environment settings (.env.local / Vercel)")]
-    n8[("SQL migration files")]
-    n9["Barnacle staff user"]
+    n7["Email recipient / mail app"]
+    n8[("Environment settings (.env.local / Vercel)")]
+    n9[("SQL migration files")]
+    n10["Barnacle staff user"]
     subgraph z1["GOOGLE (THIRD PARTY)"]
-        n10["Google OAuth and userinfo API"]
+        n11["Google OAuth and userinfo API"]
     end
     subgraph z2["PIPEDRIVE (THIRD PARTY)"]
-        n11["Pipedrive API"]
+        n12["Pipedrive API"]
     end
     subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
-        n12["Supabase Storage"]
+        n13["Supabase Storage"]
     end
-    n1 -->|"48 flows"| n4
-    n1 -->|"13 flows"| n9
+    n1 -->|"50 flows"| n4
+    n1 -->|"13 flows"| n10
     n4 -->|"30 flows"| n1
     n5 -->|"4 flows"| n1
     n2 -->|"3 flows"| n1
     n6 -->|"migrate command / seed command"| n3
-    n7 -->|"4 flows"| n1
-    n7 -->|"2 flows"| n3
+    n7 -->|"unsubscribe token, confirm or one-click POST"| n1
+    n8 -->|"4 flows"| n1
+    n8 -->|"2 flows"| n3
     n1 -->|"5 flows"| n2
-    n1 -->|"signed upload address, info, delete requests"| n12
-    n1 -->|"auth code, PKCE verifier, client id and secret"| n10
-    n10 -->|"access token, then email, domain and name"| n1
-    n3 -->|"13 flows"| n4
+    n1 -->|"signed upload address, info, delete requests"| n13
+    n1 -->|"auth code, PKCE verifier, client id and secret"| n11
+    n11 -->|"access token, then email, domain and name"| n1
+    n3 -->|"14 flows"| n4
     n3 -->|"schema"| n1
-    n8 -->|"SQL migration text"| n3
-    n11 -->|"people, organisations, deals, fields"| n1
-    n1 -->|"token header, page requests"| n11
-    n9 -->|"14 flows"| n1
-    n9 -->|"file contents (PUT to signed address)"| n12
-    n12 -->|"object info and first bytes"| n1
+    n9 -->|"SQL migration text"| n3
+    n12 -->|"people, organisations, deals, fields"| n1
+    n1 -->|"token header, page requests"| n12
+    n10 -->|"14 flows"| n1
+    n10 -->|"file contents (PUT to signed address)"| n13
+    n13 -->|"object info and first bytes"| n1
+    n1 -->|"unsubscribe confirmation page"| n7
     n1 -->|"users table and error messages"| n5
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -174,8 +183,8 @@ flowchart LR
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n5,n6,n9,n10,n11,n12 actor
-    class n7,n8 store
+    class n5,n6,n7,n10,n11,n12,n13 actor
+    class n8,n9 store
     class n1,n2,n3,n4 zone
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
     style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
@@ -214,7 +223,8 @@ flowchart LR
     n16[["Pipedrive import"]]
     n17[["People and organisations"]]
     n18[["Sign-in and sessions"]]
-    n19[["Signed-in app and user admin"]]
+    n19[["Unsubscribe"]]
+    n20[["Signed-in app and user admin"]]
     n17 -->|"2 flows"| n1
     n17 -->|"4 flows"| n7
     n1 -->|"activity rows / assignments by others"| n17
@@ -241,7 +251,7 @@ flowchart LR
     n13 -->|"table definitions"| n4
     n13 -->|"fake files / table definitions"| n5
     n13 -->|"fake organisations / table definitions"| n6
-    n13 -->|"4 flows"| n7
+    n13 -->|"5 flows"| n7
     n13 -->|"applied migration names"| n8
     n13 -->|"table definitions"| n9
     n13 -->|"fake users added / table definitions"| n11
@@ -254,14 +264,16 @@ flowchart LR
     n16 -->|"imported records"| n10
     n9 -->|"session state with user role and status"| n18
     n10 -->|"2 flows"| n17
-    n19 -->|"private people handed to a new owner"| n7
-    n19 -->|"revoked sessions of deactivated users"| n9
-    n19 -->|"2 flows"| n10
-    n19 -->|"who changed which user, and how"| n11
-    n19 -->|"added users, role and status changes"| n12
+    n19 -->|"consent set to unsubscribed by token"| n7
+    n19 -->|"unsubscribed_link / unsubscribed_mail_app events"| n10
+    n20 -->|"private people handed to a new owner"| n7
+    n20 -->|"revoked sessions of deactivated users"| n9
+    n20 -->|"2 flows"| n10
+    n20 -->|"who changed which user, and how"| n11
+    n20 -->|"added users, role and status changes"| n12
     n12 -->|"3 flows"| n18
     n12 -->|"active users matched as owners"| n17
-    n12 -->|"user list"| n19
+    n12 -->|"user list"| n20
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -269,7 +281,7 @@ flowchart LR
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11,n12 store
-    class n13,n14,n15,n16,n17,n18,n19 stub
+    class n13,n14,n15,n16,n17,n18,n19,n20 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -298,7 +310,7 @@ flowchart LR
     n1 -->|"seed command"| n4
     n9 -->|"DATABASE_URL"| n3
     n9 -->|"APP_ENV, VERCEL_ENV, DATABASE_URL"| n4
-    n3 -->|"4 flows"| n5
+    n3 -->|"5 flows"| n5
     n3 -->|"table definitions"| n6
     n3 -->|"schema"| n8
     n3 -->|"schema"| n7
@@ -776,6 +788,36 @@ flowchart LR
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
+### Unsubscribe
+
+Lets an email recipient withdraw consent through a token link or RFC 8058 one-click.
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+    n1["Email recipient / mail app"]
+    subgraph z1["NEXT.JS APP SERVER (VERCEL OR LOCAL)"]
+        n2("Unsubscribe page and one-click")
+    end
+    n3[["Database"]]
+    n1 -->|"unsubscribe token, confirm or one-click POST"| n2
+    n2 -->|"unsubscribe confirmation page"| n1
+    n2 -->|"2 flows"| n3
+    classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
+    classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
+    classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
+    classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
+    classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
+    classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
+    class n1 actor
+    class n2 process
+    class n3 stub
+    style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
+```
+
 ## Parts
 
 | Part | Kind | Subsystem | Zone | Sources |
@@ -801,6 +843,7 @@ flowchart LR
 | Deals board and deal pages | process | Deals | Next.js app server (Vercel or local) | `src/app/(app)/deals`, `src/server/deals/deals.ts`, `src/server/deals/rules.ts` |
 | Postgres deals | store | Deals database | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
 | Developer or Vercel build | actor |  |  |  |
+| Email recipient / mail app | actor |  |  |  |
 | Environment settings (.env.local / Vercel) | store | Settings |  | `.env.example`, `src/server/env.ts` |
 | Fake Google login (dev and test only) | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/dev/fake-google` |
 | Files on records | process | Files | Next.js app server (Vercel or local) | `src/app/(app)/files`, `src/app/(app)/records/file-actions.ts`, `src/server/files/files.ts`, `src/server/files/rules.ts`, `src/server/files/storage.ts` |
@@ -833,6 +876,7 @@ flowchart LR
 | Postgres stages | store | Deals database | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
 | Supabase Storage | actor |  | Supabase Storage (third party) |  |
 | timeline_events table | store | Database | Postgres (Supabase or local) | `migrations/0002_people_organisations.sql` |
+| Unsubscribe page and one-click | process | Unsubscribe | Next.js app server (Vercel or local) | `src/app/unsubscribe`, `src/server/records/unsubscribe-rules.ts`, `src/server/records/unsubscribe.ts` |
 | user_changes log | store | Database | Postgres (Supabase or local) | `migrations/0001_users_sessions.sql` |
 | Users admin page and actions | process | Signed-in app and user admin | Next.js app server (Vercel or local) | `src/app/(app)/admin/users`, `src/server/users.ts` |
 | users table | store | Database | Postgres (Supabase or local) | `migrations/0001_users_sessions.sql` |
@@ -899,6 +943,7 @@ flowchart LR
 | Postgres deals | Deals board and deal pages | visible deals (private people hidden) | `src/server/deals/deals.ts`, `src/server/records/visibility.ts` |
 | Developer or Vercel build | db:migrate command | migrate command | `package.json`, `scripts/migrate.ts` |
 | Developer or Vercel build | db:seed command (fake data) | seed command | `package.json`, `scripts/seed.ts` |
+| Email recipient / mail app | Unsubscribe page and one-click | unsubscribe token, confirm or one-click POST | `src/app/unsubscribe/[token]/confirm/route.ts`, `src/app/unsubscribe/[token]/one-click/route.ts` |
 | Environment settings (.env.local / Vercel) | Sign-in rules and session creation | FIRST_ADMIN_EMAIL | `src/server/auth/sign-in.ts`, `src/server/env.ts` |
 | Environment settings (.env.local / Vercel) | Fake Google login (dev and test only) | APP_ENV, VERCEL_ENV (fake login switch) | `src/app/dev/fake-google/actions.ts`, `src/server/env.ts` |
 | Environment settings (.env.local / Vercel) | Google sign-in routes | Google client id and secret, APP_URL | `src/server/auth/google.ts`, `src/server/env.ts` |
@@ -932,6 +977,7 @@ flowchart LR
 | db:migrate command | organisations table | table definitions | `migrations/0002_people_organisations.sql`, `scripts/migrate.ts` |
 | db:migrate command | persons, emails, phones and person_labels tables | ambassador and referrer columns | `migrations/0009_ambassadors.sql` |
 | db:migrate command | persons, emails, phones and person_labels tables | table definitions | `migrations/0002_people_organisations.sql`, `scripts/migrate.ts` |
+| db:migrate command | persons, emails, phones and person_labels tables | unsubscribe token column | `migrations/0013_unsubscribe.sql` |
 | db:migrate command | Sealed Pipedrive tokens | schema | `migrations/0012_pipedrive.sql` |
 | db:migrate command | Pipedrive imports and links | schema | `migrations/0012_pipedrive.sql` |
 | db:migrate command | schema_migrations table | applied migration names | `scripts/migrate.ts` |
@@ -1027,6 +1073,9 @@ flowchart LR
 | Supabase Storage | Files on records | object info and first bytes | `src/server/files/storage.ts` |
 | timeline_events table | Ambassadors and referrals | referral events for latest updates | `src/server/records/ambassadors.ts`, `src/server/records/timeline.ts` |
 | timeline_events table | Notes and @mentions | note events | `src/server/records/notes.ts` |
+| Unsubscribe page and one-click | Email recipient / mail app | unsubscribe confirmation page | `src/app/unsubscribe/[token]/page.tsx` |
+| Unsubscribe page and one-click | persons, emails, phones and person_labels tables | consent set to unsubscribed by token | `src/server/records/unsubscribe.ts` |
+| Unsubscribe page and one-click | timeline_events table | unsubscribed_link / unsubscribed_mail_app events | `src/server/records/unsubscribe.ts` |
 | Users admin page and actions | Barnacle admin | users table and error messages | `src/app/(app)/admin/users/page.tsx` |
 | Users admin page and actions | Postgres deals | private deals handed to a new owner | `src/server/records/handover.ts` |
 | Users admin page and actions | persons, emails, phones and person_labels tables | private people handed to a new owner | `src/app/(app)/admin/users/actions.ts`, `src/server/records/handover.ts` |

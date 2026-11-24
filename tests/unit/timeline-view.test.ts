@@ -83,3 +83,20 @@ describe("Pipedrive timeline lines (SF-117)", () => {
     expect(entryTag({ kind: "pipedrive_unsubscribed", deal: null })).toBe("CHANGE");
   });
 });
+
+// covers SF-121 FR-005, FR-006, FR-011 (T017, T033): the two unsubscribe lines (no actor) and a teammate's Consent change
+describe("unsubscribe and consent lines (SF-121)", () => {
+  const event = (kind: TimelineEvent["kind"], over: Partial<TimelineEvent> = {}): TimelineEvent => ({
+    id: 1, kind, actorName: null, fields: null, relatedPerson: null, fromPerson: null, relatedUserName: null, fromStage: null, toStage: null,
+    cause: null, reason: null, fieldName: null, oldValue: null, newValue: null, createdAt: new Date(), ...over,
+  });
+  const line = (e: TimelineEvent) => renderToStaticMarkup(createElement(Line, { e, onDeal: false }));
+  it("reads the three lines, tagged CHANGE", () => {
+    expect(line(event("unsubscribed_link"))).toBe("Unsubscribed from campaigns through the unsubscribe link");
+    expect(line(event("unsubscribed_mail_app"))).toBe("Unsubscribed from campaigns through their mail app");
+    expect(line(event("consent_changed", { actorName: "Linus Fake", oldValue: "Unsubscribed", newValue: "Subscribed" }))).toBe(
+      "Consent: Unsubscribed → Subscribed by Linus Fake",
+    );
+    for (const kind of ["unsubscribed_link", "unsubscribed_mail_app", "consent_changed"] as const) expect(entryTag({ kind, deal: null })).toBe("CHANGE");
+  });
+});

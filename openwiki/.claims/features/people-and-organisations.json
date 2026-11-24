@@ -1,24 +1,28 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:724efc39f60c0f2e4ac1fcecff4f3e01973fcf6db4615161e84745950368b388",
+  "pageVersion": "sha256:eb2bc78579de019c92df901b12ab1de52fbbae7ce40aeeb7cf6b5b92ab952bc2",
   "claims": [
     {
       "id": "claim_073174519ebe44d7a116c47962b22649",
       "statement": "Deleting a person is admin only and re-checked inside the transaction.",
       "evidence": [
         {
-          "resource": "repo://src/server/records/people.ts#L355-L385",
-          "version": "repo-lines-v1:sha256:2339c62f8964002dd8735ff6a9e4a75f237d359b929146e45d9130e231a98c5c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYmMyNWViODgzNTllZmQ2OTAwZTUyOGIxM2ZjNTlmODQ1NDBhNjA5ZTU2NTVkZTk0ZTM4OTRjNzZmZmNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhMzIwMGU3NmM3ZTU1ZTI4MDM2MDBiZWY1NzgyZTRjY2UxZDkyYzMwMGRjZGJlNjBhZmMzNzg0ZmU1YjgyYjUifQ"
+          "resource": "repo://src/server/records/people.ts#L383-L420",
+          "version": "repo-lines-v1:sha256:7bae02a3feeab1bdf0b5c862d3eb74a61f1cb508b67a9b7db8e98ad116553148:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkYjIyYTVhY2ZhOTZlYjRkZmFmOWY1ODljOTk3NzU2ODllMzQ4ZGIwNmFhNzFmNDRlYzIxYWQwMjA4YjM1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3NDljM2I1ODU2ZjIzZWQ0NGJiM2M0NmExMjIzOGRjMGYyZjBmZjg0YzE1YTI3ODFiODYyZjQ2NmU3OGY5NTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5ZGZkZmJhY2RmYjc2OGE0MTM0ZTNhMDQ4NzJkMTlhYjA0M2ZhMGJjYWQxN2ExZDI4ZWI2MGViNDNlODBmNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyYWJlZjNlOGE0YzhhOTYxM2Q4YTIxNzJhODlhZGU3Y2QzY2ZlMzBmMTNiODNlNWFlMTAzNzVlM2EyMjQ3Y2YifQ"
         }
       ]
     },
     {
       "id": "claim_a2385bdc49214a2b84827de9a9cd07f3",
-      "statement": "A private person is visible to their creator and current owner; every persons read uses visiblePerson().",
+      "statement": "A private person is visible to their creator and current owner; every persons read uses visiblePerson() except the token-based unsubscribe reads and writes.",
       "evidence": [
         {
+          "resource": "repo://src/server/records/unsubscribe.ts",
+          "version": "repo-file-v1:sha256:9e9db096fb0dba3ea04e1b045de582ab0daa5b7cbd4c7fe2109507b802d99cc8"
+        },
+        {
           "resource": "repo://src/server/records/visibility.ts",
-          "version": "repo-file-v1:sha256:eeb469146c7c41f8480b2ffaddea04ea2ed1738ab6b7d485c19a0ea5fb0461cb"
+          "version": "repo-file-v1:sha256:f656402c0553e50305d2fb21e612df5f83bb5b9d74221226774cfeb5298f3273"
         }
       ]
     },
@@ -28,11 +32,11 @@
       "evidence": [
         {
           "resource": "repo://src/proxy.ts",
-          "version": "repo-file-v1:sha256:454c2e1ae3cf430a6fcbc089099fb3cddc733fde1c008bca9d5fc1c78a19ba42"
+          "version": "repo-file-v1:sha256:ba2aaec89d13a94acd371f251c2f97e2ce52b7c4a9b31ff47c57e196b64ee91d"
         },
         {
           "resource": "repo://src/server/records/flash.ts",
-          "version": "repo-file-v1:sha256:9537e78f9787dbfe84dee8028b9169712a133e224c5df1dec66d7c1003098609"
+          "version": "repo-file-v1:sha256:a7c72152f7c04929677943ad20bb6aa6f71423ba561af833448abefa723c669c"
         }
       ]
     },
@@ -65,8 +69,8 @@
       "statement": "CSV imports are rows of csv_imports readable only by the user who started them; unfinished imports and imports older than 24 hours are purged.",
       "evidence": [
         {
-          "resource": "repo://src/server/imports/imports.ts#L1-L45",
-          "version": "repo-lines-v1:sha256:64d0aa2a99809646124532104d97f55a28f021b68266b4aaf1ca50a025537f82:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxYjczMWQzNjI4OGE0MDBiNjRjNTUwODYyZjY5NDFmYjc0YmU1YWQ4YmNkNzdhODAyZTk1MjkzNTYyOGJiM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2YjhmMTc1MmY0MzVjNDBkNzYxY2M2ZTU0N2UyNDNjODFjMTFhMDY1YWJmM2NkZmNmMDM2YzlkNDU5ODRiY2QifQ"
+          "resource": "repo://src/server/imports/imports.ts#L1-L52",
+          "version": "repo-lines-v1:sha256:bb7e1eec5339889384bf30fcd48f74a7812109576322e723a126f313514f4c84:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxYjczMWQzNjI4OGE0MDBiNjRjNTUwODYyZjY5NDFmYjc0YmU1YWQ4YmNkNzdhODAyZTk1MjkzNTYyOGJiM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2YjhmMTc1MmY0MzVjNDBkNzYxY2M2ZTU0N2UyNDNjODFjMTFhMDY1YWJmM2NkZmNmMDM2YzlkNDU5ODRiY2QifQ"
         }
       ]
     },
@@ -76,17 +80,31 @@
       "evidence": [
         {
           "resource": "repo://src/server/records/ambassadors.ts",
-          "version": "repo-file-v1:sha256:6b081b97ecaa69722a961b93a13ea1e8341e8e52fc250400605496ca760f0ec0"
+          "version": "repo-file-v1:sha256:5e8829abf8f14664079e0b35ecae6196b749ff92bf7295647ae9f93e8a81e7f6"
         },
         {
           "resource": "repo://src/server/records/visibility.ts",
-          "version": "repo-file-v1:sha256:eeb469146c7c41f8480b2ffaddea04ea2ed1738ab6b7d485c19a0ea5fb0461cb"
+          "version": "repo-file-v1:sha256:f656402c0553e50305d2fb21e612df5f83bb5b9d74221226774cfeb5298f3273"
+        }
+      ]
+    },
+    {
+      "id": "claim_475d34b7b2854dcb91986e867674ad52",
+      "statement": "The public unsubscribe routes set Consent by unguessable token, write one timeline line per real change, and are listed in PUBLIC in src/proxy.ts.",
+      "evidence": [
+        {
+          "resource": "repo://src/proxy.ts",
+          "version": "repo-file-v1:sha256:ba2aaec89d13a94acd371f251c2f97e2ce52b7c4a9b31ff47c57e196b64ee91d"
+        },
+        {
+          "resource": "repo://src/server/records/unsubscribe.ts",
+          "version": "repo-file-v1:sha256:9e9db096fb0dba3ea04e1b045de582ab0daa5b7cbd4c7fe2109507b802d99cc8"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T18:05:22.701Z"
+    "at": "2026-11-24T17:28:35.066Z"
   }
 }
