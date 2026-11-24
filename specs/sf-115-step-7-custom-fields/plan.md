@@ -181,6 +181,41 @@ tests/unit/, tests/integration/                 # quickstart.md § Automated che
 
 No other outside service: custom fields, values, lists and the CSV import run in the app and its database.
 
+## Fix round 1
+
+AI review (feature test and code review) found two problems.
+
+**Problem 1 — the word "empty" in a text filter.** A Text or Long text filter for the word "empty" (any case is
+not enough: exactly `empty`) lists the records with no value, not the records whose text contains "empty".
+`/organisations?cf6=empty` lists the 6 organisations without a value; `cf6=EMPTY` lists the one with "Empty shell".
+**Cause:** `customListParts` (`src/server/custom-fields/values.ts`) treats `raw === "empty"` as "no value" before it
+looks at the field type, and `knownCustomQuery` (`src/server/records/list-query.ts`) keeps `"empty"` for every type.
+The spec (US3 scenario 3) offers "Empty" only for Single choice and Yes/No.
+**Fix:** read `"empty"` as "no value" only for Single choice and Yes/No, in both functions. For Text and Long text,
+`empty` is ordinary text: "contains empty", ignoring case. For Number, Money, Date and Multiple choice, `cf<id>=empty`
+is dropped by `knownCustomQuery` and filters nothing (FR-012).
+
+**Problem 2 — a CSV Multiple choice cell with one unknown value.** The cell "AI, Nope" sets nothing, and the warning
+names the whole cell "AI, Nope". US5 scenario 2 says: a value naming no current choice is not set, and a warning lists
+that value, as unknown labels today (`plan.ts` keeps the known labels and warns once per unknown label).
+**Cause:** `readImportCell` (`src/server/custom-fields/rules.ts`) returns `{ unreadable: true }` for the whole cell at
+the first unknown part; `customFromRow` (`src/server/imports/rows.ts`) then reports the whole cell. The unit test
+`tests/unit/custom-fields-rules.test.ts` ("AI, Cooking" → unreadable) locks this in.
+**Fix:** a Multiple choice cell sets every part that names a current choice (in choice order) and reports each
+unknown part on its own: `readImportCell` returns the value plus the unknown parts (for example
+`{ value: [21], unknown: ["Nope"] }`); `customFromRow` keeps the value and adds one `unreadable` entry per unknown part,
+with that part as the value. A cell with only unknown parts sets nothing and warns per part. Single choice is unchanged
+(one value: set, or not set with a warning naming it). Every unknown choice value (Single and Multiple choice) gets a
+new warning `import_custom_choice_unknown` in `src/server/messages.ts`:
+`<field>: "<value>" is not one of its choices and was not set. <rows>` (rows counted per value, as labels today);
+`src/server/imports/text.ts` maps it. Number, Money, Date and Yes/No keep `import_custom_unreadable`.
+
+**Files to change:** `src/server/custom-fields/values.ts`, `src/server/records/list-query.ts`,
+`src/server/custom-fields/rules.ts`, `src/server/imports/rows.ts`, `src/server/imports/plan.ts` (warning code per
+entry), `src/server/imports/text.ts`, `src/server/messages.ts`; tests `tests/unit/list-query.test.ts`,
+`tests/unit/custom-fields-rules.test.ts`, `tests/integration/custom-lists.test.ts`,
+`tests/integration/imports-custom.test.ts`. No new dependency, no migration.
+
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
