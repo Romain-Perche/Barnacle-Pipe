@@ -273,6 +273,21 @@
     Ben Referredfake (the removed choice Pescatarian, Head count 12), Dee Referredfake (Hiring), Sample Studios Fake
     (FAKE-001, £25,000), "Fake referral · website" (31 Mar 2027, NDA Yes) and the private "… · audit" (15 Jan 2027, NDA No),
     each with a "<Field> set to <value>" timeline entry by the record's creator.
+  - SF-118 AI review (Gmail connect and sync): `rm -rf .fake-gmail && bash .factory/run/reset-db.sh`, the app on :3000
+    (`start-app.sh`, fake Gmail), plus `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh` (edge 9:
+    Gmail off) and `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_PUBSUB_TOPIC=projects/fake/topics/x GOOGLE_CLIENT_ID=x
+    GOOGLE_CLIENT_SECRET=y GMAIL_PUSH_SERVICE_ACCOUNT=sa@fake NODE_USE_ENV_PROXY=1 HTTPS_PROXY=http://127.0.0.1:9
+    https_proxy=http://127.0.0.1:9 NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1 bash .factory/run/start-app.sh` (same
+    database, real-mode Gmail with Google unreachable: US3-2 "Gmail does not answer"). Then
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf118.js` (all 32, ~2.5 min; results in
+    /tmp/sf118-results.json). `.factory/run/gmail-ctl.ts` (run with `npx tsx`, env in its head comment) steers the dev fake
+    through `.fake-gmail/state.json` for what `/dev/fake-gmail` has no button for: a signed notice kept for later
+    (`notice`), a notice signed by another key (`badnotice`), moving a message to the bin (`trash`), `sendGmail` as a later
+    feature calls it (`send`), the Sent messages and token statuses. Users: Linus (main), Margaret (2nd mailbox, then
+    deactivated by Ada), Grace (two tabs). Known (SF-118 AI review round 1): `[ ALLOW ]` / `[ CANCEL ]` on the fake consent
+    screen redirect from a server action, so Next runs the callback inside the action request without the
+    `crm_gmail_oauth` cookie (path `/settings/gmail`) and it always ends in "Gmail was not connected."; the script reloads
+    the callback address as a full navigation (as real Google does) unless `RAW=1`.
   - SF-117 AI review (Pipedrive import). Start, after the build on :3000: `nohup npx tsx .factory/run/pipedrive-server.ts >/tmp/pd.log 2>&1 &`,
     `PORT=3001 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_URL=http://localhost:9400 bash .factory/run/start-app.sh` and (edge 18)
     `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_TOKEN_KEY= bash .factory/run/start-app.sh`. Then, each on fresh data
@@ -486,3 +501,5 @@
 1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in
+4. test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json
+5. test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/cron/gmail)" = 401
