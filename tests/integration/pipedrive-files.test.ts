@@ -13,6 +13,8 @@ import { StorageFake } from "../fakes/storage";
 import { makeUser, resetDb } from "./db-helpers";
 import { makePipeline } from "./deal-helpers";
 import { DOCX, PDF, PNG, sized } from "./file-helpers";
+import { removeToken } from "@/server/pipedrive/connection";
+import { deactivate } from "@/server/users";
 import { COMPANY, connect, fakeCompany, importRow, linkTarget, LINUS_TOKEN, runToEnd, skipWait, start } from "./pipedrive-helpers";
 
 const storage = new StorageFake();
@@ -210,5 +212,70 @@ describe("the file store (US4-5, FR-003, FR-017)", () => {
     const queued = await sql<{ due: boolean }[]>`select due_at <= now() as due from file_cleanup`;
     expect(queued.length).toBeLessThanOrEqual(1);
     expect(queued.every((q) => q.due)).toBe(true);
+  });
+});
+
+// covers SF-122 Edge case 15, FR-021 (fix round 1): every per-file commit re-checks, under lock, that the user is active
+// and still has the token; a copy under way when either goes is not listed, and its path is due for removal now.
+describe("token removed or user deactivated during a file copy (Edge case 15)", () => {
+  async function toFilesStep() {
+    const id = await start(linus.id, { deals: true, files: true });
+    for (let i = 0; i < 100 && (await importRow(id)).step !== "files"; i++) {
+      const r = await runPart(linus.id, id);
+      if (r.next === "wait") await skipWait(id);
+    }
+    expect((await importRow(id)).step).toBe("files");
+    return id;
+  }
+  async function nothingListed() {
+    expect(await sql`select 1 from files`).toHaveLength(0);
+    expect(await sql`select 1 from pipedrive_links where kind = 'file'`).toHaveLength(0);
+    const queued = await sql<{ due: boolean }[]>`select due_at <= now() as due from file_cleanup`;
+    expect(queued.every((q) => q.due)).toBe(true);
+  }
+
+  it("lists no file of the part once the token is removed, and pauses as token refused", async () => {
+    const id = await toFilesStep();
+    let done = false;
+    onSaveForTests({
+      before: async () => {
+        if (done) return;
+        done = true;
+        await removeToken(linus.id);
+      },
+    });
+    expect(await runPart(linus.id, id)).toEqual({ next: "stop" });
+    await nothingListed();
+    expect(await importRow(id)).toMatchObject({ state: "paused", pause_reason: "token_refused" });
+  });
+
+  it("lists no file of the part once the user is deactivated, and the import no longer runs", async () => {
+    const admin = await makeUser({ email: "ada@barnacle.ai", name: "Ada Fake", role: "admin" });
+    const id = await toFilesStep();
+    let done = false;
+    onSaveForTests({
+      before: async () => {
+        if (done) return;
+        done = true;
+        await deactivate(admin.id, linus.id);
+      },
+    });
+    expect(await runPart(linus.id, id)).toEqual({ next: "stop" });
+    await nothingListed();
+    expect((await importRow(id)).state).toBe("paused");
+  });
+
+  it("a page save of another step after the token is removed saves nothing and pauses", async () => {
+    const id = await start(linus.id, { deals: true });
+    let done = false;
+    onSaveForTests({
+      before: async () => {
+        if (done) return;
+        done = true;
+        await removeToken(linus.id);
+      },
+    });
+    expect(await runPart(linus.id, id)).toEqual({ next: "stop" });
+    expect(await importRow(id)).toMatchObject({ state: "paused", pause_reason: "token_refused", step: "prepare" });
   });
 });

@@ -389,6 +389,24 @@ describe("npm run db:migrate", () => {
     expect(migration).not.toMatch(/create table/i);
   });
 
+  // covers SF-122 fix round 1 (US5 scenario 5, SC-001): 0014_pipedrive_fetched.sql adds the nullable jsonb column
+  // pipedrive_imports.fetched (a part's answers kept across a slow-down), transaction-safe
+  it("applies 0014_pipedrive_fetched.sql: pipedrive_imports.fetched, nullable jsonb", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0014_pipedrive_fetched.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const [col] = await c`select data_type, is_nullable from information_schema.columns where table_name = 'pipedrive_imports' and column_name = 'fetched'`;
+      expect(col).toMatchObject({ data_type: "jsonb", is_nullable: "YES" });
+    } finally {
+      await c.end();
+    }
+    const migration = readFileSync("migrations/0014_pipedrive_fetched.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+  });
+
   // covers SF-117 T013: the Pipedrive code keeps to the pooler's limits (no session state); the migration is transaction-safe
   it("keeps the Pipedrive code and 0012_pipedrive.sql free of session state", () => {
     const dir = "src/server/pipedrive";

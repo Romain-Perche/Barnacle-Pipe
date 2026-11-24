@@ -733,7 +733,7 @@ half-stored, and over 25 MB left out.
 
 See plan.md § Fix round 1. Tests first: each one fails on the current code.
 
-- [ ] T071 [Fix] Write the failing tests first, each naming what it covers:
+- [x] T071 [Fix] Write the failing tests first, each naming what it covers:
   - `// covers Edge case 15, FR-021`: in the files integration test, with three files on deals, use
     `onSaveForTests` (`before` of the first per-file commit) to call `removeToken(user)`. Expect: no `files` row and
     no `pipedrive_links` row of kind file for any file of the batch, the path of the copy due now in
@@ -758,26 +758,26 @@ See plan.md § Fix round 1. Tests first: each one fails on the current code.
     of 500 parts. Expect the import finished, every deal imported once with its followers and other linked people,
     and, from the fake's call log, each followers / participants call answered with 200 at most once per deal.
     This fails now (the cap is reached).
-- [ ] T072 [Fix] `migrations/0014_pipedrive_fetched.sql`: `alter table pipedrive_imports add column fetched jsonb;`.
+- [x] T072 [Fix] `migrations/0014_pipedrive_fetched.sql`: `alter table pipedrive_imports add column fetched jsonb;`.
   Extend `migrate.test.ts`. (`data-model.md` already lists the column.)
-- [ ] T073 [Fix] `imports.ts`: `lockRow` checks the user is `active` and the `pipedrive_connections` row exists for
+- [x] T073 [Fix] `imports.ts`: `lockRow` checks the user is `active` and the `pipedrive_connections` row exists for
   the import's company, both `for share`, and returns why it fails. `runFilesPart`: on that failure, set the path due
   now, then pause (`token_refused` when the token is gone; paused when the user is not active), and return `stop`.
   `save` does the same for the other steps.
-- [ ] T074 [Fix] The private rule for every report item (plan.md § Fix round 1, Problem 2): `planDealPage` (deal
+- [x] T074 [Fix] The private rule for every report item (plan.md § Fix round 1, Problem 2): `planDealPage` (deal
   private to another owner), `planPersonPage` (person private to another owner, or linked to a person the importer
   cannot see), `planNotePage` / `planActivityPage` / `planFileItem` and the files step's items in `imports.ts`
   (target hidden from the importer, imported or not): empty label, `args.privateKind`, no argument from the record
   itself. `messages.ts`: `pipedrive_private_note` "a private note", `pipedrive_private_activity` "a private
   activity", `pipedrive_private_file` "a private file". `report.ts` (`itemText`, `warningLines`, the not-imported
   rows) and `ReportStep.tsx`: show the matching "a private …" label for such an item.
-- [ ] T075 [Fix] `imports.ts`: a memo of the part's calls (keyed by call). `fetchStep` reads every call through it. On
+- [x] T075 [Fix] `imports.ts`: a memo of the part's calls (keyed by call). `fetchStep` reads every call through it. On
   `PipedriveSlowDown`, `runPart` stores the memo with its step and cursor in `fetched`, in the update that sets
   `waiting`. The next part of the same step and cursor starts from it; `writeRow` clears it. `runFilesPart` reads
   its page call through it.
-- [ ] T076 [Fix] `AGENTS.md`, the `pipedrive/` line: answers kept across a slow-down in `pipedrive_imports.fetched`;
+- [x] T076 [Fix] `AGENTS.md`, the `pipedrive/` line: answers kept across a slow-down in `pipedrive_imports.fetched`;
   every save re-checks the user and the token.
-- [ ] T077 [Fix] Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
+- [x] T077 [Fix] Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
   `DATABASE_URL=postgres://postgres@localhost:5432/crm_test`. Fix every failure and keep the complete failure output.
 
 ## Dependencies & Execution Order

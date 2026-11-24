@@ -112,7 +112,10 @@ OAuth code flow and database sessions.
   WITHOUT the token. `pipedrive_links` also covers kinds deal, note, activity and file (always `how = 'imported'`, ids
   `deal_id` / `note_id` / `activity_id` / `file_id`); a record skipped for a missing target gets no link. An import notifies
   nobody (no `note_mentions`; an activity's `assigned_by` is its assignee). `onSaveForTests` (tests only) hooks every import
-  transaction.
+  transaction. A part keeps the Pipedrive answers it already got across a slow-down (`pipedrive_imports.fetched`, with its
+  step and cursor; cleared when they move), and every save re-checks under lock that the user is active and still holds
+  the token (`lockRow`; else paused, nothing saved). A record private to another owner, or put on a record the importer
+  cannot see, is never named in the report (`privateItem`: empty label, `args.privateKind`, shown "a private …").
 - `src/app/(app)/settings/` (SF-117) — Settings (`page.tsx`, `PipedriveSection.tsx`, `RemoveTokenConfirm.tsx`,
   `actions.ts`), linked by `footerNav` in `nav.ts` at the bottom of the sidebar; `settings/pipedrive-import/` — the import
   page (`page.tsx`, `maxDuration = 60`; `ChooseStep.tsx`, `ProgressStep.tsx`, `ReportStep.tsx`, `Counts.tsx`,

@@ -1,6 +1,6 @@
 // The Pipedrive import engine (SF-117 research.md §5–§6, data-model.md): one row per run in pipedrive_imports, moved on
-// part by part by the open import page (no cron, no background job). A part makes at most two Pipedrive calls (the
-// five of `prepare`, and a deal page's follower and participant calls, excepted), always OUTSIDE any transaction, then saves the page in one sql.begin() that also moves
+// part by part by the open import page (no cron, no background job). A part makes its Pipedrive calls (one or two;
+// more for `prepare` and a deal page's follower and participant calls) always OUTSIDE any transaction, then saves the page in one sql.begin() that also moves
 // the cursor: a record is saved whole or not at all, and a resumed or repeated part never saves twice (the row lock and
 // the step/cursor check throw a stale page away). Each page transaction locks organisations, person_emails and
 // pipedrive_links (as the CSV import does), so two imports of one company, or an import and a hand-made add, save one
@@ -12,6 +12,9 @@
 // a time: download → path queued in file_cleanup → Storage upload → one transaction lists the file AND takes its path
 // off the queue; a part stops starting copies after 15 s or 25 MB). No Pipedrive or Storage call is ever made inside
 // sql.begin(). An import notifies nobody: no note_mentions, and an activity's assigned_by is its assignee.
+// Fix round 1: when Pipedrive asks to slow down, the answers the part already got are kept in pipedrive_imports.fetched
+// (with its step and cursor), so the next part asks only what is missing; and every save re-checks, under lock, that
+// the user is active and still holds the token (lockRow), so nothing is saved once either is gone.
 import { sql, type Sql } from "@/server/db";
 import { listFields as listCrmFields } from "@/server/custom-fields/fields";
 import { ukInstant } from "@/server/activities/rules";
@@ -130,7 +133,10 @@ type Row = Wants & {
   absent: boolean;
   wait_left: number;
   finished_at: Date | null;
+  fetched: { step: Step; cursor: string | null; calls: Memo } | null;
 };
+// The Pipedrive answers a part already got, by call (fix round 1): kept across a slow-down in pipedrive_imports.fetched.
+type Memo = Record<string, unknown>;
 
 async function load(db: Sql, userId: number, where: { id: number } | { latest: true }): Promise<Row | null> {
   const [row] = await db<Row[]>`
@@ -138,7 +144,7 @@ async function load(db: Sql, userId: number, where: { id: number } | { latest: t
            want_activities, want_files, consent, state, pause_reason, step, cursor,
            organisations_total, people_total, deals_total, notes_total, activities_total, files_total,
            organisations_done, people_done, deals_done, notes_done, activities_done, files_done,
-           snapshot, options, counts, report, finished_at,
+           snapshot, options, counts, report, finished_at, fetched,
            greatest(seen_at, coalesce(wait_until, seen_at)) < now() - make_interval(secs => ${ABSENT_SECONDS}) as absent,
            coalesce(ceil(extract(epoch from (wait_until - now())))::int, 0) as wait_left
     from pipedrive_imports
@@ -269,12 +275,21 @@ type Fetched =
   | { kind: "activities"; items: PdActivity[]; next: string | null }
   | { kind: "done" };
 
-// Every page of a cursor list (at most 10).
-async function all<T>(read: (cursor: string | null) => Promise<Page<T>>): Promise<T[]> {
+// A Pipedrive call answered from the part's memo when an earlier try of the part already got it; else made and kept.
+async function once<T>(memo: Memo, key: string, call: () => Promise<T>): Promise<T> {
+  if (Object.hasOwn(memo, key)) return memo[key] as T;
+  const value = await call();
+  memo[key] = value;
+  return value;
+}
+
+// Every page of a cursor list (at most 10), each page through the memo under "<key>:<cursor>".
+async function all<T>(memo: Memo, key: string, read: (cursor: string | null) => Promise<Page<T>>): Promise<T[]> {
   const out: T[] = [];
   let cursor: string | null = null;
   for (let i = 0; i < 10; i++) {
-    const page = await read(cursor);
+    const at: string | null = cursor;
+    const page: Page<T> = await once(memo, `${key}:${at ?? ""}`, () => read(at));
     out.push(...page.items);
     cursor = page.next;
     if (!cursor) break;
@@ -282,88 +297,88 @@ async function all<T>(read: (cursor: string | null) => Promise<Page<T>>): Promis
   return out;
 }
 
-const allFields = (token: string, kind: "person" | "organization" | "deal") => all((c) => listFields(token, kind, c));
+const allFields = (memo: Memo, token: string, kind: "person" | "organization" | "deal") => all(memo, `fields:${kind}`, (c) => listFields(token, kind, c));
 const startOf = (cursor: string | null) => (cursor === null ? 0 : Number(cursor.split(":")[0]) || 0);
 const v1Next = (next: number | null) => (next === null ? null : String(next));
 
-// The Pipedrive calls of the row's step. Never inside a transaction.
-async function fetchStep(token: string, row: Row): Promise<Fetched> {
+// The Pipedrive calls of the row's step, each through the part's memo (a part repeated after a slow-down asks only what
+// is missing). Never inside a transaction.
+async function fetchStep(token: string, row: Row, memo: Memo): Promise<Fetched> {
+  const call = <T>(key: string, f: () => Promise<T>) => once(memo, key, f);
   switch (row.step) {
     case "prepare": {
-      const users = await listUsers(token);
-      const personFields = row.want_people ? await allFields(token, "person") : [];
-      const organizationFields = await allFields(token, "organization");
+      const users = await call("users", () => listUsers(token));
+      const personFields = row.want_people ? await allFields(memo, token, "person") : [];
+      const organizationFields = await allFields(memo, token, "organization");
       const snapshot: Snapshot = { users: Object.fromEntries(users.map((u) => [String(u.id), { name: u.name, email: u.email }])), personFields, organizationFields };
-      if (row.want_deals) snapshot.dealFields = await allFields(token, "deal");
-      if (row.want_activities) snapshot.activityTypes = await listActivityTypes(token);
+      if (row.want_deals) snapshot.dealFields = await allFields(memo, token, "deal");
+      if (row.want_activities) snapshot.activityTypes = await call("activityTypes", () => listActivityTypes(token));
       return { kind: "prepare", snapshot };
     }
     case "count_organisations": {
-      const page = await listOrganizations(token, { cursor: row.cursor, limit: COUNT_PAGE });
+      const page = await call("page", () => listOrganizations(token, { cursor: row.cursor, limit: COUNT_PAGE }));
       return { kind: "count", n: page.items.filter((o) => !o.deleted).length, next: page.next };
     }
     case "count_people": {
-      const page = await listPersons(token, { cursor: row.cursor, limit: COUNT_PAGE, marketing: false });
+      const page = await call("page", () => listPersons(token, { cursor: row.cursor, limit: COUNT_PAGE, marketing: false }));
       return { kind: "count", n: page.items.filter((p) => !p.deleted).length, next: page.next };
     }
     case "count_deals":
     case "count_archived_deals": {
-      const page = await listDeals(token, { archived: row.step === "count_archived_deals", cursor: row.cursor, limit: COUNT_PAGE });
+      const page = await call("page", () => listDeals(token, { archived: row.step === "count_archived_deals", cursor: row.cursor, limit: COUNT_PAGE }));
       return { kind: "count", n: page.items.filter((d) => !d.deleted).length, next: page.next };
     }
     case "count_notes": {
-      const page = await listNotes(token, { start: startOf(row.cursor), limit: COUNT_PAGE });
+      const page = await call("page", () => listNotes(token, { start: startOf(row.cursor), limit: COUNT_PAGE }));
       return { kind: "count", n: page.items.filter((n) => n.active).length, next: v1Next(page.next) };
     }
     case "count_activities": {
-      const page = await listActivities(token, { cursor: row.cursor, limit: COUNT_PAGE });
+      const page = await call("page", () => listActivities(token, { cursor: row.cursor, limit: COUNT_PAGE }));
       return { kind: "count", n: page.items.filter((a) => !a.deleted).length, next: page.next };
     }
     case "count_files": {
-      const page = await listFiles(token, { start: startOf(row.cursor), limit: COUNT_PAGE });
+      const page = await call("page", () => listFiles(token, { start: startOf(row.cursor), limit: COUNT_PAGE }));
       return { kind: "count", n: page.items.filter((f) => f.active).length, next: v1Next(page.next) };
     }
     case "pipelines":
-      // Read here rather than in `prepare`, so that no part needs more than five calls (a part is repeated whole after
-      // a slow-down).
-      return { kind: "pipelines", pipelines: await all((c) => listPipelines(token, c)), stages: await all((c) => listStages(token, c)) };
+      return { kind: "pipelines", pipelines: await all(memo, "pipelines", (c) => listPipelines(token, c)), stages: await all(memo, "stages", (c) => listStages(token, c)) };
     case "deals":
     case "archived_deals": {
-      const page = await listDeals(token, { archived: row.step === "archived_deals", cursor: row.cursor, limit: DEAL_PAGE });
+      const page = await call("page", () => listDeals(token, { archived: row.step === "archived_deals", cursor: row.cursor, limit: DEAL_PAGE }));
       // Only when Pipedrive's counts say there is something to read; one call after the other (no burst).
       const followers = new Map<number, number[]>();
       const participants = new Map<number, { personId: number; name: string }[]>();
       for (const d of page.items) {
         if (d.deleted) continue;
-        if ((d.followersCount ?? 0) > 0) followers.set(d.id, await dealFollowers(token, d.id));
-        if ((d.participantsCount ?? 0) > (d.personId !== null ? 1 : 0)) participants.set(d.id, await dealParticipants(token, d.id));
+        if ((d.followersCount ?? 0) > 0) followers.set(d.id, await call(`followers:${d.id}`, () => dealFollowers(token, d.id)));
+        if ((d.participantsCount ?? 0) > (d.personId !== null ? 1 : 0)) participants.set(d.id, await call(`participants:${d.id}`, () => dealParticipants(token, d.id)));
       }
       return { kind: "deals", items: page.items, next: page.next, participants, followers };
     }
     case "notes": {
-      const page = await listNotes(token, { start: startOf(row.cursor), limit: NOTE_PAGE });
+      const page = await call("page", () => listNotes(token, { start: startOf(row.cursor), limit: NOTE_PAGE }));
       return { kind: "notes", items: page.items, next: v1Next(page.next) };
     }
     case "activities": {
-      const page = await listActivities(token, { cursor: row.cursor, limit: ACTIVITY_PAGE });
+      const page = await call("page", () => listActivities(token, { cursor: row.cursor, limit: ACTIVITY_PAGE }));
       return { kind: "activities", items: page.items, next: page.next };
     }
     case "files":
       throw new Error("files are copied by runFilesPart");
     case "organisations": {
-      const page = await listOrganizations(token, { cursor: row.cursor, limit: PAGE });
+      const page = await call("page", () => listOrganizations(token, { cursor: row.cursor, limit: PAGE }));
       return { kind: "organisations", items: page.items, next: page.next };
     }
     case "people": {
       let noMarketing = row.options.noMarketingStatus === true;
       let page;
       try {
-        page = await listPersons(token, { cursor: row.cursor, limit: PAGE, marketing: !noMarketing });
+        page = await call(`page:${!noMarketing}`, () => listPersons(token, { cursor: row.cursor, limit: PAGE, marketing: !noMarketing }));
       } catch (e) {
         // No marketing app: ask once without the marketing status; every person then gets the user's choice.
         if (!(e instanceof PipedriveBadRequest) || noMarketing) throw e;
         noMarketing = true;
-        page = await listPersons(token, { cursor: row.cursor, limit: PAGE, marketing: false });
+        page = await call("page:false", () => listPersons(token, { cursor: row.cursor, limit: PAGE, marketing: false }));
       }
       // FR-012: the organisations of this page that have no link yet come in the same part (the second call).
       const orgIds = [...new Set(page.items.filter((p) => !p.deleted && p.orgId !== null).map((p) => p.orgId!))];
@@ -371,7 +386,7 @@ async function fetchStep(token: string, row: Row): Promise<Fetched> {
         select pipedrive_id::text as id from pipedrive_links
         where company_id = ${row.company_id} and kind = 'organisation' and pipedrive_id = any(${orgIds}::bigint[])`;
       const missing = orgIds.filter((id) => !linked.some((l) => Number(l.id) === id));
-      const orgs = missing.length === 0 ? [] : (await listOrganizations(token, { cursor: null, limit: PAGE, ids: missing })).items;
+      const orgs = missing.length === 0 ? [] : (await call(`orgs:${missing.join(",")}`, () => listOrganizations(token, { cursor: null, limit: PAGE, ids: missing }))).items;
       return { kind: "people", items: page.items, next: page.next, orgs, noMarketing };
     }
     case "done":
@@ -396,10 +411,12 @@ export async function runPart(userId: number, id: number): Promise<PartResult> {
     await pause(userId, id, "other_company");
     return { next: "stop" };
   }
+  // The answers an earlier try of this very part got before Pipedrive asked to slow down.
+  const memo: Memo = row.fetched && row.fetched.step === row.step && row.fetched.cursor === row.cursor ? { ...row.fetched.calls } : {};
   let fetched: Fetched;
   try {
-    if (row.step === "files") return await runFilesPart(userId, row, token.token);
-    fetched = await fetchStep(token.token, row);
+    if (row.step === "files") return await runFilesPart(userId, row, token.token, memo);
+    fetched = await fetchStep(token.token, row, memo);
   } catch (e) {
     if (e instanceof StorageUnreachable) {
       await pause(userId, id, "files_unreachable");
@@ -407,7 +424,8 @@ export async function runPart(userId: number, id: number): Promise<PartResult> {
     }
     if (e instanceof PipedriveSlowDown) {
       await sql`
-        update pipedrive_imports set state = 'waiting', wait_until = now() + make_interval(secs => ${e.seconds}), seen_at = now()
+        update pipedrive_imports set state = 'waiting', wait_until = now() + make_interval(secs => ${e.seconds}), seen_at = now(),
+          fetched = ${sql.json({ step: row.step, cursor: row.cursor, calls: memo } as never)}
         where id = ${id} and user_id = ${userId} and state in ('running', 'waiting')`;
       return { next: "wait", seconds: e.seconds };
     }
@@ -875,7 +893,7 @@ async function writeRow(db: Sql, row: Row, o: { step: Step; cursor: string | nul
       organisations_done = organisations_done + ${n(o.done, "organisations")}, people_done = people_done + ${n(o.done, "people")},
       deals_done = deals_done + ${n(o.done, "deals")}, notes_done = notes_done + ${n(o.done, "notes")},
       activities_done = activities_done + ${n(o.done, "activities")}, files_done = files_done + ${n(o.done, "files")},
-      state = ${finished ? "finished" : "running"}, wait_until = null, seen_at = now(),
+      state = ${finished ? "finished" : "running"}, wait_until = null, seen_at = now(), fetched = null,
       finished_at = ${finished ? db`now()` : db`null`}
     where id = ${row.id}`;
   return finished;
@@ -883,22 +901,34 @@ async function writeRow(db: Sql, row: Row, o: { step: Step; cursor: string | nul
 
 type Locked = { step: Step; cursor: string | null; state: ImportState; snapshot: Snapshot | null; counts: unknown; report: unknown; options: Row["options"] };
 
-// The import row locked, if the part is still current (same step and cursor, running or waiting).
-async function lockRow(db: Sql, userId: number, row: Row, cursor = row.cursor): Promise<Locked | null> {
+// The import row locked, if the part is still current (same step and cursor, running or waiting): else "stale". In the
+// same transaction, the user must still be active and still hold a token of the import's company (fix round 1, Edge
+// case 15): the `for share` locks make removeToken() / deactivate() wait for a save already under way, and a save after
+// them sees they happened. Else the import is paused here and "stopped" returned: nothing of the part is saved.
+async function lockRow(db: Sql, userId: number, row: Row, cursor = row.cursor): Promise<Locked | "stale" | "stopped"> {
   const [cur] = await db<Locked[]>`
     select step, cursor, state, snapshot, counts, report, options from pipedrive_imports where id = ${row.id} and user_id = ${userId} for update`;
-  if (!cur || cur.step !== row.step || cur.cursor !== cursor || (cur.state !== "running" && cur.state !== "waiting")) return null;
-  return cur;
+  if (!cur || cur.step !== row.step || cur.cursor !== cursor || (cur.state !== "running" && cur.state !== "waiting")) return "stale";
+  const [user] = await db<{ status: string }[]>`select status from users where id = ${userId} for share`;
+  const [conn] = await db<{ company_id: string }[]>`
+    select company_id::text as company_id from pipedrive_connections where user_id = ${userId} for share`;
+  const reason: PauseReason | null = !user || user.status !== "active" || !conn ? "token_refused" : conn.company_id !== row.company_id ? "other_company" : null;
+  if (reason === null) return cur;
+  await db`
+    update pipedrive_imports set state = 'paused', pause_reason = ${reason}, wait_until = null, seen_at = now() where id = ${row.id}`;
+  return "stopped";
 }
 
 // One transaction: the row locked and checked, the page saved, the cursor, counts and report moved. Returns whether the
-// import is now finished. A stale part (another tab saved it, or the user stopped) changes nothing.
+// import is now finished or paused (no more parts). A stale part (another tab saved it, or the user stopped) changes
+// nothing.
 async function save(userId: number, row: Row, f: Fetched): Promise<boolean> {
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     await saveHooks?.before?.();
     const cur = await lockRow(db, userId, row);
-    if (!cur) return false;
+    if (cur === "stopped") return true;
+    if (cur === "stale") return false;
     const counts: Counts = readCounts(cur.counts);
     const report: Report = readReport(cur.report);
     let step: Step = row.step;
@@ -979,12 +1009,12 @@ async function commitBatch(db: Sql, row: Row, cur: Locked, batch: FileBatch, nex
 // A file part: a page of 50 metadata, then one file copied at a time from the cursor's index, each listed in its own
 // transaction together with the items passed over before it. No new copy starts after FILE_PART_MS or 25 MB. Throws
 // Pipedrive errors and StorageUnreachable to runPart (nothing since the last commit is saved; it is read again).
-async function runFilesPart(userId: number, row: Row, token: string): Promise<PartResult> {
+async function runFilesPart(userId: number, row: Row, token: string, memo: Memo): Promise<PartResult> {
   const started = Date.now();
   const [startText, indexText] = (row.cursor ?? "0:0").split(":");
   const start = Number(startText) || 0;
   let index = Number(indexText) || 0;
-  const page = await listFiles(token, { start, limit: FILE_PAGE });
+  const page = await once(memo, `files:${start}`, () => listFiles(token, { start, limit: FILE_PAGE }));
   const snapshot = row.snapshot!;
   const ctx: Ctx = { userId, importId: row.id, companyId: row.company_id, snapshot, consent: row.consent ?? "unsubscribed" };
   const lookups = await recordLookups(sql, ctx, "file", page.items, readReport(row.report));
@@ -1022,7 +1052,7 @@ async function runFilesPart(userId: number, row: Row, token: string): Promise<Pa
           const db = tx as unknown as Sql;
           await saveHooks?.before?.();
           const cur = await lockRow(db, userId, row, cursor);
-          if (!cur) return "stale" as const;
+          if (typeof cur === "string") return cur;
           await db`lock table pipedrive_links in share row exclusive mode`;
           const [taken] = await db`select 1 from pipedrive_links where company_id = ${row.company_id} and kind = 'file' and pipedrive_id = ${f.id}`;
           const t = plan.target;
@@ -1046,9 +1076,10 @@ async function runFilesPart(userId: number, row: Row, token: string): Promise<Pa
           await saveHooks?.after?.();
           return "ok" as const;
         });
-        if (result === "stale") {
+        if (result !== "ok") {
+          // Not listed: the stored copy goes at the next sweep.
           await sql`update file_cleanup set due_at = now() where storage_path = ${path}`;
-          return { next: "now" };
+          return { next: result === "stale" ? "now" : "stop" };
         }
         cursor = nextCursor;
         batch = newBatch();
@@ -1059,7 +1090,8 @@ async function runFilesPart(userId: number, row: Row, token: string): Promise<Pa
       const db = tx as unknown as Sql;
       await saveHooks?.before?.();
       const cur = await lockRow(db, userId, row, cursor);
-      if (!cur) return false;
+      if (cur === "stopped") return true;
+      if (cur === "stale") return false;
       const r = await commitBatch(db, row, cur, batch, next);
       await saveHooks?.after?.();
       return r;
