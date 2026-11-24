@@ -205,6 +205,27 @@ clients, `client-nodejs` and `client-php`, without the spec). The two files abov
 Pipedrive's published `openapi-v2.yaml` (as JSON, refreshed daily by its owner) and `openapi.yaml` (v1), pinned at a
 commit and by sha256.
 
+## Fix round 1
+
+**Problem.** The AI review (feature test US2 scenario 16, code review) failed: step 3 REPORT shows only the combined
+totals (Imported, Linked to CRM records, Not imported, "Already imported: n"). FR-025 and US2 scenario 16 ask for the
+counts per kind: people imported, organisations imported, people linked, organisations linked, already imported, not
+imported.
+
+**Cause.** `ReportStep.tsx` renders `Counts` with `view.totals` only. `getImportView` already returns `view.counts`
+(`{ people, organisations }`, each `{ imported, linked, already, notImported }`), but no component shows it.
+
+**Fix.** Keep the three total tiles and "Already imported: n" (the progress step is unchanged). Under them, on the
+report only, add a small table "// COUNTS" (design B `users import-table`): one row per ticked kind (People,
+Organisations; a kind not ticked has no row, except Organisations when it has any non-zero count, as people can bring
+their organisations), columns Imported, Linked, Already imported, Not imported, numbers with `en-GB` thousands
+separators. Column and row labels are fixed text in the component (as the existing table headers). No server, schema or
+message change.
+
+**Files.** `src/app/(app)/settings/pipedrive-import/KindCounts.tsx` (new, server component),
+`src/app/(app)/settings/pipedrive-import/ReportStep.tsx` (renders it), a test in
+`tests/integration/pipedrive-import.test.ts`.
+
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
