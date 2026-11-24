@@ -266,7 +266,7 @@ US1 → US2 (tags) → US3 (layouts) → US4 (pasted HTML, safe frame) → US5 (
 
 ## Fix round 1 (AI review 2026-11-24)
 
-- [ ] T061 [P] Write the failing tests first. (a) `tests/integration/campaign-merge-links.test.ts`, new case `// covers
+- [X] T061 [P] Write the failing tests first. (a) `tests/integration/campaign-merge-links.test.ts`, new case `// covers
   FR-009a, US2 scenario 5, Edge case "renamed and then deleted"`: save a draft with `{{Diet | none given}}` in the
   subject, a text block and pasted HTML; `updateField` renames it "Dietary needs"; `deleteField` deletes it with no save
   in between; `getCampaignById` shows `{{Dietary needs | none given}}` in all three, `unknownTags` lists it, the stored
@@ -278,13 +278,24 @@ US1 → US2 (tags) → US3 (layouts) → US4 (pasted HTML, safe frame) → US5 (
   case "Reply-to that is not an email address"`: render `CampaignEditor` with `renderToStaticMarkup` (as
   `campaign-preview-frame.test.ts` renders the preview) and check the `<form id="campaign-form"` tag has `novalidate`;
   render the Campaigns page row (or read `page.tsx` markup) and check the Status cell text is "Draft". Each fails now.
-- [ ] T062 Add `noValidate` to `#campaign-form` in `src/app/(app)/campaigns/CampaignEditor.tsx` (plan.md § Fix round 1,
+- [X] T062 Add `noValidate` to `#campaign-form` in `src/app/(app)/campaigns/CampaignEditor.tsx` (plan.md § Fix round 1,
   item 1).
-- [ ] T063 Keep a deleted field's last name: `StoredLink` gains `last?: string` and `shownLinks` uses live name → `last`
+- [X] T063 Keep a deleted field's last name: `StoredLink` gains `last?: string` and `shownLinks` uses live name → `last`
   → `name` in `src/server/campaigns/merge.ts`; in `deleteField` (`src/server/custom-fields/fields.ts`), for a `person`
   field, in the same transaction, add `"last"` with the field's name to each `campaigns.merge_links` entry of that field,
   without changing `version`, `updated_by` or `updated_at`; update `data-model.md` § Link (plan.md § Fix round 1,
   item 2).
-- [ ] T064 Show `messages.campaign_status_draft` in the Campaigns page Status column and the edit page header; remove
+- [X] T064 Show `messages.campaign_status_draft` in the Campaigns page Status column and the edit page header; remove
   the unused `messages.campaign_draft` (plan.md § Fix round 1, item 3).
-- [ ] T065 Run `npm test && npm run typecheck`; T061's tests pass and nothing else breaks.
+- [X] T065 Run `npm test && npm run typecheck`; T061's tests pass and nothing else breaks.
+
+## Fix round 2 (AI review 2026-11-24)
+
+- [ ] T066 Check first that it fails now: in `AGENTS.md`, `grep -c "The fake Pipedrive needs no seeding" AGENTS.md`
+  must print `1`, and that line must name both `campaigns.ts` and `segments.ts`. Now it prints `2` and each line names
+  only one. No repo test: it is a docs line (plan.md § Fix round 2).
+- [ ] T067 In `AGENTS.md` § Layout, the `src/seed/` entry: replace the two copies of the second line with one line
+  "files, custom fields: `custom-fields.ts`, campaigns: `campaigns.ts`, segments: `segments.ts`). The fake Pipedrive
+  needs no seeding." Change nothing else in `AGENTS.md`.
+- [ ] T068 Run T066's check again (it prints `1`, both seeders named), then `npm test && npm run typecheck` to confirm
+  nothing else changed.

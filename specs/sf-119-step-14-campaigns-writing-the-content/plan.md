@@ -214,6 +214,21 @@ Files to change: `src/app/(app)/campaigns/CampaignEditor.tsx`, `src/app/(app)/ca
 `tests/unit/campaign-editor-form.test.ts`. No migration (the `merge_links` column is already `jsonb`), no new
 dependency, no new outside service.
 
+## Fix round 2
+
+AI review (2026-11-24): one problem, in the docs only. The code passed (migration 0015 after 0014_segments, nav order
+Activities → Campaigns → Segments, the seeder before segments, `requireUser()` first in actions, preview values through
+`visiblePerson`).
+
+1. **`AGENTS.md` § Layout, the `src/seed/` entry, has its second line twice.** Cause: the merge of `main` (SF-120)
+   kept both versions of the line: one ends "campaigns: `campaigns.ts`).", the other "segments: `segments.ts`).". Each
+   copy leaves out the other seeder. Fix: keep one line, "files, custom fields: `custom-fields.ts`, campaigns:
+   `campaigns.ts`, segments: `segments.ts`). The fake Pipedrive needs no seeding." Rejected: removing the seeder list
+   and pointing to `src/seed/index.ts` (every other Layout entry names its files; the review asks for the one line).
+
+Files to change: `AGENTS.md` only. No code, no test file, no migration, no dependency, no outside service, no spec
+change (nothing the user sees changes).
+
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
