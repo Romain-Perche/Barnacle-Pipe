@@ -240,18 +240,33 @@ The AI review failed on three points. All three are reproduced and traced in the
   ends as stale and the import is paused (the row no longer stays `running`). Every step's `save` gets the same
   check, through `lockRow`.
 
-### Problem 2: a private deal of another owner is named in the importer's report (US1 scenario 8, FR-021, SC-005)
+### Problem 2: a private record of another owner is named in the importer's report (US1 scenario 8, FR-021, SC-005)
 
 - **Problem**: Linus imports a Margaret-only USD deal. His report's warnings show "Deal · SF122 Margaret secret USD
   Value in USD, not GBP: left out."
-- **Cause**: `planDealPage` (`records-page.ts`) builds every deal warning with the Pipedrive title as its label,
-  also for a deal that becomes private to another owner. The title is stored in the report and shown by
-  `ReportStep`.
-- **Fix**: in `planDealPage`, when the planned deal is private and its owner is not the importer, its warnings get no
-  Pipedrive title: the stored label is empty and the item carries `args.privateDeal = 1`. `ReportStep` (and
-  `itemText` / `warningLines`) show the label "a private deal" (`pipedrive_private_deal`) for such an item. The
-  title of such a deal is never written into the report. The count line "N private deals of other owners imported."
-  stays. Deals that are not imported are not CRM records, so their "// NOT IMPORTED" line keeps the Pipedrive title.
+- **Cause**: the planners build every report item (warning or "// NOT IMPORTED" line) with the Pipedrive name as its
+  label: `planDealPage` the deal title, `planPersonPage` (`page.ts`) the person's name, `planNotePage` the start of
+  the note, `planActivityPage` the subject, `planFileItem` and the files step the file name. This is so also when the
+  record is private to another owner or lands on one. The name is stored in the report and shown by `ReportStep`.
+- **Fix** (the person's reply, round 1: the same rule for every report line and warning): a record that is private
+  to another owner, or that is put on a record the importer cannot see, is never named in the report. That is:
+  - a deal that becomes private to another owner (`r.deal.private && r.deal.ownerId !== l.importerId`);
+  - a person that becomes, or is linked to, a private person of another owner (the people page's `privateOthers`
+    rule, and a linked person the importer cannot see);
+  - a note, activity or file whose CRM target is hidden from the importer (`isHidden(target, l.hidden)`), also when
+    it is not imported (empty note, note over 100,000 characters, bad subject, file over 25 MB, file copy failed …),
+    and in the files step's own items (`imports.ts`, stale or failed copy).
+  For such a record, every `ReportItem` it gives has an empty `label`, carries `args.privateKind` = `deal` /
+  `person` / `note` / `activity` / `file`, and no argument taken from the record itself (title, subject, text, file
+  name). `itemText` / `warningLines` / `reportLines` and `ReportStep` show the label "a private deal", "a private
+  person", "a private note", "a private activity" or "a private file" (`pipedrive_private_deal`,
+  `pipedrive_private_person`, new `pipedrive_private_note`, `pipedrive_private_activity`, `pipedrive_private_file` in
+  `messages.ts`). The count lines ("N private deals of other owners imported.", "N notes on private records of other
+  owners imported.", "N private people of other owners imported.") stay. The reasons that name the record an item
+  is on already go through `onDeal` / `onPerson` and `namesForReport` (no change).
+  A deal or person that is not imported is not a CRM record: its "// NOT IMPORTED" line keeps its Pipedrive name,
+  unless it is a note, activity or file on a hidden record (above).
+  `mergeReport` keeps items as they are; a report stored before the fix is not rewritten.
 
 ### Problem 3: the import never moves on when Pipedrive slows down every few calls (US5, SC-001)
 
@@ -275,8 +290,11 @@ The AI review failed on three points. All three are reproduced and traced in the
 ### Files to change
 
 - `src/server/pipedrive/imports.ts` (`lockRow`, `save`, `runFilesPart`, `runPart`, `fetchStep`, `writeRow`, `Row`).
-- `src/server/pipedrive/records-page.ts` (`planDealPage` warnings of private deals of other owners).
-- `src/server/pipedrive/report.ts` and `src/app/(app)/settings/pipedrive-import/ReportStep.tsx` (label of a private deal).
+- `src/server/pipedrive/records-page.ts` (`planDealPage`, `planNotePage`, `planActivityPage`, `planFileItem`: items
+  of private records unnamed), `src/server/pipedrive/page.ts` (`planPersonPage`: items of private people of other
+  owners unnamed), `imports.ts` (the files step's own items).
+- `src/server/pipedrive/report.ts`, `src/server/messages.ts` and `src/app/(app)/settings/pipedrive-import/ReportStep.tsx`
+  (the "a private …" labels).
 - `migrations/0014_pipedrive_fetched.sql`, `tests/integration/migrate.test.ts`, `tests/support/reset.ts` if needed.
 - Tests: `tests/unit/pipedrive-records-page.test.ts` (or the deal-page unit test file in use),
   `tests/integration/pipedrive-resume-records.test.ts`, `tests/integration/pipedrive-files.test.ts` (or the file

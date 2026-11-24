@@ -740,11 +740,18 @@ See plan.md § Fix round 1. Tests first: each one fails on the current code.
     `file_cleanup`, and the import paused with reason `token_refused`. The same test with the user deactivated
     (`deactivate()`) instead: no file of the batch listed, and the import row no longer `running`. These fail now
     (the reviewer saw 1 and 2 files listed).
-  - `// covers US1 scenario 8, FR-021, SC-005`: unit test of `planDealPage`: an owner-only USD deal of another CRM user
-    gives a warning with no Pipedrive title in its stored item (`JSON.stringify(plan)` does not contain the title)
-    and `args.privateDeal = 1`; the same deal owned by the importer keeps its title. Integration: Linus imports a
-    Margaret-only USD deal titled "SF122 Margaret secret USD"; the text of his report (`warningLines` /
-    `reportLines` with `namesForReport`) does not contain that title and contains "a private deal".
+  - `// covers US1 scenario 8, Edge case 8, Edge case 9, FR-021, SC-005`: unit tests of the planners, one per kind:
+    an owner-only USD deal of another CRM user (`planDealPage`); an owner-only person of another CRM user with a
+    warning, e.g. a missing organisation (`planPersonPage`); a note over 100,000 characters and an imported note with a
+    warning on a hidden deal (`planNotePage`); an activity with a 201-character subject and one with a too-long note on
+    a hidden deal (`planActivityPage`); a file over 25 MB on a hidden person (`planFileItem`). Each item has an empty
+    label, `args.privateKind` set, and `JSON.stringify(plan)` does not contain the title / name / start of text /
+    subject / file name. The same records owned by (or on a record seen by) the importer keep their names.
+    Integration: Linus imports, with Margaret owner-only records titled "SF122 Margaret secret …" (a USD deal, a
+    person with a warning, a too-long note, an activity with a 201-character subject and a file over 25 MB on that
+    deal); the text of his report (`reportLines`, `warningLines`, `itemText` with `namesForReport`) and the stored
+    `report` column contain none of the names, and contain "a private deal", "a private person", "a private note",
+    "a private activity" and "a private file". Margaret's own import of the same data names them.
   - `// covers US5 scenario 5, SC-001`: integration test with `fake.slowDownEvery(4, 1)` and, in a second case,
     `slowDownEvery(3, 1)`, on a data set with 20 deals that each have followers and participants: drive `runPart`
     in a loop (a `wait` answer moves the fake clock or the row's `wait_until` to now, no real waiting), with a cap
@@ -757,9 +764,13 @@ See plan.md § Fix round 1. Tests first: each one fails on the current code.
   the import's company, both `for share`, and returns why it fails. `runFilesPart`: on that failure, set the path due
   now, then pause (`token_refused` when the token is gone; paused when the user is not active), and return `stop`.
   `save` does the same for the other steps.
-- [ ] T074 [Fix] `records-page.ts` `planDealPage`: warnings of a deal private to another owner get an empty label and
-  `args.privateDeal = 1`. `report.ts` / `ReportStep.tsx`: show `messageFor("pipedrive_private_deal")` as the label of
-  such an item.
+- [ ] T074 [Fix] The private rule for every report item (plan.md § Fix round 1, Problem 2): `planDealPage` (deal
+  private to another owner), `planPersonPage` (person private to another owner, or linked to a person the importer
+  cannot see), `planNotePage` / `planActivityPage` / `planFileItem` and the files step's items in `imports.ts`
+  (target hidden from the importer, imported or not): empty label, `args.privateKind`, no argument from the record
+  itself. `messages.ts`: `pipedrive_private_note` "a private note", `pipedrive_private_activity` "a private
+  activity", `pipedrive_private_file` "a private file". `report.ts` (`itemText`, `warningLines`, the not-imported
+  rows) and `ReportStep.tsx`: show the matching "a private …" label for such an item.
 - [ ] T075 [Fix] `imports.ts`: a memo of the part's calls (keyed by call). `fetchStep` reads every call through it. On
   `PipedriveSlowDown`, `runPart` stores the memo with its step and cursor in `fetched`, in the update that sets
   `waiting`. The next part of the same step and cursor starts from it; `writeRow` clears it. `runFilesPart` reads
