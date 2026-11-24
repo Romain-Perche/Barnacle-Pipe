@@ -1,13 +1,13 @@
 // The Pipedrive import engine (SF-117 research.md §5–§6, data-model.md): one row per run in pipedrive_imports, moved on
 // part by part by the open import page (no cron, no background job). A part makes at most two Pipedrive calls (the
-// three of `prepare` excepted), always OUTSIDE any transaction, then saves the page in one sql.begin() that also moves
+// five of `prepare`, and a deal page's follower and participant calls, excepted), always OUTSIDE any transaction, then saves the page in one sql.begin() that also moves
 // the cursor: a record is saved whole or not at all, and a resumed or repeated part never saves twice (the row lock and
 // the step/cursor check throw a stale page away). Each page transaction locks organisations, person_emails and
 // pipedrive_links (as the CSV import does), so two imports of one company, or an import and a hand-made add, save one
 // page at a time and every check sees the other's rows. pipedrive_links (company + kind + Pipedrive id) is the
 // "never twice" key. Every query names its user: only the user who started an import can read or move it.
-// SF-122 (specs/sf-122-…/research.md, data-model.md): after people, the steps `pipelines` (matched by name or created,
-// in one locked transaction, no Pipedrive call), `deals` / `archived_deals` (20 a part, followers and participants
+// SF-122 (specs/sf-122-…/research.md, data-model.md): after people, the steps `pipelines` (read from Pipedrive, then
+// matched by name or created in one locked transaction), `deals` / `archived_deals` (20 a part, followers and participants
 // read one after the other, outside the transaction), `notes` and `activities` (200 a part) and `files` (copied one at
 // a time: download → path queued in file_cleanup → Storage upload → one transaction lists the file AND takes its path
 // off the queue; a part stops starting copies after 15 s or 25 MB). No Pipedrive or Storage call is ever made inside
@@ -45,7 +45,6 @@ import {
   type PdActivityType,
   type PdDeal,
   type PdField,
-  type PdFile,
   type PdNote,
   type PdOrganization,
   type PdPerson,
@@ -99,8 +98,6 @@ type Snapshot = {
   organizationFields: PdField[];
   // SF-122: read in `prepare` when Deals (and Activities) are ticked; stageMap written by the `pipelines` step.
   dealFields?: PdField[];
-  pipelines?: PdPipeline[];
-  stages?: PdStage[];
   activityTypes?: PdActivityType[];
   stageMap?: StageMap;
 };
@@ -266,7 +263,7 @@ type Fetched =
   | { kind: "count"; n: number; next: string | null }
   | { kind: "organisations"; items: PdOrganization[]; next: string | null }
   | { kind: "people"; items: PdPerson[]; next: string | null; orgs: PdOrganization[]; noMarketing: boolean }
-  | { kind: "pipelines" }
+  | { kind: "pipelines"; pipelines: PdPipeline[]; stages: PdStage[] }
   | { kind: "deals"; items: PdDeal[]; next: string | null; participants: Map<number, { personId: number; name: string }[]>; followers: Map<number, number[]> }
   | { kind: "notes"; items: PdNote[]; next: string | null }
   | { kind: "activities"; items: PdActivity[]; next: string | null }
@@ -297,11 +294,7 @@ async function fetchStep(token: string, row: Row): Promise<Fetched> {
       const personFields = row.want_people ? await allFields(token, "person") : [];
       const organizationFields = await allFields(token, "organization");
       const snapshot: Snapshot = { users: Object.fromEntries(users.map((u) => [String(u.id), { name: u.name, email: u.email }])), personFields, organizationFields };
-      if (row.want_deals) {
-        snapshot.dealFields = await allFields(token, "deal");
-        snapshot.pipelines = await all((c) => listPipelines(token, c));
-        snapshot.stages = await all((c) => listStages(token, c));
-      }
+      if (row.want_deals) snapshot.dealFields = await allFields(token, "deal");
       if (row.want_activities) snapshot.activityTypes = await listActivityTypes(token);
       return { kind: "prepare", snapshot };
     }
@@ -331,7 +324,9 @@ async function fetchStep(token: string, row: Row): Promise<Fetched> {
       return { kind: "count", n: page.items.filter((f) => f.active).length, next: v1Next(page.next) };
     }
     case "pipelines":
-      return { kind: "pipelines" };
+      // Read here rather than in `prepare`, so that no part needs more than five calls (a part is repeated whole after
+      // a slow-down).
+      return { kind: "pipelines", pipelines: await all((c) => listPipelines(token, c)), stages: await all((c) => listStages(token, c)) };
     case "deals":
     case "archived_deals": {
       const page = await listDeals(token, { archived: row.step === "archived_deals", cursor: row.cursor, limit: DEAL_PAGE });
@@ -676,12 +671,12 @@ const pageReport = (kind: PageReport["kind"], o: Partial<PageReport>): PageRepor
 
 // The `pipelines` step: every Pipedrive pipeline and stage matched or created, in one transaction holding the tables
 // (so two imports, or an import and an admin, never create one name twice). Inserts only.
-async function savePipelines(db: Sql, snapshot: Snapshot): Promise<{ stageMap: StageMap; page: PageReport }> {
+async function savePipelines(db: Sql, pdPipelines: PdPipeline[], pdStages: PdStage[]): Promise<{ stageMap: StageMap; page: PageReport }> {
   await db`lock table pipelines, stages in share row exclusive mode`;
   const pipelines = await db<{ id: number; name: string; position: number }[]>`select id::int as id, name, position from pipelines`;
   const stages = await db<{ id: number; pipelineId: number; name: string; position: number }[]>`
     select id::int as id, pipeline_id::int as "pipelineId", name, position from stages`;
-  const plan = planPipelines(snapshot.pipelines ?? [], snapshot.stages ?? [], { pipelines, stages });
+  const plan = planPipelines(pdPipelines, pdStages, { pipelines, stages });
   const created: { id: number; stages: number[] }[] = [];
   for (const p of plan.newPipelines) {
     const [row] = await db<{ id: number }[]>`insert into pipelines (name, position) values (${p.name}, ${p.position}) returning id::int as id`;
@@ -944,7 +939,7 @@ async function save(userId: number, row: Row, f: Fetched): Promise<boolean> {
       }
       advance(f.next);
     } else if (f.kind === "pipelines") {
-      const saved = await savePipelines(db, snapshot!);
+      const saved = await savePipelines(db, f.pipelines, f.stages);
       snapshot = { ...snapshot!, stageMap: saved.stageMap };
       mergeReport(report, counts, saved.page);
       advance(null);

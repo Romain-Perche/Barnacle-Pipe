@@ -100,16 +100,30 @@ OAuth code flow and database sessions.
   `reportLines`, `namesForReport` through `visiblePerson()`). `pipedrive_links` (company + kind + Pipedrive id) is the
   "never twice" key; `pipedrive_imports` holds one run per user (one open at a time), `pipedrive_connections` one sealed
   token per user. Timeline kinds `pipedrive_imported` / `pipedrive_unsubscribed`.
+  SF-122 deals, notes, activities and files: `html.ts` (pure `htmlToText`: note HTML → plain text), `deal-rules.ts` (pure:
+  `dealFromPipedrive`, `activityFromPipedrive`, `noteFromPipedrive`, `fileCheck`, `targetOf` deal > person > organisation,
+  `ukFromUtc`, `durationMinutes`, `formatMb`, `notePreview`), `records-page.ts` (pure: `planPipelines`, `planDealPage`,
+  `planNotePage`, `planActivityPage`, `planFileItem`). Steps after `people`: `pipelines` (read, then matched or created in
+  one transaction holding `pipelines, stages`; inserts only, by any user), `deals` / `archived_deals` (20 a part;
+  followers and participants read one after the other before the transaction), `notes`, `activities` (200 a part), `files`
+  (one copy at a time, cursor `"<start>:<index>"`, no new copy after 15 s or 25 MB). The file copy rule: download → the path
+  queued in `file_cleanup` (committed) → Storage upload → one transaction lists the file and deletes its `file_cleanup`
+  row; a stale or duplicate copy leaves its path due now. A download redirect (Pipedrive's file host) is followed once
+  WITHOUT the token. `pipedrive_links` also covers kinds deal, note, activity and file (always `how = 'imported'`, ids
+  `deal_id` / `note_id` / `activity_id` / `file_id`); a record skipped for a missing target gets no link. An import notifies
+  nobody (no `note_mentions`; an activity's `assigned_by` is its assignee). `onSaveForTests` (tests only) hooks every import
+  transaction.
 - `src/app/(app)/settings/` (SF-117) — Settings (`page.tsx`, `PipedriveSection.tsx`, `RemoveTokenConfirm.tsx`,
   `actions.ts`), linked by `footerNav` in `nav.ts` at the bottom of the sidebar; `settings/pipedrive-import/` — the import
   page (`page.tsx`, `maxDuration = 60`; `ChooseStep.tsx`, `ProgressStep.tsx`, `ReportStep.tsx`, `Counts.tsx`,
-  `StopConfirm.tsx`, `actions.ts`) and `ImportRunner.tsx` (client: one part, `router.refresh()`, the next part a second
+  `StopConfirm.tsx`, `actions.ts`, SF-122 `KindChoice.tsx`: client, the six checkboxes, Deals / Notes / Activities / Files
+  tick and lock People and Organisations) and `ImportRunner.tsx` (client: one part, `router.refresh()`, the next part a second
   later or after Pipedrive's wait). `records/import/StepBar.tsx` takes a `steps` prop.
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
   files, custom fields: `custom-fields.ts`). The fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage and Pipedrive
-  v2 / v1 schemas).
+  v2 / v1 schemas, plus the full Pipedrive v1 copy `pipedrive_v1_full_openapi.yml`).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),
   `tests/support/reset.ts` (empties every app table; lead sources back to the six starting ones).
 
@@ -136,7 +150,8 @@ npm test && npm run typecheck
 Each test names what it covers (`// covers FR-003, US1 scenario 2`). Fakes only for outside services
 (Google Sign-In: `tests/fakes/google.ts`; Supabase Storage: `tests/fakes/storage.ts`, checked against
 `storage_v0_openapi.json`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
-`pipedrive_v2_openapi.json` and `pipedrive_v1_openapi.yml` by `tests/fakes/pipedrive-schema.ts`; each checked against
+`pipedrive_v2_openapi.json` and `pipedrive_v1_openapi.yml` (a v1 path that file lacks: `pipedrive_v1_full_openapi.yml`;
+downloads checked for their content type only; the fake file host refuses the token) by `tests/fakes/pipedrive-schema.ts`; each checked against
 its schema; see `.factory/test-env.md`).
 
 <!-- OPENWIKI:START -->

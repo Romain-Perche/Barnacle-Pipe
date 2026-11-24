@@ -576,7 +576,8 @@ export function fakePipedrive(): FakePipedrive {
 export const DEV_TOKEN = "fake-pipedrive-token";
 export const DEV_OTHER_TOKEN = "fake-pipedrive-other";
 
-// Deterministic data covering every case of the spec: 60 organisations, 300 people (contracts § The fake).
+// Deterministic data covering every case of the spec: 60 organisations, 300 people (contracts § The fake); SF-122: 2
+// pipelines, 30 deals, 40 notes, 30 activities and 6 files (specs/sf-122-…/contracts/pipedrive-api.md § The fake).
 // Owners: Fake Person (ada@barnacle.ai, the seeded admin), Margaret Pipedrive Fake (margaret@barnacle.ai) and
 // Jane Fake (jane@fake.example: no CRM user).
 export function buildDevFake(): FakePipedrive {
@@ -649,5 +650,84 @@ export function buildDevFake(): FakePipedrive {
       },
     });
   }
+  addDevRecords(f, CO, orgIds);
   return f;
+}
+
+const enc = (text: string) => new TextEncoder().encode(text);
+
+// SF-122: deals in two pipelines (open, won, lost, owner-only, in USD, archived), notes (one with HTML and a mention, one
+// on a lead), activities (each type, done and planned, a "deadline") and files (a PDF, a PNG, a 26 MB one, an empty one,
+// a Drive link, an email attachment). Person ids are 61–360 (after the 60 organisations).
+function addDevRecords(f: FakePipedrive, CO: number, orgIds: number[]) {
+  const personId = (i: number) => 60 + i;
+  f.addField(CO, "deal", { field_code: "label", field_name: "Label", field_type: "set", is_custom_field: false, options: [{ id: 31, label: "Hot" }, { id: 32, label: "Strategic" }] });
+  f.addField(CO, "deal", { field_code: "fake_deal_field_01", field_name: "Budget", field_type: "double", is_custom_field: true });
+  const sales = f.addPipeline(CO, { name: "Fake Sales", order_nr: 1 });
+  const partners = f.addPipeline(CO, { name: "Fake Partners", order_nr: 2 });
+  const salesStages = ["Lead", "Qualified", "Proposal", "Negotiation"].map((name, i) => f.addStage(CO, { pipeline_id: sales, name, order_nr: i + 1 }));
+  const partnerStages = ["Intro", "Call", "Pilot", "Contract", "Live"].map((name, i) => f.addStage(CO, { pipeline_id: partners, name, order_nr: i + 1 }));
+  const deals: number[] = [];
+  for (let i = 1; i <= 30; i++) {
+    const status = i % 7 === 0 ? "won" : i % 9 === 0 ? "lost" : "open";
+    deals.push(
+      f.addDeal(
+        CO,
+        {
+          title: `Fake deal ${String(i).padStart(2, "0")}`,
+          owner_id: i % 5 === 0 ? 2 : i % 11 === 0 ? 3 : 1,
+          stage_id: i % 3 === 0 ? partnerStages[i % 5] : salesStages[i % 4],
+          person_id: personId(i * 3),
+          org_id: i % 4 === 0 ? orgIds[i] : null,
+          value: i === 13 ? 2500 : i * 1000,
+          currency: i === 13 ? "USD" : "GBP",
+          add_time: `2025-0${(i % 9) + 1}-10 09:00:00`,
+          stage_change_time: i % 2 === 0 ? `2025-10-${String((i % 27) + 1).padStart(2, "0")} 10:00:00` : null,
+          status,
+          won_time: status === "won" ? "2025-11-01 12:00:00" : null,
+          lost_time: status === "lost" ? "2025-11-02 12:00:00" : null,
+          lost_reason: status === "lost" && i !== 18 ? "Budget went elsewhere" : null,
+          visible_to: i === 10 ? 1 : 3,
+          is_archived: i === 29,
+          expected_close_date: i % 6 === 0 ? "2026-12-31" : null,
+          label_ids: i % 4 === 0 ? [31] : i % 5 === 0 ? [32] : [],
+          custom_fields: { fake_deal_field_01: i % 3 === 0 ? i * 10 : null },
+        },
+        i % 8 === 0 ? { followers: [1, 2, 3], participants: [personId(i * 3), personId(i * 3 + 1)] } : {},
+      ),
+    );
+  }
+  for (let i = 1; i <= 40; i++) {
+    const on = i === 40 ? { lead_id: "fake-lead-0001" } : i % 3 === 0 ? { deal_id: deals[i % 30] } : i % 3 === 1 ? { person_id: personId(i) } : { org_id: orgIds[i] };
+    f.addNote(CO, {
+      content: i === 1 ? '<p>Called <b>back</b>, see <a href="https://fake.example/doc">the doc</a><br>Thanks <span class="mention">@Jane Fake</span></p>' : `<p>Fake note ${i}</p>`,
+      user_id: i % 6 === 0 ? 3 : 1,
+      add_time: `2025-10-${String((i % 28) + 1).padStart(2, "0")} 08:30:00`,
+      ...on,
+    });
+  }
+  const types = ["call", "meeting", "task", "deadline", "email", "lunch"];
+  for (let i = 1; i <= 30; i++) {
+    f.addActivity(CO, {
+      subject: `Fake ${types[i % 6]} ${i}`,
+      type: types[i % 6],
+      owner_id: i % 4 === 0 ? 2 : 1,
+      deal_id: i % 2 === 0 ? deals[i % 30] : null,
+      person_id: i % 3 === 0 ? personId(i * 3) : null,
+      due_date: `2026-${i % 2 === 0 ? "11" : "12"}-${String((i % 28) + 1).padStart(2, "0")}`,
+      due_time: i % 3 === 0 ? "09:30" : null,
+      duration: i % 3 === 0 ? "00:30" : null,
+      done: i % 5 === 0,
+      marked_as_done_time: i % 5 === 0 ? "2026-11-01 10:00:00" : null,
+    });
+  }
+  const pdf = enc("%PDF-1.4\n% fake proposal\n%%EOF\n");
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, 1]);
+  f.addFile(CO, { name: "Fake proposal.pdf", user_id: 1, deal_id: deals[0], add_time: "2025-10-05 11:00:00" }, pdf);
+  f.addFile(CO, { name: "Fake logo.png", user_id: 2, person_id: personId(3) }, png);
+  // 26 MB of one repeated byte: over the 25 MB limit, never downloaded.
+  f.addFile(CO, { name: "Fake huge video.mp4", user_id: 1, deal_id: deals[1] }, new Uint8Array(27_367_014).fill(7));
+  f.addFile(CO, { name: "Fake empty.txt", user_id: 1, org_id: orgIds[2] }, new Uint8Array(0));
+  f.addFile(CO, { name: "Fake Drive doc", user_id: 1, deal_id: deals[2], remote_location: "googledrive" });
+  f.addFile(CO, { name: "Fake attachment.pdf", user_id: 1, deal_id: deals[3], mail_message_id: "fake-mail-1" }, pdf);
 }

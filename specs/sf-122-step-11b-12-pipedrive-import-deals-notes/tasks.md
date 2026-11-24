@@ -56,14 +56,14 @@ There are no browser tests (docs/DECISIONS.md, 2026-11-23). Each test file names
 
 **Purpose**: the third Pipedrive schema and the migration.
 
-- [ ] T001 Add the full v1 schema to `scripts/fetch-schemas.mjs`. Append
+- [x] T001 Add the full v1 schema to `scripts/fetch-schemas.mjs`. Append
   `{ file: "pipedrive_v1_full_openapi.yml", url: "https://raw.githubusercontent.com/konfig-sdks/openapi-examples/161ab49c45e45825ca3832945c59a3ba904321ba/pipedrive/openapi.yaml", sha256: "24230787d0c71b1e528a2824e8aa6d3137db26aa57973e65f3819b1fce825665" }`
   to `SCHEMAS`. Update the head comment: the full v1 file is used by `tests/fakes/pipedrive.ts` for the v1 paths the
   Zenika file lacks. Run `npm run test:schemas`.
-- [ ] T002 [P] Extend `tests/unit/fetch-schemas.test.ts` (`// SF-122: the full Pipedrive v1 schema`). The fresh copy
+- [x] T002 [P] Extend `tests/unit/fetch-schemas.test.ts` (`// SF-122: the full Pipedrive v1 schema`). The fresh copy
   downloads `pipedrive_v1_full_openapi.yml`, and once parsed with `yaml`'s `parse`, its `paths` contain
   `/deals/{id}/participants`, `/files/{id}/download`, `/notes`, `/files` and `/activityTypes`.
-- [ ] T003 Write `migrations/0013_pipedrive_deals.sql` exactly as data-model.md § Migration. First confirm the 0012
+- [x] T003 Write `migrations/0013_pipedrive_deals.sql` exactly as data-model.md § Migration. First confirm the 0012
   constraint names (`pipedrive_imports_step_check`, `pipedrive_imports_pause_reason_check`,
   `pipedrive_links_kind_check`) with `select conname from pg_constraint where conrelid = 'pipedrive_imports'::regclass`
   (and likewise for `pipedrive_links`). The file holds:
@@ -88,7 +88,7 @@ There are no browser tests (docs/DECISIONS.md, 2026-11-23). Each test file names
     - four partial indexes `pipedrive_links_{deal,note,activity,file}_idx … where <col> is not null`.
   - No new table, no change to the timeline kind check, no `begin` / `commit` / `concurrently`. Renumber if `0013` is
     taken when merging.
-- [ ] T004 [P] Extend `tests/integration/migrate.test.ts` (`// covers SF-122 data-model.md § Migration`):
+- [x] T004 [P] Extend `tests/integration/migrate.test.ts` (`// covers SF-122 data-model.md § Migration`):
   - the twelve new columns with their defaults;
   - the records check refuses `want_deals = true, want_people = false`;
   - the step check accepts `'archived_deals'` and refuses `'emails'`;
@@ -103,18 +103,18 @@ There are no browser tests (docs/DECISIONS.md, 2026-11-23). Each test file names
 
 **Purpose**: shared helpers, the widened report and counts, the messages, the step machine. Every story needs them.
 
-- [ ] T005 [P] In `src/server/imports/bulk.ts`:
+- [x] T005 [P] In `src/server/imports/bulk.ts`:
   - `newIds(db, table)` accepts `"persons" | "organisations" | "deals" | "timeline_events" | "activities"`;
   - `insertCustomValues(db, kind, …)` accepts kind `"deals"` (target column `deal_id`), keeping `people` /
     `organisations` unchanged.
 
   Do not change the `ImportKind` of the CSV import: give the function its own `"people" | "organisations" | "deals"`
   parameter type.
-- [ ] T006 [P] Add an option to `putSigned(url, bytes, contentType, { timeoutMs = 10_000 } = {})` in
+- [x] T006 [P] Add an option to `putSigned(url, bytes, contentType, { timeoutMs = 10_000 } = {})` in
   `src/server/files/storage.ts`. Its comment now says it is used by the fake data and the Pipedrive import. Add an
   optional `addedAt?: Date` to `insertFile` in `src/server/files/files.ts`. It sets `files.added_at` and the
   `file_added` event's `created_at` (default `now()`). The existing callers are unchanged.
-- [ ] T007 [P] Add every code of contracts/routes.md § Messages to `src/server/messages.ts`, verbatim:
+- [x] T007 [P] Add every code of contracts/routes.md § Messages to `src/server/messages.ts`, verbatim:
   - twelve fixed codes, from `pipedrive_emails_note` to `pipedrive_private_person`;
   - templates, from `pipedrive_pipeline_added` to `pipedrive_duration_left_out`, with `counted()` for the plurals;
   - `PIPEDRIVE_KIND_WORDS` gains `deals: "Deals"`, `notes: "Notes"`, `activities: "Activities"`, `files: "Files"`;
@@ -122,7 +122,7 @@ There are no browser tests (docs/DECISIONS.md, 2026-11-23). Each test file names
 
   Quote every Pipedrive argument with `'…'`. A unit test in `tests/unit/pipedrive-messages.test.ts` checks the singular
   and plural forms of each counted template and `pipedrive_file_too_large("26.1")` → "Over 25 MB (26.1 MB).".
-- [ ] T008 Widen `src/server/pipedrive/report.ts` per data-model.md § Counts and report:
+- [x] T008 Widen `src/server/pipedrive/report.ts` per data-model.md § Counts and report:
   - `Counts` gets `deals`, `notes`, `activities` and `files`;
   - `RecordKind` (in `page.ts`) gets `"deal" | "note" | "activity" | "file"`;
   - `ListMiss.list` gets `"deal_label"`;
@@ -137,7 +137,7 @@ There are no browser tests (docs/DECISIONS.md, 2026-11-23). Each test file names
 
   `tests/unit/pipedrive-report.test.ts` (`// covers FR-019`): an SF-117 report JSON reads with zeros, and merging two
   pages sums the type and elsewhere counters.
-- [ ] T009 In `src/server/pipedrive/imports.ts`, widen the step machine only (no new saver yet):
+- [x] T009 In `src/server/pipedrive/imports.ts`, widen the step machine only (no new saver yet):
   - `Step` and `ORDER` in the order of data-model.md;
   - `nextStep` skips `count_deals` / `count_archived_deals` / `pipelines` / `deals` / `archived_deals` unless
     `want_deals`, and the notes, activities and files steps unless their flag;
@@ -150,7 +150,7 @@ There are no browser tests (docs/DECISIONS.md, 2026-11-23). Each test file names
 
   `startPipedriveImportAction` in `src/app/(app)/settings/pipedrive-import/actions.ts` reads `deals`, `notes`,
   `activities` and `files` (`=== "on"`).
-- [ ] T010 [P] Write `src/server/pipedrive/html.ts`: `htmlToText(html: string): string` (research.md §6).
+- [x] T010 [P] Write `src/server/pipedrive/html.ts`: `htmlToText(html: string): string` (research.md §6).
   - `<br>` and the end of `p`, `div`, `li`, `h1`–`h6` and `tr` → `\n`; `<li>` → `- `.
   - `<a href="u">t</a>` → `t`, plus ` (u)` when `u` ≠ `t`, keeping only `http:`, `https:` and `mailto:` addresses.
   - Every other tag is removed, as are `script` / `style` contents.
@@ -163,15 +163,15 @@ There are no browser tests (docs/DECISIONS.md, 2026-11-23). Each test file names
   - a mention span → "@Jane Fake";
   - `<a href="https://evil.example">Click</a>` → `Click (https://evil.example)`;
   - `&lt;b&gt;` → `<b>` as text.
-- [ ] T011 [P] Export `ownerOf` from `src/server/pipedrive/page.ts`, unchanged, for reuse by the new planners.
-- [ ] T012 Extend the API types and reading helpers in `src/server/pipedrive/api.ts`:
+- [x] T011 [P] Export `ownerOf` from `src/server/pipedrive/page.ts`, unchanged, for reuse by the new planners.
+- [x] T012 Extend the API types and reading helpers in `src/server/pipedrive/api.ts`:
   - the types `PdDeal`, `PdActivity`, `PdNote`, `PdFile`, `PdPipeline`, `PdStage` and `PdActivityType`, exactly as in
     contracts/pipedrive-api.md;
   - a `getV1Paged(token, path, { start, limit, sort })` helper that returns `{ data, next }` from
     `additional_data.pagination` (`next_start` when `more_items_in_collection`).
 
   No new calls yet: each story adds the ones it uses.
-- [ ] T013 [P] In `src/app/(app)/settings/pipedrive-import/ProgressStep.tsx`, `Counts.tsx` and `KindCounts.tsx`:
+- [x] T013 [P] In `src/app/(app)/settings/pipedrive-import/ProgressStep.tsx`, `Counts.tsx` and `KindCounts.tsx`:
   - render a progress line and bar per item of `view.progress` (six kinds possible) using `pipedrive_progress`;
   - `KindCounts` rows for Deals, Notes, Activities and Files when wanted or non-zero, with Linked "—" for them;
   - the paused state shows `messageFor("files_unreachable")` for pause reason `files_unreachable`, with `[ CONTINUE ]`.
@@ -190,7 +190,7 @@ pipeline and stage, and the report lines are right.
 
 ### Tests for User Story 1
 
-- [ ] T014 [US1] Download `pipedrive_v2_openapi.json` from
+- [x] T014 [US1] Download `pipedrive_v2_openapi.json` from
   `https://github.com/soenneker/soenneker.pipedrive.openapiclient/blob/77695f9076c899e2ba1e7e8eb029aabb28abed27/openapi.json`
   at commit `77695f9076c899e2ba1e7e8eb029aabb28abed27` into `.factory/schemas/` (`git init -q /tmp/soenneker.pipedrive.openapiclient && git -C /tmp/soenneker.pipedrive.openapiclient fetch -q --depth 1 https://github.com/soenneker/soenneker.pipedrive.openapiclient 77695f9076c899e2ba1e7e8eb029aabb28abed27 && git -C /tmp/soenneker.pipedrive.openapiclient show FETCH_HEAD:openapi.json > .factory/schemas/pipedrive_v2_openapi.json`),
   and make the fake of Pipedrive API v2 refuse a request that the schema refuses: a test sends a wrong field and must
@@ -205,7 +205,7 @@ pipeline and stage, and the report lines are right.
 
   `GET /api/v2/deals?include_fields=followers_count,participants_count` passes, and so do `/api/v2/deals/archived`,
   `/api/v2/deals/{id}/followers`, `/api/v2/pipelines`, `/api/v2/stages` and `/api/v2/dealFields`.
-- [ ] T015 [US1] Download `pipedrive_v1_full_openapi.yml` from
+- [x] T015 [US1] Download `pipedrive_v1_full_openapi.yml` from
   `https://github.com/konfig-sdks/openapi-examples/blob/161ab49c45e45825ca3832945c59a3ba904321ba/pipedrive/openapi.yaml`
   at commit `161ab49c45e45825ca3832945c59a3ba904321ba` into `.factory/schemas/` (`git init -q /tmp/openapi-examples && git -C /tmp/openapi-examples fetch -q --depth 1 https://github.com/konfig-sdks/openapi-examples 161ab49c45e45825ca3832945c59a3ba904321ba && git -C /tmp/openapi-examples show FETCH_HEAD:pipedrive/openapi.yaml > .factory/schemas/pipedrive_v1_full_openapi.yml`),
   and make the fake of Pipedrive API v1 (full copy) refuse a request that the schema refuses: a test sends a wrong
@@ -223,7 +223,7 @@ pipeline and stage, and the report lines are right.
   - `GET /v1/files/5/download?inline=1`.
 
   `GET /v1/deals/5/participants?start=0&limit=100` passes.
-- [ ] T016 [P] [US1] Supabase Postgres has no public schema on GitHub. The tests use the real local Postgres, and the
+- [x] T016 [P] [US1] Supabase Postgres has no public schema on GitHub. The tests use the real local Postgres, and the
   new code follows Supabase's documentation https://supabase.com/docs/guides/database/connecting-to-postgres
   (transaction-mode pooler). It copies these limits: no prepared statements (`prepare: false`, unchanged), no session
   state (no `set`, `listen` or session advisory lock), every multi-statement change in one `sql.begin()`, at most 5
@@ -233,7 +233,7 @@ pipeline and stage, and the report lines are right.
   - Add a test in `tests/integration/pipedrive-deals.test.ts` that wraps the installed Pipedrive fetch and fails if a
     call happens while a `sql.begin()` of the import is open. Do it by counting calls between a `before` / `after`
     hook on `save`: export a test-only `onSaveForTests(fn)` from `imports.ts`, which throws outside `APP_ENV=test`.
-- [ ] T017 [P] [US1] Write the unit tests `tests/unit/pipedrive-deal-rules.test.ts` for `dealFromPipedrive`
+- [x] T017 [P] [US1] Write the unit tests `tests/unit/pipedrive-deal-rules.test.ts` for `dealFromPipedrive`
   (`// covers FR-005, FR-007, FR-008, US1 scenarios 4, 6, 8, 9, 11, edge cases`):
   - Title: trimmed. Empty → the form's required message. 201 characters → the form's too-long message (not imported).
   - Value: GBP 1234.5 → 123450 pence. USD → no value and the warning "Value in USD, not GBP: left out.". Negative or
@@ -250,7 +250,7 @@ pipeline and stage, and the report lines are right.
     CRM user). Else shared, with `created_by` = the importer.
   - Labels: matched to offered deal labels ignoring case and spaces. An unmatched one goes in `lists`
     (`deal_label`), counted.
-- [ ] T018 [P] [US1] Write the unit tests `tests/unit/pipedrive-pipelines.test.ts` for `planPipelines`
+- [x] T018 [P] [US1] Write the unit tests `tests/unit/pipedrive-pipelines.test.ts` for `planPipelines`
   (`// covers FR-004, US1 scenarios 2–3, edge cases`):
   - "exec dinner " matches "Exec Dinner".
   - A missing stage is added at the end in Pipedrive `order_nr` order.
@@ -259,7 +259,7 @@ pipeline and stage, and the report lines are right.
   - "Sales" and "sales " → one CRM pipeline and one `merged` item (likewise for two stages).
   - A 101-character name → `notCreated`, with its stages mapped to `null`.
   - Nothing is ever renamed or reordered: the plan holds inserts only.
-- [ ] T019 [US1] Write `tests/integration/pipedrive-deals.test.ts` (`// covers FR-004–FR-008, US1 scenarios 1–11, SC-003, SC-005`),
+- [x] T019 [US1] Write `tests/integration/pipedrive-deals.test.ts` (`// covers FR-004–FR-008, US1 scenarios 1–11, SC-003, SC-005`),
   with the fake set of the Independent Test (add a `seedDealsSet(fake)` to `tests/integration/pipedrive-helpers.ts`).
   Import as Linus Fake (not an admin) with Deals ticked, then assert:
   - **Pipelines and stages**: the CRM has "Fake Partners" with 5 stages, and "Proposal" at the end of Sales. The board
@@ -276,7 +276,7 @@ pipeline and stage, and the report lines are right.
     imported.". A participant not imported → the warning "Linked person 'Ada Example' was not imported: left out.".
   - **Privacy**: the owner-only deal is visible to its owner only (`visibleDeal`).
   - **Admin pages**: `addPipeline` / `addStage` called by Linus Fake still refuse (not an admin).
-- [ ] T020 [P] [US1] Write `tests/integration/pipedrive-choose.test.ts` (`// covers FR-001, FR-002, US1 scenario 1, edge case 1`):
+- [x] T020 [P] [US1] Write `tests/integration/pipedrive-choose.test.ts` (`// covers FR-001, FR-002, US1 scenario 1, edge case 1`):
   - `startImport` with `deals: true, people: false, organisations: false` stores `want_people` and
     `want_organisations` true;
   - with only `notes: true` and no consent → `pipedrive_consent_required`;
@@ -285,12 +285,12 @@ pipeline and stage, and the report lines are right.
 
 ### Implementation for User Story 1
 
-- [ ] T021 [P] [US1] Add `listPipelines`, `listStages`, `listDeals({ archived, cursor, limit })` (with
+- [x] T021 [P] [US1] Add `listPipelines`, `listStages`, `listDeals({ archived, cursor, limit })` (with
   `include_fields=followers_count,participants_count`), `dealFollowers(token, dealId)` and
   `dealParticipants(token, dealId)` (v1, reading `person_id.value`, else `person_id` as a number, else `id`) to
   `src/server/pipedrive/api.ts`. Also allow `listFields(token, "deal", cursor)` → `/api/v2/dealFields`. Follow
   contracts/pipedrive-api.md § Calls exactly.
-- [ ] T022 [P] [US1] Extend `src/server/pipedrive/fake-pipedrive.ts`:
+- [x] T022 [P] [US1] Extend `src/server/pipedrive/fake-pipedrive.ts`:
   - per company: `dealFields`, `pipelines`, `stages`, `deals` (with `is_archived` and `is_deleted`), `followers` (deal →
     user ids) and `participants` (deal → person ids);
   - the helpers `addPipeline`, `addStage`, `addDeal` and `deleteDeal`;
@@ -302,19 +302,19 @@ pipeline and stage, and the report lines are right.
   - every property must be one the schemas declare (T014 / T015 catch the rest).
 
   Update the file's head comment.
-- [ ] T023 [US1] Write `src/server/pipedrive/deal-rules.ts` (pure): `dealFromPipedrive(d, ctx)`, per research.md §5.
+- [x] T023 [US1] Write `src/server/pipedrive/deal-rules.ts` (pure): `dealFromPipedrive(d, ctx)`, per research.md §5.
   It reuses `parseMoney`, `parseDate`, `validateLostReason` and `MAX_PENCE` from `src/server/deals/rules.ts`, the
   deal form's title rule, `parseAddTime` and `isOwnerOnly` from `rules.ts`, and `ownerOf` from `page.ts`.
-- [ ] T024 [US1] Allow kind `"deal"` in `planFields` in `src/server/pipedrive/rules.ts`. For deals, the field with
+- [x] T024 [US1] Allow kind `"deal"` in `planFields` in `src/server/pipedrive/rules.ts`. For deals, the field with
   code `label` gives `labelOptions` (deal label names by option id). There are no built-in names for deals.
-- [ ] T025 [US1] Write `planPipelines(pdPipelines, pdStages, crm)` and `planDealPage(items, lookups)` in
+- [x] T025 [US1] Write `planPipelines(pdPipelines, pdStages, crm)` and `planDealPage(items, lookups)` in
   `src/server/pipedrive/records-page.ts` (pure).
   - `planDealPage` takes the links of the persons and organisations (`Map<pdId, crmId | null>`), the names of records
     not imported (from the report), the `stageMap`, the active users, the deal labels and the fields plan.
   - It returns `adds` (with their followers, other people, labels and custom values), `already`, `notImported`
     (reasons from research.md §5), `warnings`, `lists`, `choices`, `owners`, `privateDeals` and `done`.
   - Deleted Pipedrive deals are passed over and not counted.
-- [ ] T026 [US1] In `src/server/pipedrive/imports.ts`, add the deal steps:
+- [x] T026 [US1] In `src/server/pipedrive/imports.ts`, add the deal steps:
   - **`prepare`**: when `want_deals`, also read every page of `dealFields`, `pipelines` and `stages` into the
     snapshot.
   - **Counting**: `count_deals` / `count_archived_deals` count non-deleted deals 500 at a time.
@@ -337,13 +337,13 @@ pipeline and stage, and the report lines are right.
     - the links (kind `deal`, `how = 'imported'`).
 
     Then move the cursor, `deals_done` and `deals_total`.
-- [ ] T027 [US1] Extend `src/server/pipedrive/report.ts`:
+- [x] T027 [US1] Extend `src/server/pipedrive/report.ts`:
   - `namesForReport` loads deal titles of `notImported` / warnings args `dealId` through `visibleDeal()` (hidden →
     `pipedrive_private_deal`), and people through `visiblePerson()` (hidden → `pipedrive_private_person`);
   - `itemText` covers the new deal codes;
   - a new `pipelineLines(report)` gives the added, merged and not-created lines;
   - `reportLines` adds `pipedrive_private_deals`.
-- [ ] T028 [US1] Write `src/app/(app)/settings/pipedrive-import/KindChoice.tsx` (`"use client"`):
+- [x] T028 [US1] Write `src/app/(app)/settings/pipedrive-import/KindChoice.tsx` (`"use client"`):
   - the six checkboxes, in the order People, Organisations, Deals, Notes, Activities, Files, all unticked;
   - while any of Deals, Notes, Activities or Files is ticked, People and Organisations are checked, `aria-disabled`
     and not clickable, with a hidden `<input name="people" value="on">` and `organisations` posted;
@@ -351,17 +351,17 @@ pipeline and stage, and the report lines are right.
 
   Render it from `ChooseStep.tsx`, with the note `messageFor("pipedrive_emails_note")` under it. The consent radios
   keep showing through `:has()` on the People box.
-- [ ] T029 [US1] In `ReportStep.tsx`:
+- [x] T029 [US1] In `ReportStep.tsx`:
   - add a "// PIPELINES" block (only when not empty), with `pipelineLines` as text nodes;
   - make the "// NOT IMPORTED" Kind column read Deal / Note / Activity / File;
   - add links to `/deals` and `/activities` beside People and Organisations.
 
   Follow design B in `docs/DESIGN.md`; add CSS to `src/app/globals.css` only if needed.
-- [ ] T030 [US1] Check that a deal's `pipedrive_imported` event reads `templates.pipedrive_imported_by(name)` on the
+- [x] T030 [US1] Check that a deal's `pipedrive_imported` event reads `templates.pipedrive_imported_by(name)` on the
   deal page timeline, the drawer, and the person's and organisation's timelines through their deals
   (`src/app/(app)/records/Timeline.tsx`, `RecordTimeline.tsx`, `src/server/records/timeline-view.ts`). Add the deal
   case if missing, and assert it in T019.
-- [ ] T031 [US1] Make T014–T020 pass. `npm test && npm run typecheck`.
+- [x] T031 [US1] Make T014–T020 pass. `npm test && npm run typecheck`.
 
 **Checkpoint**: deals import on their own. This is the MVP.
 
@@ -376,7 +376,7 @@ Pipedrive's time, by its author.
 
 ### Tests for User Story 2
 
-- [ ] T032 [US2] Download `pipedrive_v1_openapi.yml` from
+- [x] T032 [US2] Download `pipedrive_v1_openapi.yml` from
   `https://github.com/Zenika/zenpipe/blob/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml`
   at commit `1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4` into `.factory/schemas/` (`git init -q /tmp/zenpipe && git -C /tmp/zenpipe fetch -q --depth 1 https://github.com/Zenika/zenpipe 1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4 && git -C /tmp/zenpipe show FETCH_HEAD:pipedrive-api/src/main/resources/openapi.yml > .factory/schemas/pipedrive_v1_openapi.yml`),
   and make the fake of Pipedrive API v1 refuse a request that the schema refuses: a test sends a wrong field and must
@@ -386,12 +386,12 @@ Pipedrive's time, by its author.
   - a fake note answer with an undeclared property `body`.
 
   `GET /v1/notes?start=0&limit=200&sort=id%20ASC` and `GET /v1/activityTypes` pass.
-- [ ] T033 [P] [US2] Write the unit tests `tests/unit/pipedrive-notes.test.ts` (`// covers FR-009, FR-010, US2 scenarios 2–4, edge cases`):
+- [x] T033 [P] [US2] Write the unit tests `tests/unit/pipedrive-notes.test.ts` (`// covers FR-009, FR-010, US2 scenarios 2–4, edge cases`):
   - `targetOf`: deal over person over organisation; lead only → `lead`; nothing → `project`;
   - `noteFromPipedrive`: empty after markup → "Empty once its formatting is removed."; 100,001 characters →
     "Longer than 100,000 characters."; 50,000 characters → imported whole (spec Clarifications);
   - `notePreview`: the first 60 characters plus "…".
-- [ ] T034 [US2] Write `tests/integration/pipedrive-notes.test.ts` (`// covers FR-009, FR-010, FR-013, US2 scenarios 1–5, SC-003, SC-004, SC-006`)
+- [x] T034 [US2] Write `tests/integration/pipedrive-notes.test.ts` (`// covers FR-009, FR-010, FR-013, US2 scenarios 1–5, SC-003, SC-004, SC-006`)
   with the spec's 50-note set (`seedNotesSet(fake)` in `pipedrive-helpers.ts`). Import People, Organisations, Deals
   and Notes, then assert:
   - **Placement**: each note on the right timeline with its text, author and `created_at`. A deal + person note → one
@@ -408,22 +408,22 @@ Pipedrive's time, by its author.
 
 ### Implementation for User Story 2
 
-- [ ] T035 [P] [US2] Add `listNotes(token, { start, limit })` (v1, `sort=id ASC`) and
+- [x] T035 [P] [US2] Add `listNotes(token, { start, limit })` (v1, `sort=id ASC`) and
   `listActivityTypes(token)` to `src/server/pipedrive/api.ts`. `PdNote` follows contracts/pipedrive-api.md.
-- [ ] T036 [P] [US2] Extend `fake-pipedrive.ts`:
+- [x] T036 [P] [US2] Extend `fake-pipedrive.ts`:
   - `notes`, `addNote` and `deleteNote` (sets `active_flag` false);
   - `/v1/notes` with `start` / `limit` / `sort=id ASC` and `additional_data.pagination`;
   - `activityTypes`, with the default `call`, `meeting`, `task`, `deadline`, `email` and `lunch`, and
     `/v1/activityTypes`;
   - only properties the Zenika file declares (T032 catches the rest).
-- [ ] T037 [US2] Add `targetOf`, `noteFromPipedrive(n)` (using `htmlToText`; limits "1..100,000 characters") and
+- [x] T037 [US2] Add `targetOf`, `noteFromPipedrive(n)` (using `htmlToText`; limits "1..100,000 characters") and
   `notePreview` to `deal-rules.ts`. Add `planNotePage(items, lookups)` to `records-page.ts`:
   - **Targets**: through the deal, person and organisation links. No link → the `pipedrive_*_not_imported` reason
     (name from the report's `notImported` label, else `#id`). A null link → `pipedrive_target_deleted`.
   - **Elsewhere**: on a lead or project → `elsewhere` counter.
   - **Author**: through `ownerOf`.
   - **Private counter**: `privateOn.notes`, from the targets' privacy loaded in the transaction (research.md §9).
-- [ ] T038 [US2] In `imports.ts`:
+- [x] T038 [US2] In `imports.ts`:
   - `count_notes` pages v1 `/notes` 500 at a time, counting `active_flag` true;
   - `notes` fetches 200 (cursor = `next_start` as text);
   - `saveNotes` locks as for people, loads the links of the page's deal, person and organisation ids, the targets'
@@ -432,7 +432,7 @@ Pipedrive's time, by its author.
     `newIds(db, "timeline_events", n)`, then the links (kind `note`, `note_id`);
   - no `note_mentions`;
   - then the cursor, `notes_done` and `notes_total`.
-- [ ] T039 [US2] Make T032–T034 pass.
+- [x] T039 [US2] Make T032–T034 pass.
 
 **Checkpoint**: US1 and US2 work together.
 
@@ -447,10 +447,10 @@ assignee, the right links, and no notification.
 
 ### Tests for User Story 3
 
-- [ ] T040 [P] [US3] Extend `tests/unit/pipedrive-fake.test.ts`: through `checkedFetch`, `GET /api/v2/activities?sort_by=subject`
+- [x] T040 [P] [US3] Extend `tests/unit/pipedrive-fake.test.ts`: through `checkedFetch`, `GET /api/v2/activities?sort_by=subject`
   and `GET /api/v2/activities?include_fields=notes` must throw (the v2 schema, T014). `GET /api/v2/activities?sort_by=id&sort_direction=asc&limit=200`
   passes, and a fake activity answer with an undeclared property `assignee_id` throws.
-- [ ] T041 [P] [US3] Write the unit tests `tests/unit/pipedrive-activities.test.ts` (`// covers FR-011, FR-012, US3 scenarios 1–2, edge cases`):
+- [x] T041 [P] [US3] Write the unit tests `tests/unit/pipedrive-activities.test.ts` (`// covers FR-011, FR-012, US3 scenarios 1–2, edge cases`):
   - `ukFromUtc`: "2026-01-15" "09:30" → "2026-01-15" "09:30"; "2026-07-15" "09:30" → "10:30"; "2026-07-15" "23:30" →
     "2026-07-16" "00:30".
   - `durationMinutes`: "00:07" → 10, "01:00" → 60, "24:00" → 1440, "24:05" → the warning, "" → null, a duration
@@ -463,7 +463,7 @@ assignee, the right links, and no notification.
     - a note of 10,001 characters → left out with a warning;
     - done → `done_at` = `marked_as_done_time`, `done_by` = assignee;
     - `assigned_by` = the assignee.
-- [ ] T042 [US3] Write `tests/integration/pipedrive-activities.test.ts` (`// covers FR-011–FR-013, US3 scenarios 1–6, SC-003, SC-006`)
+- [x] T042 [US3] Write `tests/integration/pipedrive-activities.test.ts` (`// covers FR-011–FR-013, US3 scenarios 1–6, SC-003, SC-006`)
   with the 60-activity set (`seedActivitiesSet(fake)`), importing all of People, Organisations, Deals and Activities.
   Assert:
   - **Values**: type, subject, due date and time, duration, note, links and assignee of each; "14 'deadline'
@@ -481,21 +481,21 @@ assignee, the right links, and no notification.
 
 ### Implementation for User Story 3
 
-- [ ] T043 [P] [US3] Add `listActivities(token, { cursor, limit })` (v2, `sort_by=id`, `sort_direction=asc`) to
+- [x] T043 [P] [US3] Add `listActivities(token, { cursor, limit })` (v2, `sort_by=id`, `sort_direction=asc`) to
   `api.ts`. Extend `fake-pipedrive.ts` with `activities`, `addActivity` and `deleteActivity`, and the
   `/api/v2/activities` cursor answers with declared properties only.
-- [ ] T044 [US3] Add `ukFromUtc(date, time)` (through `Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London" })`),
+- [x] T044 [US3] Add `ukFromUtc(date, time)` (through `Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London" })`),
   `durationMinutes(text)` and `activityFromPipedrive(a, ctx)` to `deal-rules.ts` (research.md §7). They reuse
   `SUBJECT_MAX` (200), `ACTIVITY_NOTE_MAX` (10,000) and `ukInstant` from `src/server/activities/rules.ts`. The
   duration must satisfy `duration_minutes between 5 and 1440 and duration_minutes % 5 = 0` and needs a due time.
-- [ ] T045 [US3] Add `planActivityPage(items, lookups)` to `records-page.ts`:
+- [x] T045 [US3] Add `planActivityPage(items, lookups)` to `records-page.ts`:
   - links through deal, person and organisation (any set but not brought in → not imported, with the reason);
   - a lead / project only → `elsewhere`;
   - nothing → unlinked;
   - the type counters (named from the snapshot's `activityTypes`);
   - the owner fallback through `ownerOf`;
   - `privateOn.activities`.
-- [ ] T046 [US3] In `imports.ts`:
+- [x] T046 [US3] In `imports.ts`:
   - `prepare` reads `listActivityTypes` when `want_activities`;
   - `count_activities` counts 500 at a time;
   - `activities` fetches 200;
@@ -506,7 +506,7 @@ assignee, the right links, and no notification.
     `update persons p set last_contacted_at = greatest(coalesce(p.last_contacted_at, '-infinity'), v.at) from unnest(...) v(id, at) where p.id = v.id`,
     with `at = least(ukInstant(due), done_at)`;
   - then the cursor, `activities_done` and `activities_total`.
-- [ ] T047 [US3] Make T040–T042 pass.
+- [x] T047 [US3] Make T040–T042 pass.
 
 **Checkpoint**: deals, notes and activities import together.
 
@@ -522,7 +522,7 @@ notes, 800 activities) with `slowDownEvery(7)`.
 
 ### Tests for User Story 5
 
-- [ ] T048 [P] [US5] Write `tests/integration/pipedrive-resume-records.test.ts` (`// covers FR-016, FR-017, FR-018, US5 scenarios 1, 3–5, SC-002`):
+- [x] T048 [P] [US5] Write `tests/integration/pipedrive-resume-records.test.ts` (`// covers FR-016, FR-017, FR-018, US5 scenarios 1, 3–5, SC-002`):
   - **Run, stop, continue**: run some parts, stop the runner, `continueImport`, finish. Each Pipedrive deal, note and
     activity has exactly one link and one CRM row. The imported count of each kind = the fake's records − those
     listed as not imported.
@@ -534,10 +534,10 @@ notes, 800 activities) with `slowDownEvery(7)`.
     name in the fake.
   - **Failed part**: make a note page's transaction fail (`failNext` on the next call after the fetch, or a forced
     error through `onSaveForTests`) → nothing of that page is saved, and continuing saves it once.
-- [ ] T049 [P] [US5] Extend `tests/integration/pipedrive-concurrency.test.ts` (`// covers FR-016, SC-002`): two users
+- [x] T049 [P] [US5] Extend `tests/integration/pipedrive-concurrency.test.ts` (`// covers FR-016, SC-002`): two users
   of one fake company import People, Organisations, Deals, Notes and Activities with interleaved parts. There is one
   CRM deal, note and activity per Pipedrive one, and one set of created pipelines.
-- [ ] T050 [P] [US5] Write `tests/integration/pipedrive-report.test.ts` (`// covers FR-018, FR-019, FR-021, US5 scenario 2, edge cases`):
+- [x] T050 [P] [US5] Write `tests/integration/pipedrive-report.test.ts` (`// covers FR-018, FR-019, FR-021, US5 scenario 2, edge cases`):
   - **Progress**: `getImportView` lists progress in the order Organisations, People, Deals, Notes, Activities.
     `pipedrive_paused` lists them in the same order.
   - **Report**: the counts per kind; "// NOT IMPORTED" items for each kind, with labels as given (an HTML-like deal
@@ -547,7 +547,7 @@ notes, 800 activities) with `slowDownEvery(7)`.
 
 ### Implementation for User Story 5
 
-- [ ] T051 [US5] Finish `reportLines` in `report.ts` in this fixed order: owners, private people, private deals, private
+- [x] T051 [US5] Finish `reportLines` in `report.ts` in this fixed order: owners, private people, private deals, private
   notes / activities / files, owner-only organisations, lists (with `deal_label`), fields, choices, activity types as
   tasks, elsewhere (notes, activities, files × lead, project, email), linked, unsubscribed. Then make T048–T050 pass,
   fixing the engine where a test shows a gap.
@@ -565,7 +565,7 @@ half-stored, and over 25 MB left out.
 
 ### Tests for User Story 4
 
-- [ ] T052 [US4] Download `storage_v0_openapi.json` from
+- [x] T052 [US4] Download `storage_v0_openapi.json` from
   `https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json`
   at commit `aa0fb9e84b9d128342f0127c7650d8cc5b240202` into `.factory/schemas/` (`git init -q /tmp/supabase && git -C /tmp/supabase fetch -q --depth 1 https://github.com/supabase/supabase aa0fb9e84b9d128342f0127c7650d8cc5b240202 && git -C /tmp/supabase show FETCH_HEAD:apps/docs/spec/storage_v0_openapi.json > .factory/schemas/storage_v0_openapi.json`),
   and make the fake of Supabase Storage refuse a request that the schema refuses: a test sends a wrong field and must
@@ -576,12 +576,12 @@ half-stored, and over 25 MB left out.
 
   The import's call sequence passes: `createSignedUploadUrl`, the `putSigned` PUT with
   `{ timeoutMs: 20_000 }`, `objectInfo` and `removeObjects`.
-- [ ] T053 [P] [US4] Extend `tests/unit/pipedrive-fake.test.ts` for downloads:
+- [x] T053 [P] [US4] Extend `tests/unit/pipedrive-fake.test.ts` for downloads:
   - `GET /v1/files/7/download` → 200 `application/octet-stream` with the bytes, checked only for its content type;
   - with `redirectDownloads(true)` → 302 to `files.fake-pipedrive.invalid`;
   - a follow-up request carrying `x-api-token` throws;
   - `GET /v1/files?sort=id%20ASC&start=0&limit=50` passes the Zenika file.
-- [ ] T054 [P] [US4] Write the unit tests `tests/unit/pipedrive-files.test.ts` for `fileCheck` and `formatMb`
+- [x] T054 [P] [US4] Write the unit tests `tests/unit/pipedrive-files.test.ts` for `fileCheck` and `formatMb`
   (`// covers FR-015, US4 scenarios 3–4`):
   - Sizes: 26,214,400 bytes is allowed; 27,367,014 → "Over 25 MB (26.1 MB).", using `formatMb` (one decimal,
     1 MB = 1,048,576 bytes); 0 → "Empty file.".
@@ -590,7 +590,7 @@ half-stored, and over 25 MB left out.
   - `mail_message_id` set (even with a `deal_id`) → the email counter.
   - Lead only → the lead counter.
   - `active_flag` false → passed over without a line.
-- [ ] T055 [US4] Write `tests/integration/pipedrive-files.test.ts` (`// covers FR-003, FR-014, FR-015, FR-017, FR-020, US4 scenarios 1–5, SC-004`),
+- [x] T055 [US4] Write `tests/integration/pipedrive-files.test.ts` (`// covers FR-003, FR-014, FR-015, FR-017, FR-020, US4 scenarios 1–5, SC-004`),
   with the fake Storage installed (`tests/fakes/storage.ts`) and the 12-file set (`seedFilesSet(fake)`: PDF, PNG,
   `.docx`, 26 MB from a repeated byte, empty, on a person not imported, attached to an email, a Drive link, and others
   on a deal, person and organisation). Assert:
@@ -608,13 +608,13 @@ half-stored, and over 25 MB left out.
     one `files` row exists, and `sweepFileCleanup` removes the orphan object.
   - **Duplicate**: a stale part (cursor moved by another tab) leaves the uploaded path in `file_cleanup` with
     `due_at <= now()`, and no second row.
-- [ ] T056 [P] [US4] Extend `tests/integration/pipedrive-choose.test.ts`: ticking `files` with no Storage set up →
+- [x] T056 [P] [US4] Extend `tests/integration/pipedrive-choose.test.ts`: ticking `files` with no Storage set up →
   `?error=files_unreachable` from `startPipedriveImportAction` (called with a `FormData`) shows "Files can't be reached
   right now. Try again in a minute.".
 
 ### Implementation for User Story 4
 
-- [ ] T057 [P] [US4] Add `listFiles(token, { start, limit })` (v1, `sort=id ASC`) and
+- [x] T057 [P] [US4] Add `listFiles(token, { start, limit })` (v1, `sort=id ASC`) and
   `downloadFile(token, id, maxBytes)` to `api.ts`:
   - `redirect: "manual"`;
   - on a 3xx, fetch `Location` once with **no** `x-api-token`;
@@ -625,14 +625,14 @@ half-stored, and over 25 MB left out.
   Extend `fake-pipedrive.ts` with `files` (metadata and bytes), `addFile`, `deleteFile`, `/v1/files`,
   `/v1/files/{id}/download` and `redirectDownloads(on)`, serving `https://files.fake-pipedrive.invalid/<id>` and
   answering 400 when the token header is present.
-- [ ] T058 [US4] Add `fileCheck(f)`, `formatMb(bytes)` and `planFileItem(f, lookups)` to `deal-rules.ts` /
+- [x] T058 [US4] Add `fileCheck(f)`, `formatMb(bytes)` and `planFileItem(f, lookups)` to `deal-rules.ts` /
   `records-page.ts` (research.md §8). They reuse `validateFile`, `MAX_FILE_BYTES` (26,214,400) and `MAX_FILE_NAME`
   (255) from `src/server/files/rules.ts`.
-- [ ] T059 [US4] In `imports.ts`, the start check: when `files` is ticked, `startImport` returns
+- [x] T059 [US4] In `imports.ts`, the start check: when `files` is ticked, `startImport` returns
   `{ error: "files_unreachable" }` if `storageConfig().mode === "off"`, or if
   `objectInfo("files/pipedrive-import-check")` throws `StorageUnreachable`. `startPipedriveImportAction` redirects to
   `?error=files_unreachable`, and `ChooseStep` shows the message.
-- [ ] T060 [US4] In `imports.ts`, the `count_files` step (500 at a time, `active_flag` true) and the `files` step.
+- [x] T060 [US4] In `imports.ts`, the `count_files` step (500 at a time, `active_flag` true) and the `files` step.
   The cursor is `"<start>:<index>"`, and a page of 50 is fetched each part. For each item from `index`, while under
   15 s elapsed and 25 MB copied:
   1. **Check**: `planFileItem` against the links read just before (outside a transaction). Skipped and already items
@@ -656,9 +656,9 @@ half-stored, and over 25 MB left out.
   At the end of the page or the budget, one transaction saves the collected items and the cursor.
   `StorageUnreachable` anywhere → `pause(userId, id, "files_unreachable")`. `sweepFileCleanup()` runs after each part.
   There is never a Storage or Pipedrive call inside `sql.begin()`.
-- [ ] T061 [US4] Add `privateOn.files` to the file plan, and `elsewhere` for emails, leads and projects. Make T052–T056
+- [x] T061 [US4] Add `privateOn.files` to the file plan, and `elsewhere` for emails, leads and projects. Make T052–T056
   pass.
-- [ ] T062 [US4] Extend `tests/integration/pipedrive-resume-records.test.ts` and `pipedrive-concurrency.test.ts` with
+- [x] T062 [US4] Extend `tests/integration/pipedrive-resume-records.test.ts` and `pipedrive-concurrency.test.ts` with
   30 files (`// covers FR-016, FR-017, US5 scenario 5, SC-002`): after a stop and continue mid-files, a repeat, and two
   users at once, each Pipedrive file is in `files` exactly once, and no Storage object exists without a `files` row
   once `sweepFileCleanup` has run (with `due_at` moved back by the test).
@@ -669,7 +669,7 @@ half-stored, and over 25 MB left out.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T063 [P] Extend the development instance `fakePipedrive()` in `src/server/pipedrive/fake-pipedrive.ts` with the
+- [x] T063 [P] Extend the development instance `fakePipedrive()` in `src/server/pipedrive/fake-pipedrive.ts` with the
   small hand-testing set of contracts/pipedrive-api.md § The fake:
   - 2 pipelines;
   - 30 deals (open, won, lost, owner-only, USD, archived);
@@ -678,19 +678,19 @@ half-stored, and over 25 MB left out.
   - 6 files (PDF, PNG, 26 MB, empty, Drive link, email attachment).
 
   Use clearly fake names. Extend `tests/integration/pipedrive-dev-fake.test.ts` to import it once without error.
-- [ ] T064 [P] Extend `tests/integration/pipedrive-access.test.ts` (`// covers spec edge case "not signed in or deactivated"`):
+- [x] T064 [P] Extend `tests/integration/pipedrive-access.test.ts` (`// covers spec edge case "not signed in or deactivated"`):
   a deactivated user's `runPart` returns `stop` and imports no deal, note, activity or file. `startImport` with the
   four new kinds still needs a connection.
-- [ ] T065 [P] Extend `tests/integration/pipedrive-markup.test.ts`: a deal title, note, activity subject and file name
+- [x] T065 [P] Extend `tests/integration/pipedrive-markup.test.ts`: a deal title, note, activity subject and file name
   of `<a href="https://evil.example">Click</a>` are shown as text on the deal page, timeline, Activities list and
   "// FILES" (`renderToStaticMarkup`). The file downloads under `safeDownloadName`.
-- [ ] T066 [P] Update `README.md` § "Pipedrive import":
+- [x] T066 [P] Update `README.md` § "Pipedrive import":
   - what is imported now (deals, notes, activities, files; emails not);
   - pipelines and stages created by any import;
   - files copied into the file store, with the 25 MB limit;
   - the fake data set;
   - the `test:schemas` line naming the third Pipedrive schema.
-- [ ] T067 [P] Update `AGENTS.md` § Layout:
+- [x] T067 [P] Update `AGENTS.md` § Layout:
   - on the `src/server/pipedrive/` line:
     - `html.ts`, `deal-rules.ts` and `records-page.ts`;
     - the steps and kinds;
@@ -700,17 +700,17 @@ half-stored, and over 25 MB left out.
     - `pipedrive_links` now covering deal, note, activity and file;
   - on the tests line: `tests/fakes/pipedrive.ts` checks v1 against the Zenika file, else `pipedrive_v1_full_openapi.yml`;
   - on the import UI line: `KindChoice.tsx` (client).
-- [ ] T068 Add these lines at the end of `docs/DECISIONS.md`, exactly:
+- [x] T068 Add these lines at the end of `docs/DECISIONS.md`, exactly:
   - `- Any user's Pipedrive import creates the pipelines and stages the CRM lacks (matched by name, never renaming, reordering or deleting one); the only exception to admins-only pipelines (SF-122)`
   - `- In the Pipedrive import, ticking Deals, Notes, Activities or Files ticks People and Organisations, which stay ticked (SF-122)`
   - `- Pipedrive activities of a type the CRM does not have come in as tasks, counted per Pipedrive type in the report (SF-122)`
 
   Add also any factory choice of spec.md § Clarifications the Plan Review confirmed. There is no "Departs from
   blueprint" line: there are no blueprints.
-- [ ] T069 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
+- [x] T069 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
   `DATABASE_URL=postgres://postgres@localhost:5432/crm_test`. Fix every failure and keep the complete failure output
   in the session.
-- [ ] T070 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
+- [x] T070 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
   schema) and `## Schemas` (each schema's GitHub URL at its commit).
   - **Services**:
     - Pipedrive API v2: fake `src/server/pipedrive/fake-pipedrive.ts` via `tests/fakes/pipedrive.ts`, schema

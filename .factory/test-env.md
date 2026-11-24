@@ -19,6 +19,9 @@
   and `apikey`. Switches: `down()` (network error), `failDeletes()` (500 on delete), `advance(ms)` (token clock),
   `objects()`, `requests`. In the running app (APP_ENV development/test and `SUPABASE_URL` empty) the same fake is
   reached by the browser at `/dev/fake-storage/...` (contents in `.fake-storage/`, git-ignored).
+  SF-122: the Pipedrive import's file copy uses the same fake and checks (sign-upload, the server's PUT with a 20 s
+  time-out, info for the start check `files/pipedrive-import-check`, bulk delete through the sweep);
+  `tests/unit/storage-fake.test.ts` shows a sign-upload body and an undeclared info path refused.
   AI review only: `.factory/run/storage-proxy.js`, a stand-in Storage on :54321 (`/storage/v1/*` forwarded to the app's
   `/dev/fake-storage`, CORS like Storage, `MODE=fail-deletes` answers 500 to every DELETE) for a second app run with
   `SUPABASE_URL=http://localhost:54321 SUPABASE_SECRET_KEY=fake-storage-key`.
@@ -44,6 +47,23 @@
   characters; "Budget" (double), "Favourite colour" (varchar), "Job title", "Lead source" (Referral / Webinar / Event),
   "LinkedIn", org "Region" (address), labels Hot / Cold / Investor) and `fake-pipedrive-other` ("Otherco Pipedrive"
   1002). It needs `PIPEDRIVE_TOKEN_KEY` set (`start-app.sh` makes one into /tmp/pipedrive-token-key; tests set their own).
+- Pipedrive API, SF-122 additions (v2 `GET /deals`, `/deals/archived`, `/deals/{id}/followers`, `/dealFields`, `/pipelines`,
+  `/stages`, `/activities`; v1 `GET /notes`, `/files`, `/activityTypes`, `/deals/{id}/participants`,
+  `/files/{id}/download`): the same fake and wrapper. v2 calls against `pipedrive_v2_openapi.json` as above; a v1 call
+  against `pipedrive_v1_openapi.yml` when that file declares the path and method, else against
+  `pipedrive_v1_full_openapi.yml` (the error names the file); a 200 answer that is not JSON (the download,
+  `application/octet-stream`) is checked only for a content type its operation declares. The fake answers v1 lists by
+  `start` / `limit` (≤ 500, `sort=id ASC`) with `additional_data.pagination` (participants: `start`, `limit`,
+  `more_items_in_collection` as that schema has them), `include_fields=followers_count,participants_count` on deals,
+  and serves downloads (404 for a removed file or lost bytes); with `redirectDownloads(true)` a download answers 302
+  to `https://files.fake-pipedrive.invalid/<company>/<id>`, which the fake serves only to a request WITHOUT
+  `x-api-token` (400 otherwise) and the wrapper throws on a token there (`fileHostRequests` records each request).
+  Seeding: `addPipeline`, `addStage`, `addDeal` (followers, participants), `addActivity`, `addActivityType`, `addNote`,
+  `addFile(meta, bytes)`, `deleteDeal` / `deleteActivity` / `deleteNote` / `deleteFile`, `loseFileBytes`,
+  `updatePerson`; `slowDownEvery`, `failNext` and the 401 rule apply to every new address. The development instance
+  adds 2 pipelines, 30 deals, 40 notes, 30 activities and 6 files (PDF, PNG, 26 MB, empty, Drive link, email
+  attachment). Engine hook `onSaveForTests` (APP_ENV=test only) runs inside every import transaction: tests use it to
+  prove no Pipedrive call happens while one is open, to force a failure, or to move the cursor (a stale part).
 - Supabase Postgres (through the Supavisor pooler): no fake — a real local PostgreSQL 17. No public schema
   on GitHub; follows Supabase's docs (https://supabase.com/docs/guides/database/connecting-to-postgres):
   transaction-mode pooler copied by always connecting with `prepare: false` and taking only
@@ -138,12 +158,20 @@
   check), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a
   second open import, paused without a reason, People without consent, nothing ticked, a person link with an
   organisation id, `how = 'copied'`, a 256-character company name).
+  SF-122 (`migrations/0013_pipedrive_deals.sql`: no new table; `want_*`, `*_total`, `*_done` columns, the records, step
+  and pause-reason checks, link kinds deal / note / activity / file with their id columns) applied on a fresh database
+  by `migrate.test.ts` (23514 for Deals without People, an unknown step, a note link with a deal id, a linked deal). The
+  new steps keep the same rules: every Pipedrive call (followers, participants, the pipelines and stages lists, file
+  downloads) and every Storage call (sign-upload, PUT) happens before `sql.begin()`; the `pipelines` step holds
+  `lock table pipelines, stages in share row exclusive mode`; a file part queues its Storage path in `file_cleanup` before
+  the upload and lists the file in the transaction that deletes that row.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
 - storage_v0_openapi.json: https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json
 - pipedrive_v2_openapi.json: https://github.com/soenneker/soenneker.pipedrive.openapiclient/blob/77695f9076c899e2ba1e7e8eb029aabb28abed27/openapi.json
 - pipedrive_v1_openapi.yml: https://github.com/Zenika/zenpipe/blob/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml
+- pipedrive_v1_full_openapi.yml: https://github.com/konfig-sdks/openapi-examples/blob/161ab49c45e45825ca3832945c59a3ba904321ba/pipedrive/openapi.yaml
 
 - Pipedrive stand-in over HTTP (AI review, SF-117): `.factory/run/pipedrive-server.ts` serves Build's `FakePipedrive`
   (`buildDevFake()`, the same data as the in-process fake) on :9400 (`npx tsx .factory/run/pipedrive-server.ts`), for a second
