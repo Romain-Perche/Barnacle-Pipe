@@ -284,10 +284,9 @@
     through `.fake-gmail/state.json` for what `/dev/fake-gmail` has no button for: a signed notice kept for later
     (`notice`), a notice signed by another key (`badnotice`), moving a message to the bin (`trash`), `sendGmail` as a later
     feature calls it (`send`), the Sent messages and token statuses. Users: Linus (main), Margaret (2nd mailbox, then
-    deactivated by Ada), Grace (two tabs). Known (SF-118 AI review round 1): `[ ALLOW ]` / `[ CANCEL ]` on the fake consent
-    screen redirect from a server action, so Next runs the callback inside the action request without the
-    `crm_gmail_oauth` cookie (path `/settings/gmail`) and it always ends in "Gmail was not connected."; the script reloads
-    the callback address as a full navigation (as real Google does) unless `RAW=1`.
+    deactivated by Ada), Grace (two tabs). Fix round 1: `[ ALLOW ]` / `[ CANCEL ]` on the fake consent screen post a plain form to
+    `/dev/fake-google/gmail/answer` (a 303 to the callback), so the browser sends the `crm_gmail_oauth` cookie; the script
+    clicks them as a user would. Round 2: all 32 pass (needs `npm run test:schemas` first for smoke checks 1 and 4).
   - SF-117 AI review (Pipedrive import). Start, after the build on :3000: `nohup npx tsx .factory/run/pipedrive-server.ts >/tmp/pd.log 2>&1 &`,
     `PORT=3001 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_URL=http://localhost:9400 bash .factory/run/start-app.sh` and (edge 18)
     `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_TOKEN_KEY= bash .factory/run/start-app.sh`. Then, each on fresh data
