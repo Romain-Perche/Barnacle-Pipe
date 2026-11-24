@@ -6,7 +6,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/server/auth/cookie";
 import { FLASH_COOKIE } from "@/server/records/flash-cookie";
 
-const PUBLIC = [/^\/sign-in\/?$/, /^\/auth(\/|$)/, /^\/dev\/fake-google\/?$/];
+const PUBLIC = [
+  /^\/sign-in\/?$/,
+  /^\/auth(\/|$)/,
+  /^\/dev\/fake-google\/?$/,
+  // SF-121: public by design, the token in the address is the authority (the page, its button, RFC 8058 one-click);
+  // the development links page answers 404 outside development and test.
+  /^\/unsubscribe\/[^/]+(\/(confirm|one-click))?\/?$/,
+  /^\/dev\/unsubscribe-links\/?$/,
+];
 
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;

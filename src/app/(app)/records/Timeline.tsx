@@ -53,6 +53,18 @@ export function Line({ e, onDeal, filePage }: { e: TimelineEvent & { file?: Time
       return <>{templates.pipedrive_imported_by(e.actorName ?? "")}</>;
     case "pipedrive_unsubscribed":
       return <>{templates.pipedrive_unsubscribed_by(e.actorName ?? "")}</>;
+    // SF-121
+    case "unsubscribed_link":
+      return <>{templates.unsubscribed_link_event}</>;
+    case "unsubscribed_mail_app":
+      return <>{templates.unsubscribed_mail_app_event}</>;
+    case "consent_changed":
+      return (
+        <>
+          {templates.consent_changed_event(e.oldValue ?? "", e.newValue ?? "")}
+          {by(e.actorName)}
+        </>
+      );
     case "edited":
       return (
         <>

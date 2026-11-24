@@ -47,6 +47,13 @@ OAuth code flow and database sessions.
   `file_uploads`), `deleteFile`, `cleanupPathsFor` (used by the three record deletes), `sweepFileCleanup` (table
   `file_cleanup`, swept after every file action: no cron)). No Storage call inside a transaction. `visibleFile()` in
   `records/visibility.ts`: every `files` read uses it. FILE timeline entries: kinds `file_added` / `file_deleted`.
+- SF-121 unsubscribe: `src/server/records/unsubscribe-rules.ts` (pure: `isTokenShape`, `unsubscribeLinks`, `isOneClickBody`)
+  and `src/server/records/unsubscribe.ts` (`unsubscribeByToken`, `unsubscribePageState`, `unsubscribeLinksFor` — the one
+  function campaign sending uses — and `listUnsubscribeLinks`; the only `persons` reads without `visiblePerson()`: the
+  token is the authority). Public pages: `src/app/unsubscribe/[token]/` (the page, `confirm/` and `one-click/` route
+  handlers, listed in `PUBLIC` in `src/proxy.ts`) and `src/app/dev/unsubscribe-links/` (development and test only).
+  Timeline kinds `unsubscribed_link`, `unsubscribed_mail_app` (no actor) and `consent_changed` (a teammate's Consent edit;
+  the person form sends `consentShown` and a save changes Consent only when the field was changed on that form).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
   `records/import/`: the CSV import screens shared by `/people/import` and `/organisations/import` (`ImportPages.tsx`:
   the four steps; `FileStep.tsx`: the only client part, sends the file in 512 KiB parts; `actions.ts`; `example.ts`).

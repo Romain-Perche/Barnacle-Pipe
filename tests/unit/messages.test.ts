@@ -1,6 +1,6 @@
 // covers FR-025 (messages only from messages.ts; templates never reachable from a URL code), contracts/routes.md § Messages
 import { describe, expect, it } from "vitest";
-import { fieldMessage, messageFor, templates } from "@/server/messages";
+import { fieldMessage, messageFor, messages, templates } from "@/server/messages";
 
 describe("record messages", () => {
   it("has the fixed texts of contracts/routes.md", () => {
@@ -479,5 +479,20 @@ describe("Pipedrive import messages (SF-117)", () => {
   });
   it("never answers a Pipedrive template from a URL code", () => {
     for (const code of ["pipedrive_connected", "pipedrive_linked", "pipedrive_field_no_match"]) expect(messageFor(code), code).toBeUndefined();
+  });
+});
+
+// covers SF-121 T002: the unsubscribe page's texts and the three timeline lines
+describe("unsubscribe messages (SF-121)", () => {
+  it("has the exact texts", () => {
+    expect(messages.unsubscribe_lead).toBe("Stop receiving campaign emails from Barnacle Labs.");
+    expect(messages.unsubscribe_done).toBe("You're unsubscribed. You won't get any more campaign emails from us.");
+    expect(messages.unsubscribe_invalid).toBe(
+      "This unsubscribe link isn't valid any more. If you still get emails from us, reply to one and ask to be removed.",
+    );
+    expect(messages.unsubscribe_error).toBe("Something went wrong. Try again in a minute.");
+    expect(templates.unsubscribed_link_event).toBe("Unsubscribed from campaigns through the unsubscribe link");
+    expect(templates.unsubscribed_mail_app_event).toBe("Unsubscribed from campaigns through their mail app");
+    expect(templates.consent_changed_event("Unsubscribed", "Subscribed")).toBe("Consent: Unsubscribed → Subscribed");
   });
 });

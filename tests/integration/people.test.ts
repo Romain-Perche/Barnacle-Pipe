@@ -156,12 +156,34 @@ describe("updatePerson", () => {
     expect((await readTimeline(ada.id, { personId: id })).entries).toHaveLength(1);
   });
 
-  it("records a consent change as Consent (FR-006)", async () => {
+  // covers FR-006; SF-121 FR-011: a Consent change is its own line, "Consent: <old> → <new>" by the teammate
+  it("records a consent change as a Consent line, with no edited line when it is the only change", async () => {
     const id = saved(await createPerson(ada.id, personForm()));
-    await updatePerson(linus.id, id, 1, personForm({ ownerId: String(ada.id), consent: "unsubscribed" }));
-    const [last] = (await readTimeline(ada.id, { personId: id })).entries;
-    expect(last).toMatchObject({ kind: "edited", actorName: "Linus Fake", fields: ["Consent"] });
+    await updatePerson(linus.id, id, 1, personForm({ ownerId: String(ada.id), consent: "unsubscribed", consentShown: "subscribed" }));
+    const { entries } = await readTimeline(ada.id, { personId: id });
+    expect(entries[0]).toMatchObject({ kind: "consent_changed", actorName: "Linus Fake", oldValue: "Subscribed", newValue: "Unsubscribed" });
+    expect(entries.map((e) => e.kind)).toEqual(["consent_changed", "added"]);
     expect((await getPerson(ada.id, id))!.consent).toBe("unsubscribed");
+  });
+
+  // covers SF-121 FR-011: Consent and Role changed together: an edited line without Consent, plus the Consent line
+  it("leaves Consent out of the edited line when other fields change too", async () => {
+    const id = saved(await createPerson(ada.id, personForm()));
+    await updatePerson(linus.id, id, 1, personForm({ ownerId: String(ada.id), role: "CFO", consent: "unsubscribed", consentShown: "subscribed" }));
+    const kinds = (await readTimeline(ada.id, { personId: id })).entries.map((e) => ({ kind: e.kind, fields: e.fields }));
+    expect(kinds).toContainEqual({ kind: "edited", fields: ["Role"] });
+    expect(kinds.filter((k) => k.kind === "consent_changed")).toHaveLength(1);
+  });
+
+  // covers SF-121 FR-019, US4 scenario 5: Consent changes only when the field was changed on the form
+  it("keeps the stored Consent unless the form changed it", async () => {
+    const id = saved(await createPerson(ada.id, personForm({ consent: "unsubscribed" })));
+    await updatePerson(ada.id, id, 1, personForm({ role: "CFO", consent: "unsubscribed", consentShown: "unsubscribed" }));
+    expect((await getPerson(ada.id, id))!).toMatchObject({ consent: "unsubscribed", role: "CFO" });
+    await updatePerson(ada.id, id, 2, personForm({ role: "CEO", consent: "subscribed" }));
+    expect((await getPerson(ada.id, id))!).toMatchObject({ consent: "unsubscribed", role: "CEO" });
+    const kinds = (await readTimeline(ada.id, { personId: id })).entries.map((e) => e.kind);
+    expect(kinds).not.toContain("consent_changed");
   });
 
   it("keeps a current deactivated owner; never takes a deactivated one as a new owner", async () => {

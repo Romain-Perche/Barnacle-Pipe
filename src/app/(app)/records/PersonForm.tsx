@@ -111,6 +111,8 @@ export function PersonForm({ action, initial, choices, canSetPrivate, currentRef
       )}
       {id !== undefined && <input type="hidden" name="id" value={id} />}
       {version !== undefined && <input type="hidden" name="version" value={version} />}
+      {/* SF-121 FR-019: the Consent the form was opened with (from `initial`, so it survives a refused save) */}
+      {id !== undefined && <input type="hidden" name="consentShown" value={initial.consent} />}
       <div className="grid2">
         <Text name="firstName" label="First name" value={v.firstName} error={errors.name} />
         <Text name="lastName" label="Last name" value={v.lastName} />

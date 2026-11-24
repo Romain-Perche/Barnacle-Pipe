@@ -229,6 +229,11 @@ export const messages = {
   pipedrive_running: "Import running.",
   pipedrive_not_connected: "Save your Pipedrive token first.",
   pipedrive_email_other_hidden: "Another Pipedrive person has the same email address.",
+  // SF-121: the public unsubscribe page
+  unsubscribe_lead: "Stop receiving campaign emails from Barnacle Labs.",
+  unsubscribe_done: "You're unsubscribed. You won't get any more campaign emails from us.",
+  unsubscribe_invalid: "This unsubscribe link isn't valid any more. If you still get emails from us, reply to one and ask to be removed.",
+  unsubscribe_error: "Something went wrong. Try again in a minute.",
 } as const;
 
 // SF-117: Pipedrive's field types in words (contracts/routes.md § Messages); any other type is "other".
@@ -400,6 +405,10 @@ export const templates = {
   pipedrive_imported_by: (name: string) => `Imported from Pipedrive by ${name}`,
   pipedrive_unsubscribed_by: (name: string) => `Unsubscribed by the Pipedrive import of ${name}`,
   pipedrive_already: (n: number) => `Already imported: ${n}`,
+  // SF-121: timeline lines (the consent labels of the time)
+  unsubscribed_link_event: "Unsubscribed from campaigns through the unsubscribe link",
+  unsubscribed_mail_app_event: "Unsubscribed from campaigns through their mail app",
+  consent_changed_event: (from: string, to: string) => `Consent: ${from} → ${to}`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

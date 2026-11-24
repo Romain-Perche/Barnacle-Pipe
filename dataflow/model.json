@@ -82,9 +82,9 @@
       "description": "Connects a Pipedrive token and imports people, organisations and deals page by page, never twice."
     },
     {
-      "id": "segments",
-      "label": "Segments",
-      "description": "Saved, team-shared people segments and the count of people each one reaches."
+      "id": "unsubscribe",
+      "label": "Unsubscribe",
+      "description": "Lets an email recipient withdraw consent through a token link or RFC 8058 one-click."
     }
   ],
   "actors": [
@@ -114,6 +114,10 @@
       "id": "pipedrive-api",
       "label": "Pipedrive API",
       "zone": "pipedrive"
+    },
+    {
+      "id": "email-recipient",
+      "label": "Email recipient / mail app"
     }
   ],
   "processes": [
@@ -372,15 +376,14 @@
       ]
     },
     {
-      "id": "segments",
-      "label": "Segments pages",
+      "id": "unsubscribe",
+      "label": "Unsubscribe page and one-click",
       "zone": "app",
-      "group": "segments",
+      "group": "unsubscribe",
       "sources": [
-        "src/app/(app)/segments",
-        "src/server/segments/segments.ts",
-        "src/server/segments/reach.ts",
-        "src/server/segments/rules.ts"
+        "src/app/unsubscribe",
+        "src/server/records/unsubscribe.ts",
+        "src/server/records/unsubscribe-rules.ts"
       ]
     }
   ],
@@ -617,15 +620,6 @@
       "group": "pipedrive",
       "sources": [
         "migrations/0012_pipedrive.sql"
-      ]
-    },
-    {
-      "id": "segments-table",
-      "label": "Postgres segments",
-      "zone": "postgres",
-      "group": "segments",
-      "sources": [
-        "migrations/0013_segments.sql"
       ]
     }
   ],
@@ -2280,91 +2274,44 @@
       ]
     },
     {
-      "from": "session-guard",
-      "to": "segments",
-      "data": "signed-in user check",
+      "from": "email-recipient",
+      "to": "unsubscribe",
+      "data": "unsubscribe token, confirm or one-click POST",
       "sources": [
-        "src/app/(app)/segments/actions.ts"
+        "src/app/unsubscribe/[token]/confirm/route.ts",
+        "src/app/unsubscribe/[token]/one-click/route.ts"
       ]
     },
     {
-      "from": "staff",
-      "to": "segments",
-      "data": "segment form, conditions, count requests",
+      "from": "unsubscribe",
+      "to": "email-recipient",
+      "data": "unsubscribe confirmation page",
       "sources": [
-        "src/app/(app)/segments/actions.ts"
+        "src/app/unsubscribe/[token]/page.tsx"
       ]
     },
     {
-      "from": "segments",
-      "to": "staff",
-      "data": "segment list, page and reach counts",
+      "from": "unsubscribe",
+      "to": "persons-table",
+      "data": "consent set to unsubscribed by token",
       "sources": [
-        "src/app/(app)/segments/page.tsx"
+        "src/server/records/unsubscribe.ts"
       ]
     },
     {
-      "from": "segments",
-      "to": "segments-table",
-      "data": "segment definitions, conditions",
+      "from": "unsubscribe",
+      "to": "timeline-table",
+      "data": "unsubscribed_link / unsubscribed_mail_app events",
       "sources": [
-        "src/server/segments/segments.ts"
-      ]
-    },
-    {
-      "from": "segments-table",
-      "to": "segments",
-      "data": "saved segments",
-      "sources": [
-        "src/server/segments/segments.ts"
-      ]
-    },
-    {
-      "from": "persons-table",
-      "to": "segments",
-      "data": "visible people reached",
-      "sources": [
-        "src/server/segments/reach.ts"
-      ]
-    },
-    {
-      "from": "deals-table",
-      "to": "segments",
-      "data": "visible deals for conditions",
-      "sources": [
-        "src/server/segments/reach.ts"
-      ]
-    },
-    {
-      "from": "custom-values-table",
-      "to": "segments",
-      "data": "custom value tests",
-      "sources": [
-        "src/server/custom-fields/values.ts"
-      ]
-    },
-    {
-      "from": "segments",
-      "to": "record-flash",
-      "data": "delete notice",
-      "sources": [
-        "src/server/records/flash.ts"
+        "src/server/records/unsubscribe.ts"
       ]
     },
     {
       "from": "migrate",
-      "to": "segments-table",
-      "data": "table definition",
+      "to": "persons-table",
+      "data": "unsubscribe token column",
       "sources": [
-        "migrations/0013_segments.sql"
-      ]
-    },
-    {
-      "from": "seed",
-      "to": "segments-table",
-      "data": "fake segments",
-      "sources": [
-        "src/seed/segments.ts"
+        "migrations/0013_unsubscribe.sql"
       ]
     }
   ]

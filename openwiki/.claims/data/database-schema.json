@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bb978e4449955809a01a21d752767a9ae4f7ca53f4571f797ee6a14a9c26a8b9",
+  "pageVersion": "sha256:18c022d1f64e6e19b22756a1ed6e5af4502ffa8816180dc8c9487284178741e3",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L36",
-          "version": "repo-lines-v1:sha256:4381f13abecb5c2b8e46a12d259498b79af91ff9ea60358b1d4a591dce34174a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L34",
+          "version": "repo-lines-v1:sha256:46a80f119a36bc732fdd08345691d77420ea4869d35efcb0c7fa0afe25195a17:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -173,18 +173,18 @@
       ]
     },
     {
-      "id": "claim_aefb294551cc401f882c7bb926683981",
-      "statement": "Migration 0013 adds the segments table with who of everyone, pipeline or stage, up to 20 jsonb conditions and no foreign keys on pipeline, stage or condition ids.",
+      "id": "claim_e78f128a76654f9db28c22608a2baf00",
+      "statement": "Migration 0013 adds a unique 64-hex persons.unsubscribe_token and the timeline kinds unsubscribed_link, unsubscribed_mail_app and consent_changed.",
       "evidence": [
         {
-          "resource": "repo://migrations/0013_segments.sql",
-          "version": "repo-file-v1:sha256:82c3d433bf643cded205897ae3136e5eb940046d2cbc6025d510365714419d93"
+          "resource": "repo://migrations/0013_unsubscribe.sql",
+          "version": "repo-file-v1:sha256:c98191351b0608fdbb5cd6f4aa295969d75120a705b24ffd2bf41ac6e9a3d7bc"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T17:35:43.352Z"
+    "at": "2026-11-24T17:28:35.066Z"
   }
 }

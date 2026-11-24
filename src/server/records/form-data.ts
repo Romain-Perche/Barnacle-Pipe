@@ -60,6 +60,7 @@ function personFields(fd: FormData): PersonForm {
     ownerId: text(fd, "ownerId"),
     labelIds: fd.getAll("labelIds").filter((v): v is string => typeof v === "string").slice(0, 200),
     consent: text(fd, "consent"),
+    consentShown: text(fd, "consentShown"),
     private: text(fd, "private") === "on",
     ambassador: text(fd, "ambassador") === "on",
     referredBy: text(fd, "referredBy"),
