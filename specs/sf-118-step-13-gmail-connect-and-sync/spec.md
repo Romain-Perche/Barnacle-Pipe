@@ -8,11 +8,20 @@
 
 **Input**: User description: "Step 13 - Gmail: connect and sync. Each user connects their own barnacle.ai Gmail account (`docs/PRODUCT.md` section 3, the email lines in `docs/DECISIONS.md`). In their settings, \"Connect Gmail\" asks Google for access through the existing Internal Google app (read, send, and change labels); the access key is stored encrypted and never shown; the user can disconnect. The settings show the connected address, the last sync and how many conversations were copied, and \"Reconnect Gmail\" when Google no longer accepts the key. Sync: Gmail push notifications through Google Cloud Pub/Sub, renewed every day, plus a check every 15 minutes for anything missed. Only conversations with people in the CRM (any of their email addresses) are copied, from the moment the account is connected: messages sent and received, with the names and sizes of their attachments. Sending: a server function sends an email from the user's Gmail (later issues use it); here, \"Send me a test email\" in the settings proves it works. Not in this issue: showing emails on timelines, past emails, writing emails. Gmail and Pub/Sub are faked in tests."
 
+## Clarifications
+
+### Session 2026-11-24
+
+- Q: Which design? → A: Design: B, a "Settings" link in the sidebar for everyone, Gmail as a card on the Settings page (state, connected as, last sync, conversations copied, copying since, the buttons in the card heading), and an orange "!" on the "Settings" link on every page while Gmail needs reconnecting (see `design-options.html`).
+- Q: What happens to a user's copied emails when they disconnect Gmail or are deactivated? → A: They are kept: they are the team's history with the contact (A).
+- Q: What runs the 15-minute check and the daily renewal? → A: Vercel scheduled jobs (cron), on the Vercel Pro plan (A).
+
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Connect my Gmail account (Priority: P1)
 
-A team member opens their own Settings page (reached from their name at the bottom of the sidebar) and, under "// GMAIL", presses `[ CONNECT GMAIL ]`. Google asks them, through the team's existing Internal Google app, to let the CRM read their mail, send mail as them and change labels. They agree and come back to Settings, which now shows "Connected as <their address>", the last sync ("Not synced yet" until the first one) and "0 conversations copied". They never see the access key Google gave the CRM.
+A team member opens their own Settings page (the "Settings" link in the sidebar) and, in the Gmail card, presses `[ CONNECT GMAIL ]`. Google asks them, through the team's existing Internal Google app, to let the CRM read their mail, send mail as them and change labels. They agree and come back to Settings, which now shows "Connected as <their address>", the last sync ("Not synced yet" until the first one) and "0 conversations copied". They never see the access key Google gave the CRM.
 
 **Why this priority**: Gmail sync is a Must have (PRODUCT §3, "read and send email inside the app"); nothing else in this issue or the later email issues works until an account is connected.
 
@@ -20,8 +29,8 @@ A team member opens their own Settings page (reached from their name at the bott
 
 **Acceptance Scenarios**:
 
-1. **Given** a signed-in user with no Gmail connected, **When** they open Settings, **Then** "// GMAIL" shows "Gmail is not connected." and `[ CONNECT GMAIL ]`.
-2. **Given** they press `[ CONNECT GMAIL ]` and agree on Google's screen with their own account, **When** they come back, **Then** Settings shows "Gmail connected." once, "Connected as <address>", "Last sync: Not synced yet", "0 conversations copied", `[ SEND ME A TEST EMAIL ]` and `[ DISCONNECT ]`, and Gmail starts telling the CRM about new mail.
+1. **Given** a signed-in user with no Gmail connected, **When** they open Settings, **Then** the Gmail card shows "Gmail is not connected." and `[ CONNECT GMAIL ]`, and the sidebar shows a "Settings" link with no "!".
+2. **Given** they press `[ CONNECT GMAIL ]` and agree on Google's screen with their own account, **When** they come back, **Then** Settings shows "Gmail connected." once, "Connected as <address>", "Last sync: Not synced yet", "0 conversations copied", `[ SEND ME A TEST EMAIL ]` and `[ DISCONNECT ]` in a card headed "Gmail · connected", and Gmail starts telling the CRM about new mail.
 3. **Given** they cancel or refuse on Google's screen, **When** they come back, **Then** nothing is stored and Settings shows "Gmail was not connected." with `[ CONNECT GMAIL ]` again.
 4. **Given** they choose a different Google account than the one they sign in to the CRM with, **When** they come back, **Then** nothing is stored and Settings shows "Connect the Gmail account you sign in with (<their sign-in address>)."
 5. **Given** they agree but leave out one of the three permissions on Google's screen, **When** they come back, **Then** nothing is stored and Settings shows "Gmail needs all the permissions asked for. Try again and tick every box."
@@ -78,8 +87,8 @@ A user can disconnect Gmail at any time: the CRM stops syncing and forgets the k
 **Acceptance Scenarios**:
 
 1. **Given** a connected user, **When** they press `[ DISCONNECT ]` and confirm "Disconnect Gmail? New email will stop being copied. Emails already copied stay in the CRM.", **Then** Settings shows "Gmail disconnected." and `[ CONNECT GMAIL ]`; the fake Google shows the key cancelled and Gmail's notices for the user stopped, and the stored key is gone (checked by automated tests); a new message from a CRM person no longer changes anything.
-2. **Given** a connected user whose key Google no longer accepts, **When** a sync, renewal or send finds this, **Then** the connection is marked as needing reconnecting, its sync stops, and Settings shows "Google no longer accepts the CRM's access to <address>. Reconnect to carry on copying email." with `[ RECONNECT GMAIL ]` and `[ DISCONNECT ]`, and the last sync and count as they were.
-3. **Given** a connection needing reconnecting with "37 conversations copied", **When** the user reconnects with the same account, **Then** Settings shows "Gmail reconnected.", the working state and still 37; a new message from a CRM person in a new conversation then raises it to 38, and a message already copied before is not counted again.
+2. **Given** a connected user whose key Google no longer accepts, **When** a sync, renewal or send finds this, **Then** the connection is marked as needing reconnecting, its sync stops, and Settings shows "Google no longer accepts the CRM's access to <address>. Reconnect to carry on copying email." with `[ RECONNECT GMAIL ]` and `[ DISCONNECT ]`, the last sync and count as they were, and the "Settings" link in the sidebar shows an orange "!" on every page.
+3. **Given** a connection needing reconnecting with "37 conversations copied", **When** the user reconnects with the same account, **Then** Settings shows "Gmail reconnected.", the working state and still 37, and the "!" is gone from the "Settings" link; a new message from a CRM person in a new conversation then raises it to 38, and a message already copied before is not counted again.
 4. **Given** a connection needing reconnecting, **When** the user opens Settings, **Then** `[ SEND ME A TEST EMAIL ]` is not offered, and a later feature that calls the send function for them gets a refusal saying they must reconnect Gmail, with nothing sent.
 
 ---
@@ -105,7 +114,7 @@ A user can disconnect Gmail at any time: the CRM stops syncing and forgets the k
 
 **Connecting**
 
-- **FR-001**: Every signed-in, active user MUST have a Settings page for their own account, reached from their name at the bottom of the sidebar, with a "// GMAIL" section. Only the user themselves sees and changes their Gmail connection; nothing here is admin-only and admins cannot see or change another user's connection.
+- **FR-001**: Every signed-in, active user MUST have a Settings page for their own account, reached from a "Settings" link in the sidebar's main group, shown to everyone, with a Gmail card. Only the user themselves sees and changes their Gmail connection; nothing here is admin-only and admins cannot see or change another user's connection.
 - **FR-002**: `[ CONNECT GMAIL ]` MUST ask Google, through the team's existing Internal Google app, for exactly these permissions: read mail, send mail as the user, and change labels. The connection MUST be refused, with nothing stored, when the user cancels, leaves out a permission, or picks a Google account other than their CRM sign-in address (US1 scenarios 3-5). The return from Google MUST be checked to belong to the request the same user started.
 - **FR-003**: The key Google gives MUST be stored encrypted with a secret kept in the app's settings, never in the repo; it MUST never be shown on any page, sent to the browser, written to a log or put in a message.
 - **FR-004**: Settings MUST show, for a connected user: the connected address, the time of the last successful sync ("Not synced yet" before the first), the number of conversations copied from this account, `[ SEND ME A TEST EMAIL ]` and `[ DISCONNECT ]`; for a connection Google no longer accepts: the message and `[ RECONNECT GMAIL ]` of US4 scenario 2.
@@ -130,7 +139,7 @@ A user can disconnect Gmail at any time: the CRM stops syncing and forgets the k
 
 - **FR-015**: Every page and action MUST require a signed-in, active user; scheduled checks, renewals and Google's notices MUST be refused unless they carry the app's secret or Google's proof (FR-008), and never show data in their answer.
 - **FR-016**: Every message shown MUST be one of the app's fixed messages (built only from the user's own address where a message names one); text from the page address or from Google's answers MUST never be shown.
-- **FR-017**: The Settings page MUST follow `docs/DESIGN.md` and the signed-in layout (design B).
+- **FR-017**: The Settings page MUST follow design B in `design-options.html` (a "Settings" sidebar link, Gmail as a card with a green dot and "Gmail · connected" or a red dot and "Gmail · needs reconnecting", the buttons in the card heading) and `docs/DESIGN.md`. While the user's connection needs reconnecting, the "Settings" link MUST show an orange "!" on every signed-in page; it MUST go away once they reconnect or disconnect.
 - **FR-018**: Gmail, Google's consent screen for these permissions and Google Cloud notices MUST be reached through settings and have fakes, so the whole feature is built, run locally and tested with no real account (team decision, kickoff); the fakes MUST be checked against Google's published descriptions of these services, like the existing Google fake. The fake consent screen and a fake mailbox page (where a tester puts a received or sent message in a user's fake mailbox, with or without delivering its notice, and runs the 15-minute check) MUST only work where the fake Google login works (development and tests).
 - **FR-019**: The fake data command MUST give at least one fake user a connected fake Gmail account with a few copied conversations (with attachments) with fake CRM people, without duplicates when run again.
 
@@ -160,7 +169,7 @@ A user can disconnect Gmail at any time: the CRM stops syncing and forgets the k
 - Who may see a copied conversation (DECISIONS 2026-11-24: hidden from a user who cannot see someone in it) is applied where conversations are shown, in the later issues; nothing copied here is shown to anyone but the counts on the user's own Settings.
 - The connected account must be the address the user signs in with: every user is a barnacle.ai account (DECISIONS kickoff), and "their own barnacle.ai Gmail account" (PRODUCT §3) is read as that one.
 - The Internal Google app gets the Gmail permissions and a Google Cloud topic for notices before go-live; because the app is Internal, no Google review is needed. These are set up with the other real accounts before go-live.
-- The hosting runs a scheduled call every 15 minutes and once a day (the app's first scheduled jobs); if the hosting plan cannot, the team picks another scheduler that calls the same address with the app's secret.
-- Copied messages are kept when a user disconnects, is deactivated, or deletes a message in Gmail, and when a person is deleted; removing them is a later decision. Messages are not changed when edited labels or read state change in Gmail in this issue (the label permission is asked now for later issues, so users need not reconnect).
+- The 15-minute check and the daily renewal are Vercel scheduled jobs (the app's first), which needs the Vercel Pro plan (clarified 2026-11-24); each call carries the app's secret.
+- Copied messages are kept (clarified 2026-11-24) when a user disconnects, is deactivated, or deletes a message in Gmail, and when a person is deleted; removing them is a later decision. Messages are not changed when edited labels or read state change in Gmail in this issue (the label permission is asked now for later issues, so users need not reconnect).
 - Attachment contents are not copied in this issue: names and sizes only, as asked.
 - Technical choices already in `docs/DECISIONS.md` and `AGENTS.md` apply and are not repeated here.
