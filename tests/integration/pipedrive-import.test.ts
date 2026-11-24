@@ -150,6 +150,11 @@ describe("a complete import of the small account", () => {
     expect(view.counts).toEqual({
       organisations: { imported: 9, linked: 1, already: 0, notImported: 0 },
       people: { imported: 27, linked: 1, already: 0, notImported: 2 },
+      // SF-122: the kinds not ticked stay at zero.
+      deals: { imported: 0, linked: 0, already: 0, notImported: 0 },
+      notes: { imported: 0, linked: 0, already: 0, notImported: 0 },
+      activities: { imported: 0, linked: 0, already: 0, notImported: 0 },
+      files: { imported: 0, linked: 0, already: 0, notImported: 0 },
     });
     expect(view.totals).toEqual({ imported: 36, linked: 2, notImported: 2, already: 0 });
   });

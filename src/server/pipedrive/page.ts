@@ -17,11 +17,11 @@ import {
 } from "@/server/pipedrive/rules";
 import { isValidEmail, normaliseEmail, type Consent, type OrganisationFields, type PersonFields } from "@/server/records/rules";
 
-export type RecordKind = "person" | "organisation";
+export type RecordKind = "person" | "organisation" | "deal" | "note" | "activity" | "file";
 // A record of the report: its Pipedrive id and name (as data), and the reason or warning as a message code.
 export type ReportItem = { kind: RecordKind; pipedriveId: number; label: string; code: string; args?: Record<string, string | number> };
 export type LinkedItem = { kind: "person"; personId: number; pipedriveId: number } | { kind: "organisation"; organisationId: number; pipedriveId: number };
-export type ListMiss = { list: "lead_source" | "label"; value: string; records: number };
+export type ListMiss = { list: "lead_source" | "label" | "deal_label"; value: string; records: number };
 export type ChoiceMiss = { kind: RecordKind; field: string; value: string; records: number };
 export type OwnerMiss = { name: string; email: string; records: number };
 export type PdUsers = Record<string, { name: string; email: string }>;
@@ -42,7 +42,7 @@ type PlanBase = {
 
 const key = (text: string) => text.trim().toLowerCase();
 
-class Counter<T extends { records: number }> {
+export class Counter<T extends { records: number }> {
   private map = new Map<string, T>();
   add(k: string, make: () => Omit<T, "records">) {
     const cur = this.map.get(k) ?? ({ ...make(), records: 0 } as T);
@@ -55,7 +55,7 @@ class Counter<T extends { records: number }> {
 }
 
 // The CRM owner of a Pipedrive owner: the active CRM user with that email, else the importer (counted per owner).
-function ownerOf(pdOwner: number | null, users: Map<string, number>, pdUsers: PdUsers, importerId: number, owners: Record<string, OwnerMiss>): number {
+export function ownerOf(pdOwner: number | null, users: Map<string, number>, pdUsers: PdUsers, importerId: number, owners: Record<string, OwnerMiss>): number {
   if (pdOwner === null) return importerId;
   const u = pdUsers[String(pdOwner)];
   const id = u ? users.get(key(u.email)) : undefined;
@@ -66,7 +66,7 @@ function ownerOf(pdOwner: number | null, users: Map<string, number>, pdUsers: Pd
   return importerId;
 }
 
-const toItem = (kind: RecordKind, pipedriveId: number, label: string, p: Problem): ReportItem =>
+export const toItem = (kind: RecordKind, pipedriveId: number, label: string, p: Problem): ReportItem =>
   p.args === undefined ? { kind, pipedriveId, label, code: p.code } : { kind, pipedriveId, label, code: p.code, args: p.args };
 
 // ---------------------------------------------------------------- organisations

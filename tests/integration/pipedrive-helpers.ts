@@ -1,3 +1,4 @@
+// SF-122: `start` takes the four new kinds too; `link` reads a Pipedrive link of any kind.
 // SF-117 test helpers: connect a user to the fake Pipedrive, run an import to its end (waits fast-forwarded in the
 // database, never slept), and the spec's small account (30 people, 10 organisations: spec US2 Independent Test).
 import { sql } from "@/server/db";
@@ -24,8 +25,14 @@ export async function connect(userId: number, token: string) {
   if (!("ok" in r)) throw new Error(`connect: ${r.error}`);
 }
 
-export async function start(userId: number, o: { people?: boolean; organisations?: boolean; consent?: "subscribed" | "unsubscribed" | null } = {}) {
-  const r = await startImport(userId, { people: o.people ?? true, organisations: o.organisations ?? true, consent: o.consent === undefined ? "unsubscribed" : o.consent });
+export async function start(
+  userId: number,
+  o: { people?: boolean; organisations?: boolean; deals?: boolean; notes?: boolean; activities?: boolean; files?: boolean; consent?: "subscribed" | "unsubscribed" | null } = {},
+) {
+  const r = await startImport(userId, {
+    people: o.people ?? true, organisations: o.organisations ?? true, deals: o.deals, notes: o.notes, activities: o.activities, files: o.files,
+    consent: o.consent === undefined ? "unsubscribed" : o.consent,
+  });
   if (!("id" in r)) throw new Error(`start: ${r.error}`);
   return r.id;
 }
@@ -121,4 +128,12 @@ export function smallAccount(fake: FakePipedrive) {
     );
   }
   return { org, person };
+}
+
+// SF-122: the CRM record a Pipedrive record became (undefined: no link; null: the CRM record was deleted).
+export async function linkTarget(kind: "person" | "organisation" | "deal" | "note" | "activity" | "file", pipedriveId: number): Promise<number | null | undefined> {
+  const column = { person: "person_id", organisation: "organisation_id", deal: "deal_id", note: "note_id", activity: "activity_id", file: "file_id" }[kind];
+  const [row] = await sql<{ target: number | null }[]>`
+    select ${sql(column)}::int as target from pipedrive_links where company_id = ${COMPANY} and kind = ${kind} and pipedrive_id = ${pipedriveId}`;
+  return row === undefined ? undefined : row.target;
 }

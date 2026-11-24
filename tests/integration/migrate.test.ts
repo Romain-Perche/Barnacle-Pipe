@@ -336,10 +336,63 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-122 data-model.md § Migration: 0013_pipedrive_deals.sql: the new columns, the records, step and pause checks,
+  // the link kinds and targets
+  it("applies 0013_pipedrive_deals.sql: new columns and defaults, records check, steps, pause reason, link checks", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0013_pipedrive_deals.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [o] = await c`insert into organisations (name, owner_id, created_by) values ('Fakeco', ${u.id}, ${u.id}) returning id`;
+      const [pl] = await c`insert into pipelines (name, position) values ('Sales', 1) returning id`;
+      const [st] = await c`insert into stages (pipeline_id, name, position) values (${pl.id}, 'Lead', 1) returning id`;
+      const [d] = await c`insert into deals (title, stage_id, owner_id, created_by) values ('Fake deal', ${st.id}, ${u.id}, ${u.id}) returning id`;
+      const cols = await c`select column_name, column_default, is_nullable from information_schema.columns
+        where table_name = 'pipedrive_imports' and (column_name like 'want_%' or column_name like '%_total' or column_name like '%_done')`;
+      const byName = new Map(cols.map((r) => [r.column_name as string, r]));
+      for (const k of ["deals", "notes", "activities", "files"]) {
+        expect(byName.get(`want_${k}`)?.column_default).toBe("false");
+        expect(byName.get(`${k}_total`)?.is_nullable).toBe("YES");
+        expect(byName.get(`${k}_done`)?.column_default).toBe("0");
+      }
+      const imp = (o: { people?: boolean; orgs?: boolean; deals?: boolean; step?: string; state?: string; pause?: string | null }) =>
+        c`insert into pipedrive_imports (user_id, company_id, company_name, want_people, want_organisations, want_deals, consent, step, state, pause_reason, finished_at)
+          values (${u.id}, 1001, 'Fakeco Pipedrive', ${o.people ?? true}, ${o.orgs ?? true}, ${o.deals ?? false}, 'subscribed',
+                  ${o.step ?? "prepare"}, ${o.state ?? "finished"}, ${o.pause ?? null}, ${(o.state ?? "finished") === "finished" ? new Date() : null})`;
+      expect(await code(imp({ deals: true, people: false }))).toBe("23514");
+      expect(await code(imp({ deals: true, orgs: false }))).toBe("23514");
+      expect(await code(imp({ deals: true }))).toBe("ok");
+      expect(await code(imp({ step: "archived_deals" }))).toBe("ok");
+      expect(await code(imp({ step: "emails" }))).toBe("23514");
+      expect(await code(imp({ state: "paused", pause: "files_unreachable" }))).toBe("ok");
+      const link = (o: { kind: string; deal?: unknown; how?: string; id: number; org?: unknown }) =>
+        c`insert into pipedrive_links (company_id, kind, pipedrive_id, deal_id, organisation_id, how)
+          values (1001, ${o.kind}, ${o.id}, ${(o.deal ?? null) as number | null}, ${(o.org ?? null) as number | null}, ${o.how ?? "imported"})`;
+      expect(await code(link({ kind: "deal", id: 1, deal: d.id }))).toBe("ok");
+      expect(await code(link({ kind: "note", id: 2, deal: d.id }))).toBe("23514");
+      expect(await code(link({ kind: "deal", id: 3, deal: d.id, how: "linked" }))).toBe("23514");
+      expect(await code(link({ kind: "email", id: 4 }))).toBe("23514");
+      expect(await code(link({ kind: "organisation", id: 5, org: o.id, how: "linked" }))).toBe("ok");
+      // A deleted deal keeps its link (the id goes null).
+      await c`delete from deals where id = ${d.id}`;
+      const [{ k }] = await c`select count(*)::int as k from pipedrive_links where kind = 'deal' and deal_id is null`;
+      expect(k).toBe(1);
+    } finally {
+      await c.end();
+    }
+    const migration = readFileSync("migrations/0013_pipedrive_deals.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration).not.toMatch(/create table/i);
+  });
+
   // covers SF-117 T013: the Pipedrive code keeps to the pooler's limits (no session state); the migration is transaction-safe
   it("keeps the Pipedrive code and 0012_pipedrive.sql free of session state", () => {
     const dir = "src/server/pipedrive";
-    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["api.ts", "connection.ts", "imports.ts", "rules.ts", "page.ts"]));
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["api.ts", "connection.ts", "imports.ts", "rules.ts", "page.ts", "html.ts", "deal-rules.ts", "records-page.ts"]));
     for (const file of readdirSync(dir)) {
       const text = readFileSync(`${dir}/${file}`, "utf8");
       expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);

@@ -183,6 +183,19 @@ export const messages = {
   pipedrive_running: "Import running.",
   pipedrive_not_connected: "Save your Pipedrive token first.",
   pipedrive_email_other_hidden: "Another Pipedrive person has the same email address.",
+  // SF-122: deals, notes, activities and files
+  pipedrive_emails_note: "Pipedrive emails are not imported: they will come from Gmail.",
+  pipedrive_no_lost_reason: "No reason given in Pipedrive.",
+  pipedrive_lost_reason_too_long: "Lost reason too long to import from Pipedrive.",
+  pipedrive_note_empty: "Empty once its formatting is removed.",
+  pipedrive_note_too_long: "Longer than 100,000 characters.",
+  pipedrive_no_due_date: "No due date.",
+  pipedrive_file_gone: "No longer in Pipedrive.",
+  pipedrive_file_link: "A linked document, not an uploaded file.",
+  pipedrive_file_empty: "Empty file.",
+  pipedrive_stage_missing: "Its stage is not in Pipedrive any more.",
+  pipedrive_private_deal: "a private deal",
+  pipedrive_private_person: "a private person",
 } as const;
 
 // SF-117: Pipedrive's field types in words (contracts/routes.md § Messages); any other type is "other".
@@ -195,7 +208,13 @@ const pdType = (type: string) => PIPEDRIVE_TYPE_WORDS[type] ?? "other";
 const article = (word: string) => (/^[aeiou]/.test(word) ? `an ${word}` : `a ${word}`);
 const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 const grouped = (n: number) => n.toLocaleString("en-GB");
-const PIPEDRIVE_KIND_WORDS = { organisations: "Organisations", people: "People" } as const;
+const PIPEDRIVE_KIND_WORDS = {
+  organisations: "Organisations", people: "People", deals: "Deals", notes: "Notes", activities: "Activities", files: "Files",
+} as const;
+export type PipedriveKind = keyof typeof PIPEDRIVE_KIND_WORDS;
+// SF-122: a note, activity or file, counted.
+const RECORD_WORDS = { note: ["note", "notes"], activity: ["activity", "activities"], file: ["file", "files"] } as const;
+const ON_WORDS = { lead: "leads", project: "projects", email: "emails" } as const;
 const CRM_TYPE_WORDS: Record<string, string> = {
   text: "text", long_text: "long text", number: "number", money: "money", date: "date",
   single_choice: "single choice", multiple_choice: "multiple choice", yes_no: "yes / no",
@@ -311,15 +330,17 @@ export const templates = {
   pipedrive_connected: (user: string, company: string) => `Connected to Pipedrive as ${user} (${company}).`,
   pipedrive_saved_on: (date: string) => `Token saved on ${date}.`,
   pipedrive_slow_down: (n: number) => `Pipedrive asked us to slow down. Carrying on in ${n} ${n === 1 ? "second" : "seconds"}.`,
-  pipedrive_paused: (parts: { kind: "organisations" | "people"; done: number; total: number }[]) =>
+  pipedrive_paused: (parts: { kind: PipedriveKind; done: number; total: number }[]) =>
     `Import paused: ${parts.map((p) => `${PIPEDRIVE_KIND_WORDS[p.kind]} ${grouped(p.done)} of ${grouped(p.total)}`).join(", ")}.`,
-  pipedrive_progress: (kind: "organisations" | "people", done: number, total: number) => `${PIPEDRIVE_KIND_WORDS[kind]} · ${grouped(done)} of ${grouped(total)}`,
+  pipedrive_progress: (kind: PipedriveKind, done: number, total: number) => `${PIPEDRIVE_KIND_WORDS[kind]} · ${grouped(done)} of ${grouped(total)}`,
   pipedrive_owner_missing: (name: string, email: string, n: number) =>
     `Owner '${name}' (${email}) has no CRM user: ${counted(n, "record", "records")} given to you.`,
   pipedrive_private_others: (n: number) => `${n} private ${n === 1 ? "person" : "people"} of other owners imported.`,
   pipedrive_owner_only_orgs: (n: number) => `${counted(n, "owner-only organisation", "owner-only organisations")} imported as shared.`,
-  pipedrive_list_missing: (list: "lead_source" | "label", value: string, n: number) =>
-    `${list === "lead_source" ? "Lead source" : "Label"} not on the list: '${value}' (${counted(n, "person", "people")})`,
+  pipedrive_list_missing: (list: "lead_source" | "label" | "deal_label", value: string, n: number) =>
+    list === "deal_label"
+      ? `Deal label not on the list: '${value}' (${counted(n, "deal", "deals")})`
+      : `${list === "lead_source" ? "Lead source" : "Label"} not on the list: '${value}' (${counted(n, "person", "people")})`,
   pipedrive_choice_missing: (field: string, value: string, n: number) => `'${value}' is not a choice of '${field}': left out (${counted(n, "record", "records")}).`,
   pipedrive_field_no_match: (name: string) => `No CRM field named '${name}'.`,
   pipedrive_field_type_mismatch: (name: string, pd: string, crm: string) =>
@@ -336,6 +357,31 @@ export const templates = {
   pipedrive_imported_by: (name: string) => `Imported from Pipedrive by ${name}`,
   pipedrive_unsubscribed_by: (name: string) => `Unsubscribed by the Pipedrive import of ${name}`,
   pipedrive_already: (n: number) => `Already imported: ${n}`,
+  // SF-122 (contracts/routes.md § Messages): Pipedrive values in quotes; CRM pipeline names as they are.
+  pipedrive_pipeline_added: (name: string, n: number) => `Pipeline '${name}' added with ${counted(n, "stage", "stages")}.`,
+  pipedrive_stage_added: (stage: string, pipeline: string) => `Stage '${stage}' added to the pipeline ${pipeline}.`,
+  pipedrive_pipelines_merged: (a: string, b: string) => `Pipedrive pipelines '${a}' and '${b}' were imported into one pipeline.`,
+  pipedrive_stages_merged: (a: string, b: string) => `Pipedrive stages '${a}' and '${b}' were imported into one stage.`,
+  pipedrive_name_not_created: (kind: "pipeline" | "stage", name: string) =>
+    `${kind === "pipeline" ? "Pipeline" : "Stage"} name '${name}' is longer than 100 characters: not created.`,
+  pipedrive_pipeline_not_created: (name: string) => `Its pipeline '${name}' could not be created.`,
+  pipedrive_stage_not_created: (name: string) => `Its stage '${name}' could not be created.`,
+  pipedrive_person_not_imported: (name: string) => `Its person '${name}' was not imported.`,
+  pipedrive_organisation_not_imported: (name: string) => `Its organisation '${name}' was not imported.`,
+  pipedrive_deal_not_imported: (title: string) => `Its deal '${title}' was not imported.`,
+  pipedrive_target_deleted: (kind: "deal" | "person" | "organisation") => `Its ${kind} was deleted in the CRM.`,
+  pipedrive_deal_currency: (currency: string) => `Value in ${currency}, not GBP: left out.`,
+  pipedrive_participant_left_out: (name: string) => `Linked person '${name}' was not imported: left out.`,
+  pipedrive_private_deals: (n: number) => `${counted(n, "private deal", "private deals")} of other owners imported.`,
+  pipedrive_private_on: (kind: "note" | "activity" | "file", n: number) =>
+    `${counted(n, RECORD_WORDS[kind][0], RECORD_WORDS[kind][1])} on private records of other owners imported.`,
+  pipedrive_types_as_tasks: (type: string, n: number) => `${n} '${type}' ${n === 1 ? "activity" : "activities"} imported as tasks.`,
+  pipedrive_elsewhere: (kind: "note" | "activity" | "file", on: "lead" | "project" | "email", n: number) =>
+    `${counted(n, RECORD_WORDS[kind][0], RECORD_WORDS[kind][1])} on Pipedrive ${ON_WORDS[on]}: not imported.`,
+  pipedrive_file_too_large: (mb: string) => `Over 25 MB (${mb} MB).`,
+  pipedrive_duration_left_out: (text: string) => `Duration '${text}' is not between 5 minutes and 24 hours: left out.`,
+  // A reason about a record the CRM has: "<reason> (on <deal title, person or organisation name>)".
+  pipedrive_on_record: (reason: string, name: string) => `${reason} (on ${name})`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

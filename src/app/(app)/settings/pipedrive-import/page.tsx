@@ -17,7 +17,7 @@ import { ReportStep } from "./ReportStep";
 export const maxDuration = 60;
 
 const STEPS = ["1 CHOOSE", "2 IMPORTING", "3 REPORT"];
-const ERRORS = ["pipedrive_tick_something", "pipedrive_consent_required"] as const;
+const ERRORS = ["pipedrive_tick_something", "pipedrive_consent_required", "files_unreachable"] as const;
 type Search = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
 

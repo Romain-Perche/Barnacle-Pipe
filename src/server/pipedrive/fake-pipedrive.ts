@@ -5,6 +5,11 @@
 // n calls, to fail the next call, or to refuse `include_fields=marketing_status` (no marketing app).
 // Used by the app only when fakes are allowed and PIPEDRIVE_URL is empty; tests wrap it (tests/fakes/pipedrive.ts).
 // Every name is clearly fake. `requests` records method, path and query, never the token.
+// SF-122 (specs/sf-122-…/contracts/pipedrive-api.md § The fake): also deal fields, pipelines, stages, deals (open and
+// archived, with followers and participants), activities, activity types, notes and files with their bytes. v2 lists
+// page by cursor as above; v1 lists (/notes, /files, participants) by start / limit with `additional_data`.
+// /v1/files/{id}/download answers the bytes, or with redirectDownloads(true) a 302 to FILE_HOST, which serves them only
+// to a request WITHOUT x-api-token (400 otherwise, so a leaked token fails the test).
 
 export type FakeUser = { id: number; name: string; email: string };
 export type FakeField = {
@@ -49,16 +54,107 @@ export type FakePerson = {
   // Served only with include_fields=marketing_status.
   marketing_status?: string | null;
 };
+export type FakePipeline = { id: number; name: string; order_nr: number; is_deleted: boolean; add_time: string; update_time: string | null };
+export type FakeStage = { id: number; pipeline_id: number; name: string; order_nr: number; is_deleted: boolean; add_time: string; update_time: string | null };
+export type FakeDeal = {
+  id: number;
+  title: string;
+  owner_id: number;
+  person_id: number | null;
+  org_id: number | null;
+  pipeline_id: number | null;
+  stage_id: number | null;
+  value: number | null;
+  currency: string;
+  add_time: string;
+  update_time: string | null;
+  stage_change_time: string | null;
+  is_deleted: boolean;
+  is_archived: boolean;
+  status: string;
+  lost_reason: string | null;
+  visible_to: number;
+  close_time: string | null;
+  won_time: string | null;
+  lost_time: string | null;
+  expected_close_date: string | null;
+  label_ids: number[];
+  custom_fields: Record<string, unknown>;
+};
+export type FakeActivity = {
+  id: number;
+  subject: string;
+  type: string;
+  owner_id: number;
+  is_deleted: boolean;
+  add_time: string;
+  update_time: string | null;
+  deal_id: number | null;
+  lead_id: string | null;
+  person_id: number | null;
+  org_id: number | null;
+  project_id: number | null;
+  due_date: string | null;
+  due_time: string | null;
+  duration: string | null;
+  busy: boolean;
+  done: boolean;
+  marked_as_done_time: string | null;
+  note: string | null;
+};
+export type FakeActivityType = { id: number; name: string; key_string: string; icon_key: string; color: string | null; order_nr: number; active_flag: boolean; is_custom_flag: boolean; add_time: string; update_time: string | null };
+export type FakeNote = {
+  id: number;
+  active_flag: boolean;
+  add_time: string;
+  update_time: string | null;
+  content: string;
+  deal_id: number | null;
+  person_id: number | null;
+  org_id: number | null;
+  lead_id: string | null;
+  user_id: number;
+};
+export type FakeFile = {
+  id: number;
+  user_id: number;
+  deal_id: number | null;
+  person_id: number | null;
+  org_id: number | null;
+  lead_id: string | null;
+  add_time: string;
+  update_time: string | null;
+  name: string;
+  file_name: string;
+  file_size: number;
+  active_flag: boolean;
+  remote_location: string | null;
+  mail_message_id: string | null;
+};
 type Company = {
   id: number;
   name: string;
   users: Map<number, FakeUser>;
   personFields: FakeField[];
   organizationFields: FakeField[];
+  dealFields: FakeField[];
   organizations: Map<number, FakeOrganization>;
   persons: Map<number, FakePerson>;
+  pipelines: Map<number, FakePipeline>;
+  stages: Map<number, FakeStage>;
+  deals: Map<number, FakeDeal>;
+  followers: Map<number, number[]>;
+  participants: Map<number, number[]>;
+  activities: Map<number, FakeActivity>;
+  activityTypes: FakeActivityType[];
+  notes: Map<number, FakeNote>;
+  files: Map<number, FakeFile>;
+  bytes: Map<number, Uint8Array>;
   nextId: number;
 };
+// Where redirected downloads go (never Pipedrive's API host).
+export const FILE_HOST = "files.fake-pipedrive.invalid";
+const DEFAULT_TYPES = [["call", "Call"], ["meeting", "Meeting"], ["task", "Task"], ["deadline", "Deadline"], ["email", "Email"], ["lunch", "Lunch"]] as const;
 export type FakeRequest = { method: string; path: string; query: Record<string, string> };
 
 const json = (status: number, body: unknown, headers: Record<string, string> = {}) =>
@@ -79,6 +175,7 @@ export class FakePipedrive {
   private failure: "network" | 500 | null = null;
   private hanging = false;
   private marketingApp = true;
+  private redirecting = false;
   // Test hook: changes the next answer's JSON body before it is sent.
   private tamperNext: ((body: Record<string, unknown>) => void) | null = null;
   readonly requests: FakeRequest[] = [];
@@ -90,7 +187,14 @@ export class FakePipedrive {
   addCompany(o: { token: string; user: FakeUser; companyId: number; companyName: string }): void {
     let c = this.companies.get(o.companyId);
     if (!c) {
-      c = { id: o.companyId, name: o.companyName, users: new Map(), personFields: [], organizationFields: [], organizations: new Map(), persons: new Map(), nextId: 1 };
+      c = {
+        id: o.companyId, name: o.companyName, users: new Map(), personFields: [], organizationFields: [], dealFields: [], organizations: new Map(),
+        persons: new Map(), pipelines: new Map(), stages: new Map(), deals: new Map(), followers: new Map(), participants: new Map(),
+        activities: new Map(), notes: new Map(), files: new Map(), bytes: new Map(), nextId: 1,
+        activityTypes: DEFAULT_TYPES.map(([key, name], i) => ({
+          id: i + 1, name, key_string: key, icon_key: key, color: null, order_nr: i + 1, active_flag: true, is_custom_flag: false, add_time: NOW, update_time: null,
+        })),
+      };
       this.companies.set(o.companyId, c);
     }
     c.users.set(o.user.id, o.user);
@@ -108,9 +212,113 @@ export class FakePipedrive {
     this.company(companyId).users.set(user.id, user);
   }
 
-  addField(companyId: number, kind: "person" | "organization", field: FakeField): void {
+  addField(companyId: number, kind: "person" | "organization" | "deal", field: FakeField): void {
     const c = this.company(companyId);
-    (kind === "person" ? c.personFields : c.organizationFields).push({ options: null, ...field });
+    (kind === "person" ? c.personFields : kind === "deal" ? c.dealFields : c.organizationFields).push({ options: null, ...field });
+  }
+
+  private newId(c: Company, id?: number): number {
+    const n = id ?? c.nextId++;
+    c.nextId = Math.max(c.nextId, n + 1);
+    return n;
+  }
+
+  addPipeline(companyId: number, p: Partial<FakePipeline> & { name: string }): number {
+    const c = this.company(companyId);
+    const id = this.newId(c, p.id);
+    c.pipelines.set(id, { order_nr: c.pipelines.size + 1, is_deleted: false, add_time: NOW, update_time: null, ...p, id });
+    return id;
+  }
+
+  addStage(companyId: number, s: Partial<FakeStage> & { pipeline_id: number; name: string }): number {
+    const c = this.company(companyId);
+    const id = this.newId(c, s.id);
+    const order = [...c.stages.values()].filter((x) => x.pipeline_id === s.pipeline_id).length + 1;
+    c.stages.set(id, { order_nr: order, is_deleted: false, add_time: NOW, update_time: null, ...s, id });
+    return id;
+  }
+
+  addDeal(companyId: number, d: Partial<FakeDeal> & { title: string; owner_id: number; stage_id: number }, extra: { followers?: number[]; participants?: number[] } = {}): number {
+    const c = this.company(companyId);
+    const id = this.newId(c, d.id);
+    c.deals.set(id, {
+      person_id: null, org_id: null, pipeline_id: c.stages.get(d.stage_id)?.pipeline_id ?? null, value: null, currency: "GBP", add_time: NOW,
+      update_time: null, stage_change_time: null, is_deleted: false, is_archived: false, status: "open", lost_reason: null, visible_to: 3,
+      close_time: null, won_time: null, lost_time: null, expected_close_date: null, label_ids: [], custom_fields: {}, ...d, id,
+    });
+    if (extra.followers) c.followers.set(id, extra.followers);
+    if (extra.participants) c.participants.set(id, extra.participants);
+    return id;
+  }
+
+  deleteDeal(companyId: number, id: number): void {
+    this.company(companyId).deals.delete(id);
+  }
+
+  addActivity(companyId: number, a: Partial<FakeActivity> & { subject: string; owner_id: number }): number {
+    const c = this.company(companyId);
+    const id = this.newId(c, a.id);
+    c.activities.set(id, {
+      type: "task", is_deleted: false, add_time: NOW, update_time: null, deal_id: null, lead_id: null, person_id: null, org_id: null,
+      project_id: null, due_date: "2026-11-30", due_time: null, duration: null, busy: false, done: false, marked_as_done_time: null, note: null, ...a, id,
+    });
+    return id;
+  }
+
+  deleteActivity(companyId: number, id: number): void {
+    this.company(companyId).activities.delete(id);
+  }
+
+  addActivityType(companyId: number, key: string, name: string): void {
+    const c = this.company(companyId);
+    c.activityTypes.push({ id: c.activityTypes.length + 1, name, key_string: key, icon_key: "task", color: null, order_nr: c.activityTypes.length + 1, active_flag: true, is_custom_flag: true, add_time: NOW, update_time: null });
+  }
+
+  addNote(companyId: number, n: Partial<FakeNote> & { content: string; user_id: number }): number {
+    const c = this.company(companyId);
+    const id = this.newId(c, n.id);
+    c.notes.set(id, { active_flag: true, add_time: NOW, update_time: null, deal_id: null, person_id: null, org_id: null, lead_id: null, ...n, id });
+    return id;
+  }
+
+  // A note deleted in Pipedrive: no longer listed.
+  deleteNote(companyId: number, id: number): void {
+    this.company(companyId).notes.delete(id);
+  }
+
+  addFile(companyId: number, f: Partial<FakeFile> & { name: string; user_id: number }, bytes: Uint8Array = new Uint8Array(0)): number {
+    const c = this.company(companyId);
+    const id = this.newId(c, f.id);
+    c.files.set(id, {
+      deal_id: null, person_id: null, org_id: null, lead_id: null, add_time: NOW, update_time: null, file_name: f.name, file_size: bytes.length,
+      active_flag: true, remote_location: null, mail_message_id: null, ...f, id,
+    });
+    c.bytes.set(id, bytes);
+    return id;
+  }
+
+  // A file removed in Pipedrive: still listed by an earlier page, but its download answers 404.
+  deleteFile(companyId: number, id: number): void {
+    const c = this.company(companyId);
+    c.files.delete(id);
+    c.bytes.delete(id);
+  }
+
+  // The file's bytes gone while its metadata stays (a download then answers 404).
+  loseFileBytes(companyId: number, id: number): void {
+    this.company(companyId).bytes.delete(id);
+  }
+
+  // On: a download answers 302 to FILE_HOST instead of the bytes.
+  redirectDownloads(on: boolean): void {
+    this.redirecting = on;
+  }
+
+  // Changes a person in the fake (e.g. a name given after a first import).
+  updatePerson(companyId: number, id: number, change: Partial<FakePerson>): void {
+    const c = this.company(companyId);
+    const p = c.persons.get(id);
+    if (p) c.persons.set(id, { ...p, ...change, id });
   }
 
   addOrganization(companyId: number, o: Partial<FakeOrganization> & { name: string; owner_id: number }): number {
@@ -143,6 +351,10 @@ export class FakePipedrive {
 
   deleteOrganization(companyId: number, id: number): void {
     this.company(companyId).organizations.delete(id);
+  }
+
+  dealCount(companyId: number): number {
+    return this.company(companyId).deals.size;
   }
 
   personCount(companyId: number): number {
@@ -185,6 +397,7 @@ export class FakePipedrive {
     const url = new URL(req.url);
     const query = Object.fromEntries(url.searchParams);
     this.requests.push({ method: req.method, path: url.pathname, query });
+    if (url.hostname === FILE_HOST) return this.fileHost(req, url);
     if (this.hanging) {
       this.hanging = false;
       return new Promise<Response>((_, reject) => {
@@ -215,6 +428,14 @@ export class FakePipedrive {
       return json(200, body);
     }
     return res;
+  }
+
+  private fileHost(req: Request, url: URL): Response {
+    if (req.headers.get("x-api-token")) return new Response("A token was sent to the file host.", { status: 400 });
+    const [companyId, id] = url.pathname.split("/").filter(Boolean).map(Number);
+    const bytes = this.companies.get(companyId)?.bytes.get(id);
+    if (!bytes) return new Response("Not found", { status: 404 });
+    return new Response(new Uint8Array(bytes), { status: 200, headers: { "content-type": "application/octet-stream" } });
   }
 
   private route(method: string, url: URL, c: Company, userId: number): Response {
@@ -254,9 +475,79 @@ export class FakePipedrive {
         });
         return this.page(q, persons);
       }
-      default:
+      case "/api/v2/dealFields": {
+        const fields = c.dealFields.map((f, i) => ({ id: i + 1, item: { field_code: f.field_code, field_name: f.field_name, field_type: f.field_type, is_custom_field: f.is_custom_field, options: f.options ?? null } }));
+        return this.page(q, fields);
+      }
+      case "/api/v2/pipelines":
+        return this.page(q, [...c.pipelines.values()].sort((a, b) => a.id - b.id).map((p) => ({ id: p.id, item: p })));
+      case "/api/v2/stages":
+        return this.page(q, [...c.stages.values()].sort((a, b) => a.id - b.id).map((s) => ({ id: s.id, item: s })));
+      case "/api/v2/deals":
+      case "/api/v2/deals/archived": {
+        const archived = url.pathname.endsWith("/archived");
+        const include = (q.get("include_fields") ?? "").split(",").filter(Boolean);
+        const deals = [...c.deals.values()].filter((d) => d.is_archived === archived && !d.is_deleted).sort((a, b) => a.id - b.id).map((d) => {
+          const item: Record<string, unknown> = { ...d };
+          if (include.includes("followers_count")) item.followers_count = (c.followers.get(d.id) ?? []).length;
+          if (include.includes("participants_count")) item.participants_count = (c.participants.get(d.id) ?? []).length;
+          return { id: d.id, item };
+        });
+        return this.page(q, deals);
+      }
+      case "/api/v2/activities":
+        return this.page(q, [...c.activities.values()].filter((a) => !a.is_deleted).sort((a, b) => a.id - b.id).map((a) => ({ id: a.id, item: a })));
+      case "/v1/activityTypes":
+        return json(200, { success: true, data: c.activityTypes });
+      case "/v1/notes":
+        return this.v1Page(q, [...c.notes.values()].sort((a, b) => a.id - b.id));
+      case "/v1/files":
+        return this.v1Page(q, [...c.files.values()].sort((a, b) => a.id - b.id));
+      default: {
+        const followers = /^\/api\/v2\/deals\/(\d+)\/followers$/.exec(url.pathname);
+        if (followers) {
+          const deal = c.deals.get(Number(followers[1]));
+          if (!deal) return json(404, { success: false, error: "Deal not found" });
+          return this.page(q, (c.followers.get(deal.id) ?? []).map((userId) => ({ id: userId, item: { user_id: userId, add_time: NOW } })));
+        }
+        const participants = /^\/v1\/deals\/(\d+)\/participants$/.exec(url.pathname);
+        if (participants) {
+          const deal = c.deals.get(Number(participants[1]));
+          if (!deal) return json(404, { success: false, error: "Deal not found" });
+          const people = (c.participants.get(deal.id) ?? []).flatMap((id) => {
+            const p = c.persons.get(id);
+            return p ? [{ id: p.id, name: p.name, first_name: p.first_name, last_name: p.last_name, active_flag: true, add_time: p.add_time }] : [];
+          });
+          return this.v1Page(q, people, true);
+        }
+        const download = /^\/v1\/files\/(\d+)\/download$/.exec(url.pathname);
+        if (download) {
+          const id = Number(download[1]);
+          const file = c.files.get(id);
+          const bytes = c.bytes.get(id);
+          if (!file || !file.active_flag || !bytes) return json(404, { success: false, error: "File not found" });
+          if (this.redirecting) return new Response(null, { status: 302, headers: { location: `https://${FILE_HOST}/${c.id}/${id}` } });
+          return new Response(new Uint8Array(bytes), { status: 200, headers: { "content-type": "application/octet-stream" } });
+        }
         return json(404, { success: false, error: "Not found" });
+      }
     }
+  }
+
+  // v1 paging: start / limit (≤ 500), ids ascending. `flat`: the participants shape (start, limit and
+  // more_items_in_collection directly in additional_data) instead of additional_data.pagination.
+  private v1Page(q: URLSearchParams, rows: unknown[], flat = false): Response {
+    const limit = q.has("limit") ? Number(q.get("limit")) : 100;
+    const start = q.has("start") ? Number(q.get("start")) : 0;
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500 || !Number.isInteger(start) || start < 0) return json(400, { success: false, error: "bad start or limit" });
+    const sort = q.get("sort");
+    if (sort !== null && sort !== "id ASC") return json(400, { success: false, error: "unsupported sort" });
+    const taken = rows.slice(start, start + limit);
+    const more = rows.length > start + limit;
+    const additional = flat
+      ? { start, limit, more_items_in_collection: more }
+      : { pagination: { start, limit, more_items_in_collection: more, ...(more ? { next_start: start + limit } : {}) } };
+    return json(200, { success: true, data: taken, additional_data: additional });
   }
 
   private page(q: URLSearchParams, rows: { id: number; item: unknown }[], noCursor = false): Response {

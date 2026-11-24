@@ -129,11 +129,12 @@ export async function removeObjects(paths: string[]): Promise<void> {
   }
 }
 
-// The PUT the browser makes to a signed upload address, made by the server: only the fake data (src/seed/files.ts).
-export async function putSigned(url: string, bytes: Uint8Array<ArrayBuffer>, contentType: string): Promise<boolean> {
+// The PUT the browser makes to a signed upload address, made by the server: the fake data (src/seed/files.ts) and the
+// Pipedrive import's file copy (SF-122, with a 20-second time-out for files up to 25 MB).
+export async function putSigned(url: string, bytes: Uint8Array<ArrayBuffer>, contentType: string, o: { timeoutMs?: number } = {}): Promise<boolean> {
   const c = settings();
   try {
-    const res = await c.fetch(url, { method: "PUT", headers: { "content-type": contentType }, body: bytes, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const res = await c.fetch(url, { method: "PUT", headers: { "content-type": contentType }, body: bytes, signal: AbortSignal.timeout(o.timeoutMs ?? TIMEOUT_MS) });
     await res.body?.cancel();
     return res.status >= 200 && res.status < 300;
   } catch {
