@@ -34,7 +34,7 @@ Push (Google → app): `POST ${APP_URL}/gmail/push`, `Authorization: Bearer <OID
 | Name | Needed | Meaning |
 |---|---|---|
 | `GMAIL_PUBSUB_TOPIC` | production (Gmail) | `projects/<project>/topics/<topic>`. When empty with `APP_ENV` development/test, the fake Gmail is used. When empty otherwise, Gmail can't be connected (the rest of the app works). |
-| `GMAIL_TOKEN_KEY` | with `GMAIL_PUBSUB_TOPIC` | 32 random bytes, base64 (`openssl rand -base64 32`). Encrypts the stored Gmail keys. Secret. Changing it forces every user to reconnect. |
+| `GMAIL_TOKEN_KEY` | with `GMAIL_PUBSUB_TOPIC` | 32 random bytes, base64 (`openssl rand -base64 32`). Encrypts the stored Gmail keys (separate from `PIPEDRIVE_TOKEN_KEY`; never the same value). Secret. Changing it forces every user to reconnect. No built-in value: without it Gmail is off, in development too. |
 | `GMAIL_PUSH_SERVICE_ACCOUNT` | with `GMAIL_PUBSUB_TOPIC` | The service account email the push subscription signs with. |
 | `GMAIL_PUSH_AUDIENCE` | optional | The push token's audience. Default `${APP_URL}/gmail/push`. |
 | `GMAIL_PUSH_SUBSCRIPTION` | optional | `projects/<project>/subscriptions/<name>`. When set, other subscriptions are refused. |
@@ -44,8 +44,8 @@ Push (Google → app): `POST ${APP_URL}/gmail/push`, `Authorization: Bearer <OID
 
 ## Google Cloud setup before go-live (README § Gmail)
 
-1. In the Internal OAuth app's project: enable the Gmail API and the Cloud Pub/Sub API. Add the scopes `gmail.readonly`,
-   `gmail.send` and `gmail.labels` to the consent screen. Add the redirect URI `${APP_URL}/settings/gmail/callback`.
+1. In the Internal OAuth app's project: enable the Gmail API and the Cloud Pub/Sub API. Add the scopes `gmail.modify` and
+   `gmail.send` to the consent screen. Add the redirect URI `${APP_URL}/settings/gmail/callback`.
 2. Create the topic and grant `gmail-api-push@system.gserviceaccount.com` the Pub/Sub Publisher role on it.
 3. Create a service account for push (no keys needed). Create a push subscription to `${APP_URL}/gmail/push` with
    authentication on that service account, audience = `GMAIL_PUSH_AUDIENCE`, and an acknowledgement deadline of 60 s.

@@ -4,7 +4,7 @@
 
 | Path | Who | What |
 |---|---|---|
-| `/settings` | any signed-in active user (`requireUser()`) | Design B: page head `// SETTINGS` / "Your settings", one card "Gmail". The user's own connection only. |
+| `/settings` | any signed-in active user (`requireUser()`) | SF-117's existing page (head `// YOU` / "Settings", then `// PIPEDRIVE`). SF-118 adds the Gmail card (design B) after the Pipedrive section. The user's own connection only. |
 | `/dev/fake-google/gmail` | public, 404 unless `isFakeAllowed()` and Gmail mode `fake` | The fake consent screen (research.md §14). |
 | `/dev/fake-gmail` | public, same 404 rule | The fake mailbox page (FR-018). |
 
@@ -12,6 +12,8 @@
 `/^\/cron\/gmail\/?$/` to `PUBLIC`. These routes check their own proof. `/settings/gmail/callback` stays protected.
 
 ### `/settings` query parameters (all looked up in fixed lists; anything else is ignored)
+- SF-117's own parameters (`error`, `saved`, `removed`, `replace`, `remove-token`) are unchanged and only touch the
+  Pipedrive section; the Gmail card reads only `gmail` and `disconnect`.
 - `gmail=<code>`: a notice code from § Messages (`connected`, `reconnected`, `not_connected`, `wrong_account`,
   `missing_scopes`, `disconnected`, `test_sent`, `test_failed`, `unavailable`). The `connected`, `reconnected`,
   `disconnected` and `test_sent` notices are shown once. They come from the flash cookie (`records/flash.ts`, as in
@@ -29,8 +31,8 @@
 Times are shown with `src/server/format.ts`, in UK time like the rest of the app.
 
 ### Sidebar
-`nav.ts` `mainNav` adds `{ href: "/settings", label: "Settings" }`, last in the main group. `SidebarLink` gets
-`warn?: boolean`. The layout and `currentSidebar()` give `warn` = `gmailNeedsReconnect(user.id)`.
+No new nav entry: SF-117's `footerNav` already holds `{ href: "/settings", label: "Settings" }`, rendered at the
+bottom of the sidebar above `[ SIGN OUT ]`. `SidebarLink` gets `warn?: boolean` and that footer link gets it. The layout and `currentSidebar()` give `warn` = `gmailNeedsReconnect(user.id)`.
 
 ## Routes
 
@@ -42,7 +44,7 @@ Times are shown with `src/server/format.ts`, in UK time like the rest of the app
 
 `vercel.json` (new): `{ "crons": [{ "path": "/cron/gmail", "schedule": "*/15 * * * *" }] }`.
 
-## Server actions (`src/app/(app)/settings/actions.ts`, each `requireUser()` first)
+## Server actions (added to SF-117's `src/app/(app)/settings/actions.ts`, each `requireUser()` first)
 
 | Action | Does |
 |---|---|
@@ -64,7 +66,9 @@ Times are shown with `src/server/format.ts`, in UK time like the rest of the app
   - `buildMime(input)` (research.md §10, throws `BadHeader` on CR/LF);
   - `testEmail(address)`;
   - `classifyGoogleError(status, body)` → `"key_refused" | "unavailable"`.
-- `crypto.ts`: `sealToken(userId, token, key)` / `openToken(userId, cipher, key)`.
+- `src/server/crypto/seal.ts` (shared with Pipedrive, replaces `pipedrive/crypto.ts`): `sealToken(key, purpose, userId, token)` /
+  `openToken(key, purpose, userId, sealed)`, `TokenUnreadable`; purposes `"pipedrive-token"` and `"gmail-token"`.
+  `env.ts` `readTokenKey(raw)`: 32 bytes from base64, else null (used by `pipedriveConfig()` and `gmailConfig()`).
 - `google-api.ts`:
   - `consentUrl({ state, codeChallenge, loginHint })`;
   - `exchangeGmailCode(code, verifier)` → `{ refreshToken | null, accessToken, scope }`;

@@ -17,18 +17,20 @@ confirm are in spec.md § Clarifications ("decided by the factory, to confirm").
 
 ## 2. Permissions (scopes) and the consent request
 
-- **Decision**: ask for exactly `https://www.googleapis.com/auth/gmail.readonly` (read mail),
-  `https://www.googleapis.com/auth/gmail.send` (send mail as the user) and
-  `https://www.googleapis.com/auth/gmail.labels` (change labels: "See and edit your email labels"). Authorization URL:
+- **Decision** (person, plan review 2026-11-24): ask for exactly `https://www.googleapis.com/auth/gmail.modify` (read
+  mail, change its labels and read state, send; bin but no permanent delete) and
+  `https://www.googleapis.com/auth/gmail.send` (send mail as the user). Authorization URL:
   the same `https://accounts.google.com/o/oauth2/v2/auth` and client as sign-in, with `response_type=code`, PKCE S256,
   `state`, `access_type=offline`, `prompt=consent` (always gives a refresh token), `include_granted_scopes=false`,
   `login_hint=<user's sign-in address>`, `hd=barnacle.ai`, and redirect URI `${APP_URL}/settings/gmail/callback`.
-  The token answer's `scope` must contain all three. Otherwise the connection is refused (`missing_scopes`) and the
+  The token answer's `scope` must contain both. Otherwise the connection is refused (`missing_scopes`) and the
   token is revoked. Google lets the user untick boxes ("granular consent").
-- **Rationale**: least privilege that matches the spec's three words. `gmail.modify` would also allow trashing and
-  editing messages. Confirmed with the person in spec.md § Clarifications, because marking mail read or archived
-  (a later Inbox) needs `gmail.modify` and a reconnect.
-- **Alternatives**: `gmail.modify` (broader). `https://mail.google.com/` (full access, permanent delete). Reusing the
+- **Rationale**: `gmail.labels` cannot mark mail read or change a message's labels, which the later Inbox needs;
+  asking for `gmail.modify` now saves every user a reconnect (spec.md § Clarifications). This issue still changes
+  nothing in Gmail: it only reads and sends. `gmail.modify` alone also allows sending; `gmail.send` is asked as well,
+  as the person chose, and the check needs both.
+- **Alternatives**: `gmail.readonly` + `gmail.send` + `gmail.labels` (the factory's first choice, refused: a reconnect
+  later). `https://mail.google.com/` (full access, permanent delete). Reusing the
   sign-in flow with more scopes would ask every user for Gmail when signing in.
 
 ## 3. Checking the return from Google
@@ -44,18 +46,26 @@ confirm are in spec.md § Clarifications ("decided by the factory, to confirm").
   6. `getProfile` with the new access token: `emailAddress` normalised equals the user's email, else `wrong_account`;
   7. no `refresh_token`, else `not_connected`.
   Any refusal after step 4 revokes the new token (best effort) and stores nothing. The cookie is always cleared.
-- **Rationale**: FR-002 (belongs to the request the same user started) and US1 scenarios 3-5. `getProfile` needs only
-  `gmail.readonly`, so no `openid email` scope is needed.
+- **Rationale**: FR-002 (belongs to the request the same user started) and US1 scenarios 3-5. `getProfile` works with
+  `gmail.modify`, so no `openid email` scope is needed.
 
-## 4. Keeping the key: AES-256-GCM, refresh token only
+## 4. Keeping the key: AES-256-GCM through the shared seal module, refresh token only
 
-- **Decision**: only the refresh token is stored, in `gmail_connections.token_cipher` (`bytea`). The format is
-  `v1` byte ‖ 12-byte IV ‖ 16-byte tag ‖ ciphertext. The cipher is AES-256-GCM (`node:crypto`), keyed by
-  `GMAIL_TOKEN_KEY` (32 random bytes, base64), with the connection's `user_id` as additional data, so a cipher copied
-  to another row does not decrypt. Access tokens are never stored: each sync, renewal or send asks for a fresh one
-  (`grant_type=refresh_token`), kept in memory for that call only. The fake mode (development/test with no
-  `GMAIL_PUBSUB_TOPIC`) uses a fixed dev-only key when `GMAIL_TOKEN_KEY` is empty, like `fake-storage-key`.
-- **Rationale**: FR-003 / SC-004. It is the same rule as the Pipedrive token (DECISIONS kickoff). With ≤ 10 users
+- **Decision**: only the refresh token is stored, in `gmail_connections.token_cipher` (`bytea`). SF-117's
+  `src/server/pipedrive/crypto.ts` moves to one shared module, `src/server/crypto/seal.ts`
+  (person, plan review 2026-11-24): `sealToken(key, purpose, userId, token)` / `openToken(key, purpose, userId, sealed)`
+  and `TokenUnreadable` (with a neutral message). The format is unchanged: version byte 1 ‖ 12-byte IV ‖ 16-byte tag ‖
+  ciphertext, AES-256-GCM (`node:crypto`), tag length pinned to 16. The additional data is `"<purpose>:<userId>"`,
+  with purpose `pipedrive-token` (exactly SF-117's string, so saved Pipedrive tokens still open) or `gmail-token`, so a
+  cipher copied to another user or to the other service does not open. Pipedrive keeps `PIPEDRIVE_TOKEN_KEY`; Gmail
+  uses its own `GMAIL_TOKEN_KEY` (32 random bytes, base64), decoded by one shared `readTokenKey(raw)` helper in
+  `env.ts` that `pipedriveConfig()` also uses. `pipedrive/crypto.ts` is removed and its importers
+  (`pipedrive/connection.ts`, `tests/unit/pipedrive-crypto.test.ts`) point at the shared module. Access tokens are never stored: each sync, renewal or send asks for a fresh one
+  (`grant_type=refresh_token`), kept in memory for that call only. As for Pipedrive, there is no built-in key:
+  without a valid `GMAIL_TOKEN_KEY` Gmail mode is `off`, in fake mode too (`.env.example` says how to make one; the
+  test setup sets one).
+- **Rationale**: FR-003 / SC-004. It is the same rule as the Pipedrive token (DECISIONS kickoff), now the same code.
+  Separate keys keep a leak or rotation of one service's key from touching the other. With ≤ 10 users
   every 15 minutes, one extra refresh per run is cheap. `GoogleRefused`/`GmailError` messages carry only the HTTP
   status and Google's `error` code, never a token or a body.
 - **Alternatives**: pgcrypto (the key would travel in SQL text and could reach query logs). Caching access tokens
@@ -192,14 +202,15 @@ confirm are in spec.md § Clarifications ("decided by the factory, to confirm").
 - **Decision**: `gmailConfig()` in `env.ts`:
   - `real` when `GMAIL_PUBSUB_TOPIC` is set and `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL`,
     `GMAIL_TOKEN_KEY` (32 bytes once decoded), `GMAIL_PUSH_SERVICE_ACCOUNT` and `CRON_SECRET` are all valid;
-  - `fake` when `GMAIL_PUBSUB_TOPIC` is empty and `isFakeAllowed()`;
+  - `fake` when `GMAIL_PUBSUB_TOPIC` is empty, `isFakeAllowed()` and `GMAIL_TOKEN_KEY` is valid;
   - else `off`: Settings shows "Gmail can't be connected right now." and no button, the actions refuse, and the cron and
     push routes answer `204` doing nothing.
   An existing connection shown while `off` keeps its state line, but the buttons are hidden.
 
 ## 13. The "!" on the Settings link on every page
 
-- **Decision**: the layout reads `gmailNeedsReconnect(user.id)` beside `unreadCount`. SF-108's `currentUnread` becomes
+- **Decision**: the "!" goes on SF-117's one "Settings" link, `footerNav` at the bottom of the sidebar above
+  `[ SIGN OUT ]` (no new nav entry). The layout reads `gmailNeedsReconnect(user.id)` beside `unreadCount`. SF-108's `currentUnread` becomes
   `currentSidebar()` → `{ unread, gmailWarn }`, and the client part is generalised so the Notifications count and the
   Settings "!" are both refreshed after each client navigation. `SidebarLink` gets `warn?: boolean`: a
   `<span className="warn" aria-label="Gmail needs reconnecting">!</span>` in orange (`--orange` / the nearest existing
@@ -215,7 +226,7 @@ confirm are in spec.md § Clarifications ("decided by the factory, to confirm").
     codes, refresh and access tokens with scopes, revoked tokens, watches, and an RSA key pair for push JWTs.
   - **Store**: `MemoryStore` in tests, `DiskStore` `.fake-gmail/state.json` in development (git-ignored).
   - **Fetch**: answers the token, revoke, certs and Gmail calls of §1 at the real URLs.
-  - **Consent screen** `/dev/fake-google/gmail`: account field pre-filled with `login_hint`, three ticked boxes, `[ ALLOW ]`
+  - **Consent screen** `/dev/fake-google/gmail`: account field pre-filled with `login_hint`, two ticked boxes ("Read, change and send your email" = `gmail.modify`, "Send email as you" = `gmail.send`), `[ ALLOW ]`
     and `[ CANCEL ]`. It redirects to the `redirect_uri` with `code`+`state` or `error=access_denied`.
   - **Mailbox page** `/dev/fake-gmail`:
     - pick a user;

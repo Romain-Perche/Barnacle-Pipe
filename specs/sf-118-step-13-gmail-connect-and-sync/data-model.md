@@ -1,6 +1,6 @@
 # Data model: Gmail connect and sync (SF-118)
 
-One migration, `migrations/0012_gmail.sql`. It holds only statements allowed in a transaction, and every
+One migration, `migrations/0013_gmail.sql` (`0012` is SF-117's `0012_pipedrive.sql`). It holds only statements allowed in a transaction, and every
 `create table` is followed by `enable row level security` (no policies). `tests/support/reset.ts` empties the four new
 tables, and `tests/integration/migrate.test.ts` applies the migration on a fresh database and checks the refusals
 below.
