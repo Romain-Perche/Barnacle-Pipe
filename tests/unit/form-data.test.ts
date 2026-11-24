@@ -88,3 +88,26 @@ describe("the Ambassador tick and Referred by", () => {
     expect(dealFormFromData(data([])).referredBy).toBe("");
   });
 });
+
+// covers SF-115 FR-006, research.md §7 (`cfShown` and `cf.<id>` on the three forms)
+describe("custom fields on the forms", () => {
+  it("reads the shown field ids and every cf.<id> value", () => {
+    const fd = data([["cfShown", "3,5,x,7"], ["cf.3", "Vegan"], ["cf.5", "21"], ["cf.5", "23"], ["cf.9", "ignored? no: kept"], ["cf.abc", "no"]]);
+    const expected = { shown: [3, 5, 7], values: { 3: ["Vegan"], 5: ["21", "23"], 9: ["ignored? no: kept"] } };
+    expect(personFormFromData(fd).custom).toEqual(expected);
+    expect(organisationFormFromData(fd).custom).toEqual(expected);
+    expect(dealFormFromData(fd).custom).toEqual(expected);
+  });
+  it("is absent when the form showed no custom field", () => {
+    expect(personFormFromData(data([["firstName", "Ada"]])).custom).toBeUndefined();
+  });
+  it("keeps at most 50 fields, 100 values each, each cut at 10,001 characters", () => {
+    const entries: [string, string][] = [["cfShown", Array.from({ length: 60 }, (_, i) => i + 1).join(",")]];
+    for (let i = 0; i < 120; i++) entries.push(["cf.1", String(i)]);
+    entries.push(["cf.2", "x".repeat(20_000)]);
+    const custom = personFormFromData(data(entries)).custom!;
+    expect(custom.shown).toHaveLength(50);
+    expect(custom.values[1]).toHaveLength(100);
+    expect(custom.values[2][0]).toHaveLength(10_001);
+  });
+});

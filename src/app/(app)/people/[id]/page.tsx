@@ -15,6 +15,7 @@ import { ActivityNotices } from "../../activities/ActivityNotices";
 import { ActivityOverlays } from "../../activities/ActivityOverlays";
 import { NextActivities } from "../../activities/NextActivities";
 import { archivePerson, deletePerson, restorePerson } from "../actions";
+import { MoreDetails } from "../../records/MoreDetails";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Params> };
 
@@ -151,6 +152,7 @@ export default async function PersonPage({ params, searchParams }: Props) {
           </div>
         </dl>
       </section>
+      <MoreDetails details={person.custom} />
 
       <NextActivities viewerId={user.id} target={{ personId: id }} archived={person.archived} back={href} />
 

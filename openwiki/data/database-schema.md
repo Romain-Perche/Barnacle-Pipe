@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T18:05:22.701Z
+    at: 2026-11-24T11:28:51.796Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -25,13 +25,15 @@ sources:
     resource: repo://migrations/0008_activities.sql
   - id: openwiki-source-afe126abfd80a7bbf3246173
     resource: repo://migrations/0009_ambassadors.sql
+  - id: openwiki-source-720a4e6307035f2f4697bba4
+    resource: repo://migrations/0010_custom_fields.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-23T18:05:22.701Z" }
+generated: { by: "claude-code", at: "2026-11-24T11:28:51.796Z" }
 ---
 
 # Database schema and access
@@ -155,6 +157,15 @@ gets `from_person_id` (the previous referrer, only on `referrer_changed` events)
 `ambassador_added`, `ambassador_removed`, `referrer_set`, `referrer_changed` and `referrer_cleared`, and the cause
 `person_deleted`. Partial indexes serve the "referred by" lookups. See
 [People and organisations](../features/people-and-organisations.md).
+
+### Custom fields (migration 0010)
+
+`0010_custom_fields.sql` adds `custom_fields` (a field of kind `person`, `organisation` or `deal`, with a type, a
+position and `in_list`), `custom_field_choices` (choices of the two choice types, soft-removed with `removed_at`) and
+`custom_values` (one row per field and record that has a value; exactly one of the person, organisation or deal ids
+and exactly one typed value column are set; unique per field and record). `timeline_events` gets `field_name`,
+`old_value` and `new_value` and the kinds `custom_set`, `custom_changed` and `custom_cleared`. See
+[Custom fields](../features/custom-fields.md).
 
 ## Row level security
 

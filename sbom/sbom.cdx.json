@@ -1330,24 +1330,6 @@
       "version": "0.156.0"
     },
     {
-      "bom-ref": "pkg:npm/%40playwright/test@1.65.0",
-      "group": "@playwright",
-      "name": "test",
-      "properties": [
-        {
-          "name": "aquasecurity:trivy:PkgID",
-          "value": "@playwright/test@1.65.0"
-        },
-        {
-          "name": "aquasecurity:trivy:PkgType",
-          "value": "npm"
-        }
-      ],
-      "purl": "pkg:npm/%40playwright/test@1.65.0",
-      "type": "library",
-      "version": "1.65.0"
-    },
-    {
       "bom-ref": "pkg:npm/%40rolldown/binding-android-arm-eabi@1.2.19",
       "group": "@rolldown",
       "name": "binding-android-arm-eabi",
@@ -2428,40 +2410,6 @@
       "version": "4.0.7"
     },
     {
-      "bom-ref": "pkg:npm/playwright-core@1.65.0",
-      "name": "playwright-core",
-      "properties": [
-        {
-          "name": "aquasecurity:trivy:PkgID",
-          "value": "playwright-core@1.65.0"
-        },
-        {
-          "name": "aquasecurity:trivy:PkgType",
-          "value": "npm"
-        }
-      ],
-      "purl": "pkg:npm/playwright-core@1.65.0",
-      "type": "library",
-      "version": "1.65.0"
-    },
-    {
-      "bom-ref": "pkg:npm/playwright@1.65.0",
-      "name": "playwright",
-      "properties": [
-        {
-          "name": "aquasecurity:trivy:PkgID",
-          "value": "playwright@1.65.0"
-        },
-        {
-          "name": "aquasecurity:trivy:PkgType",
-          "value": "npm"
-        }
-      ],
-      "purl": "pkg:npm/playwright@1.65.0",
-      "type": "library",
-      "version": "1.65.0"
-    },
-    {
       "bom-ref": "pkg:npm/postcss@8.5.23",
       "name": "postcss",
       "properties": [
@@ -2851,7 +2799,6 @@
   "dependencies": [
     {
       "dependsOn": [
-        "pkg:npm/%40playwright/test@1.65.0",
         "pkg:npm/%40types/node@26.6.6",
         "pkg:npm/%40types/react-dom@19.3.0",
         "pkg:npm/%40types/react@19.3.0",
@@ -3193,12 +3140,6 @@
       "ref": "pkg:npm/%40oxc-project/types@0.156.0"
     },
     {
-      "dependsOn": [
-        "pkg:npm/playwright@1.65.0"
-      ],
-      "ref": "pkg:npm/%40playwright/test@1.65.0"
-    },
-    {
       "dependsOn": [],
       "ref": "pkg:npm/%40rolldown/binding-android-arm-eabi@1.2.19"
     },
@@ -3500,7 +3441,6 @@
         "pkg:npm/%40next/swc-linux-x64-musl@16.4.6",
         "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.6",
         "pkg:npm/%40next/swc-win32-x64-msvc@16.4.6",
-        "pkg:npm/%40playwright/test@1.65.0",
         "pkg:npm/%40swc/helpers@0.5.23",
         "pkg:npm/baseline-browser-mapping@2.11.36",
         "pkg:npm/caniuse-lite@1.0.30001826",
@@ -3523,16 +3463,6 @@
     {
       "dependsOn": [],
       "ref": "pkg:npm/picomatch@4.0.7"
-    },
-    {
-      "dependsOn": [],
-      "ref": "pkg:npm/playwright-core@1.65.0"
-    },
-    {
-      "dependsOn": [
-        "pkg:npm/playwright-core@1.65.0"
-      ],
-      "ref": "pkg:npm/playwright@1.65.0"
     },
     {
       "dependsOn": [

@@ -48,6 +48,17 @@ OAuth code flow and database sessions.
   and "Schedule a follow-up?" in a box over the page), `ActivityOverlays.tsx` (opens the box or the delete confirmation from
   `?activity=` / `?followup=` / `?delete-activity=`), `NextActivities.tsx` ("// NEXT ACTIVITIES" of record pages and the
   drawer), `DoneBox.tsx`, `ActivityBits.tsx`, `ActivityDeleteConfirm.tsx`, `ActivityNotices.tsx`.
+  SF-115 custom fields: `src/server/custom-fields/` — `rules.ts` (pure: types, built-in names, limits, field and value
+  checks `validateFieldForm` / `validateCustomValues`, `formatValue` / `listText`, `customEvent`, CSV cells `readImportCell`),
+  `fields.ts` (admin: fields and choices, `countValues`; admin re-checked in each transaction), `values.ts` (record values:
+  `readCustomValues` with the record's visibility in the same query, `saveCustomValues` inside the record's save, list parts
+  `customListParts`, columns `customColumns`, filter options `customFilterOptions`). Values are `custom_values` rows (one per
+  field and record); changes are `custom_set` / `custom_changed` / `custom_cleared` timeline events with the field name and
+  values as text of the time. `list-query.ts` reads `cf<id>` filters and `sort=cf<id>` (`knownCustomQuery`).
+- `src/app/(app)/admin/custom-fields/` (SF-115) — the Custom fields page (design B: a tab per kind, a table), `FieldBox.tsx`
+  (client: the add / edit box), `ChoiceRows.tsx`, `FieldDeleteConfirm.tsx`, `actions.ts`. `records/MoreDetails.tsx` ("// MORE
+  DETAILS" of record pages and the deal drawer), `records/CustomInputs.tsx` (the inputs of the three forms, `cf.<id>` and
+  `cfShown`), `records/CustomFilters.tsx` (list filters, sort options, columns).
 - `src/app/(app)/ambassadors/` — the Ambassadors page and `[id]/` the ambassador page (design B, `LatestUpdates.tsx`,
   `not-found.tsx`). `records/ReferrerPicker.tsx` (client: the "Referred by" picker of the person and deal forms) and
   `records/ReferredBy.tsx` (the "Referred by" line of the person page, deal page and drawer).
@@ -59,7 +70,8 @@ OAuth code flow and database sessions.
   will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
   (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
   `person_emails`, bulk inserts).
-- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors).
+- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
+  custom fields: `custom-fields.ts`).
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google schema).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),

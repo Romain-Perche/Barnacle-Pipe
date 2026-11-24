@@ -440,3 +440,34 @@ describe("fake activities (SF-109)", () => {
     expect(assignments.map((a) => a.read)).toEqual([false]);
   });
 });
+
+// covers SF-115 FR-018 (T044): every type, a field in each list, a removed choice still on a record, values on a private
+// person and a private deal, a timeline entry per value; a second run adds no row
+describe("fake custom fields (SF-115)", () => {
+  beforeEach(resetDb);
+  it("adds fake custom fields and values, once", async () => {
+    await runSeeders(sql);
+    const snapshot = async () => {
+      const [c] = await sql<Record<string, number>[]>`
+        select (select count(distinct type) from custom_fields)::int as types,
+               (select count(distinct kind) from custom_fields where in_list)::int as listed_kinds,
+               (select count(*) from custom_values v join custom_field_choices c on c.id = v.choice_id where c.removed_at is not null)::int as removed_kept,
+               (select count(*) from custom_values v join persons p on p.id = v.person_id where p.private)::int as private_people,
+               (select count(*) from custom_values v join deals d on d.id = v.deal_id where d.private)::int as private_deals,
+               (select count(*) from custom_values)::int as values,
+               (select count(*) from timeline_events where kind like 'custom_%')::int as events,
+               (select count(*) from custom_fields)::int as fields, (select count(*) from custom_field_choices)::int as choices`;
+      return c;
+    };
+    const first = await snapshot();
+    expect(first).toMatchObject({ types: 8, listed_kinds: 3, removed_kept: 1, fields: 9 });
+    expect(first.private_people).toBeGreaterThanOrEqual(1);
+    expect(first.private_deals).toBeGreaterThanOrEqual(1);
+    expect(first.events).toBe(first.values);
+    const names = await sql<{ name: string }[]>`select name from custom_fields`;
+    expect(names.every((n) => n.name.endsWith("(fake)"))).toBe(true);
+    const again = await runSeeders(sql);
+    expect(again.every((l) => l.startsWith("already there "))).toBe(true);
+    expect(await snapshot()).toEqual(first);
+  });
+});

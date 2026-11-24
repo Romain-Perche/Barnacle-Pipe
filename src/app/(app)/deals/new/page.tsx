@@ -7,6 +7,7 @@ import { messages } from "@/server/messages";
 import { toId } from "@/server/records/rules";
 import { createDeal } from "../actions";
 import { DealForm } from "../DealForm";
+import { newFormFields } from "@/server/custom-fields/values";
 
 export default async function NewDealPage({ searchParams }: { searchParams: Promise<BoardParams> }) {
   const user = await requireUser();
@@ -34,6 +35,7 @@ export default async function NewDealPage({ searchParams }: { searchParams: Prom
       ) : (
         <DealForm
           action={createDeal}
+          customFields={await newFormFields("deal")}
           choices={choices}
           canSetPrivate
           withStage

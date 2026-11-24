@@ -363,6 +363,61 @@ describe("npm run db:migrate", () => {
     expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
   });
 
+  // covers SF-115 T013: Supabase's transaction-mode pooler limits (no session state) and 0010_custom_fields.sql's checks
+  it("keeps the custom fields code and 0010_custom_fields.sql free of session state", () => {
+    const files = readdirSync("src/server/custom-fields").map((f) => `src/server/custom-fields/${f}`);
+    expect(files.length).toBeGreaterThanOrEqual(3);
+    for (const file of [...files, "src/server/imports/imports.ts"]) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0010_custom_fields.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    for (const table of ["custom_fields", "custom_field_choices", "custom_values"]) {
+      expect(migration).toContain(`alter table ${table} enable row level security;`);
+    }
+  });
+
+  it("applies 0010_custom_fields.sql: refuses bad fields, values and custom events; keeps every kind, SF-116's included", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0010_custom_fields.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [p] = await c`insert into persons (first_name, owner_id, created_by) values ('Cara', ${u.id}, ${u.id}) returning id`;
+      const [o] = await c`insert into organisations (name, owner_id, created_by) values ('Fakeco', ${u.id}, ${u.id}) returning id`;
+      expect(await code(c`insert into custom_fields (kind, name, type, position) values ('person', ${"x".repeat(61)}, 'text', 1)`)).toBe("23514");
+      expect(await code(c`insert into custom_fields (kind, name, type, position) values ('person', 'Colour', 'colour', 1)`)).toBe("23514");
+      const [f] = await c`insert into custom_fields (kind, name, type, position) values ('person', 'Diet', 'text', 1) returning id`;
+      expect(await code(c`insert into custom_fields (kind, name, type, position) values ('person', 'diet', 'text', 2)`)).toBe("23505");
+      expect(await code(c`insert into custom_fields (kind, name, type, position) values ('deal', 'diet', 'text', 1)`)).toBe("ok");
+      expect(await code(c`insert into custom_values (field_id, person_id, text_value, bool_value) values (${f.id}, ${p.id}, 'x', true)`)).toBe("23514");
+      expect(await code(c`insert into custom_values (field_id, person_id, organisation_id, text_value) values (${f.id}, ${p.id}, ${o.id}, 'x')`)).toBe("23514");
+      expect(await code(c`insert into custom_values (field_id, person_id, text_value) values (${f.id}, ${p.id}, '')`)).toBe("23514");
+      expect(await code(c`insert into custom_values (field_id, person_id, text_value) values (${f.id}, ${p.id}, 'Vegan')`)).toBe("ok");
+      expect(await code(c`insert into custom_values (field_id, person_id, text_value) values (${f.id}, ${p.id}, 'Again')`)).toBe("23505");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id) values (${p.id}, 'custom_set', ${u.id})`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, old_value) values (${p.id}, 'edited', ${u.id}, 'x')`)).toBe("23514");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, field_name, new_value) values (${p.id}, 'custom_set', ${u.id}, 'Diet', 'Vegan')`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, body) values (${p.id}, 'note', ${u.id}, 'x')`)).toBe("ok");
+      for (const kind of ["imported", "referrer_set", "file_added", "file_deleted"]) {
+        expect(await code(c`insert into timeline_events (person_id, kind, actor_id) values (${p.id}, ${kind}, ${u.id})`), kind).toBe("ok");
+      }
+      const [q] = await c`insert into persons (first_name, owner_id, created_by) values ('Ben', ${u.id}, ${u.id}) returning id`;
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, related_person_id, from_person_id) values (${q.id}, 'referrer_changed', ${u.id}, ${p.id}, ${p.id})`)).toBe("ok");
+      // A field delete takes its values with it.
+      await c`delete from custom_fields where id = ${f.id}`;
+      const [{ n }] = await c`select count(*)::int as n from custom_values`;
+      expect(n).toBe(0);
+    } finally {
+      await c.end();
+    }
+  });
+
   it("runs twice at the same time: both finish, each migration applied once, no lock left", async () => {
     const db = await scratchDb();
     const [a, b] = await Promise.all([runMigrate(db), runMigrate(db)]);

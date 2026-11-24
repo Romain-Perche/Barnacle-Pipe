@@ -12,6 +12,7 @@ import type { FieldErrors } from "@/server/records/rules";
 import { recordEvent, type MoveCause } from "@/server/records/timeline";
 import { visibleActivity, visibleDeal, visiblePerson } from "@/server/records/visibility";
 import type { ActivityType } from "@/server/activities/rules";
+import { customToForm, readCustomValues, saveCustomValues, type CustomDetail } from "@/server/custom-fields/values";
 
 export type BoardCard = {
   id: number;
@@ -59,6 +60,8 @@ export type DealView = {
   followedByViewer: boolean;
   // SF-114: "Referred by" ("hidden": a referrer the viewer cannot see).
   referredBy: Referrer;
+  // SF-115: every custom field of deals, in order, with this deal's value.
+  custom: CustomDetail[];
 };
 
 export type StatusResult =
@@ -179,6 +182,7 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
       where f.deal_id = ${id} order by lower(u.name), u.id`,
     referrerOf(db, viewerId, r.referred_by_id),
   ]);
+  const custom = await readCustomValues(db, viewerId, { dealId: id });
   return {
     id: r.id,
     title: r.title,
@@ -203,6 +207,7 @@ export async function getDeal(viewerId: number, id: number, db: Sql = sql): Prom
     followers: [...followers],
     followedByViewer: followers.some((f) => f.id === viewerId),
     referredBy,
+    custom,
   };
 }
 
@@ -235,6 +240,7 @@ export function dealToForm(d: DealView): DealForm {
     private: d.private,
     labelIds: d.labels.map((l) => String(l.id)),
     referredBy: referredByToForm(d.referredBy),
+    custom: customToForm(d.custom),
   };
 }
 
@@ -375,6 +381,7 @@ export async function createDeal(actorId: number, form: DealForm): Promise<DealS
         insert into deal_stage_periods (deal_id, stage_id, stage_name, pipeline_name, moved_by)
         values (${row.id}, ${stage.id}, ${stage.name}, ${stage.pipelineName}, ${actorId})`;
       await recordEvent(db, { dealId: row.id, kind: "added", actorId });
+      await saveCustomValues(db, actorId, { dealId: row.id }, form.custom, { archived: false });
       await recordReferral(db, { dealId: row.id }, actorId, null, referredById);
       return { status: "saved" as const, id: row.id, pipelineId: stage.pipelineId };
     }),
@@ -458,6 +465,7 @@ export async function updateDeal(actorId: number, id: number, version: number, f
       // A person is linked once: the new main person leaves "Other people" (spec Clarifications).
       if (after.personId !== null) await db`delete from deal_people where deal_id = ${id} and person_id = ${after.personId}`;
       const fields = changedDealFields(before, after);
+      await saveCustomValues(db, actorId, { dealId: id }, form.custom, { archived: current.archived });
       if (fields.length > 0) await recordEvent(db, { dealId: id, kind: "edited", actorId, fields });
       await recordReferral(db, { dealId: id }, actorId, before.referredById, after.referredById);
       if (after.private && actorId !== current.createdBy && actorId !== after.ownerId) {

@@ -17,6 +17,9 @@ export const CONSENT_LABELS: Record<Consent, string> = { subscribed: "Subscribed
 export type FieldError = { code: string; name?: string; href?: string };
 export type FieldErrors = Record<string, FieldError>;
 
+// SF-115 (research.md §7): the custom field ids a form showed (`cfShown`) and the values sent for each (`cf.<id>`).
+export type CustomForm = { shown: number[]; values: Record<number, string[]> };
+
 // What the person form sends, as typed (also sent back to the form on a refusal).
 export type PersonForm = {
   firstName: string;
@@ -35,6 +38,8 @@ export type PersonForm = {
   // SF-114: the Ambassador tick, and "Referred by": "", "<id>" or "keep" (parsed by referral-rules.ts).
   ambassador: boolean;
   referredBy: string;
+  // SF-115: absent when the form showed no custom field (no custom value changes).
+  custom?: CustomForm;
 };
 
 // A person's fields once validated and normalised (and as compared for the timeline).
@@ -57,7 +62,7 @@ export type PersonFields = {
   referredById: number | null;
 };
 
-export type OrganisationForm = { name: string; website: string; sector: string; size: string; location: string; ownerId: string };
+export type OrganisationForm = { name: string; website: string; sector: string; size: string; location: string; ownerId: string; custom?: CustomForm };
 export type OrganisationFields = {
   name: string;
   website: string | null;

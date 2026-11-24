@@ -1,6 +1,7 @@
 // What an import will do, row by row (SF-103 research.md §6, data-model.md § Import plan). Pure: the same function
 // runs for the preview and again inside the import's transaction, so the report says what really happened.
 // Existing records are referred to by id only; names of people are loaded when shown, through visiblePerson().
+import type { CustomField, CustomValue } from "@/server/custom-fields/rules";
 import type { ColumnMapping } from "@/server/imports/columns";
 import type { CsvRow } from "@/server/imports/csv";
 import { organisationFormFromRow, personFormFromRow, type RowError } from "@/server/imports/rows";
@@ -17,16 +18,20 @@ export type Lookups = {
   labels: Map<string, number>;
   // Active users, email and name in lower case.
   users: { id: number; email: string; name: string }[];
+  // SF-115: the kind's custom fields (a mapped field not here is ignored).
+  customFields: CustomField[];
 };
 
 export function emptyLookups(importerId: number): Lookups {
-  return { importerId, emails: new Map(), organisations: new Map(), leadSources: new Map(), labels: new Map(), users: [] };
+  return { importerId, emails: new Map(), organisations: new Map(), leadSources: new Map(), labels: new Map(), users: [], customFields: [] };
 }
 
 // Spreadsheet row number and the name or email from the row (data the user uploaded).
 export type RowRef = { row: number; label: string };
 export type Skip = RowRef & RowError & { personId?: number; organisationId?: number };
-export type Warning = { code: string; value?: string; rows: number[]; organisationId?: number };
+// `field`: the custom field's name of an import_custom_unreadable or import_custom_choice_unknown warning (SF-115).
+export type Warning = { code: string; value?: string; rows: number[]; organisationId?: number; field?: string };
+export type CustomToAdd = { fieldId: number; value: CustomValue }[];
 
 export type PersonToAdd = {
   row: number;
@@ -38,8 +43,9 @@ export type PersonToAdd = {
   labelIds: number[];
   // null: none in the file, the user's choice applies (FR-007).
   consent: Consent | null;
+  custom: CustomToAdd;
 };
-export type OrganisationToAdd = { row: number; label: string; fields: OrganisationFields & { ownerId: number } };
+export type OrganisationToAdd = { row: number; label: string; fields: OrganisationFields & { ownerId: number }; custom: CustomToAdd };
 
 export type ImportPlan<T> = {
   adds: T[];
@@ -56,6 +62,8 @@ export type ImportReport = {
   organisationsAddedNames: string[];
   skipped: Skip[];
   warnings: Warning[];
+  // SF-115: mapped custom fields deleted before the import ran (their names when mapped).
+  goneFields?: string[];
 };
 
 export const keyOf = (name: string) => name.trim().toLowerCase();
@@ -63,14 +71,15 @@ export const keyOf = (name: string) => name.trim().toLowerCase();
 // One warning per (code, value), with every row it applies to, in the order first met.
 class Warnings {
   private byKey = new Map<string, Warning>();
-  add(code: string, value: string, row: number, extra: { organisationId?: number } = {}) {
-    const key = `${code}\u0000${keyOf(value)}`;
+  add(code: string, value: string, row: number, extra: { organisationId?: number; field?: string } = {}) {
+    const key = `${code}\u0000${extra.field ?? ""}\u0000${keyOf(value)}`;
     const w = this.byKey.get(key) ?? { code, value, ...extra, rows: [] };
     if (!w.rows.includes(row)) w.rows.push(row);
     this.byKey.set(key, w);
   }
   list(): Warning[] {
-    return [...this.byKey.values()].map(({ code, value, organisationId, rows }) => (organisationId === undefined ? { code, value, rows } : { code, value, organisationId, rows }));
+    return [...this.byKey.values()].map(({ code, value, organisationId, field, rows }) =>
+      field !== undefined ? { code, field, value, rows } : organisationId === undefined ? { code, value, rows } : { code, value, organisationId, rows });
   }
 }
 
@@ -95,7 +104,7 @@ export function planPeople(rows: CsvRow[], mapping: ColumnMapping, lookups: Look
   const newOrganisations = new Map<string, string>();
   const emailRows = new Map<string, number>();
   for (const { number: row, values } of rows) {
-    const r = personFormFromRow(values, mapping);
+    const r = personFormFromRow(values, mapping, lookups.customFields);
     if (!r.ok) {
       skipped.push(skipOf(row, r.label, r.error));
       continue;
@@ -146,7 +155,9 @@ export function planPeople(rows: CsvRow[], mapping: ColumnMapping, lookups: Look
       leadSourceId,
       labelIds: [...labelIds].sort((a, b) => a - b),
       consent: r.value.consent,
+      custom: r.value.custom,
     });
+    for (const u of r.value.unreadable) warnings.add(u.code, u.value, row, { field: u.field });
   }
   return {
     adds,
@@ -164,7 +175,7 @@ export function planOrganisations(rows: CsvRow[], mapping: ColumnMapping, lookup
   const warnings = new Warnings();
   const nameRows = new Map<string, number>();
   for (const { number: row, values } of rows) {
-    const r = organisationFormFromRow(values, mapping);
+    const r = organisationFormFromRow(values, mapping, lookups.customFields);
     if (!r.ok) {
       skipped.push(skipOf(row, r.label, r.error));
       continue;
@@ -181,7 +192,8 @@ export function planOrganisations(rows: CsvRow[], mapping: ColumnMapping, lookup
     }
     nameRows.set(key, row);
     if (r.value.sizeUnknown !== null) warnings.add("import_size_unknown", r.value.sizeUnknown, row);
-    adds.push({ row, label: r.label, fields: { ...r.value.fields, ownerId: resolveOwner(r.value.owner, row, lookups, warnings) } });
+    adds.push({ row, label: r.label, fields: { ...r.value.fields, ownerId: resolveOwner(r.value.owner, row, lookups, warnings) }, custom: r.value.custom });
+    for (const u of r.value.unreadable) warnings.add(u.code, u.value, row, { field: u.field });
   }
   return { adds, newOrganisations: [], skipped, warnings: warnings.list(), withoutEmail: 0, needsConsent: 0 };
 }

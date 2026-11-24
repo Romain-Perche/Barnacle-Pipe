@@ -13,3 +13,12 @@ describe("mainNav", () => {
     expect(labels[i + 1]).toBe("Notifications");
   });
 });
+
+// covers SF-115 FR-017: "Custom fields" last in the "// Admin" group
+import { adminNav } from "@/app/(app)/nav";
+describe("adminNav", () => {
+  it("ends with Custom fields", () => {
+    expect(adminNav.at(-1)).toEqual({ href: "/admin/custom-fields", label: "Custom fields" });
+    expect(adminNav.at(-2)?.label).toBe("Pipelines");
+  });
+});

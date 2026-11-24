@@ -14,6 +14,7 @@ import { ActivityNotices } from "../../activities/ActivityNotices";
 import { ActivityOverlays } from "../../activities/ActivityOverlays";
 import { NextActivities } from "../../activities/NextActivities";
 import { archiveOrganisation, deleteOrganisation, restoreOrganisation } from "../actions";
+import { MoreDetails } from "../../records/MoreDetails";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Params> };
 
@@ -80,6 +81,7 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
           ))}
         </dl>
       </section>
+      <MoreDetails details={org.custom} />
 
       <section aria-label="People">
         <div className="label sect">

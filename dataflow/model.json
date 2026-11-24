@@ -298,6 +298,18 @@
         "src/server/records/ambassadors.ts",
         "src/server/records/referral-rules.ts"
       ]
+    },
+    {
+      "id": "custom-fields",
+      "label": "Custom fields",
+      "zone": "app",
+      "group": "records",
+      "sources": [
+        "src/app/(app)/admin/custom-fields",
+        "src/server/custom-fields/fields.ts",
+        "src/server/custom-fields/values.ts",
+        "src/server/custom-fields/rules.ts"
+      ]
     }
   ],
   "stores": [
@@ -489,6 +501,24 @@
       "sources": [
         "migrations/0008_activities.sql"
       ]
+    },
+    {
+      "id": "custom-fields-table",
+      "label": "Custom fields and choices",
+      "group": "database",
+      "sources": [
+        "migrations/0010_custom_fields.sql"
+      ],
+      "zone": "postgres"
+    },
+    {
+      "id": "custom-values-table",
+      "label": "Custom values",
+      "group": "database",
+      "sources": [
+        "migrations/0010_custom_fields.sql"
+      ],
+      "zone": "postgres"
     }
   ],
   "flows": [
@@ -1782,6 +1812,118 @@
       "data": "fake ambassadors and referrals",
       "sources": [
         "src/seed/ambassadors.ts"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "custom-fields",
+      "data": "admin check, signed-in user",
+      "sources": [
+        "src/server/auth/session.ts"
+      ]
+    },
+    {
+      "from": "admin",
+      "to": "custom-fields",
+      "data": "field and choice changes",
+      "sources": [
+        "src/app/(app)/admin/custom-fields/actions.ts"
+      ]
+    },
+    {
+      "from": "custom-fields",
+      "to": "custom-fields-table",
+      "data": "field and choice definitions",
+      "sources": [
+        "src/server/custom-fields/fields.ts"
+      ]
+    },
+    {
+      "from": "custom-fields-table",
+      "to": "custom-fields",
+      "data": "field definitions for forms and lists",
+      "sources": [
+        "src/server/custom-fields/values.ts"
+      ]
+    },
+    {
+      "from": "custom-fields",
+      "to": "custom-values-table",
+      "data": "saved record values",
+      "sources": [
+        "src/server/custom-fields/values.ts"
+      ]
+    },
+    {
+      "from": "custom-values-table",
+      "to": "custom-fields",
+      "data": "record values, list columns and filters",
+      "sources": [
+        "src/server/custom-fields/values.ts"
+      ]
+    },
+    {
+      "from": "custom-fields",
+      "to": "timeline-table",
+      "data": "custom field set, changed, cleared events",
+      "sources": [
+        "src/server/custom-fields/values.ts"
+      ]
+    },
+    {
+      "from": "custom-fields",
+      "to": "people-pages",
+      "data": "custom inputs, values, filters",
+      "sources": [
+        "src/app/(app)/records/CustomInputs.tsx"
+      ]
+    },
+    {
+      "from": "custom-fields",
+      "to": "organisations-pages",
+      "data": "custom inputs, values, filters",
+      "sources": [
+        "src/app/(app)/records/CustomInputs.tsx"
+      ]
+    },
+    {
+      "from": "custom-fields",
+      "to": "deals-board",
+      "data": "custom inputs, values, filters",
+      "sources": [
+        "src/app/(app)/records/CustomInputs.tsx"
+      ]
+    },
+    {
+      "from": "custom-fields",
+      "to": "csv-import",
+      "data": "custom field columns and cell checks",
+      "sources": [
+        "src/server/imports/columns.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "custom-fields-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0010_custom_fields.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "custom-values-table",
+      "data": "table definitions",
+      "sources": [
+        "migrations/0010_custom_fields.sql"
+      ]
+    },
+    {
+      "from": "seed",
+      "to": "custom-fields-table",
+      "data": "fake custom fields and values",
+      "sources": [
+        "src/seed/custom-fields.ts"
       ]
     }
   ]

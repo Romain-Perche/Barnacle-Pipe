@@ -17,7 +17,8 @@ import {
   type UserRef,
 } from "@/server/records/common";
 import { ambassadorOptions, isOfferedAmbassador, referrerOf, referrerOptions, type AmbassadorOption, type Referrer } from "@/server/records/ambassadors";
-import { PAGE_SIZE, type PeopleQuery } from "@/server/records/list-query";
+import { PAGE_SIZE, type PEOPLE_SORTS, type PeopleQuery } from "@/server/records/list-query";
+import type { CustomField } from "@/server/custom-fields/rules";
 import { organisationExistsAfterRace, resolveOrganisation } from "@/server/records/organisations";
 import {
   changedPersonFields,
@@ -33,6 +34,7 @@ import {
 import { decideReferrer, parseReferredBy, referralEvent } from "@/server/records/referral-rules";
 import { recordEvent, type Target } from "@/server/records/timeline";
 import { visiblePerson } from "@/server/records/visibility";
+import { customListParts, customToForm, readCustomValues, saveCustomValues, type CustomDetail } from "@/server/custom-fields/values";
 
 export type PersonView = {
   id: number;
@@ -57,6 +59,8 @@ export type PersonView = {
   // SF-114: the Ambassador tick and "Referred by" ("hidden": a referrer the viewer cannot see).
   ambassador: boolean;
   referredBy: Referrer;
+  // SF-115: every custom field of people, in order, with this person's value.
+  custom: CustomDetail[];
 };
 
 export type PersonRow = {
@@ -107,6 +111,7 @@ export async function getPerson(viewerId: number, id: number, db: Sql = sql): Pr
     select l.id::int as id, l.name from person_labels pl join labels l on l.id = pl.label_id
     where pl.person_id = ${id} order by lower(l.name), l.id`;
   const referredBy = await referrerOf(db, viewerId, r.referred_by_id);
+  const custom = await readCustomValues(db, viewerId, { personId: id });
   return {
     id: r.id,
     firstName: r.first_name,
@@ -129,6 +134,7 @@ export async function getPerson(viewerId: number, id: number, db: Sql = sql): Pr
     version: r.version,
     ambassador: r.is_ambassador,
     referredBy,
+    custom,
   };
 }
 
@@ -254,6 +260,7 @@ export async function createPerson(actorId: number, form: PersonForm): Promise<S
         returning id::int as id`;
       await writeChildren(db, row.id, { ...value, labelIds });
       await recordEvent(db, { personId: row.id, kind: "added", actorId });
+      await saveCustomValues(db, actorId, { personId: row.id }, form.custom, { archived: false });
       if (value.ambassador) await recordEvent(db, { personId: row.id, kind: "ambassador_added", actorId });
       await recordReferral(db, { personId: row.id }, actorId, null, referredById);
       if (org.id !== null) await recordEvent(db, { organisationId: org.id, kind: "person_linked", actorId, relatedPersonId: row.id });
@@ -309,6 +316,8 @@ export async function updatePerson(actorId: number, id: number, version: number,
         where id = ${id}`;
       await writeChildren(db, id, after);
       const fields = changedPersonFields(before, after);
+      // SF-115: before this save's other events, so a refused custom value leaves nothing written.
+      await saveCustomValues(db, actorId, { personId: id }, form.custom, { archived: current.archived });
       if (fields.length > 0) await recordEvent(db, { personId: id, kind: "edited", actorId, fields });
       if (before.ambassador !== after.ambassador) {
         await recordEvent(db, { personId: id, kind: after.ambassador ? "ambassador_added" : "ambassador_removed", actorId });
@@ -384,11 +393,15 @@ export async function deletePerson(actorId: number, id: number): Promise<DeleteR
   });
 }
 
+// SF-115: `shown` are the people fields shown in the list; their filters and sort (query.custom, sort=cf<id>, already
+// checked by knownCustomQuery) run inside the same visible `where`.
 export async function listPeople(
   viewerId: number,
   query: PeopleQuery,
+  shown: CustomField[] = [],
 ): Promise<{ rows: PersonRow[]; total: number; page: number; pages: number }> {
   const pattern = `%${escapeLike(query.q)}%`;
+  const custom = customListParts(sql, "person", "p", shown, query);
   const where = sql`
     ${visiblePerson(sql, viewerId)}
     ${query.archived ? sql`` : sql`and p.archived_at is null`}
@@ -403,18 +416,21 @@ export async function listPeople(
     ${query.source !== null ? sql`and p.lead_source_id = ${query.source}` : sql``}
     ${query.org !== null ? sql`and p.organisation_id = ${query.org}` : sql``}
     ${query.consent !== null ? sql`and p.consent = ${query.consent}` : sql``}
-    ${query.ref !== null ? sql`and p.referred_by_id = ${query.ref}` : sql``}`;
+    ${query.ref !== null ? sql`and p.referred_by_id = ${query.ref}` : sql``}
+    ${custom.where}`;
   const [{ total }] = await sql<{ total: number }[]>`
     select count(*)::int as total from persons p left join organisations o on o.id = p.organisation_id where ${where}`;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(query.page, pages);
   const dir = direction(sql, query.dir);
-  const order = {
-    name: sql`lower(${NAME()}) ${dir}, p.id ${dir}`,
-    organisation: sql`lower(o.name) ${dir} nulls last, lower(${NAME()}) asc, p.id asc`,
-    added: sql`p.created_at ${dir}, p.id ${dir}`,
-    contacted: sql`p.last_contacted_at ${dir} nulls last, lower(${NAME()}) asc, p.id asc`,
-  }[query.sort];
+  const order = custom.order
+    ? sql`${custom.order}, lower(${NAME()}) asc, p.id asc`
+    : {
+        name: sql`lower(${NAME()}) ${dir}, p.id ${dir}`,
+        organisation: sql`lower(o.name) ${dir} nulls last, lower(${NAME()}) asc, p.id asc`,
+        added: sql`p.created_at ${dir}, p.id ${dir}`,
+        contacted: sql`p.last_contacted_at ${dir} nulls last, lower(${NAME()}) asc, p.id asc`,
+      }[query.sort as (typeof PEOPLE_SORTS)[number]] ?? sql`lower(${NAME()}) asc, p.id asc`;
   const rows = await sql<
     {
       id: number; name: string; email: string | null; org_id: number | null; org_name: string | null; org_archived: boolean | null;
@@ -433,6 +449,7 @@ export async function listPeople(
     join users u on u.id = p.owner_id
     left join organisations o on o.id = p.organisation_id
     left join lead_sources ls on ls.id = p.lead_source_id
+    ${custom.join}
     where ${where}
     order by ${order}
     limit ${PAGE_SIZE} offset ${(page - 1) * PAGE_SIZE}`;
@@ -519,6 +536,7 @@ export function personToForm(p: PersonView): PersonForm {
     private: p.private,
     ambassador: p.ambassador,
     referredBy: referredByToForm(p.referredBy),
+    custom: customToForm(p.custom),
   };
 }
 

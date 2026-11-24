@@ -152,3 +152,17 @@ describe("planOrganisations", () => {
     expect(p.warnings).toEqual([{ code: "import_owner_unknown", value: "nobody", rows: [3] }]);
   });
 });
+
+// covers SF-115 FR-013, SC-007, US5 scenarios 2–4: values per add; one warning per field and value with its rows
+import { warningText } from "@/server/imports/text";
+describe("custom values in the plan", () => {
+  it("carries values per add and warns about unreadable ones with the field name and rows", () => {
+    const yes = { id: 5, kind: "person" as const, name: "NDA", type: "yes_no" as const, position: 1, inList: false, choices: [] };
+    const mapping = { columns: [{ index: 0, heading: "First", field: "first_name" as const }, { index: 1, heading: "NDA", field: "custom:5" as const }] };
+    const rows = [["A", "yes"], ["B", "maybe"], ["C", "Maybe"], ["D", ""]].map((values, i) => ({ number: i + 2, values }));
+    const plan = planPeople(rows, mapping, lookups({ customFields: [yes] }));
+    expect(plan.adds.map((a) => a.custom)).toEqual([[{ fieldId: 5, value: true }], [], [], []]);
+    expect(plan.warnings).toEqual([{ code: "import_custom_unreadable", field: "NDA", value: "maybe", rows: [3, 4] }]);
+    expect(warningText(plan.warnings[0]).text).toBe('NDA: "maybe" could not be read and was left empty. (rows 3, 4)');
+  });
+});

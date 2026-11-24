@@ -14,7 +14,8 @@ import {
   type SaveResult,
   type UserRef,
 } from "@/server/records/common";
-import { PAGE_SIZE, type OrganisationsQuery } from "@/server/records/list-query";
+import { PAGE_SIZE, type ORGANISATION_SORTS, type OrganisationsQuery } from "@/server/records/list-query";
+import type { CustomField } from "@/server/custom-fields/rules";
 import {
   changedOrganisationFields,
   escapeLike,
@@ -26,6 +27,7 @@ import {
 } from "@/server/records/rules";
 import { recordEvent } from "@/server/records/timeline";
 import { visiblePerson } from "@/server/records/visibility";
+import { customListParts, customToForm, readCustomValues, saveCustomValues, type CustomDetail } from "@/server/custom-fields/values";
 
 export type OrganisationView = {
   id: number;
@@ -39,9 +41,11 @@ export type OrganisationView = {
   archived: boolean;
   version: number;
   peopleCount: number;
+  // SF-115: every custom field of organisations, in order, with this organisation's value.
+  custom: CustomDetail[];
 };
 
-export type OrganisationRow = Omit<OrganisationView, "version" | "peopleCount" | "createdAt"> & { people: number };
+export type OrganisationRow = Omit<OrganisationView, "version" | "peopleCount" | "createdAt" | "custom"> & { people: number };
 
 const NAME_KEY = "organisations_name_key";
 
@@ -109,7 +113,8 @@ export async function getOrganisation(viewerId: number, id: number): Promise<Org
     where o.id = ${id}`;
   if (!r) return null;
   const { owner_id, owner_name, owner_active, ...rest } = r;
-  return { ...rest, owner: { id: owner_id, name: owner_name, active: owner_active } };
+  const custom = await readCustomValues(sql, viewerId, { organisationId: id });
+  return { ...rest, owner: { id: owner_id, name: owner_name, active: owner_active }, custom };
 }
 
 export async function peopleOf(
@@ -139,6 +144,7 @@ export async function createOrganisation(actorId: number, form: OrganisationForm
         values (${value.name}, ${value.website}, ${value.sector}, ${value.size}, ${value.location}, ${ownerId}, ${actorId})
         returning id::int as id`;
       await recordEvent(db, { organisationId: row.id, kind: "added", actorId });
+      await saveCustomValues(db, actorId, { organisationId: row.id }, form.custom, { archived: false });
       return { status: "saved" as const, id: row.id };
     });
   } catch (err) {
@@ -155,8 +161,8 @@ export async function updateOrganisation(actorId: number, id: number, version: n
   try {
     return await sql.begin(async (tx) => {
       const db = tx as unknown as Sql;
-      const [cur] = await db<{ version: number; name: string; website: string | null; sector: string | null; size: Size | null; location: string | null; owner_id: number }[]>`
-        select version, name, website, sector, size, location, owner_id::int as owner_id
+      const [cur] = await db<{ version: number; name: string; website: string | null; sector: string | null; size: Size | null; location: string | null; owner_id: number; archived: boolean }[]>`
+        select version, name, website, sector, size, location, owner_id::int as owner_id, archived_at is not null as archived
         from organisations where id = ${id} for update`;
       if (!cur) throw new Refused({ status: "not_found" });
       if (cur.version !== version) refuse({ form: { code: "edit_conflict_organisation" } });
@@ -170,6 +176,7 @@ export async function updateOrganisation(actorId: number, id: number, version: n
                location = ${after.location}, owner_id = ${ownerId}, version = version + 1
         where id = ${id}`;
       const fields = changedOrganisationFields(before, after);
+      await saveCustomValues(db, actorId, { organisationId: id }, form.custom, { archived: cur.archived });
       if (fields.length > 0) await recordEvent(db, { organisationId: id, kind: "edited", actorId, fields });
       return { status: "saved" as const, id };
     });
@@ -209,32 +216,39 @@ export async function deleteOrganisation(actorId: number, id: number): Promise<D
   });
 }
 
+// SF-115: `shown` are the organisation fields shown in the list (filters and sort from knownCustomQuery).
 export async function listOrganisations(
   viewerId: number,
   query: OrganisationsQuery,
+  shown: CustomField[] = [],
 ): Promise<{ rows: OrganisationRow[]; total: number; page: number; pages: number }> {
   const pattern = `%${escapeLike(query.q)}%`;
+  const custom = customListParts(sql, "organisation", "o", shown, query);
   const where = sql`
     true
     ${query.archived ? sql`` : sql`and o.archived_at is null`}
     ${query.q ? sql`and (o.name ilike ${pattern} or coalesce(o.website, '') ilike ${pattern})` : sql``}
     ${query.owner !== null ? sql`and o.owner_id = ${query.owner}` : sql``}
     ${query.sector !== null ? sql`and lower(o.sector) = lower(${query.sector})` : sql``}
-    ${query.size !== null ? sql`and o.size = ${query.size}` : sql``}`;
+    ${query.size !== null ? sql`and o.size = ${query.size}` : sql``}
+    ${custom.where}`;
   const [{ total }] = await sql<{ total: number }[]>`select count(*)::int as total from organisations o where ${where}`;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(query.page, pages);
   const dir = direction(sql, query.dir);
-  const order = {
-    name: sql`lower(o.name) ${dir}, o.id ${dir}`,
-    people: sql`people ${dir}, lower(o.name) asc, o.id asc`,
-    added: sql`o.created_at ${dir}, o.id ${dir}`,
-  }[query.sort];
+  const order = custom.order
+    ? sql`${custom.order}, lower(o.name) asc, o.id asc`
+    : {
+        name: sql`lower(o.name) ${dir}, o.id ${dir}`,
+        people: sql`people ${dir}, lower(o.name) asc, o.id asc`,
+        added: sql`o.created_at ${dir}, o.id ${dir}`,
+      }[query.sort as (typeof ORGANISATION_SORTS)[number]] ?? sql`lower(o.name) asc, o.id asc`;
   const rows = await sql<(Omit<OrganisationRow, "owner"> & { owner_id: number; owner_name: string; owner_active: boolean })[]>`
     select o.id::int as id, o.name, o.website, o.sector, o.size, o.location, o.archived_at is not null as archived,
            ${peopleCount(viewerId)} as people,
            u.id::int as owner_id, u.name as owner_name, u.status = 'active' as owner_active
     from organisations o join users u on u.id = o.owner_id
+    ${custom.join}
     where ${where}
     order by ${order}
     limit ${PAGE_SIZE} offset ${(page - 1) * PAGE_SIZE}`;
@@ -266,5 +280,6 @@ export function organisationToForm(o: OrganisationView): OrganisationForm {
     size: o.size ?? "",
     location: o.location ?? "",
     ownerId: String(o.owner.id),
+    custom: customToForm(o.custom),
   };
 }

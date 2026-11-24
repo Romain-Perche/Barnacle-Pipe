@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:596d52d0e21b370240751747bab50d7fcce24f3a964b609961824d171a5c03d1",
+  "pageVersion": "sha256:8603c629d5fad28d36edecf4a4091e8e93dea2b26c3f5462bd800c674dd0e224",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L29",
-          "version": "repo-lines-v1:sha256:6830b03c6073d90e9bd99ae2bb57f771705698941597c53d3ae3479ddb5c316b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L31",
+          "version": "repo-lines-v1:sha256:159e7e430f8a6e89bc9feb5c9d8b8785d20dcce5b5face679be3286d98dc52ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -141,10 +141,20 @@
           "version": "repo-file-v1:sha256:cecc816defeddf88f5a99100d085dd3c5703acfc78616b6ddc5276c629b4c368"
         }
       ]
+    },
+    {
+      "id": "claim_22e672b7e6514748852a4e211a95a53a",
+      "statement": "Migration 0010 adds custom_fields, custom_field_choices and custom_values, and timeline_events columns field_name, old_value, new_value.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0010_custom_fields.sql",
+          "version": "repo-file-v1:sha256:5d7bbcd858d035ca2c12a316586200ebb3971dd2a82478a7b8b7abefc2b1ce3d"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T18:05:22.701Z"
+    "at": "2026-11-24T11:28:51.796Z"
   }
 }

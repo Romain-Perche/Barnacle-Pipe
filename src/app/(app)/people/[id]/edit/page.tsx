@@ -4,6 +4,7 @@ import { parseId } from "@/server/records/list-query";
 import { getPerson, personFormChoices, personToForm } from "@/server/records/people";
 import { PersonForm } from "../../../records/PersonForm";
 import { updatePerson } from "../../actions";
+import { formFields } from "@/server/custom-fields/values";
 
 export default async function EditPersonPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -28,6 +29,7 @@ export default async function EditPersonPage({ params }: { params: Promise<{ id:
         canSetPrivate={person.createdBy === user.id || person.owner.id === user.id}
         currentReferrer={person.referredBy}
         archived={person.archived}
+        customFields={formFields(person.custom)}
         initial={personToForm(person)}
         id={id}
         version={person.version}

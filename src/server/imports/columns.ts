@@ -1,5 +1,7 @@
 // The fields a CSV column can fill, the suggested match for each heading, the mapping checks and the example files
 // (SF-103 research.md §4, §10). Pure: one table of fields drives the select, the suggestions and the example file.
+// SF-115: the kind's custom fields are targets too (`custom:<id>`), after the built-in fields, one column each.
+import type { CustomField } from "@/server/custom-fields/rules";
 import { KINDS, type Kind } from "@/server/records/rules";
 
 export type ImportKind = "people" | "organisations";
@@ -7,12 +9,14 @@ export type PersonField =
   | "first_name" | "last_name" | "full_name" | "email" | "phone" | "organisation" | "role" | "lead_source" | "labels"
   | "linkedin" | "owner" | "consent";
 export type OrganisationField = "name" | "website" | "sector" | "size" | "location" | "owner";
-export type ImportField = PersonField | OrganisationField;
+export type CustomTarget = `custom:${number}`;
+export type ImportField = PersonField | OrganisationField | CustomTarget;
 
-export type MappedColumn = { index: number; heading: string; field: ImportField | "skip"; kind?: Kind };
+// `customName`: the custom field's name when the columns were chosen (the report names a field deleted since).
+export type MappedColumn = { index: number; heading: string; field: ImportField | "skip"; kind?: Kind; customName?: string };
 export type ColumnMapping = { columns: MappedColumn[] };
 
-type FieldDef<K extends string> = { key: K; label: string; multiple: boolean; aliases: Record<string, Kind | true> };
+type FieldDef<K extends string> = { key: K; label: string; multiple: boolean; aliases: Record<string, Kind | true>; custom?: true };
 
 const OWNER_ALIASES = { owner: true, owneremail: true, ownername: true } as const;
 
@@ -55,12 +59,23 @@ export const ORGANISATION_IMPORT_FIELDS: readonly FieldDef<OrganisationField>[] 
   { key: "owner", label: "Owner", multiple: false, aliases: OWNER_ALIASES },
 ];
 
-export function fieldsFor(kind: ImportKind): readonly FieldDef<ImportField>[] {
-  return kind === "people" ? PERSON_IMPORT_FIELDS : ORGANISATION_IMPORT_FIELDS;
+export const customTarget = (id: number): CustomTarget => `custom:${id}`;
+export function customFieldId(field: string): number | null {
+  const m = /^custom:([1-9][0-9]{0,15})$/.exec(field);
+  return m ? Number(m[1]) : null;
 }
 
-export function fieldLabel(kind: ImportKind, key: string): string | undefined {
-  return fieldsFor(kind).find((f) => f.key === key)?.label;
+// The built-in fields, then the given custom fields (their name as the only alias).
+export function fieldsFor(kind: ImportKind, custom: readonly CustomField[] = []): readonly FieldDef<ImportField>[] {
+  const builtIn: readonly FieldDef<ImportField>[] = kind === "people" ? PERSON_IMPORT_FIELDS : ORGANISATION_IMPORT_FIELDS;
+  return [
+    ...builtIn,
+    ...custom.map((f) => ({ key: customTarget(f.id), label: f.name, multiple: false, aliases: { [headingKey(f.name)]: true as const }, custom: true as const })),
+  ];
+}
+
+export function fieldLabel(kind: ImportKind, key: string, custom: readonly CustomField[] = []): string | undefined {
+  return fieldsFor(kind, custom).find((f) => f.key === key)?.label;
 }
 
 export function headingKey(text: string): string {
@@ -72,19 +87,27 @@ export function columnLabel(heading: string, index: number): string {
 }
 
 // A field key from a form or the database, or "skip" when it is not one of this kind's fields.
-export function toField(kind: ImportKind, value: unknown): ImportField | "skip" {
-  return fieldsFor(kind).find((f) => f.key === value)?.key ?? "skip";
+export function toField(kind: ImportKind, value: unknown, custom: readonly CustomField[] = []): ImportField | "skip" {
+  return fieldsFor(kind, custom).find((f) => f.key === value)?.key ?? "skip";
 }
 
 export function toKind(value: unknown): Kind {
   return (KINDS as readonly unknown[]).includes(value) ? (value as Kind) : "work";
 }
 
-export function suggest(kind: ImportKind, headings: string[]): ColumnMapping {
+// A heading equal to a custom field's name (ignoring case, spaces and punctuation) is suggested for it before any
+// built-in alias (spec Clarifications: its name is exact).
+export function suggest(kind: ImportKind, headings: string[], custom: readonly CustomField[] = []): ColumnMapping {
   const used = new Set<string>();
+  const defs = fieldsFor(kind, custom);
   const columns = headings.map((heading, index): MappedColumn => {
     const key = headingKey(heading);
-    const def = key ? fieldsFor(kind).find((f) => Object.hasOwn(f.aliases, key)) : undefined;
+    const own = key ? defs.find((f) => f.custom && Object.hasOwn(f.aliases, key) && !used.has(f.key)) : undefined;
+    if (own) {
+      used.add(own.key);
+      return { index, heading, field: own.key, customName: own.label };
+    }
+    const def = key ? defs.find((f) => !f.custom && Object.hasOwn(f.aliases, key)) : undefined;
     if (!def || (!def.multiple && used.has(def.key))) return { index, heading, field: "skip" };
     used.add(def.key);
     const alias = def.aliases[key];
@@ -95,13 +118,13 @@ export function suggest(kind: ImportKind, headings: string[]): ColumnMapping {
 
 export type MappingError = { code: "import_one_column"; field: ImportField } | { code: "import_person_name_column" } | { code: "import_organisation_name_column" };
 
-export function checkMapping(kind: ImportKind, mapping: ColumnMapping): MappingError | null {
+export function checkMapping(kind: ImportKind, mapping: ColumnMapping, custom: readonly CustomField[] = []): MappingError | null {
   const counts = new Map<string, number>();
   for (const c of mapping.columns) {
-    const field = toField(kind, c.field);
+    const field = toField(kind, c.field, custom);
     if (field !== "skip") counts.set(field, (counts.get(field) ?? 0) + 1);
   }
-  for (const def of fieldsFor(kind)) {
+  for (const def of fieldsFor(kind, custom)) {
     if (!def.multiple && (counts.get(def.key) ?? 0) > 1) return { code: "import_one_column", field: def.key };
   }
   if (kind === "people" && !counts.has("first_name") && !counts.has("last_name") && !counts.has("full_name")) {

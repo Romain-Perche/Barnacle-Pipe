@@ -8,6 +8,8 @@ import { FieldError } from "./FieldError";
 import type { FormState } from "./form-state";
 import { OrganisationPicker } from "./OrganisationPicker";
 import { ReferrerPicker, type CurrentReferrer } from "./ReferrerPicker";
+import type { FormField } from "@/server/custom-fields/values";
+import { CustomInputs } from "./CustomInputs";
 
 type Option = { id: number; name: string };
 export type PersonChoices = {
@@ -24,6 +26,8 @@ type Props = {
   // SF-114: the person's current referrer; an archived person's tick and referrer are not editable (spec Edge Cases).
   currentReferrer?: CurrentReferrer;
   archived?: boolean;
+  // SF-115: the custom fields of people (none shown on an archived person's form).
+  customFields?: FormField[];
   id?: number;
   version?: number;
   cancelHref: string;
@@ -94,7 +98,7 @@ function Text({ name, label, value, error, type = "text" }: { name: string; labe
   );
 }
 
-export function PersonForm({ action, initial, choices, canSetPrivate, currentReferrer = null, archived = false, id, version, cancelHref }: Props) {
+export function PersonForm({ action, initial, choices, canSetPrivate, currentReferrer = null, archived = false, customFields = [], id, version, cancelHref }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
   const v = state?.values ?? initial;
   const errors = state?.errors ?? {};
@@ -177,6 +181,7 @@ export function PersonForm({ action, initial, choices, canSetPrivate, currentRef
           <input type="checkbox" name="private" defaultChecked={v.private} /> {messages.private_label}
         </label>
       )}
+      {!archived && <CustomInputs fields={customFields} values={v.custom} errors={errors} />}
       <div className="form-acts">
         <button className="btn solid" type="submit" disabled={pending}>
           [ SAVE ]
