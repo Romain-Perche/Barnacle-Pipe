@@ -1,9 +1,9 @@
 // SF-120 segments: AI review scenarios. Needs the app (start-app.sh) on crm_dev freshly seeded, then
 // `psql -h localhost -U postgres crm_dev -f .factory/run/sf120-setup.sql`. Run: NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf120.js
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const { chromium, check, signIn, bodyText } = require("./lib.js");
 const base = process.env.BASE || "http://localhost:3000";
-const q = (s) => execSync(`/usr/lib/postgresql/17/bin/psql -h localhost -U postgres crm_dev -Atc "${s.replace(/"/g, '\\"')}"`).toString().trim();
+const q = (s) => execFileSync("/usr/lib/postgresql/17/bin/psql", ["-h", "localhost", "-U", "postgres", "crm_dev", "-Atc", s], { encoding: "utf8" }).trim();
 const main = (p) => p.innerText("main");
 async function idle(p) { await p.waitForLoadState("networkidle"); await p.waitForTimeout(300); }
 async function openNew(p) { await p.goto(base + "/segments"); await p.click("text=[ NEW SEGMENT ]"); await idle(p); }
@@ -29,7 +29,9 @@ async function rowText(p, name) { await p.goto(base + "/segments"); const r = p.
 
 (async () => {
   // fresh data each run: empty + seed, then the review's own data
-  execSync("bash .factory/run/reset-db.sh crm_dev >/dev/null 2>&1 && /usr/lib/postgresql/17/bin/psql -h localhost -U postgres crm_dev -q -v ON_ERROR_STOP=1 -f .factory/run/sf120-setup.sql >/dev/null", { cwd: __dirname + "/../.." });
+  const root = __dirname + "/../..";
+  execFileSync("bash", [".factory/run/reset-db.sh", "crm_dev"], { cwd: root, stdio: "ignore" });
+  execFileSync("/usr/lib/postgresql/17/bin/psql", ["-h", "localhost", "-U", "postgres", "crm_dev", "-q", "-v", "ON_ERROR_STOP=1", "-f", ".factory/run/sf120-setup.sql"], { cwd: root, stdio: "ignore" });
   const b = await chromium.launch();
   const ctxA = await b.newContext(), ctxG = await b.newContext();
   const a = await ctxA.newPage(), g = await ctxG.newPage();
@@ -67,7 +69,9 @@ async function rowText(p, name) { await p.goto(base + "/segments"); const r = p.
   t = await save(a);
   const strip = t.replace(/\s+/g, " ");
   check("US1 scenario 3", c3 && /REACHES NOW 4 ARCHIVED 1 UNSUBSCRIBED 1 NO EMAIL ADDRESS 1/i.test(strip) && t.includes(note), `count again: ${c3}; after save url ${a.url()} strip: ${strip.slice(0, 200)}`);
-  const first = execSync(`cd /home/agent/repo && DATABASE_URL=postgres://postgres@localhost:5432/crm_dev APP_ENV=development npx tsx -e 'import("@/server/segments/reach").then(async (m) => { const r = await m.reachedPeople((await import("@/server/db")).sql, 1, { who: "pipeline", pipelineId: ${q("select id from pipelines where name='RevPipe'")}, stageId: null, dealStatus: "open", conditions: [] }); console.log(JSON.stringify(r.map((x) => x.email))); process.exit(0); })'`).toString().trim();
+  const revPipe = Number(q("select id from pipelines where name='RevPipe'"));
+  const code = `import("@/server/segments/reach").then(async (m) => { const r = await m.reachedPeople((await import("@/server/db")).sql, 1, { who: "pipeline", pipelineId: ${revPipe}, stageId: null, dealStatus: "open", conditions: [] }); console.log(JSON.stringify(r.map((x) => x.email))); process.exit(0); })`;
+  const first = execFileSync("npx", ["tsx", "-e", code], { cwd: __dirname + "/../..", encoding: "utf8", env: { ...process.env, DATABASE_URL: "postgres://postgres@localhost:5432/crm_dev", APP_ENV: "development" } }).trim();
   check("US1 scenario 7", /REACHES NOW\s+4/i.test(t) && first.includes("rv.a1@example.test") && !first.includes("rv.a1.second"), `A1 on Rv D1 and Rv D5, 2 addresses: count 4 (A1,A2,A3,M1), recipients ${first}`);
   // Edge 2 on stage RB: A1, M1 reached; L1 archived+unsub+no email, L2 unsub+no email, L3 no email
   await openNew(a); await a.fill('input[name="name"]', "Rv RB"); await who(a, "stage", "RevPipe", "RB"); t = await save(a);
