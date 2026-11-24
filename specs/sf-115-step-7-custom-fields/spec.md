@@ -141,7 +141,7 @@ A custom value is part of its record: whoever cannot see a private person or dea
 - Renaming a choice to the name of another choice of the same field: refused; removing the last offered choice of a field: refused with "A choice field needs at least one choice."
 - An admin adds a field while a user has an edit form open: after the user saves, the record page shows what they typed and "—" for the new field.
 - Two admins rename the same field one after the other from pages opened at the same time: after reloading, the page shows the name saved last, the field is listed once, and the fields are still listed in a single order with no field missing.
-- An archived record: its page shows its custom values; it cannot be edited (as today), and a direct request to change them is refused with the existing archived-record message.
+- An archived record: its page shows its custom values; its edit form shows no custom field; a direct request that would change a custom value is refused with "Restore this record before changing its custom fields." and nothing is saved; a save that changes no custom value goes through.
 - Deleting a person, organisation or deal (admin, for good): its custom values are deleted with it, and the delete confirmation of each field it had a value in counts one record fewer.
 - A Number of 0, a Money of £0 and Yes/No set to "No" are values, shown as "0", "£0" and "No", counted in the delete confirmation and matched by filters; only an empty field is "—".
 - A Multiple choice field with all its ticks removed on save: the value is cleared and the timeline says "<Field> cleared".

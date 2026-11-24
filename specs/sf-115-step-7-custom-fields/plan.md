@@ -47,8 +47,8 @@ text nodes; unknown or invalid `cf…` address parts ignored (FR-012).
 **Scale/Scope**: ≤ 10 users, a few thousand records, ≤ 50 fields per kind. 1 new admin page with 3 boxes; 3 record
 pages, the deal drawer, 3 forms, 3 lists and the 2 import flows changed; the sidebar.
 
-No NEEDS CLARIFICATION left: research.md resolves each open point; the choices a person should confirm are in spec.md
-§ Clarifications ("decided by the factory, to confirm").
+No NEEDS CLARIFICATION left: research.md resolves each open point; a person confirmed every choice in spec.md
+§ Clarifications on 2026-11-24 (and asked for the shared kind check, Build step 1).
 
 ## Constitution Check
 
@@ -170,8 +170,8 @@ tests/unit/, tests/integration/                 # quickstart.md § Automated che
     "Custom fields use design B: a Custom fields admin page with a tab per kind and a table, the add and edit form and the
     delete confirmation in a box over the page; values in their own // MORE DETAILS section (SF-115)",
     "An admin ticks "Show in list" on a custom field; it is the same for every user, at most 8 per list (SF-115)" and
-    "A custom field's type cannot be changed: to change it, delete the field and add a new one (SF-115)". The factory's
-    choices (spec Clarifications "to confirm") are not added until a person confirms them. No blueprint exception (no
+    "A custom field's type cannot be changed: to change it, delete the field and add a new one (SF-115)", and the choices
+    the person confirmed on 2026-11-24: "An archived person or deal keeps its custom values on its page, but its edit form hides them and a change to them is refused until it is restored (SF-115)", "Renaming or deleting a custom field or a choice does not change earlier timeline entries: they keep the names of the time (SF-115)", "A custom field's list filter offers the current choices, plus a removed choice only while a record the viewer can see still has it (SF-115)", "A CSV import adds no timeline entry per custom value: an imported record gets only its "imported" entry (SF-115)", "A CSV column heading that matches a custom field name is suggested for the custom field before a built-in field (SF-115)", "The timeline kind check of each migration also lists the kinds of features planned at the same time (SF-115 lists SF-116's file_added and file_deleted), so whichever merges first drops none (SF-115)". No blueprint exception (no
     blueprint index in this run), so no "Departs from blueprint" line. Update `AGENTS.md` § Layout with
     `src/server/custom-fields/`, `admin/custom-fields/`, `MoreDetails.tsx`, `CustomInputs.tsx`, `CustomFilters.tsx`.
 
