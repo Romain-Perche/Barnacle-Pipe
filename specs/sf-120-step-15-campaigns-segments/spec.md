@@ -14,6 +14,11 @@
 
 - Q: Which design? → A: Design: C, a Segments table (Name, Who, Reaches now, Last changed) and one page per segment with a count strip (Reaches now, Archived, Unsubscribed, No email address), "// WHO" and "// CONDITIONS" sections, `[ EDIT ]` opening the form on its own page (see `design-options.html`).
 - Q: Which deals does a pipeline or stage segment count? → A: The user picks Open, Won, Lost or All deals; Open is picked first; archived deals never count.
+- Q: How many conditions can a segment have, and how many values can one condition hold? → A: At most 20 conditions per segment and at most 100 values per condition; a longer text value is refused like the People list filter (at most 200 characters for Role and text custom fields); the message names the limit (decided by the factory, to confirm)
+- Q: Does the Organisation condition offer archived organisations? → A: Yes: every organisation on the Organisations list, archived ones included and marked "(archived)", since an archived organisation's people still count (decided by the factory, to confirm)
+- Q: Can a Single choice custom field condition pick "Empty" together with choices? → A: Yes: "Empty" is one more value; a person matches when they have any chosen choice or no value. A Yes/No condition picks one of Yes, No or Empty (decided by the factory, to confirm)
+- Q: Should a deleted segment, a "Someone else changed" refusal or a save leave anything on the people's or deals' timelines? → A: No: segments make no timeline entry or notification; only the segment's own "Last changed by" changes (decided by the factory, to confirm)
+- Q: Which segments can a user delete? → A: Any segment, as the spec says, with no undo; the confirmation names the segment and says it is deleted for the whole team (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
