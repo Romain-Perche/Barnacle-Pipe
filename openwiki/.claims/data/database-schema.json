@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d5e18e3e3fae7eb8266961ce621cda2b6a2e9d583abd9d3752e052ff69698964",
+  "pageVersion": "sha256:4e7830e270c5f237befd2bcdc210aec21495b757c3492aee88557afa237b426d",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -171,10 +171,20 @@
           "version": "repo-file-v1:sha256:ab720ea93a23250ae361ccb698fe75dbcd3eee99d6c27c0c4b415cef940407d4"
         }
       ]
+    },
+    {
+      "id": "claim_c3e1386f455f451cbf2d0e27a2669533",
+      "statement": "Migration 0013 adds gmail_connections, email_threads, email_messages and email_attachments, each with row level security enabled and no policy.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0013_gmail.sql",
+          "version": "repo-file-v1:sha256:533c33c4d730356df860dc6037c24c9de2d7f90e95eb795bb725ea1b70c89207"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T14:34:59.724Z"
+    "at": "2026-11-24T18:41:40.383Z"
   }
 }

@@ -19,88 +19,95 @@ flowchart LR
     n3[["Deals"]]
     n4[["Deals database"]]
     n5[["Files"]]
-    n6[["People and organisations"]]
-    n7[["Pipedrive import"]]
-    n8[["Settings"]]
-    n9[["Sign-in and sessions"]]
-    n10[["Signed-in app and user admin"]]
-    n11["Barnacle admin"]
-    n12["Developer or Vercel build"]
-    n13["Barnacle staff user"]
+    n6[["Gmail"]]
+    n7[["People and organisations"]]
+    n8[["Pipedrive import"]]
+    n9[["Settings"]]
+    n10[["Sign-in and sessions"]]
+    n11[["Signed-in app and user admin"]]
+    n12["Barnacle admin"]
+    n13["Developer or Vercel build"]
+    n14["Barnacle staff user"]
     subgraph z1["GOOGLE (THIRD PARTY)"]
-        n14["Google OAuth and userinfo API"]
+        n15["Google Gmail and Pub/Sub"]
+        n16["Google OAuth and userinfo API"]
     end
     subgraph z2["PIPEDRIVE (THIRD PARTY)"]
-        n15["Pipedrive API"]
+        n17["Pipedrive API"]
     end
     subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
-        n16["Supabase Storage"]
+        n18["Supabase Storage"]
     end
-    n6 -->|"17 flows"| n1
-    n6 -->|"7 flows"| n13
-    n1 -->|"12 flows"| n6
+    n7 -->|"17 flows"| n1
+    n7 -->|"7 flows"| n14
+    n1 -->|"12 flows"| n7
     n1 -->|"next activity per deal"| n3
-    n11 -->|"2 flows"| n6
-    n11 -->|"pipeline and stage changes"| n3
-    n11 -->|"new user email, role and status changes"| n10
-    n10 -->|"2 flows"| n6
-    n10 -->|"sidebar and signed-in pages"| n13
-    n6 -->|"label changes seen on deals"| n4
-    n9 -->|"4 flows"| n1
-    n6 -->|"custom inputs, values, filters"| n3
+    n12 -->|"2 flows"| n7
+    n12 -->|"pipeline and stage changes"| n3
+    n12 -->|"new user email, role and status changes"| n11
+    n11 -->|"2 flows"| n7
+    n11 -->|"sidebar and signed-in pages"| n14
+    n7 -->|"label changes seen on deals"| n4
+    n10 -->|"4 flows"| n1
+    n7 -->|"custom inputs, values, filters"| n3
     n4 -->|"7 flows"| n3
     n3 -->|"9 flows"| n4
     n3 -->|"4 flows"| n1
-    n3 -->|"board, deal drawer and forms"| n13
-    n4 -->|"visible referred deals and totals"| n6
-    n12 -->|"migrate command / seed command"| n2
-    n8 -->|"3 flows"| n9
-    n8 -->|"2 flows"| n2
-    n8 -->|"PIPEDRIVE_URL, token key"| n7
+    n3 -->|"board, deal drawer and forms"| n14
+    n4 -->|"visible referred deals and totals"| n7
+    n13 -->|"migrate command / seed command"| n2
+    n9 -->|"3 flows"| n10
+    n9 -->|"GMAIL_TOKEN_KEY, Google settings"| n6
+    n9 -->|"2 flows"| n2
+    n9 -->|"PIPEDRIVE_URL, token key"| n8
     n5 -->|"files section"| n3
     n5 -->|"2 flows"| n1
-    n5 -->|"files section"| n6
-    n5 -->|"303 to a 60-second read address"| n13
-    n5 -->|"signed upload address, info, delete requests"| n16
+    n5 -->|"files section"| n7
+    n5 -->|"303 to a 60-second read address"| n14
+    n5 -->|"signed upload address, info, delete requests"| n18
     n1 -->|"file rows visible to the user"| n5
-    n9 -->|"auth code, PKCE verifier, client id and secret"| n14
-    n9 -->|"2 flows"| n13
-    n14 -->|"access token, then email, domain and name"| n9
+    n15 -->|"2 flows"| n6
+    n6 -->|"consent, token, revoke, send"| n15
+    n10 -->|"auth code, PKCE verifier, client id and secret"| n16
+    n10 -->|"2 flows"| n14
+    n16 -->|"access token, then email, domain and name"| n10
     n2 -->|"12 flows"| n1
     n2 -->|"fake deals / table definitions"| n4
     n2 -->|"schema"| n6
     n2 -->|"schema"| n7
-    n6 -->|"current unread count"| n10
-    n15 -->|"people, organisations, deals, fields"| n7
-    n7 -->|"imported records"| n1
-    n7 -->|"token header, page requests"| n15
-    n7 -->|"progress and report"| n13
-    n6 -->|"crm_flash cookie"| n9
-    n9 -->|"4 flows"| n6
-    n9 -->|"2 flows"| n10
-    n9 -->|"admin check / signed-in user and admin check"| n3
-    n9 -->|"signed-in user"| n5
-    n9 -->|"signed-in user"| n7
-    n1 -->|"4 flows"| n9
-    n13 -->|"7 flows"| n6
-    n13 -->|"deal form fields, board drags"| n3
-    n13 -->|"4 flows"| n9
-    n13 -->|"files to add, delete, download, preview"| n5
-    n13 -->|"API token, import choices"| n7
-    n13 -->|"file contents (PUT to signed address)"| n16
-    n16 -->|"object info and first bytes"| n5
-    n10 -->|"users table and error messages"| n11
-    n10 -->|"private deals handed to a new owner"| n4
-    n10 -->|"6 flows"| n1
-    n1 -->|"user list"| n10
+    n2 -->|"schema"| n8
+    n7 -->|"current unread count"| n11
+    n17 -->|"people, organisations, deals, fields"| n8
+    n8 -->|"imported records"| n1
+    n8 -->|"token header, page requests"| n17
+    n8 -->|"progress and report"| n14
+    n7 -->|"crm_flash cookie"| n10
+    n10 -->|"4 flows"| n7
+    n10 -->|"2 flows"| n11
+    n10 -->|"admin check / signed-in user and admin check"| n3
+    n10 -->|"signed-in user"| n5
+    n10 -->|"signed-in user"| n8
+    n1 -->|"4 flows"| n10
+    n14 -->|"7 flows"| n7
+    n14 -->|"deal form fields, board drags"| n3
+    n14 -->|"4 flows"| n10
+    n14 -->|"files to add, delete, download, preview"| n5
+    n14 -->|"connect, disconnect, test email"| n6
+    n14 -->|"API token, import choices"| n8
+    n14 -->|"file contents (PUT to signed address)"| n18
+    n18 -->|"object info and first bytes"| n5
+    n11 -->|"users table and error messages"| n12
+    n11 -->|"private deals handed to a new owner"| n4
+    n11 -->|"6 flows"| n1
+    n1 -->|"user list"| n11
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n11,n12,n13,n14,n15,n16 actor
-    class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10 group
+    class n12,n13,n14,n15,n16,n17,n18 actor
+    class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11 group
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
     style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
     style z3 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
@@ -113,6 +120,7 @@ flowchart LR
 | Deals | Pipelines, stages and the deal board, with deals kept private by their person. | Deals board and deal pages, Pipelines admin |
 | Deals database | The Postgres tables for pipelines, stages, deals, their stage time, labels, linked people and followers. | Postgres deal followers, Postgres deal labels and label links, Postgres deal people, Postgres deal stage periods, Postgres deals, Postgres pipelines, Postgres stages |
 | Files | Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage. | Files on records |
+| Gmail | Connects a user's Gmail, copies mail of known people by push and a 15-minute check, and sends mail. | Gmail connect and send, Sealed Gmail tokens, Email threads, messages, attachments, Gmail sync and push |
 | People and organisations | Staff list, search, create, edit, archive and delete people and organisations, with a timeline and shared lead sources and labels. | Activities (calls, meetings, tasks), Ambassadors and referrals, Lead sources and labels admin, CSV import, Postgres csv_imports, Custom fields, Postgres note mentions, Notes and @mentions, Notifications page, Organisation pages and actions, People pages and actions, One-shot delete notice |
 | Pipedrive import | Connects a Pipedrive token and imports people, organisations and deals page by page, never twice. | Sealed Pipedrive tokens, Pipedrive import, Pipedrive imports and links |
 | Settings | Environment variables (.env.local or Vercel settings) that hold secrets and switch features on or off. | Environment settings (.env.local / Vercel) |
@@ -139,34 +147,37 @@ flowchart LR
     n8[("SQL migration files")]
     n9["Barnacle staff user"]
     subgraph z1["GOOGLE (THIRD PARTY)"]
-        n10["Google OAuth and userinfo API"]
+        n10["Google Gmail and Pub/Sub"]
+        n11["Google OAuth and userinfo API"]
     end
     subgraph z2["PIPEDRIVE (THIRD PARTY)"]
-        n11["Pipedrive API"]
+        n12["Pipedrive API"]
     end
     subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
-        n12["Supabase Storage"]
+        n13["Supabase Storage"]
     end
-    n1 -->|"48 flows"| n4
+    n1 -->|"50 flows"| n4
     n1 -->|"13 flows"| n9
-    n4 -->|"30 flows"| n1
+    n4 -->|"31 flows"| n1
     n5 -->|"4 flows"| n1
     n2 -->|"3 flows"| n1
     n6 -->|"migrate command / seed command"| n3
-    n7 -->|"4 flows"| n1
+    n7 -->|"5 flows"| n1
     n7 -->|"2 flows"| n3
     n1 -->|"5 flows"| n2
-    n1 -->|"signed upload address, info, delete requests"| n12
-    n1 -->|"auth code, PKCE verifier, client id and secret"| n10
-    n10 -->|"access token, then email, domain and name"| n1
+    n1 -->|"signed upload address, info, delete requests"| n13
+    n10 -->|"2 flows"| n1
+    n1 -->|"consent, token, revoke, send"| n10
+    n1 -->|"auth code, PKCE verifier, client id and secret"| n11
+    n11 -->|"access token, then email, domain and name"| n1
     n3 -->|"13 flows"| n4
     n3 -->|"schema"| n1
     n8 -->|"SQL migration text"| n3
-    n11 -->|"people, organisations, deals, fields"| n1
-    n1 -->|"token header, page requests"| n11
-    n9 -->|"14 flows"| n1
-    n9 -->|"file contents (PUT to signed address)"| n12
-    n12 -->|"object info and first bytes"| n1
+    n12 -->|"people, organisations, deals, fields"| n1
+    n1 -->|"token header, page requests"| n12
+    n9 -->|"15 flows"| n1
+    n9 -->|"file contents (PUT to signed address)"| n13
+    n13 -->|"object info and first bytes"| n1
     n1 -->|"users table and error messages"| n5
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -174,7 +185,7 @@ flowchart LR
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n5,n6,n9,n10,n11,n12 actor
+    class n5,n6,n9,n10,n11,n12,n13 actor
     class n7,n8 store
     class n1,n2,n3,n4 zone
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
@@ -291,17 +302,19 @@ flowchart LR
     end
     n5[["Database"]]
     n6[["Deals database"]]
-    n7[["Pipedrive import"]]
-    n8[["People and organisations"]]
-    n9[["Settings"]]
+    n7[["Gmail"]]
+    n8[["Pipedrive import"]]
+    n9[["People and organisations"]]
+    n10[["Settings"]]
     n1 -->|"migrate command"| n3
     n1 -->|"seed command"| n4
-    n9 -->|"DATABASE_URL"| n3
-    n9 -->|"APP_ENV, VERCEL_ENV, DATABASE_URL"| n4
+    n10 -->|"DATABASE_URL"| n3
+    n10 -->|"APP_ENV, VERCEL_ENV, DATABASE_URL"| n4
     n3 -->|"4 flows"| n5
     n3 -->|"table definitions"| n6
-    n3 -->|"schema"| n8
     n3 -->|"schema"| n7
+    n3 -->|"schema"| n9
+    n3 -->|"schema"| n8
     n2 -->|"SQL migration text"| n3
     n4 -->|"8 flows"| n5
     n4 -->|"fake deals"| n6
@@ -314,7 +327,7 @@ flowchart LR
     class n1 actor
     class n3,n4 process
     class n2 store
-    class n5,n6,n7,n8,n9 stub
+    class n5,n6,n7,n8,n9,n10 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -459,6 +472,55 @@ flowchart LR
     class n4,n5,n6,n7 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
     style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
+```
+
+### Gmail
+
+Connects a user's Gmail, copies mail of known people by push and a 15-minute check, and sends mail.
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+    n1["Barnacle staff user"]
+    subgraph z1["NEXT.JS APP SERVER (VERCEL OR LOCAL)"]
+        n2("Gmail connect and send")
+        n3("Gmail sync and push")
+    end
+    subgraph z2["GOOGLE (THIRD PARTY)"]
+        n4["Google Gmail and Pub/Sub"]
+    end
+    subgraph z3["POSTGRES (SUPABASE OR LOCAL)"]
+        n5[("Sealed Gmail tokens")]
+        n6[("Email threads, messages, attachments")]
+    end
+    n7[["Database commands"]]
+    n8[["Settings"]]
+    n8 -->|"GMAIL_TOKEN_KEY, Google settings"| n2
+    n4 -->|"tokens and scopes"| n2
+    n4 -->|"push notice, messages, history"| n3
+    n2 -->|"consent, token, revoke, send"| n4
+    n2 -->|"tokens sealed with AES-256-GCM"| n5
+    n5 -->|"sealed token, history id"| n3
+    n3 -->|"copied mail"| n6
+    n7 -->|"schema"| n5
+    n7 -->|"schema"| n6
+    n1 -->|"connect, disconnect, test email"| n2
+    classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
+    classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
+    classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
+    classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
+    classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
+    classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
+    class n1,n4 actor
+    class n2,n3 process
+    class n5,n6 store
+    class n7,n8 stub
+    style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
+    style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
+    style z3 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
 ### People and organisations
@@ -636,11 +698,13 @@ config:
 flowchart LR
     n1[("Environment settings (.env.local / Vercel)")]
     n2[["Database commands"]]
-    n3[["Pipedrive import"]]
-    n4[["Sign-in and sessions"]]
-    n1 -->|"3 flows"| n4
+    n3[["Gmail"]]
+    n4[["Pipedrive import"]]
+    n5[["Sign-in and sessions"]]
+    n1 -->|"3 flows"| n5
+    n1 -->|"GMAIL_TOKEN_KEY, Google settings"| n3
     n1 -->|"2 flows"| n2
-    n1 -->|"PIPEDRIVE_URL, token key"| n3
+    n1 -->|"PIPEDRIVE_URL, token key"| n4
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -648,7 +712,7 @@ flowchart LR
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1 store
-    class n2,n3,n4 stub
+    class n2,n3,n4,n5 stub
 ```
 
 ### Sign-in and sessions
@@ -805,6 +869,11 @@ flowchart LR
 | Fake Google login (dev and test only) | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/dev/fake-google` |
 | Files on records | process | Files | Next.js app server (Vercel or local) | `src/app/(app)/files`, `src/app/(app)/records/file-actions.ts`, `src/server/files/files.ts`, `src/server/files/rules.ts`, `src/server/files/storage.ts` |
 | File rows, uploads and cleanup | store | Database | Postgres (Supabase or local) | `migrations/0011_files.sql` |
+| Google Gmail and Pub/Sub | actor |  | Google (third party) |  |
+| Gmail connect and send | process | Gmail | Next.js app server (Vercel or local) | `src/app/(app)/settings/actions.ts`, `src/app/(app)/settings/gmail/callback/route.ts`, `src/server/gmail/connections.ts`, `src/server/gmail/google-api.ts`, `src/server/gmail/send.ts` |
+| Sealed Gmail tokens | store | Gmail | Postgres (Supabase or local) | `migrations/0013_gmail.sql` |
+| Email threads, messages, attachments | store | Gmail | Postgres (Supabase or local) | `migrations/0013_gmail.sql` |
+| Gmail sync and push | process | Gmail | Next.js app server (Vercel or local) | `src/app/cron/gmail/route.ts`, `src/app/gmail/push/route.ts`, `src/server/gmail/push.ts`, `src/server/gmail/sync.ts`, `vercel.json` |
 | Google sign-in routes | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/auth/google`, `src/server/auth/google.ts` |
 | Google OAuth and userinfo API | actor |  | Google (third party) |  |
 | db:migrate command | process | Database commands | Command line (developer machine or Vercel build) | `scripts/migrate.ts` |
@@ -818,7 +887,7 @@ flowchart LR
 | persons, emails, phones and person_labels tables | store | Database | Postgres (Supabase or local) | `migrations/0002_people_organisations.sql` |
 | Pipedrive API | actor |  | Pipedrive (third party) |  |
 | Sealed Pipedrive tokens | store | Pipedrive import | Postgres (Supabase or local) | `migrations/0012_pipedrive.sql` |
-| Pipedrive import | process | Pipedrive import | Next.js app server (Vercel or local) | `src/app/(app)/settings/actions.ts`, `src/app/(app)/settings/pipedrive-import`, `src/server/pipedrive/api.ts`, `src/server/pipedrive/connection.ts`, `src/server/pipedrive/crypto.ts`, `src/server/pipedrive/imports.ts` |
+| Pipedrive import | process | Pipedrive import | Next.js app server (Vercel or local) | `src/app/(app)/settings/actions.ts`, `src/app/(app)/settings/pipedrive-import`, `src/server/crypto/seal.ts`, `src/server/pipedrive/api.ts`, `src/server/pipedrive/connection.ts`, `src/server/pipedrive/imports.ts` |
 | Pipedrive imports and links | store | Pipedrive import | Postgres (Supabase or local) | `migrations/0012_pipedrive.sql` |
 | Pipelines admin | process | Deals | Next.js app server (Vercel or local) | `src/app/(app)/admin/pipelines`, `src/server/deals/pipelines.ts` |
 | Postgres pipelines | store | Deals database | Postgres (Supabase or local) | `migrations/0004_pipelines_deals.sql` |
@@ -901,6 +970,7 @@ flowchart LR
 | Developer or Vercel build | db:seed command (fake data) | seed command | `package.json`, `scripts/seed.ts` |
 | Environment settings (.env.local / Vercel) | Sign-in rules and session creation | FIRST_ADMIN_EMAIL | `src/server/auth/sign-in.ts`, `src/server/env.ts` |
 | Environment settings (.env.local / Vercel) | Fake Google login (dev and test only) | APP_ENV, VERCEL_ENV (fake login switch) | `src/app/dev/fake-google/actions.ts`, `src/server/env.ts` |
+| Environment settings (.env.local / Vercel) | Gmail connect and send | GMAIL_TOKEN_KEY, Google settings | `src/server/env.ts` |
 | Environment settings (.env.local / Vercel) | Google sign-in routes | Google client id and secret, APP_URL | `src/server/auth/google.ts`, `src/server/env.ts` |
 | Environment settings (.env.local / Vercel) | db:migrate command | DATABASE_URL | `scripts/migrate.ts`, `src/server/db.ts` |
 | Environment settings (.env.local / Vercel) | Pipedrive import | PIPEDRIVE_URL, token key | `src/server/env.ts` |
@@ -915,6 +985,12 @@ flowchart LR
 | Files on records | Supabase Storage | signed upload address, info, delete requests | `src/server/files/storage.ts` |
 | Files on records | timeline_events table | file added and deleted events | `src/server/files/files.ts` |
 | File rows, uploads and cleanup | Files on records | file rows visible to the user | `src/server/files/files.ts` |
+| Google Gmail and Pub/Sub | Gmail connect and send | tokens and scopes | `src/server/gmail/google-api.ts` |
+| Google Gmail and Pub/Sub | Gmail sync and push | push notice, messages, history | `src/server/gmail/google-api.ts`, `src/server/gmail/push.ts` |
+| Gmail connect and send | Google Gmail and Pub/Sub | consent, token, revoke, send | `src/server/gmail/google-api.ts` |
+| Gmail connect and send | Sealed Gmail tokens | tokens sealed with AES-256-GCM | `src/server/gmail/connections.ts` |
+| Sealed Gmail tokens | Gmail sync and push | sealed token, history id | `src/server/gmail/sync.ts` |
+| Gmail sync and push | Email threads, messages, attachments | copied mail | `src/server/gmail/sync.ts` |
 | Google sign-in routes | Browser cookies (crm_session, crm_oauth) | OAuth state, PKCE verifier, session token | `src/app/auth/google/callback/route.ts`, `src/app/auth/google/start/route.ts` |
 | Google sign-in routes | Sign-in rules and session creation | Google identity (email, verified, domain, name) | `src/app/auth/google/callback/route.ts` |
 | Google sign-in routes | Google OAuth and userinfo API | auth code, PKCE verifier, client id and secret | `src/server/auth/google.ts` |
@@ -928,6 +1004,8 @@ flowchart LR
 | db:migrate command | Postgres deal people | table definitions | `migrations/0005_deal_page.sql` |
 | db:migrate command | Postgres deals | table definitions | `scripts/migrate.ts` |
 | db:migrate command | File rows, uploads and cleanup | table definitions | `migrations/0011_files.sql` |
+| db:migrate command | Sealed Gmail tokens | schema | `migrations/0013_gmail.sql` |
+| db:migrate command | Email threads, messages, attachments | schema | `migrations/0013_gmail.sql` |
 | db:migrate command | Postgres note mentions | schema | `migrations/0007_notes_mentions.sql` |
 | db:migrate command | organisations table | table definitions | `migrations/0002_people_organisations.sql`, `scripts/migrate.ts` |
 | db:migrate command | persons, emails, phones and person_labels tables | ambassador and referrer columns | `migrations/0009_ambassadors.sql` |
@@ -1014,6 +1092,7 @@ flowchart LR
 | Barnacle staff user | Deals board and deal pages | deal form fields, board drags | `src/app/(app)/deals/actions.ts` |
 | Barnacle staff user | Fake Google login (dev and test only) | chosen fake account email and name | `src/app/dev/fake-google/actions.ts` |
 | Barnacle staff user | Files on records | files to add, delete, download, preview | `src/app/(app)/files/file-route.ts`, `src/app/(app)/records/file-actions.ts` |
+| Barnacle staff user | Gmail connect and send | connect, disconnect, test email | `src/app/(app)/settings/actions.ts` |
 | Barnacle staff user | Google sign-in routes | sign-in start, OAuth code and state | `src/app/auth/google/callback/route.ts`, `src/app/auth/google/start/route.ts` |
 | Barnacle staff user | Notes and @mentions | note text and mentions | `src/app/(app)/records/note-actions.ts` |
 | Barnacle staff user | Notifications page | open, mark all read | `src/app/(app)/notifications/actions.ts` |

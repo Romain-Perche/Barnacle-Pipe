@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T14:34:59.724Z
+    at: 2026-11-24T18:41:40.383Z
 sources:
   - id: sf95-src-migration
     resource: repo://migrations/0005_deal_page.sql
@@ -31,13 +31,15 @@ sources:
     resource: repo://migrations/0011_files.sql
   - id: openwiki-source-dc1f2867de00af07970a260d
     resource: repo://migrations/0012_pipedrive.sql
+  - id: openwiki-source-c317c3c9a820cd1fcd6bd0cf
+    resource: repo://migrations/0013_gmail.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T14:34:59.724Z" }
+generated: { by: "claude-code", at: "2026-11-24T18:41:40.383Z" }
 ---
 
 # Database schema and access
@@ -189,6 +191,14 @@ counts, consent and the report; a unique index allows one open run per user) and
 Pipedrive id as the primary key, so a Pipedrive record never leads to two CRM records; a deleted CRM record keeps its
 link row). Row level security is on all three with no policy, and the `timeline_events` kind list gains
 `pipedrive_imported` and `pipedrive_unsubscribed`. See [Pipedrive import](../features/pipedrive-import.md).
+
+### Gmail (migration 0013)
+
+`0013_gmail.sql` adds `gmail_connections` (one per user, kept after disconnect: the address, a `state` of `working`,
+`needs_reconnect` or `disconnected`, the token sealed in `token_cipher` (null only when disconnected), granted scopes,
+Gmail `history_id`, watch dates and a sync lease), `email_threads`, `email_messages` (one row per message and account,
+direction `sent` or `received`) and `email_attachments` (names and sizes only). Row level security is on all four with
+no policy. See [Gmail connect and sync](../features/gmail-connect-and-sync.md).
 
 ## Row level security
 

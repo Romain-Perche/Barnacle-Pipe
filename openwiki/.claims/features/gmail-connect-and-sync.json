@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:cc51363ba27464ee6fa18a9be7f65dbb81ad7d60300a59ef3ba489da196a85ce",
+  "claims": [
+    {
+      "id": "claim_fec23bec7f4044ab9b2408b13a879b27",
+      "statement": "Gmail mail sync is started by a Pub/Sub push to /gmail/push or by the 15-minute /cron/gmail job, and syncConnection runs one sync per connection at a time through a lease.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/cron/gmail/route.ts",
+          "version": "repo-file-v1:sha256:643036705fbe7f1918316c17eaee9901ab7a9eb3a082b3f569d9cc06519e84eb"
+        },
+        {
+          "resource": "repo://src/server/gmail/sync.ts",
+          "version": "repo-file-v1:sha256:08f5c1c9f4491ad1425801b0ed983ab05fef829bbf66afbfd3f790f2c700776e"
+        },
+        {
+          "resource": "repo://vercel.json",
+          "version": "repo-file-v1:sha256:c5a862bc0475c8e665462aaf82321207758ff807665bb02225559cfb6880b32d"
+        }
+      ]
+    },
+    {
+      "id": "claim_0850d8f2e7664a8a9a20f74ba33261ec",
+      "statement": "Gmail tokens are sealed by src/server/crypto/seal.ts with GMAIL_TOKEN_KEY.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/crypto/seal.ts",
+          "version": "repo-file-v1:sha256:37f70887203566e9ed07c68e45e9c773d0b3636e30ab65124e0ef697b3c6cc0a"
+        },
+        {
+          "resource": "repo://src/server/gmail/connections.ts",
+          "version": "repo-file-v1:sha256:99bf2d614b7f0611eac19a6355715fa6a0264d46be027038123a7b972624048c"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-24T18:41:40.383Z"
+  }
+}

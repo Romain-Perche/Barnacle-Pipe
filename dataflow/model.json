@@ -80,6 +80,11 @@
       "id": "pipedrive",
       "label": "Pipedrive import",
       "description": "Connects a Pipedrive token and imports people, organisations and deals page by page, never twice."
+    },
+    {
+      "id": "gmail",
+      "label": "Gmail",
+      "description": "Connects a user's Gmail, copies mail of known people by push and a 15-minute check, and sends mail."
     }
   ],
   "actors": [
@@ -109,6 +114,11 @@
       "id": "pipedrive-api",
       "label": "Pipedrive API",
       "zone": "pipedrive"
+    },
+    {
+      "id": "gmail-api",
+      "label": "Google Gmail and Pub/Sub",
+      "zone": "google"
     }
   ],
   "processes": [
@@ -361,9 +371,35 @@
         "src/server/pipedrive/imports.ts",
         "src/server/pipedrive/api.ts",
         "src/server/pipedrive/connection.ts",
-        "src/server/pipedrive/crypto.ts",
+        "src/server/crypto/seal.ts",
         "src/app/(app)/settings/pipedrive-import",
         "src/app/(app)/settings/actions.ts"
+      ]
+    },
+    {
+      "id": "gmail-connect",
+      "label": "Gmail connect and send",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/gmail/connections.ts",
+        "src/server/gmail/send.ts",
+        "src/server/gmail/google-api.ts",
+        "src/app/(app)/settings/gmail/callback/route.ts",
+        "src/app/(app)/settings/actions.ts"
+      ]
+    },
+    {
+      "id": "gmail-sync",
+      "label": "Gmail sync and push",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/gmail/sync.ts",
+        "src/server/gmail/push.ts",
+        "src/app/gmail/push/route.ts",
+        "src/app/cron/gmail/route.ts",
+        "vercel.json"
       ]
     }
   ],
@@ -600,6 +636,24 @@
       "group": "pipedrive",
       "sources": [
         "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "id": "gmail-connections-table",
+      "label": "Sealed Gmail tokens",
+      "zone": "postgres",
+      "group": "gmail",
+      "sources": [
+        "migrations/0013_gmail.sql"
+      ]
+    },
+    {
+      "id": "gmail-mail-tables",
+      "label": "Email threads, messages, attachments",
+      "zone": "postgres",
+      "group": "gmail",
+      "sources": [
+        "migrations/0013_gmail.sql"
       ]
     }
   ],
@@ -2251,6 +2305,87 @@
       "data": "schema",
       "sources": [
         "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "gmail-connect",
+      "data": "connect, disconnect, test email",
+      "sources": [
+        "src/app/(app)/settings/actions.ts"
+      ]
+    },
+    {
+      "from": "gmail-connect",
+      "to": "gmail-api",
+      "data": "consent, token, revoke, send",
+      "sources": [
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-api",
+      "to": "gmail-connect",
+      "data": "tokens and scopes",
+      "sources": [
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-connect",
+      "to": "gmail-connections-table",
+      "data": "tokens sealed with AES-256-GCM",
+      "sources": [
+        "src/server/gmail/connections.ts"
+      ]
+    },
+    {
+      "from": "gmail-api",
+      "to": "gmail-sync",
+      "data": "push notice, messages, history",
+      "sources": [
+        "src/server/gmail/push.ts",
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-connections-table",
+      "to": "gmail-sync",
+      "data": "sealed token, history id",
+      "sources": [
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-sync",
+      "to": "gmail-mail-tables",
+      "data": "copied mail",
+      "sources": [
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "gmail-connect",
+      "data": "GMAIL_TOKEN_KEY, Google settings",
+      "sources": [
+        "src/server/env.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "gmail-connections-table",
+      "data": "schema",
+      "sources": [
+        "migrations/0013_gmail.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "gmail-mail-tables",
+      "data": "schema",
+      "sources": [
+        "migrations/0013_gmail.sql"
       ]
     }
   ]
