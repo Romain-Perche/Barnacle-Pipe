@@ -8,6 +8,14 @@
 
 **Input**: User description: "Step 8 - Files. Files (`docs/PRODUCT.md` section 5): upload files to deals, people and organisations, list them on the record page, preview images and PDFs in the browser, and download any file. Up to 25 MB per file (Gmail's attachment limit, so a file can later be attached to an email). Adding or deleting a file shows on the record's timeline. Files follow the record's private rules, also for direct download links. Files are stored in Supabase Storage, with a fake in tests like every other outside service. Attaching files to emails comes with the email issues."
 
+## Clarifications
+
+### Session 2026-11-24
+
+- Q: Which design? → A: Design: A, a "// FILES" table above the timeline (name, kind, size, added by, date, `[ PREVIEW ]` / `[ DOWNLOAD ]` / `[ DELETE ]`, `[ ADD FILE ]` in the section heading), the image preview in a box over the page with `[ DOWNLOAD ]` and `[ CLOSE ]`, FILE entries on the timeline (see `design-options.html`).
+- Q: Who can delete a file? → A: Anyone who can see the record, as with notes (SF-102).
+- Q: Which files does a person or organisation page list under "// FILES"? → A: Only the files added to that person or organisation; their deals' files show only as FILE entries on the timeline.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Upload a file to a deal, person or organisation (Priority: P1)
@@ -39,8 +47,8 @@ On a deal page, deal drawer, person page or organisation page, the team member s
 
 **Acceptance Scenarios**:
 
-1. **Given** a record the user can see, **When** its page or the deal drawer is shown, **Then** "// FILES (<n>)" lists every file on the record, newest first, each with its name, type, size, who added it and when, `[ DOWNLOAD ]` and `[ DELETE ]`; with no files it shows "No files yet." and `[ ADD FILE ]`.
-2. **Given** a file that is a JPEG, PNG, GIF or WebP image, **When** the user clicks its name or `[ PREVIEW ]`, **Then** the image is shown in the browser, scaled to fit, with its name, `[ DOWNLOAD ]` and `[ CLOSE ]`.
+1. **Given** a record the user can see, **When** its page or the deal drawer is shown, **Then** "// FILES (<n>)" is shown between "// NEXT ACTIVITIES" and "// TIMELINE" with `[ ADD FILE ]` in its heading, and a table lists every file on the record, newest first, with the columns Name, Kind, Size, Added by and Added, and on each row `[ PREVIEW ]` (images and PDFs only), `[ DOWNLOAD ]` and `[ DELETE ]`; with no files it shows "No files yet." and `[ ADD FILE ]`.
+2. **Given** a file that is a JPEG, PNG, GIF or WebP image, **When** the user clicks its name or `[ PREVIEW ]`, **Then** a box opens over the page showing the image scaled to fit, its name and size, `[ DOWNLOAD ]` and `[ CLOSE ]`; `[ CLOSE ]` closes the box and the record page is shown again.
 3. **Given** a PDF file, **When** the user clicks its name or `[ PREVIEW ]`, **Then** the PDF opens in the browser's own PDF viewer, where the user can scroll its pages.
 4. **Given** any other kind of file (Word, Excel, CSV, ZIP, SVG, HTML, text…), **When** the user clicks its name, **Then** it is downloaded, never opened inside the app; there is no `[ PREVIEW ]` for it.
 5. **Given** any file, **When** the user presses `[ DOWNLOAD ]`, **Then** the browser saves it under its original name with exactly the bytes that were uploaded.
@@ -140,7 +148,7 @@ A team member removes a file uploaded by mistake or out of date. It disappears f
 - **FR-011**: Files on an archived record MUST stay listed, previewable and downloadable; adding and deleting MUST be refused until the record is restored.
 - **FR-012**: When a deal, person or organisation is deleted for good, its files MUST be deleted with it, contents included.
 - **FR-013**: Every message shown MUST be one of the app's fixed messages (built only from a file name or a user name where a message names one); text from the page address MUST never be shown; file names are shown as plain text only.
-- **FR-014**: "// FILES", the upload, the preview and the delete confirmation MUST follow the design chosen for this issue and `docs/DESIGN.md`; the FILE timeline entry MUST follow the timeline's design B (SF-102).
+- **FR-014**: "// FILES", the upload, the preview and the delete confirmation MUST follow design A in `design-options.html` (a "// FILES" table between "// NEXT ACTIVITIES" and "// TIMELINE" on record pages and the deal drawer, the image preview in a box over the page) and `docs/DESIGN.md`; the FILE timeline entry MUST follow the timeline's design B (SF-102).
 
 **Storage and fake**
 

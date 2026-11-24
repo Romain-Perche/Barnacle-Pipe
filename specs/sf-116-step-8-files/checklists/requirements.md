@@ -33,4 +33,4 @@
 
 - Supabase Storage is named in FR-015 and the Assumptions because the user's request and `docs/DECISIONS.md` (kickoff: Supabase hosting, a fake for every outside service) fix it as a product constraint; no other technology is named.
 - Choices made by default, to confirm in `/speckit-clarify`: anyone who can see a record can delete any of its files (as for notes); each record lists only its own files; previews limited to JPEG/PNG/GIF/WebP and PDF (SVG downloaded only); direct storage addresses expire within 5 minutes; no notification on upload.
-- The design for "// FILES", the upload and the preview is left to the design choice of this issue (FR-014).
+- Clarified 2026-11-24: design A; anyone who can see the record deletes files; each record lists only its own files.
