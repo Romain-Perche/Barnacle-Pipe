@@ -18,6 +18,7 @@ import {
   type PersonToAdd,
   type Skip,
 } from "@/server/imports/plan";
+import { col, inChunks, insertCustomValues, newIds } from "@/server/imports/bulk";
 import { splitMulti } from "@/server/imports/rows";
 import type { Names } from "@/server/imports/text";
 import { CONSENTS, normaliseEmail, type Consent } from "@/server/records/rules";
@@ -34,8 +35,6 @@ export type ImportInfo = {
   report: ImportReport | null;
 };
 
-// Inserts go in chunks of this many rows (one array parameter per column, research.md §8).
-const CHUNK = 1000;
 const DAY = "24 hours";
 
 const isKind = (k: unknown): k is ImportKind => k === "people" || k === "organisations";
@@ -303,19 +302,6 @@ export async function namesForReport(viewerId: number, skipped: Skip[]): Promise
   return { people: new Map(people.map((p) => [p.id, p.name])), organisations: new Map(orgs.map((o) => [o.id, o.name])) };
 }
 
-async function newIds(db: Sql, table: "persons" | "organisations", n: number): Promise<number[]> {
-  if (n === 0) return [];
-  const rows = await db<{ id: number }[]>`
-    select nextval(pg_get_serial_sequence(${table}, 'id'))::int as id from generate_series(1, ${n})`;
-  return rows.map((r) => r.id);
-}
-
-async function inChunks<T>(items: T[], insert: (chunk: T[]) => Promise<unknown>) {
-  for (let i = 0; i < items.length; i += CHUNK) await insert(items.slice(i, i + CHUNK));
-}
-
-const col = <T, V>(items: T[], f: (t: T) => V) => items.map(f);
-
 type EventRow = { personId: number | null; organisationId: number | null; kind: "imported" | "person_linked"; relatedPersonId: number | null };
 
 async function insertEvents(db: Sql, actorId: number, events: EventRow[]) {
@@ -371,24 +357,6 @@ async function importPeople(db: Sql, actorId: number, plan: ImportPlan<PersonToA
       p.organisationId === null ? [] : [{ personId: null, organisationId: p.organisationId, kind: "person_linked" as const, relatedPersonId: p.id }],
     ),
   ];
-}
-
-// SF-115: the custom values of the imported records, in bulk (one array per column); multiple choice as text '{1,2}'.
-// No timeline entry per value: the record has its "imported" entry (spec Clarifications).
-async function insertCustomValues(db: Sql, kind: ImportKind, fields: CustomField[], records: { id: number; custom: { fieldId: number; value: CustomValue }[] }[]) {
-  const byId = new Map(fields.map((f) => [f.id, f]));
-  const rows = records.flatMap((r) => r.custom.filter((c) => byId.has(c.fieldId)).map((c) => ({ id: r.id, field: byId.get(c.fieldId)!, value: c.value })));
-  const of = (row: (typeof rows)[number], types: CustomField["type"][]) => (types.includes(row.field.type) ? row.value : null);
-  const target = kind === "people" ? db`person_id` : db`organisation_id`;
-  await inChunks(rows, (c) => db`
-    insert into custom_values (field_id, ${target}, text_value, number_value, money_pence, date_value, choice_id, choice_ids, bool_value)
-    select field_id, target, text_value, number_value::numeric, money_pence, date_value::date, choice_id, choice_ids::bigint[], bool_value
-    from unnest(${col(c, (r) => r.field.id)}::bigint[], ${col(c, (r) => r.id)}::bigint[], ${col(c, (r) => of(r, ["text", "long_text"]) as string | null)}::text[],
-                ${col(c, (r) => of(r, ["number"]) as string | null)}::text[], ${col(c, (r) => of(r, ["money"]) as number | null)}::bigint[],
-                ${col(c, (r) => of(r, ["date"]) as string | null)}::text[], ${col(c, (r) => of(r, ["single_choice"]) as number | null)}::bigint[],
-                ${col(c, (r) => { const v = of(r, ["multiple_choice"]) as number[] | null; return v === null ? null : `{${v.join(",")}}`; })}::text[],
-                ${col(c, (r) => of(r, ["yes_no"]) as boolean | null)}::boolean[])
-         as t(field_id, target, text_value, number_value, money_pence, date_value, choice_id, choice_ids, bool_value)`);
 }
 
 async function importOrganisations(db: Sql, actorId: number, plan: ImportPlan<OrganisationToAdd>, fields: CustomField[]): Promise<EventRow[]> {

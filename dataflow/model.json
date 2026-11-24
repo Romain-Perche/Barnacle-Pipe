@@ -24,6 +24,10 @@
     {
       "id": "supabase",
       "label": "Supabase Storage (third party)"
+    },
+    {
+      "id": "pipedrive",
+      "label": "Pipedrive (third party)"
     }
   ],
   "groups": [
@@ -73,9 +77,9 @@
       "description": "Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage."
     },
     {
-      "id": "segments",
-      "label": "Segments",
-      "description": "Saved, team-shared people segments and the count of who they reach."
+      "id": "pipedrive",
+      "label": "Pipedrive import",
+      "description": "Connects a Pipedrive token and imports people, organisations and deals page by page, never twice."
     }
   ],
   "actors": [
@@ -100,6 +104,11 @@
       "id": "supabase-storage",
       "label": "Supabase Storage",
       "zone": "supabase"
+    },
+    {
+      "id": "pipedrive-api",
+      "label": "Pipedrive API",
+      "zone": "pipedrive"
     }
   ],
   "processes": [
@@ -344,15 +353,17 @@
       ]
     },
     {
-      "id": "segments",
-      "label": "Segments pages and reach",
+      "id": "pipedrive-import",
+      "label": "Pipedrive import",
       "zone": "app",
-      "group": "segments",
+      "group": "pipedrive",
       "sources": [
-        "src/app/(app)/segments",
-        "src/server/segments/segments.ts",
-        "src/server/segments/reach.ts",
-        "src/server/segments/rules.ts"
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/api.ts",
+        "src/server/pipedrive/connection.ts",
+        "src/server/pipedrive/crypto.ts",
+        "src/app/(app)/settings/pipedrive-import",
+        "src/app/(app)/settings/actions.ts"
       ]
     }
   ],
@@ -574,12 +585,21 @@
       ]
     },
     {
-      "id": "segments-table",
-      "label": "Segments",
+      "id": "pipedrive-connections-table",
+      "label": "Sealed Pipedrive tokens",
       "zone": "postgres",
-      "group": "segments",
+      "group": "pipedrive",
       "sources": [
-        "migrations/0012_segments.sql"
+        "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "id": "pipedrive-imports-table",
+      "label": "Pipedrive imports and links",
+      "zone": "postgres",
+      "group": "pipedrive",
+      "sources": [
+        "migrations/0012_pipedrive.sql"
       ]
     }
   ],
@@ -2103,74 +2123,134 @@
     },
     {
       "from": "session-guard",
-      "to": "segments",
+      "to": "pipedrive-import",
       "data": "signed-in user",
       "sources": [
-        "src/server/auth/session.ts"
+        "src/server/pipedrive/imports.ts"
       ]
     },
     {
       "from": "staff",
-      "to": "segments",
-      "data": "segment form, count requests",
+      "to": "pipedrive-import",
+      "data": "API token, import choices",
       "sources": [
-        "src/app/(app)/segments/actions.ts"
+        "src/app/(app)/settings/actions.ts"
       ]
     },
     {
-      "from": "segments",
-      "to": "segments-table",
-      "data": "segment definitions",
+      "from": "pipedrive-import",
+      "to": "staff",
+      "data": "progress and report",
       "sources": [
-        "src/server/segments/segments.ts"
+        "src/app/(app)/settings/pipedrive-import/page.tsx"
       ]
     },
     {
-      "from": "segments-table",
-      "to": "segments",
-      "data": "saved segments",
+      "from": "pipedrive-import",
+      "to": "pipedrive-api",
+      "data": "token header, page requests",
       "sources": [
-        "src/server/segments/segments.ts"
+        "src/server/pipedrive/api.ts"
       ]
     },
     {
-      "from": "persons-table",
-      "to": "segments",
-      "data": "people reach counts",
+      "from": "pipedrive-api",
+      "to": "pipedrive-import",
+      "data": "people, organisations, deals, fields",
       "sources": [
-        "src/server/segments/reach.ts"
+        "src/server/pipedrive/api.ts"
       ]
     },
     {
-      "from": "deals-table",
-      "to": "segments",
-      "data": "deal conditions for reach",
+      "from": "pipedrive-import",
+      "to": "pipedrive-connections-table",
+      "data": "token sealed with AES-256-GCM",
       "sources": [
-        "src/server/segments/reach.ts"
+        "src/server/pipedrive/connection.ts"
       ]
     },
     {
-      "from": "custom-values-table",
-      "to": "segments",
-      "data": "custom value tests",
+      "from": "pipedrive-connections-table",
+      "to": "pipedrive-import",
+      "data": "sealed token",
       "sources": [
-        "src/server/custom-fields/values.ts"
+        "src/server/pipedrive/connection.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "pipedrive-import",
+      "data": "PIPEDRIVE_URL, token key",
+      "sources": [
+        "src/server/env.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "pipedrive-imports-table",
+      "data": "run state, links",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-imports-table",
+      "to": "pipedrive-import",
+      "data": "cursor, links",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "persons-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "organisations-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "custom-values-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "timeline-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
       ]
     },
     {
       "from": "migrate",
-      "to": "segments-table",
-      "data": "table definition",
+      "to": "pipedrive-connections-table",
+      "data": "schema",
       "sources": [
-        "migrations/0012_segments.sql"
+        "migrations/0012_pipedrive.sql"
       ]
     },
     {
-      "from": "seed",
-      "to": "segments-table",
-      "data": "fake segments",
+      "from": "migrate",
+      "to": "pipedrive-imports-table",
+      "data": "schema",
       "sources": [
-        "src/seed/segments.ts"
+        "migrations/0012_pipedrive.sql"
       ]
     }
   ]

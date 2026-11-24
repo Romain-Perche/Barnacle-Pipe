@@ -281,13 +281,13 @@ describe("npm run db:migrate", () => {
     }
   });
 
-  // covers SF-120 T005, FR-005, FR-007: 0012_segments.sql on a fresh database: names, who, conditions as a list of at
+  // covers SF-120 T005, FR-005, FR-007: 0013_segments.sql on a fresh database: names, who, conditions as a list of at
   // most 20, no foreign keys to things that can be deleted, row level security on
-  it("applies 0012_segments.sql: checked names, who and conditions, unique names ignoring case, RLS on", async () => {
+  it("applies 0013_segments.sql: checked names, who and conditions, unique names ignoring case, RLS on", async () => {
     const db = await scratchDb();
     const run = await runMigrate(db);
     expect(run.code, run.out).toBe(0);
-    expect(run.out).toContain("Applied 0012_segments.sql");
+    expect(run.out).toContain("Applied 0013_segments.sql");
     const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
     try {
       const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
@@ -323,8 +323,63 @@ describe("npm run db:migrate", () => {
     }
   });
 
-  // covers SF-120 T005: the segments code keeps to the pooler's limits (no session state); 0012 is transaction-safe
-  it("keeps the segments code and 0012_segments.sql free of session state", () => {
+  // covers SF-117 T013, FR-006, FR-017: 0012_pipedrive.sql on a fresh database: connections, imports, links, two new kinds
+  it("applies 0012_pipedrive.sql: one open import per user, state and kind checks, link checks, kinds kept and added", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0012_pipedrive.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const [o] = await c`insert into organisations (name, owner_id, created_by) values ('Fakeco', ${u.id}, ${u.id}) returning id`;
+      const [p] = await c`insert into persons (first_name, owner_id, created_by) values ('Cara', ${u.id}, ${u.id}) returning id`;
+      const token = Buffer.alloc(40, 1);
+      const conn = (name: string) =>
+        c`insert into pipedrive_connections (user_id, token, pipedrive_user_id, pipedrive_user_name, company_id, company_name)
+          values (${u.id}, ${token}, 1, 'Fake Person', 1001, ${name}) on conflict (user_id) do update set company_name = excluded.company_name`;
+      expect(await code(conn("x".repeat(256)))).toBe("23514");
+      expect(await code(conn("Fakeco Pipedrive"))).toBe("ok");
+      const imp = (cols: { people?: boolean; orgs?: boolean; consent?: string | null; state?: string; pause?: string | null; finished?: boolean; stop?: string | null }) =>
+        c`insert into pipedrive_imports (user_id, company_id, company_name, want_people, want_organisations, consent, state, pause_reason, finished_at, stop_reason)
+          values (${u.id}, 1001, 'Fakeco Pipedrive', ${cols.people ?? true}, ${cols.orgs ?? true},
+                  ${cols.consent === undefined ? "subscribed" : cols.consent}, ${cols.state ?? "running"}, ${cols.pause ?? null},
+                  ${cols.finished ? new Date() : null}, ${cols.stop ?? null}) returning id`;
+      expect(await code(imp({ people: false, orgs: false }))).toBe("23514");
+      expect(await code(imp({ consent: null }))).toBe("23514");
+      expect(await code(imp({ state: "paused" }))).toBe("23514");
+      expect(await code(imp({ state: "stopped", finished: true }))).toBe("23514");
+      expect(await code(imp({ state: "finished", finished: true }))).toBe("ok");
+      expect(await code(imp({}))).toBe("ok");
+      expect(await code(imp({ state: "paused", pause: "unreachable" }))).toBe("23505");
+      const link = (cols: { kind: string; person?: number | null; org?: number | null; how?: string; id: number }) =>
+        c`insert into pipedrive_links (company_id, kind, pipedrive_id, person_id, organisation_id, how)
+          values (1001, ${cols.kind}, ${cols.id}, ${cols.person ?? null}, ${cols.org ?? null}, ${cols.how ?? "imported"})`;
+      expect(await code(link({ kind: "person", id: 1, person: p.id }))).toBe("ok");
+      expect(await code(link({ kind: "person", id: 1, person: p.id }))).toBe("23505");
+      expect(await code(link({ kind: "person", id: 2, org: o.id }))).toBe("23514");
+      expect(await code(link({ kind: "organisation", id: 2, person: p.id }))).toBe("23514");
+      expect(await code(link({ kind: "organisation", id: 2, org: o.id, how: "copied" }))).toBe("23514");
+      expect(await code(link({ kind: "organisation", id: 2, org: o.id, how: "linked" }))).toBe("ok");
+      // A deleted CRM record keeps its link (both ids null): never imported again.
+      await c`delete from persons where id = ${p.id}`;
+      const [{ k }] = await c`select count(*)::int as k from pipedrive_links where kind = 'person' and person_id is null`;
+      expect(k).toBe(1);
+      const ev = (kind: string) => c`insert into timeline_events (organisation_id, kind, actor_id) values (${o.id}, ${kind}, ${u.id})`;
+      for (const kind of ["imported", "edited", "pipedrive_imported", "pipedrive_unsubscribed"]) expect(await code(ev(kind)), kind).toBe("ok");
+      expect(await code(ev("pipedrive_other"))).toBe("23514");
+      expect(await code(c`insert into timeline_events (organisation_id, kind, actor_id, field_name) values (${o.id}, 'custom_set', ${u.id}, 'Diet')`)).toBe("ok");
+      expect(await code(c`insert into timeline_events (organisation_id, kind, actor_id, file_name, file_size) values (${o.id}, 'file_added', ${u.id}, 'a.pdf', 1)`)).toBe("ok");
+      const rls = await c`select relname from pg_class where relname like 'pipedrive_%' and relkind = 'r' and relrowsecurity`;
+      expect(rls.map((r) => r.relname).sort()).toEqual(["pipedrive_connections", "pipedrive_imports", "pipedrive_links"]);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-120 T005: the segments code keeps to the pooler's limits (no session state); 0013 is transaction-safe
+  it("keeps the segments code and 0013_segments.sql free of session state", () => {
     const dir = "src/server/segments";
     expect(readdirSync(dir)).toEqual(expect.arrayContaining(["rules.ts", "reach.ts", "segments.ts"]));
     for (const file of readdirSync(dir)) {
@@ -332,10 +387,25 @@ describe("npm run db:migrate", () => {
       expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
       expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
     }
-    const migration = readFileSync("migrations/0012_segments.sql", "utf8");
+    const migration = readFileSync("migrations/0013_segments.sql", "utf8");
     expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
     expect(migration.match(/create table/gi)?.length).toBe(1);
     expect(migration).toContain("alter table segments enable row level security;");
+  });
+
+  // covers SF-117 T013: the Pipedrive code keeps to the pooler's limits (no session state); the migration is transaction-safe
+  it("keeps the Pipedrive code and 0012_pipedrive.sql free of session state", () => {
+    const dir = "src/server/pipedrive";
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["api.ts", "connection.ts", "imports.ts", "rules.ts", "page.ts"]));
+    for (const file of readdirSync(dir)) {
+      const text = readFileSync(`${dir}/${file}`, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0012_pipedrive.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration.match(/create table/gi)?.length).toBe(3);
+    expect(migration.match(/enable row level security/gi)?.length).toBe(3);
   });
 
   // covers SF-116 T015: the files code keeps to the pooler's limits (no session state); the migration is transaction-safe

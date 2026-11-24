@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6992bc512bce636357de57065c8e94da5591a932fe706ef493f79ea81cad6919",
+  "pageVersion": "sha256:d5e18e3e3fae7eb8266961ce621cda2b6a2e9d583abd9d3752e052ff69698964",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -38,7 +38,7 @@
       "evidence": [
         {
           "resource": "repo://tests/integration/rls.test.ts#L14-L34",
-          "version": "repo-lines-v1:sha256:d395d671156420bb758fa3d0a96b1779f9daa947feea3e17afc936ee4b443674:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "version": "repo-lines-v1:sha256:46a80f119a36bc732fdd08345691d77420ea4869d35efcb0c7fa0afe25195a17:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -163,18 +163,18 @@
       ]
     },
     {
-      "id": "claim_09e47df287d14d428b95d71bb2e82314",
-      "statement": "The segments table stores a saved choice of recipients (who, pipeline, stage, deal status, up to 20 jsonb conditions) with no foreign keys on pipeline, stage or condition ids.",
+      "id": "claim_6c6a5d476ab444e6bfab38d9080f8f62",
+      "statement": "Migration 0012 adds pipedrive_connections, pipedrive_imports and pipedrive_links, with a unique index allowing one open import per user.",
       "evidence": [
         {
-          "resource": "repo://migrations/0012_segments.sql",
-          "version": "repo-file-v1:sha256:82c3d433bf643cded205897ae3136e5eb940046d2cbc6025d510365714419d93"
+          "resource": "repo://migrations/0012_pipedrive.sql",
+          "version": "repo-file-v1:sha256:ab720ea93a23250ae361ccb698fe75dbcd3eee99d6c27c0c4b415cef940407d4"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T15:00:12.302Z"
+    "at": "2026-11-24T14:34:59.724Z"
   }
 }
