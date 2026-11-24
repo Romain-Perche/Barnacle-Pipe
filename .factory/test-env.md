@@ -104,6 +104,11 @@
   on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a 61-character or
   `colour`-typed field, a second "diet" person field, a value row with two values or two targets, a second value for the
   same field and person, a `custom_set` without a field name, an `edited` event with an old value). No new outside service.
+  Saved segments (SF-120, `src/server/segments/`) keep to the same pooler limits: no `set`/`listen`/session advisory lock
+  (scanned by `tests/integration/migrate.test.ts`), each save one `sql.begin()` with an optimistic `version` check, counts
+  as one read-only query per segment; the table and index come from `migrations/0012_segments.sql` (only `create table` /
+  `create index`, RLS on), applied on a fresh database by the same test, which checks Postgres's own 23514 / 23505
+  refusals. No new outside service and no new fake.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json

@@ -383,3 +383,37 @@ describe("custom field messages (SF-115)", () => {
     expect(missing).toEqual([]);
   });
 });
+
+// covers SF-120 FR-011, FR-014 (T004): every segment message of contracts/routes.md § Messages, templates in singular and plural
+describe("segment messages (SF-120)", () => {
+  it("has the fixed texts", () => {
+    expect(messageFor("segment_name_required")).toBe("Give the segment a name.");
+    expect(messageFor("segment_name_too_long")).toBe("A segment name can be at most 100 characters.");
+    expect(messageFor("segment_pipeline_required")).toBe("Choose a pipeline.");
+    expect(messageFor("segment_stage_required")).toBe("Choose a stage.");
+    expect(messageFor("segment_conditions_limit")).toBe("A segment can have at most 20 conditions.");
+    expect(messageFor("segment_changed")).toBe("Someone else changed this segment. Open it again to see their changes.");
+    expect(messageFor("segment_not_found")).toBe("This segment no longer exists.");
+    expect(messageFor("segment_count_note")).toBe("Recipients are worked out when the campaign is sent, so this number can change.");
+    expect(messageFor("segment_broken")).toBe("This segment refers to something that was deleted. Edit it before using it.");
+    expect(messageFor("segments_none")).toBe("No segments yet.");
+    expect(messageFor("segment_who_everyone")).toBe("Everyone in the CRM");
+    expect(messageFor("segment_who_pipeline")).toBe("People on the deals of a pipeline");
+    expect(messageFor("segment_who_stage")).toBe("People on the deals of a stage");
+    expect(["open", "won", "lost", "all"].map((s) => messageFor(`segment_status_${s}`))).toEqual(["Open deals", "Won deals", "Lost deals", "All deals"]);
+  });
+  it("renders the templates with the names as given", () => {
+    expect(templates.segment_name_exists("<b>Test</b>")).toBe("There is already a segment called <b>Test</b>.");
+    expect(templates.segment_deleted("Sales — Proposal")).toBe("Segment Sales — Proposal deleted.");
+    expect(templates.segment_delete_confirm("Old list")).toBe("Delete the segment Old list? It is deleted for the whole team.");
+    expect(templates.segment_reaches(1)).toBe("Reaches 1 person now");
+    expect(templates.segment_reaches(0)).toBe("Reaches 0 people now");
+    expect(templates.segment_reaches(42)).toBe("Reaches 42 people now");
+    expect(templates.segment_left_out(3, 5, 2)).toBe("Left out: 3 archived · 5 unsubscribed · 2 with no email address");
+    expect(templates.segment_more_conditions(1)).toBe("+ 1 condition");
+    expect(templates.segment_more_conditions(3)).toBe("+ 3 conditions");
+    expect(templates.segment_last_changed("Ada Fake", "24 Nov 2026 10:12")).toBe("Last changed by Ada Fake · 24 Nov 2026 10:12");
+    expect(templates.segment_condition_required("Lead source", "choose")).toBe("Lead source: choose at least one.");
+    for (const code of ["segment_name_exists", "segment_deleted", "segment_reaches", "segment_left_out"]) expect(messageFor(code)).toBeUndefined();
+  });
+});

@@ -281,6 +281,63 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-120 T005, FR-005, FR-007: 0012_segments.sql on a fresh database: names, who, conditions as a list of at
+  // most 20, no foreign keys to things that can be deleted, row level security on
+  it("applies 0012_segments.sql: checked names, who and conditions, unique names ignoring case, RLS on", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0012_segments.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const seg = (name: string, who = "everyone", pipeline: number | null = null, stage: number | null = null, status: string | null = null, conditions: unknown = []) =>
+        c`insert into segments (name, who, pipeline_id, stage_id, deal_status, conditions, created_by, updated_by)
+          values (${name}, ${who}, ${pipeline}, ${stage}, ${status}, ${c.json(conditions as never)}, ${u.id}, ${u.id})`;
+      expect(await code(seg("Everyone"))).toBe("ok");
+      expect(await code(seg("EVERYONE"))).toBe("23505");
+      expect(await code(seg(" padded "))).toBe("23514");
+      expect(await code(seg(""))).toBe("23514");
+      expect(await code(seg("x".repeat(101)))).toBe("23514");
+      expect(await code(seg("x".repeat(100)))).toBe("ok");
+      expect(await code(seg("Bad who", "nobody"))).toBe("23514");
+      expect(await code(seg("Everyone with pipeline", "everyone", 1, null, "open"))).toBe("23514");
+      // No foreign key: a pipeline or stage id that does not exist (deleted) is kept.
+      expect(await code(seg("Pipeline", "pipeline", 999, null, "all"))).toBe("ok");
+      expect(await code(seg("Pipeline with stage", "pipeline", 999, 5, "open"))).toBe("23514");
+      expect(await code(seg("Stage", "stage", 999, 998, "won"))).toBe("ok");
+      expect(await code(seg("Stage no stage", "stage", 999, null, "won"))).toBe("23514");
+      expect(await code(seg("Bad status", "pipeline", 999, null, "closed"))).toBe("23514");
+      expect(await code(seg("Not a list", "everyone", null, null, null, { a: 1 }))).toBe("23514");
+      expect(await code(seg("21", "everyone", null, null, null, Array.from({ length: 21 }, () => ({}))))).toBe("23514");
+      expect(await code(seg("20", "everyone", null, null, null, Array.from({ length: 20 }, () => ({}))))).toBe("ok");
+      const [row] = await c`select version, created_at is not null as at from segments where name = 'Everyone'`;
+      expect(row).toEqual({ version: 1, at: true });
+      const rls = await c`select relname from pg_class where relname = 'segments' and relrowsecurity`;
+      expect(rls.length).toBe(1);
+      const idx = await c`select indexname from pg_indexes where indexname in ('segments_name_key', 'deals_stage_live_idx') order by indexname`;
+      expect(idx.map((r) => r.indexname)).toEqual(["deals_stage_live_idx", "segments_name_key"]);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-120 T005: the segments code keeps to the pooler's limits (no session state); 0012 is transaction-safe
+  it("keeps the segments code and 0012_segments.sql free of session state", () => {
+    const dir = "src/server/segments";
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["rules.ts", "reach.ts", "segments.ts"]));
+    for (const file of readdirSync(dir)) {
+      const text = readFileSync(`${dir}/${file}`, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0012_segments.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration.match(/create table/gi)?.length).toBe(1);
+    expect(migration).toContain("alter table segments enable row level security;");
+  });
+
   // covers SF-116 T015: the files code keeps to the pooler's limits (no session state); the migration is transaction-safe
   it("keeps the files code and 0011_files.sql free of session state", () => {
     const dir = "src/server/files";

@@ -80,13 +80,26 @@ OAuth code flow and database sessions.
 - `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms, `list/` (the deal
   list), `[id]/` (the deal page: `StageBar.tsx`, `LostBox.tsx`, `not-found.tsx`), `ViewSwitch.tsx` (Board / List);
   `src/app/(app)/admin/pipelines/` — the Pipelines admin pages.
+- `src/server/segments/` (SF-120) — saved segments, shared by the whole team: `rules.ts` (pure: `Condition` / `Definition` /
+  `Reach` types, `readSegmentForm`, `validateSegmentForm` (ids kept only when among the form options), `readConditions`,
+  `describeSegment` (summary, // WHO and // CONDITIONS lines, "(deleted)", `broken`), `formToValues`), `reach.ts` (`reachWhere` on
+  `persons p` with `visiblePerson` and the deals through `visibleDeal`, archived deals never; `countReach`: one query, left out
+  archived → unsubscribed → no email; `reachedPeople`: person and first email, for the later campaign issue), `segments.ts`
+  (`listSegments`, `getSegment`, `segmentFormOptions`, `createSegment` / `updateSegment` (version check) / `deleteSegment`,
+  `countDefinition`). Table `segments` (conditions as jsonb, no foreign keys to things that can be deleted). Counts are worked
+  out at each read, never stored. `customProbe` in `custom-fields/values.ts` is the custom value test shared by the People
+  list filters and the segment reach.
+- `src/app/(app)/segments/` (SF-120) — the Segments table (`page.tsx`), `[id]/` the segment page (count strip, // WHO,
+  // CONDITIONS, `?confirm=delete` → `SegmentDeleteConfirm.tsx`), `new/` and `[id]/edit/` (the form on its own page),
+  `SegmentForm.tsx` (client: who, condition rows, [ COUNT AGAIN ]), `MultiPicker.tsx` (client: filtering multi-select with
+  chips), `ReachBlock.tsx`, `actions.ts`.
 - `src/server/imports/` — CSV import (SF-103): `csv.ts` (reading the file), `columns.ts` (fields, suggestions, mapping
   checks, example files), `rows.ts` (a row through `validatePerson`/`validateOrganisation`), `plan.ts` (what an import
   will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
   (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
   `person_emails`, bulk inserts).
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
-  files, custom fields: `custom-fields.ts`).
+  files, custom fields: `custom-fields.ts`, segments: `segments.ts`).
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google and Supabase Storage schemas).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),

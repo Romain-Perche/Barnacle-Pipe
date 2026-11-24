@@ -4,7 +4,8 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { runSeeders } from "@/seed";
 import { listUsers } from "@/server/users";
-import { count, resetDb } from "./db-helpers";
+import { count, getUser, resetDb } from "./db-helpers";
+import { listSegments } from "@/server/segments/segments";
 
 beforeEach(resetDb);
 afterAll(closeDb);
@@ -509,5 +510,26 @@ describe("fake custom fields (SF-115)", () => {
     const again = await runSeeders(sql);
     expect(again.every((l) => l.startsWith("already there "))).toBe(true);
     expect(await snapshot()).toEqual(first);
+  });
+});
+
+// covers SF-120 FR-015 (T031): four fake segments, one of each kind of choice, with a count; a second run adds none
+describe("fake segments (SF-120)", () => {
+  beforeEach(resetDb);
+  it("adds the four fake segments once, each reaching people for Ada", async () => {
+    await runSeeders(sql);
+    const rows = await listSegments((await getUser("ada@barnacle.ai")).id);
+    expect(rows.map((r) => [r.name, r.summary, r.broken])).toEqual([
+      ["Fake — everyone", "Everyone in the CRM", false],
+      ["Fake — Exec Dinner, all deals", "People on all deals of Exec Dinner", false],
+      ["Fake — Inbound owned by Ada Fake", "Everyone in the CRM + 3 conditions", false],
+      ["Fake — Sales Proposal, open deals", "People on open deals of Sales · Proposal + 1 condition", false],
+    ]);
+    expect(rows[0].reaches).toBeGreaterThan(0);
+    expect(rows[1].reaches).toBeGreaterThan(0);
+    expect(rows.every((r) => r.updatedBy === "Ada Fake")).toBe(true);
+    const again = await runSeeders(sql);
+    expect(again.filter((l) => l.includes("segment")).sort()).toEqual(rows.map((r) => `already there segment ${r.name}`).sort());
+    expect((await listSegments((await getUser("ada@barnacle.ai")).id)).length).toBe(4);
   });
 });
