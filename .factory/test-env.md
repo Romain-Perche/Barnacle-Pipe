@@ -267,6 +267,29 @@
     added the "// COUNTS" table per kind on 3 REPORT, `section[aria-label="Counts per kind"]`). `check-sf117-kindcounts.js`
     (app on :3000, `BASE=http://localhost:3000`, fresh data) prints that table next to the `pipedrive_links` counts per kind
     (round 2: People 298/0/0/2, Organisations 58/1/0/1, equal to the links).
+  - SF-122 AI review (deals, notes, activities, files). Needs :3000 built, the stand-in Pipedrive on :9400 and :3001 as for
+    SF-117, plus `UPSTREAM=http://localhost:3001/dev/fake-storage setsid nohup node .factory/run/storage-proxy.js &` (:54321;
+    SF-122 adds `POST /__mode {"mode":"pass"|"down"|"fail-deletes","delay":ms}`: "down" answers 503 to everything, `delay` holds
+    each PUT upload), `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_URL=http://localhost:9400 SUPABASE_URL=http://localhost:54321
+    SUPABASE_SECRET_KEY=fake-storage-key bash .factory/run/start-app.sh` and the same with `PORT=3003 ... SUPABASE_URL=http://localhost:54399`
+    (nothing listens: "Files can't be reached"). `psql` must be on PATH (`sudo ln -sf /usr/lib/postgresql/17/bin/psql /usr/local/bin/psql`).
+    `pipedrive-server.ts` takes addFile bytes as `{"__b64": …}` or `{"__fill": [length, byte]}`. `sf122-lib.js` `setupData()` resets
+    the DB and the stand-in and adds the scenario data (ids in $TMPDIR/sf122-ids.json): Pipedrive pipelines "sales " (stages "lead
+    in", "Qualified", "qualified ", "Demo Fake", "Proposal"), "SALES", "Fake Empty Pipeline", a 101-character pipeline and stage,
+    a CRM deal field "Budget" (number), PD user 4 = grace@barnacle.ai, a "Site visit" type, people linked to Bob Placeholder and to
+    the private Dora Privatefake, a private person of Margaret, ~20 "SF122 …" deals (USD, lost reason 501 chars, empty / 201-char
+    title, bad values, xss title, participants incl. the nameless person 159), notes, activities and files covering every edge case.
+    Scripts, in order on one data set (NODE_PATH=/opt/playwright/node_modules): `scenarios-sf122-a.js` (setup + one import of all six
+    kinds as Ada, ~20 s; report in $TMPDIR/sf122-report.txt), `-b.js` (UI pages after a → $TMPDIR/sf122-ui.json), `-c.js` (Linus
+    edits/deletes imported notes, CRM changes, new PD records, the nameless person named, Edge 1 UI and the server rule, Pipedrive down
+    mid-run → paused/continue, second import → $TMPDIR/sf122-c.json); then `-d.js` (fresh setup; Linus non-admin imports; a
+    Margaret-only USD deal; deletion mid-import), `-e.js` (fresh setup; store unreachable at start on :3003 and :3002, store down in
+    the files step, Edge 15 stop / token removed / deactivated during a held upload; `ONLY=deact` reruns the last case), `-f.js`
+    (page closed → paused message, done activity on the timeline, download name, signed-out / deactivated requests).
+    Round 1 results: all pass except US1-8 (Linus's report warning names Margaret's private deal "SF122 Margaret secret USD") and
+    Edge 15 (a file is still listed after the token is removed (1) or the user deactivated (2) during the copy). With
+    `slowDownEvery(4, 1)` the deals step never advanced in 10 min (a part with follower/participant calls restarts whole on 429);
+    `slowDownEvery(25, 1)` finishes.
   - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
     1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
@@ -465,6 +488,6 @@
       as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
 
 ## Smoke checks
-1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml
+1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in
