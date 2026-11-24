@@ -3,7 +3,7 @@ import { Wordmark } from "@/app/Wordmark";
 import { requireUser } from "@/server/auth/session";
 import { unreadCount } from "@/server/notifications";
 import { signOut } from "./actions";
-import { adminNav, mainNav } from "./nav";
+import { adminNav, footerNav, mainNav } from "./nav";
 import { RefreshOnHistory } from "./RefreshOnHistory";
 import { SidebarLink } from "./SidebarLink";
 import { UnreadLink } from "./UnreadLink";
@@ -43,6 +43,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         )}
         <div className="me">
           <div className="n">{user.name}</div>
+          {/* SF-117: "Settings" at the bottom, above [ SIGN OUT ]. */}
+          <nav aria-label="You" className="me-nav">
+            {footerNav.map((item) => (
+              <SidebarLink key={item.href} {...item} />
+            ))}
+          </nav>
           <form action={signOut}>
             <button type="submit">[ Sign out ]</button>
           </form>
