@@ -50,11 +50,11 @@ description: "Task list for SF-118 Gmail: connect and sync"
 
 **Purpose**: Schema, settings and texts every story uses.
 
-- [ ] T000 Merge `origin/main` into the branch first (SF-117: `/settings` with `PipedriveSection`, `footerNav`'s
+- [x] T000 Merge `origin/main` into the branch first (SF-117: `/settings` with `PipedriveSection`, `footerNav`'s
   "Settings" link in `layout.tsx`, `src/server/pipedrive/crypto.ts`, `PIPEDRIVE_TOKEN_KEY`, `0012_pipedrive.sql`). Run
   `npm test` once to see the base is green. Every task below builds on these files; none adds a second Settings page
   or link.
-- [ ] T001 Write `migrations/0013_gmail.sql` exactly as data-model.md § Migration. No `begin`/`commit`/`concurrently`.
+- [x] T001 Write `migrations/0013_gmail.sql` exactly as data-model.md § Migration. No `begin`/`commit`/`concurrently`.
   - **`gmail_connections`**:
     - `user_id bigint not null unique references users (id)`
     - `email text not null unique check (email = lower(btrim(email)) and email like '%@barnacle.ai')`
@@ -94,14 +94,14 @@ description: "Task list for SF-118 Gmail: connect and sync"
     - `size bigint not null check (size >= 0)`
     - `unique (message_id, position)`
   - **RLS**: `alter table … enable row level security` after each of the four `create table`, with no policies.
-- [ ] T002 [P] Add the messages and templates of contracts/routes.md § Messages to `src/server/messages.ts`, under an
+- [x] T002 [P] Add the messages and templates of contracts/routes.md § Messages to `src/server/messages.ts`, under an
   `// SF-118` comment.
   - Codes: `gmail_not_connected`, `gmail_unavailable`, `gmail_connected`, `gmail_reconnected`, `gmail_cancelled`,
     `gmail_missing_scopes`, `gmail_disconnected`, `gmail_disconnect_confirm`, `gmail_test_failed`, `gmail_not_synced`,
     `gmail_test_subject`, `gmail_test_text`, `gmail_settings_warn`.
   - Templates: `gmail_connected_as`, `gmail_wrong_account`, `gmail_needs_reconnect`, `gmail_test_sent`,
     `gmail_conversations` (1 → "conversation", otherwise "conversations"), `gmail_last_sync`, `gmail_copying_since`.
-- [ ] T003 [P] Add `gmailConfig()` to `src/server/env.ts` (research.md §12, contracts/google.md § Settings). Read at call
+- [x] T003 [P] Add `gmailConfig()` to `src/server/env.ts` (research.md §12, contracts/google.md § Settings). Read at call
   time.
   - Mode `real`: `GMAIL_PUBSUB_TOPIC` is set, and `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL`,
     `GMAIL_TOKEN_KEY` (base64 that decodes to exactly 32 bytes), `GMAIL_PUSH_SERVICE_ACCOUNT` and `CRON_SECRET`
@@ -116,7 +116,7 @@ description: "Task list for SF-118 Gmail: connect and sync"
     `PIPEDRIVE_TOKEN_KEY` value), `GMAIL_PUSH_SERVICE_ACCOUNT=`, `GMAIL_PUSH_AUDIENCE=`,
     `GMAIL_PUSH_SUBSCRIPTION=` and `CRON_SECRET=` (empty, with comments, the secrets marked as secrets) to
     `.env.example`, and `.fake-gmail/` to `.gitignore`.
-- [ ] T004 [P] In `scripts/fetch-schemas.mjs`, add two entries to `SCHEMAS`:
+- [x] T004 [P] In `scripts/fetch-schemas.mjs`, add two entries to `SCHEMAS`:
   - `gmail-api.json`: `https://raw.githubusercontent.com/googleapis/google-api-go-client/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json`,
     sha256 `839b7963df95481f3cd2ba7aa1e906f1fc67c4ae89719d09bb7305040e99f0fb`;
   - `pubsub-api.json`: `…/3f740bc15212818d4d0eb041b02c951457ff63fa/pubsub/v1/pubsub-api.json`,
@@ -131,7 +131,7 @@ description: "Task list for SF-118 Gmail: connect and sync"
 **Purpose**: The pure rules, encryption, database reset and migration test. ⚠️ No story starts before this phase is
 done.
 
-- [ ] T005 [P] Unit tests `tests/unit/gmail-rules.test.ts` for `src/server/gmail/rules.ts` (research.md §2, §5, §9,
+- [x] T005 [P] Unit tests `tests/unit/gmail-rules.test.ts` for `src/server/gmail/rules.ts` (research.md §2, §5, §9,
   §10). Cover:
   - `GMAIL_SCOPES` is exactly the two URLs `gmail.modify` and `gmail.send`. `hasAllScopes` is true only when both are
     in a space-separated scope string, in any order, with extra scopes allowed (`gmail.modify` alone is refused).
@@ -163,7 +163,7 @@ done.
   - `classifyGoogleError`:
     - `400 invalid_grant`, a Gmail `401`, and a `403` with reason `insufficientPermissions` → `key_refused`;
     - a `403` with another reason, `429`, `5xx`, and `400 invalid_client` → `unavailable`.
-- [ ] T006 [P] Move `tests/unit/pipedrive-crypto.test.ts` to `tests/unit/seal.test.ts` for the shared module (covers
+- [x] T006 [P] Move `tests/unit/pipedrive-crypto.test.ts` to `tests/unit/seal.test.ts` for the shared module (covers
   FR-003, SC-004, and SF-117 FR-003):
   - `sealToken` / `openToken` round trip for both purposes `"pipedrive-token"` and `"gmail-token"`;
   - the cipher contains no byte run of the token;
@@ -173,15 +173,15 @@ done.
   - the first byte is version 1;
   - a fixed sample sealed by SF-117's `pipedrive/crypto.ts` (made once before the move, key and value in the test)
     still opens with purpose `"pipedrive-token"`.
-- [ ] T007 Write `src/server/gmail/rules.ts`, and move `src/server/pipedrive/crypto.ts` to `src/server/crypto/seal.ts`
+- [x] T007 Write `src/server/gmail/rules.ts`, and move `src/server/pipedrive/crypto.ts` to `src/server/crypto/seal.ts`
   (research.md §4): `sealToken(key, purpose, userId, token)` / `openToken(key, purpose, userId, sealed)`, additional
   data `"<purpose>:<userId>"`, format and 16-byte tag unchanged, `TokenUnreadable` with a neutral message. Point
   `src/server/pipedrive/connection.ts` at it with purpose `"pipedrive-token"` and delete `pipedrive/crypto.ts`. Work
   until T005, T006 and the SF-117 Pipedrive tests pass. Pure: no database and no network.
-- [ ] T008 Add `gmail_connections`, `email_threads`, `email_messages` and `email_attachments` to
+- [x] T008 Add `gmail_connections`, `email_threads`, `email_messages` and `email_attachments` to
   `tests/support/reset.ts`, in an order that respects the foreign keys (and to `.factory/run/reset-db.sh` if it lists
   tables).
-- [ ] T009 Extend `tests/integration/migrate.test.ts` (covers data-model.md § Migration). Check:
+- [x] T009 Extend `tests/integration/migrate.test.ts` (covers data-model.md § Migration). Check:
   - `0013_gmail.sql` applies on a fresh database, after `0012_pipedrive.sql`;
   - `23514` for:
     - a `disconnected` row with a cipher;
@@ -209,7 +209,7 @@ token never appears in plain text in the database, a page, a message or the cons
 
 ### Tests for User Story 1
 
-- [ ] T010 [US1] Download `gmail-api.json` from
+- [x] T010 [US1] Download `gmail-api.json` from
   https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json
   at commit `3f740bc15212818d4d0eb041b02c951457ff63fa` into `.factory/schemas/`:
 
@@ -232,7 +232,7 @@ token never appears in plain text in the database, a page, a message or the cons
     - `watch` with body `{ "topic": "…" }` (not `topicName`);
     - `history.list` with query `startHistory=1`;
     - a fake answer of `getProfile` with `email` instead of `emailAddress`.
-- [ ] T011 [P] [US1] Google OAuth token and revoke endpoints and Google's signing keys have no public schema on GitHub.
+- [x] T011 [P] [US1] Google OAuth token and revoke endpoints and Google's signing keys have no public schema on GitHub.
   The fake follows Google's documentation pages "Using OAuth 2.0 for Web Server Applications"
   (https://developers.google.com/identity/protocols/oauth2/web-server: code exchange, refresh, revoke, granular
   consent) and "Authenticate push subscriptions"
@@ -250,11 +250,11 @@ token never appears in plain text in the database, a page, a message or the cons
     - `revoke` answers `200`, or `400 invalid_token` for an unknown token;
     - the certs answer is a JWK set with `kid`, `kty: "RSA"`, `alg: "RS256"`, `n`, `e` and `cache-control: max-age`.
   - Tests in `tests/unit/gmail-fake-oauth.test.ts` check each of these against the fake.
-- [ ] T012 [P] [US1] Supabase Postgres has no public schema on GitHub (Supabase's "Connect to your database" page,
+- [x] T012 [P] [US1] Supabase Postgres has no public schema on GitHub (Supabase's "Connect to your database" page,
   https://supabase.com/docs/guides/database/connecting-to-postgres). The tests use the real local PostgreSQL 17 and
   copy the transaction-mode pooler's limits: `prepare: false`, `max: 5`, no session state. Extend the session-state
   scan in `tests/integration/migrate.test.ts` to `src/server/gmail/*.ts`.
-- [ ] T013 [US1] Write `src/server/gmail/fake-gmail.ts`: `FakeGoogleMail` with `MemoryStore` (tests) and `DiskStore`
+- [x] T013 [US1] Write `src/server/gmail/fake-gmail.ts`: `FakeGoogleMail` with `MemoryStore` (tests) and `DiskStore`
   (`.fake-gmail/state.json`, development), and `fakeGmail()` returning the instance for the current mode (research.md
   §14, contracts/google.md § Fake).
   - Its `fetch` answers the token, revoke, certs and Gmail URLs of contracts/google.md § Calls.
@@ -262,7 +262,7 @@ token never appears in plain text in the database, a page, a message or the cons
   - Switches: `down()`, `refuseKey(email)`, `failWatch(on)`, `forgetHistory()`, `advance(ms)`, `requests`,
     `mailbox(email)`, `tokenStatus(token)`.
   - Make T010 and T011 pass.
-- [ ] T014 [P] [US1] Integration tests `tests/integration/gmail-connect.test.ts`, through the settings actions and the
+- [x] T014 [P] [US1] Integration tests `tests/integration/gmail-connect.test.ts`, through the settings actions and the
   callback route handler, with `GmailFake`:
   - US1 scenario 1: `gmailSettings` gives `not connected`, and the layout's `warn` is false;
   - US1 scenario 2: connect → `working`, `email`, `last_synced_at` null, 0 conversations; the fake has an active watch
@@ -277,13 +277,13 @@ token never appears in plain text in the database, a page, a message or the cons
   - SC-004: after a connect, the refresh token is not found in any text or bytea column of any table (search with
     `encode(token_cipher,'escape')` and every text column), in the rendered `/settings` HTML, in any message, or in the
     captured `console.*` output.
-- [ ] T015 [P] [US1] Unit test `tests/unit/proxy-matcher.test.ts` (extend): `/gmail/push`, `/cron/gmail`,
+- [x] T015 [P] [US1] Unit test `tests/unit/proxy-matcher.test.ts` (extend): `/gmail/push`, `/cron/gmail`,
   `/dev/fake-google/gmail` and `/dev/fake-gmail` are public. `/settings` and `/settings/gmail/callback` redirect to
   sign-in without a session.
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Write `src/server/gmail/google-api.ts` (contracts/google.md § Calls; research.md §1, §2): each call is
+- [x] T016 [US1] Write `src/server/gmail/google-api.ts` (contracts/google.md § Calls; research.md §1, §2): each call is
   one `fetch` with `AbortSignal.timeout(10_000)`.
   - `consentUrl({ state, codeChallenge, loginHint })`, with the parameters of research.md §2 and the fake consent URL
     `${appBaseUrl()}/dev/fake-google/gmail` in fake mode.
@@ -293,7 +293,7 @@ token never appears in plain text in the database, a page, a message or the cons
     hold only the status and the `error` code.
   - `useGmailFetchForTests(fn)` throws outside `APP_ENV=test`.
   - Fake mode uses `fakeGmail().fetch`, copied from `src/server/files/storage.ts`.
-- [ ] T017 [US1] Write `src/server/gmail/connections.ts` (data-model.md § State changes; research.md §3, §4, §11):
+- [x] T017 [US1] Write `src/server/gmail/connections.ts` (data-model.md § State changes; research.md §3, §4, §11):
   - `gmailSettings(userId)`: never selects `token_cipher`. Count = `count(*) from email_threads where connection_id`.
   - `gmailNeedsReconnect(userId)`.
   - `finishConnect(userId, { refreshToken, scope, profile })`: one `sql.begin()` upsert on `user_id`.
@@ -304,13 +304,13 @@ token never appears in plain text in the database, a page, a message or the cons
       connection working.
   - `loadKey(connectionId)`: the only function that selects `token_cipher`.
   - `markNeedsReconnect(connectionId)`: `where state = 'working'`.
-- [ ] T018 [US1] Add `startGmailConnect` to SF-117's `src/app/(app)/settings/actions.ts` (`requireUser()` first). It sets the
+- [x] T018 [US1] Add `startGmailConnect` to SF-117's `src/app/(app)/settings/actions.ts` (`requireUser()` first). It sets the
   cookie `crm_gmail_oauth` `{ state, verifier, userId }` (httpOnly, SameSite=Lax, path `/settings/gmail`, maxAge 600,
   secure on https) and redirects to `consentUrl`.
-- [ ] T019 [US1] Write `src/app/(app)/settings/gmail/callback/route.ts` (research.md §3): the 7 steps in order. Every
+- [x] T019 [US1] Write `src/app/(app)/settings/gmail/callback/route.ts` (research.md §3): the 7 steps in order. Every
   refusal after the code exchange revokes the new token. The cookie is always cleared. It answers with a 303 to
   `/settings`: `setFlash` for `gmail_connected` / `gmail_reconnected`, and `?gmail=<code>` for errors.
-- [ ] T020 [US1] Write `src/app/(app)/settings/GmailCard.tsx` and render it in SF-117's `src/app/(app)/settings/page.tsx`
+- [x] T020 [US1] Write `src/app/(app)/settings/GmailCard.tsx` and render it in SF-117's `src/app/(app)/settings/page.tsx`
   after `<PipedriveSection>` (contracts/routes.md § Gmail card, design B in `design-options.html`):
   - keep SF-117's page head (`// YOU` / "Settings") and its Pipedrive section and query parameters unchanged;
   - the card states for off, not connected, working and needs reconnecting;
@@ -319,7 +319,7 @@ token never appears in plain text in the database, a page, a message or the cons
   - `?gmail=` read only from the fixed code list.
   Add the `.dot`, `.dot.bad`, card heading and `.warn` styles to `src/app/globals.css`, with existing variables
   (`--green` or the nearest, `--danger`, `--orange`).
-- [ ] T021 [US1] Sidebar:
+- [x] T021 [US1] Sidebar:
   - `src/app/(app)/nav.ts`: unchanged; SF-117's `footerNav` "Settings" link is the one that gets the "!";
   - `src/app/(app)/SidebarLink.tsx`: a `warn?: boolean` prop renders `<span className="warn">!</span>`, with
     `aria-label` from `messages.gmail_settings_warn`;
@@ -329,7 +329,7 @@ token never appears in plain text in the database, a page, a message or the cons
   - `src/app/(app)/layout.tsx`: passes `gmailNeedsReconnect(user.id)` as the start value, and renders the footer
     Settings link (bottom of the sidebar, above `[ SIGN OUT ]`) with `warn`. Exactly one "Settings" link.
   Update the SF-108 tests that import `currentUnread`.
-- [ ] T022 [US1] Write the fake consent screen `src/app/dev/fake-google/gmail/page.tsx` and its `actions.ts`
+- [x] T022 [US1] Write the fake consent screen `src/app/dev/fake-google/gmail/page.tsx` and its `actions.ts`
   (research.md §14):
   - an account field pre-filled from `login_hint`;
   - two ticked boxes, "Read, change and send your email" (`gmail.modify`) and "Send email as you" (`gmail.send`);
@@ -337,7 +337,7 @@ token never appears in plain text in the database, a page, a message or the cons
   - `[ CANCEL ]` redirects with `error=access_denied`;
   - `notFound()` unless `isFakeAllowed()` and the mode is `fake`;
   - `redirect_uri` must start with `${appBaseUrl()}/settings/gmail/callback`.
-- [ ] T023 [US1] Add `/^\/dev\/fake-google\/gmail\/?$/`, `/^\/dev\/fake-gmail\/?$/`, `/^\/gmail\/push\/?$/` and
+- [x] T023 [US1] Add `/^\/dev\/fake-google\/gmail\/?$/`, `/^\/dev\/fake-gmail\/?$/`, `/^\/gmail\/push\/?$/` and
   `/^\/cron\/gmail\/?$/` to `PUBLIC` in `src/proxy.ts`, and update its head comment. Make T014 and T015 pass.
 
 **Checkpoint**: US1 works on its own: connect, refusals, the Settings card and the sidebar link.
@@ -353,7 +353,7 @@ token never appears in plain text in the database, a page, a message or the cons
 
 ### Tests for User Story 2
 
-- [ ] T024 [US2] Download `pubsub-api.json` from
+- [x] T024 [US2] Download `pubsub-api.json` from
   https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/pubsub/v1/pubsub-api.json
   at commit `3f740bc15212818d4d0eb041b02c951457ff63fa` into `.factory/schemas/`:
 
@@ -368,7 +368,7 @@ token never appears in plain text in the database, a page, a message or the cons
     `data` base64. The wrapper is `{ message, subscription }`.
   - In `tests/unit/gmail-fake-schema.test.ts`, assert that a push body with `message.payload` instead of
     `message.data` makes the test fail.
-- [ ] T025 [P] [US2] Unit tests `tests/unit/gmail-push.test.ts` for `verifyPushToken` (research.md §6; FR-008,
+- [x] T025 [P] [US2] Unit tests `tests/unit/gmail-push.test.ts` for `verifyPushToken` (research.md §6; FR-008,
   FR-015, edge case "Notices not from Google"). With tokens signed by the fake's key, each of these is refused:
   - `alg` other than RS256;
   - an unknown `kid` (with exactly one certs fetch again);
@@ -379,7 +379,7 @@ token never appears in plain text in the database, a page, a message or the cons
   - `iat` more than 1 h old;
   - a missing `Authorization`.
   A good token is accepted. The JWKS is cached by `max-age`.
-- [ ] T026 [P] [US2] Integration tests `tests/integration/gmail-sync.test.ts` with `GmailFake`. Linus Fake is
+- [x] T026 [P] [US2] Integration tests `tests/integration/gmail-sync.test.ts` with `GmailFake`. Linus Fake is
   connected; the person has `ana@example.test` and `ana.k@example.test`. Cover:
   - US2 scenario 1: a message from `ana.k@example.test` with 2 attachments, delivered → 1 conversation;
     `last_synced_at` set; 2 attachment rows;
@@ -411,11 +411,11 @@ token never appears in plain text in the database, a page, a message or the cons
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Write `src/server/gmail/push.ts` (research.md §6): `verifyPushToken` with `node:crypto` (`createPublicKey`
+- [x] T027 [US2] Write `src/server/gmail/push.ts` (research.md §6): `verifyPushToken` with `node:crypto` (`createPublicKey`
   with `format: "jwk"`, `crypto.verify("sha256", …)`), the JWKS cache from `max-age` (at most 1 h), and
   `receiveGmailPush(authorization, body)` → `{ status }`. In the fake, add `deliver(email)` / `dropNotice()`, which
   sign with the fake key. Make T025 pass.
-- [ ] T028 [US2] Write `src/server/gmail/sync.ts` (research.md §8, data-model.md § Copy rules):
+- [x] T028 [US2] Write `src/server/gmail/sync.ts` (research.md §8, data-model.md § Copy rules):
   - `syncConnection(connectionId, now)`:
     - the lease update (2 minutes) and `sync_again`;
     - refresh the access token;
@@ -430,13 +430,13 @@ token never appears in plain text in the database, a page, a message or the cons
     - on `GoogleKeyRefused`, `markNeedsReconnect`.
   - `runGmailCheck(now)`: working connections, oldest `last_synced_at` first. Sync each, then renew the watch when
     `watch_renewed_at` is null or older than 20 h. Stop starting new connections after 240 s.
-- [ ] T029 [US2] Write the routes:
+- [x] T029 [US2] Write the routes:
   - `src/app/gmail/push/route.ts` (POST, `maxDuration = 60`, `receiveGmailPush`, empty bodies);
   - `src/app/cron/gmail/route.ts` (GET, `maxDuration = 300`; `CRON_SECRET` compared with `crypto.timingSafeEqual` on
     the SHA-256 of both values; 401/204, empty bodies);
   - `vercel.json`: `{ "crons": [{ "path": "/cron/gmail", "schedule": "*/15 * * * *" }] }`.
   In mode `off`, both answer 204 and do nothing. Make T026 pass.
-- [ ] T030 [US2] Write the fake mailbox page `src/app/dev/fake-gmail/page.tsx` and its `actions.ts` (research.md §14,
+- [x] T030 [US2] Write the fake mailbox page `src/app/dev/fake-gmail/page.tsx` and its `actions.ts` (research.md §14,
   FR-018):
   - pick a user;
   - a message form:
@@ -465,7 +465,7 @@ in SENT and INBOX. Make the fake refuse, and see the failure message.
 
 ### Tests for User Story 3
 
-- [ ] T031 [P] [US3] Integration tests `tests/integration/gmail-send.test.ts` with `GmailFake`:
+- [x] T031 [P] [US3] Integration tests `tests/integration/gmail-send.test.ts` with `GmailFake`:
   - US3 scenario 1: `sendTestEmail` → one `messages.send` whose decoded `raw` has `From` and `To` = the user,
     `Subject: Barnacle CRM test email` and the `gmail_test_text` text; the fake mailbox has it with SENT and INBOX; the
     flash is the `gmail_test_sent` template;
@@ -482,7 +482,7 @@ in SENT and INBOX. Make the fake refuse, and see the failure message.
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] Write `src/server/gmail/send.ts` (research.md §10): `sendGmail(userId, input)` →
+- [x] T032 [US3] Write `src/server/gmail/send.ts` (research.md §10): `sendGmail(userId, input)` →
   `{ messageId, threadId }`.
   - It refuses before any network call (`GmailNotConnected`, `GmailNeedsReconnect`).
   - It uses `buildMime`, base64url `raw` and `sendRaw`.
@@ -490,7 +490,7 @@ in SENT and INBOX. Make the fake refuse, and see the failure message.
   - `GoogleKeyRefused` → `markNeedsReconnect` + `GmailNeedsReconnect`; other failures → `GmailUnavailable`.
   In the fake, `messages.send` puts the message in the sender's mailbox with SENT, and with INBOX when it is addressed
   to self.
-- [ ] T033 [US3] Add `sendTestEmail` to `src/app/(app)/settings/actions.ts` (`requireUser()` first): `testEmail(address)`
+- [x] T033 [US3] Add `sendTestEmail` to `src/app/(app)/settings/actions.ts` (`requireUser()` first): `testEmail(address)`
   through `sendGmail`, then the flash `gmail_test_sent` or `?gmail=test_failed`. In `GmailCard.tsx`,
   `[ SEND ME A TEST EMAIL ]` is shown only when `working`. Make T031 pass.
 
@@ -508,7 +508,7 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
 
 ### Tests for User Story 4
 
-- [ ] T034 [P] [US4] Integration tests `tests/integration/gmail-disconnect.test.ts` with `GmailFake`:
+- [x] T034 [P] [US4] Integration tests `tests/integration/gmail-disconnect.test.ts` with `GmailFake`:
   - US4 scenario 1: `disconnectGmail` →
     - `state` `disconnected`, `token_cipher` null, watch fields null;
     - the fake shows `stop` called and the token revoked;
@@ -541,16 +541,16 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
 
 ### Implementation for User Story 4
 
-- [ ] T035 [US4] In `src/server/gmail/connections.ts`, add:
+- [x] T035 [US4] In `src/server/gmail/connections.ts`, add:
   - `disconnect(userId)`: one transaction takes the cipher and sets `disconnected` with the nulls of data-model.md;
     after commit, best effort: refresh → `stopWatch` → `revokeToken`, with errors ignored;
   - `forgetGmailInTx(db, userId)`, which returns the cipher;
   - `afterGmailForgotten(userId, cipher)`, which does the same Google calls.
-- [ ] T036 [US4] Add `disconnectGmail` to SF-117's `src/app/(app)/settings/actions.ts` (`requireUser()` first). In
+- [x] T036 [US4] Add `disconnectGmail` to SF-117's `src/app/(app)/settings/actions.ts` (`requireUser()` first). In
   `src/app/(app)/settings/page.tsx`, `?disconnect=1` opens the confirmation box with `gmail_disconnect_confirm`,
   `[ DISCONNECT ]` (red) and `[ CANCEL ]`, reusing the existing delete-confirm look. `[ RECONNECT GMAIL ]` posts
   `startGmailConnect`.
-- [ ] T037 [US4] In `src/server/users.ts`, `deactivate` calls `forgetGmailInTx` inside its `asAdmin` transaction, beside
+- [x] T037 [US4] In `src/server/users.ts`, `deactivate` calls `forgetGmailInTx` inside its `asAdmin` transaction, beside
   SF-117's `deleteConnection`. In
   `src/app/(app)/admin/users/actions.ts`, `deactivate` calls `afterGmailForgotten` after the change succeeds. Make T034
   pass, and keep the existing users tests green.
@@ -561,7 +561,7 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
 
 ## Phase 7: Polish & cross-cutting concerns
 
-- [ ] T038 [P] Write the fake data `src/seed/gmail.ts` (data-model.md § Fake data, FR-019): Ada Fake `ada@barnacle.ai`
+- [x] T038 [P] Write the fake data `src/seed/gmail.ts` (data-model.md § Fake data, FR-019): Ada Fake `ada@barnacle.ai`
   gets a working connection through `FakeGoogleMail`.
   - Three conversations with fake people from `src/seed/people.ts`:
     - "Fake proposal": received, then sent; `proposal-fake.pdf` 250880 bytes;
@@ -572,12 +572,12 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
   - With Gmail mode `off` (no valid `GMAIL_TOKEN_KEY`) it prints "Gmail fake data skipped (GMAIL_TOKEN_KEY not set)."
   - Register it in `src/seed/index.ts` after `deals`, with a `// SF-118` comment.
   - Test in `tests/integration/seed.test.ts` that running it twice leaves 3 conversations and no duplicates.
-- [ ] T039 [P] Update `README.md`:
+- [x] T039 [P] Update `README.md`:
   - the Settings table: the six settings of contracts/google.md § Settings;
   - a "Gmail" section with the Google Cloud setup steps of contracts/google.md, the fake used when
     `GMAIL_PUBSUB_TOPIC` is empty in development/test, `/dev/fake-gmail`, the Vercel Pro cron and the scopes;
   - the `npm run test:schemas` line.
-- [ ] T040 [P] Update `AGENTS.md` § Layout:
+- [x] T040 [P] Update `AGENTS.md` § Layout:
   - `src/server/crypto/seal.ts` (shared token sealing, one key per service);
   - `src/server/gmail/` (`rules.ts`, `google-api.ts`, `push.ts`, `connections.ts`, `sync.ts`, `send.ts`,
     `fake-gmail.ts`);
@@ -586,7 +586,7 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
     and `src/app/dev/fake-google/gmail`;
   - `tests/fakes/gmail.ts`, checked against `gmail-api.json` and `pubsub-api.json`;
   - the `gmail` seeder.
-- [ ] T041 [P] Add to the end of `docs/DECISIONS.md` one line per choice of spec.md § Clarifications:
+- [x] T041 [P] Add to the end of `docs/DECISIONS.md` one line per choice of spec.md § Clarifications:
   - "Gmail settings use design B: a Gmail card on the Settings page after Pipedrive, and an orange "!" on the one
     Settings link on every page while Gmail needs reconnecting (SF-118)";
   - "Saved tokens of outside services are sealed by one shared AES-256-GCM module, each service with its own key
@@ -602,13 +602,13 @@ key, run the check: the reconnect state shows. Reconnect: a new message is copie
   - "Deactivating a user also cancels their Gmail access at Google (SF-118)".
 
   No "Departs from blueprint" line (no blueprint applies).
-- [ ] T042 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
+- [x] T042 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test` and
   `DATABASE_URL=postgres://postgres@localhost:5432/crm_test`. Fix any failure. Every test file has its `// covers`
   line.
-- [ ] T043 Check SC-004 across the codebase: grep `src/` for `console.` in `src/server/gmail/` and the new routes, and
+- [x] T043 Check SC-004 across the codebase: grep `src/` for `console.` in `src/server/gmail/` and the new routes, and
   confirm no token, cipher or Google body is logged; confirm `token_cipher` is selected only in `loadKey`
   (`grep -rn token_cipher src/`).
-- [ ] T044 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
+- [x] T044 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
   schema) and `## Schemas` (each schema's GitHub URL at its commit).
   - Gmail API: fake `src/server/gmail/fake-gmail.ts`, wrapped by `tests/fakes/gmail.ts`; schema `gmail-api.json`.
   - Cloud Pub/Sub push: the same fake's `deliver`; schema `pubsub-api.json` (`PubsubMessage`).

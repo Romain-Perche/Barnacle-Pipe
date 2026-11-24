@@ -1,6 +1,7 @@
 // covers US4 scenario 3, FR-031 (fresh checkout: `npm run test:schemas` fetches the pinned Google schema once);
 // SF-116 T013: and Supabase Storage's OpenAPI file
 // SF-117: and the two Pipedrive schemas
+// SF-118 T004: and Gmail's and Pub/Sub's discovery files
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -23,6 +24,8 @@ describe("npm run test:schemas in a copy of the repo without .factory/schemas/",
   const storage = path.join(dir, ".factory/schemas/storage_v0_openapi.json");
   const pipedriveV2 = path.join(dir, ".factory/schemas/pipedrive_v2_openapi.json");
   const pipedriveV1 = path.join(dir, ".factory/schemas/pipedrive_v1_openapi.yml");
+  const gmail = path.join(dir, ".factory/schemas/gmail-api.json");
+  const pubsub = path.join(dir, ".factory/schemas/pubsub-api.json");
 
   it("downloads the pinned oauth2-api.json and storage_v0_openapi.json", () => {
     expect(existsSync(file)).toBe(false);
@@ -39,11 +42,13 @@ describe("npm run test:schemas in a copy of the repo without .factory/schemas/",
     const v1 = parse(readFileSync(pipedriveV1, "utf8"));
     expect(Object.keys(v1.paths)).toContain("/users/me");
     expect(Object.keys(v1.paths)).toContain("/users");
+    expect(JSON.parse(readFileSync(gmail, "utf8")).schemas.Profile.properties.emailAddress.type).toBe("string");
+    expect(Object.keys(JSON.parse(readFileSync(pubsub, "utf8")).schemas.PubsubMessage.properties)).toContain("data");
   }, 60_000);
 
   it("does nothing on a second run (no download)", () => {
     const before = [statSync(file).mtimeMs, statSync(storage).mtimeMs];
-    expect(run().match(/already there/g)).toHaveLength(4);
+    expect(run().match(/already there/g)).toHaveLength(6);
     expect([statSync(file).mtimeMs, statSync(storage).mtimeMs]).toEqual(before);
   });
 

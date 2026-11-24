@@ -6,7 +6,17 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/server/auth/cookie";
 import { FLASH_COOKIE } from "@/server/records/flash-cookie";
 
-const PUBLIC = [/^\/sign-in\/?$/, /^\/auth(\/|$)/, /^\/dev\/fake-google\/?$/];
+// SF-118: Google's push (/gmail/push, a Google-signed token), Vercel's cron (/cron/gmail, CRON_SECRET) and the fake
+// Gmail pages (404 outside development/test) check their own proof; /settings/gmail/callback stays protected.
+const PUBLIC = [
+  /^\/sign-in\/?$/,
+  /^\/auth(\/|$)/,
+  /^\/dev\/fake-google\/?$/,
+  /^\/dev\/fake-google\/gmail\/?$/,
+  /^\/dev\/fake-gmail\/?$/,
+  /^\/gmail\/push\/?$/,
+  /^\/cron\/gmail\/?$/,
+];
 
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;

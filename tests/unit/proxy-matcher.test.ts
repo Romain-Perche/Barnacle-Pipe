@@ -17,3 +17,27 @@ describe("proxy matcher", () => {
     for (const url of ["/deals", "/files/1/download", "/sign-in", "/dev/fake-google"]) expect(matches(url)).toBe(true);
   });
 });
+
+// covers SF-118 FR-015, T015: Google's push, Vercel's cron and the two fake Gmail pages pass without a session (they
+// check their own proof); the Settings page and the Gmail callback still need one.
+import { NextRequest } from "next/server";
+import { proxy } from "@/proxy";
+describe("proxy without a session (SF-118)", () => {
+  const run = (path: string, method = "GET") => proxy(new NextRequest(new URL(path, "http://localhost:3000"), { method }));
+  it.each([
+    ["/gmail/push", "POST"],
+    ["/cron/gmail", "GET"],
+    ["/dev/fake-google/gmail", "GET"],
+    ["/dev/fake-gmail", "GET"],
+    ["/dev/fake-gmail/", "GET"],
+  ])("lets %s through", (path, method) => {
+    expect(matches(path)).toBe(true);
+    expect(run(path, method).headers.get("location")).toBeNull();
+  });
+  it.each(["/settings", "/settings/gmail/callback?code=x&state=y", "/gmail/push/x", "/cron/gmail/other", "/dev/fake-gmail/x"])(
+    "sends %s to sign-in",
+    (path) => {
+      expect(run(path).headers.get("location")).toMatch(/^http:\/\/localhost:3000\/sign-in\?next=/);
+    },
+  );
+});

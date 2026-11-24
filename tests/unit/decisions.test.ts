@@ -92,3 +92,20 @@ describe("docs/DECISIONS.md (SF-117)", () => {
     expect(sf117.some((l) => l.includes("becomes Unsubscribed on import") && l.includes("never makes anyone Subscribed"))).toBe(true);
   });
 });
+
+// covers SF-118 spec.md § Clarifications (Sessions 2026-11-24 and plan review): one line per choice
+describe("docs/DECISIONS.md (SF-118)", () => {
+  const sf118 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-118)"));
+  it("records the eight choices", () => {
+    const has = (...parts: string[]) => sf118.some((l) => parts.every((p) => l.includes(p)));
+    expect(has("design B", "Gmail card on the Settings page after Pipedrive", 'orange "!"')).toBe(true);
+    expect(has("one shared AES-256-GCM module", "PIPEDRIVE_TOKEN_KEY", "GMAIL_TOKEN_KEY")).toBe(true);
+    expect(has("kept when they disconnect or are deactivated")).toBe(true);
+    expect(has("one Vercel cron job every 15 minutes", "Vercel Pro plan")).toBe(true);
+    expect(has("gmail.modify and gmail.send")).toBe(true);
+    expect(has("After a disconnect, copying starts again from the new connection", "carries on from the last successful sync")).toBe(true);
+    expect(has("the time Gmail received or sent a message, not the sender's Date line")).toBe(true);
+    expect(has("Deactivating a user also cancels their Gmail access at Google")).toBe(true);
+    expect(sf118).toHaveLength(8);
+  });
+});

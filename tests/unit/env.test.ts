@@ -115,3 +115,62 @@ describe("pipedriveConfig", () => {
     expect(pipedriveConfig().key).toBeNull();
   });
 });
+
+// covers SF-118 FR-003, FR-018, edge case "Gmail not set up" (research.md §12, contracts/google.md § Settings)
+import { gmailConfig, readTokenKey } from "@/server/env";
+describe("readTokenKey", () => {
+  it("decodes base64 of exactly 32 bytes (trimmed), else null", () => {
+    expect(readTokenKey(` ${Buffer.alloc(32, 5).toString("base64")} `)?.equals(Buffer.alloc(32, 5))).toBe(true);
+    for (const raw of ["", undefined, Buffer.alloc(31).toString("base64"), Buffer.alloc(33).toString("base64"), "not a key at all, really not!!"]) {
+      expect(readTokenKey(raw), String(raw)).toBeNull();
+    }
+  });
+});
+describe("gmailConfig", () => {
+  const key = Buffer.alloc(32, 8).toString("base64");
+  const real = {
+    APP_ENV: "production",
+    VERCEL_ENV: undefined,
+    GMAIL_PUBSUB_TOPIC: "projects/crm-fake/topics/gmail",
+    GOOGLE_CLIENT_ID: "client-id",
+    GOOGLE_CLIENT_SECRET: "client-secret",
+    APP_URL: "https://crm.example.test/",
+    GMAIL_TOKEN_KEY: key,
+    GMAIL_PUSH_SERVICE_ACCOUNT: "push@crm-fake.iam.gserviceaccount.com",
+    GMAIL_PUSH_AUDIENCE: undefined,
+    GMAIL_PUSH_SUBSCRIPTION: undefined,
+    CRON_SECRET: "a-cron-secret-of-16+",
+  };
+  it("is real when the topic and every setting are valid; the audience defaults to APP_URL/gmail/push", () => {
+    withEnv(real);
+    const c = gmailConfig();
+    if (c.mode !== "real") throw new Error(c.mode);
+    expect(c).toMatchObject({ topic: "projects/crm-fake/topics/gmail", appUrl: "https://crm.example.test", pushAudience: "https://crm.example.test/gmail/push", pushSubscription: null });
+    expect(c.tokenKey.equals(Buffer.alloc(32, 8))).toBe(true);
+    withEnv({ ...real, GMAIL_PUSH_AUDIENCE: "https://aud.example.test", GMAIL_PUSH_SUBSCRIPTION: "projects/p/subscriptions/s" });
+    expect(gmailConfig()).toMatchObject({ pushAudience: "https://aud.example.test", pushSubscription: "projects/p/subscriptions/s" });
+  });
+  it.each([
+    ["GOOGLE_CLIENT_ID", ""],
+    ["GOOGLE_CLIENT_SECRET", ""],
+    ["APP_URL", ""],
+    ["GMAIL_TOKEN_KEY", Buffer.alloc(31).toString("base64")],
+    ["GMAIL_PUSH_SERVICE_ACCOUNT", ""],
+    ["CRON_SECRET", "short-15-chars!"],
+  ])("is off with a topic but %s=%j", (name, value) => {
+    withEnv({ ...real, [name]: value });
+    expect(gmailConfig()).toEqual({ mode: "off" });
+  });
+  it.each(["development", "test"])("is fake with APP_ENV=%s, no topic and a key", (appEnv) => {
+    withEnv({ ...real, APP_ENV: appEnv, GMAIL_PUBSUB_TOPIC: "", GOOGLE_CLIENT_ID: "", CRON_SECRET: "", APP_URL: "" });
+    expect(gmailConfig()).toMatchObject({ mode: "fake", appUrl: "http://localhost:3000" });
+  });
+  it("is off without a key even where fakes are allowed (no built-in key), and without a topic in production", () => {
+    withEnv({ ...real, APP_ENV: "test", GMAIL_PUBSUB_TOPIC: "", GMAIL_TOKEN_KEY: "" });
+    expect(gmailConfig()).toEqual({ mode: "off" });
+    withEnv({ ...real, GMAIL_PUBSUB_TOPIC: "" });
+    expect(gmailConfig()).toEqual({ mode: "off" });
+    withEnv({ ...real, APP_ENV: "development", VERCEL_ENV: "preview", GMAIL_PUBSUB_TOPIC: "" });
+    expect(gmailConfig()).toEqual({ mode: "off" });
+  });
+});

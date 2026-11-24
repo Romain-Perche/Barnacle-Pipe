@@ -447,3 +447,36 @@ describe("Pipedrive import messages (SF-117)", () => {
     for (const code of ["pipedrive_connected", "pipedrive_linked", "pipedrive_field_no_match"]) expect(messageFor(code), code).toBeUndefined();
   });
 });
+
+// covers SF-118 FR-016, contracts/routes.md § Messages: the Gmail texts, verbatim; templates only from an address or a number
+describe("Gmail messages (SF-118)", () => {
+  it("has the fixed texts", () => {
+    expect(messageFor("gmail_not_connected")).toBe("Gmail is not connected.");
+    expect(messageFor("gmail_unavailable")).toBe("Gmail can't be connected right now.");
+    expect(messageFor("gmail_connected")).toBe("Gmail connected.");
+    expect(messageFor("gmail_reconnected")).toBe("Gmail reconnected.");
+    expect(messageFor("gmail_cancelled")).toBe("Gmail was not connected.");
+    expect(messageFor("gmail_missing_scopes")).toBe("Gmail needs all the permissions asked for. Try again and tick every box.");
+    expect(messageFor("gmail_disconnected")).toBe("Gmail disconnected.");
+    expect(messageFor("gmail_disconnect_confirm")).toBe("Disconnect Gmail? New email will stop being copied. Emails already copied stay in the CRM.");
+    expect(messageFor("gmail_test_failed")).toBe("The test email could not be sent. Try again in a minute.");
+    expect(messageFor("gmail_not_synced")).toBe("Not synced yet");
+    expect(messageFor("gmail_test_subject")).toBe("Barnacle CRM test email");
+    expect(messageFor("gmail_test_text")).toBe("This is a test email from Barnacle CRM. If you can read it, the CRM can send email from your Gmail.");
+    expect(messageFor("gmail_settings_warn")).toBe("Gmail needs reconnecting");
+  });
+  it("builds the templates", () => {
+    expect(templates.gmail_connected_as("linus@barnacle.ai")).toBe("Connected as linus@barnacle.ai");
+    expect(templates.gmail_wrong_account("linus@barnacle.ai")).toBe("Connect the Gmail account you sign in with (linus@barnacle.ai).");
+    expect(templates.gmail_needs_reconnect("linus@barnacle.ai")).toBe(
+      "Google no longer accepts the CRM's access to linus@barnacle.ai. Reconnect to carry on copying email.",
+    );
+    expect(templates.gmail_test_sent("linus@barnacle.ai")).toBe("Test email sent to linus@barnacle.ai. Check your inbox.");
+    expect(templates.gmail_conversations(0)).toBe("0 conversations copied");
+    expect(templates.gmail_conversations(1)).toBe("1 conversation copied");
+    expect(templates.gmail_conversations(37)).toBe("37 conversations copied");
+    expect(templates.gmail_last_sync("Not synced yet")).toBe("Last sync: Not synced yet");
+    expect(templates.gmail_copying_since("24 Nov 2026, 10:00")).toBe("Copying since 24 Nov 2026, 10:00");
+    for (const code of ["gmail_connected_as", "gmail_wrong_account", "gmail_needs_reconnect", "gmail_test_sent"]) expect(messageFor(code)).toBeUndefined();
+  });
+});

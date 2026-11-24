@@ -8,6 +8,7 @@ import { seedAmbassadors } from "@/seed/ambassadors";
 import { seedCustomFields } from "@/seed/custom-fields";
 import { seedDeals } from "@/seed/deals";
 import { seedFiles } from "@/seed/files";
+import { seedGmail } from "@/seed/gmail";
 import { seedNotes } from "@/seed/notes";
 import { seedPeople } from "@/seed/people";
 import { seedUsers } from "@/seed/users";
@@ -16,6 +17,8 @@ export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] =
   { name: "users", run: seedUsers },
   { name: "people", run: seedPeople },
   { name: "deals", run: seedDeals },
+  // SF-118: Ada Fake's fake Gmail connection and three copied conversations with fake people (fake Gmail only).
+  { name: "gmail", run: seedGmail },
   // SF-102: notes, mentions and notifications (after the records they are on).
   { name: "notes", run: seedNotes },
   // SF-109: calls, meetings and tasks, with assignment notifications (after the records they are on).

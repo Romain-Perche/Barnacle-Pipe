@@ -183,6 +183,20 @@ export const messages = {
   pipedrive_running: "Import running.",
   pipedrive_not_connected: "Save your Pipedrive token first.",
   pipedrive_email_other_hidden: "Another Pipedrive person has the same email address.",
+  // SF-118: Gmail connect and sync (contracts/routes.md § Messages)
+  gmail_not_connected: "Gmail is not connected.",
+  gmail_unavailable: "Gmail can't be connected right now.",
+  gmail_connected: "Gmail connected.",
+  gmail_reconnected: "Gmail reconnected.",
+  gmail_cancelled: "Gmail was not connected.",
+  gmail_missing_scopes: "Gmail needs all the permissions asked for. Try again and tick every box.",
+  gmail_disconnected: "Gmail disconnected.",
+  gmail_disconnect_confirm: "Disconnect Gmail? New email will stop being copied. Emails already copied stay in the CRM.",
+  gmail_test_failed: "The test email could not be sent. Try again in a minute.",
+  gmail_not_synced: "Not synced yet",
+  gmail_test_subject: "Barnacle CRM test email",
+  gmail_test_text: "This is a test email from Barnacle CRM. If you can read it, the CRM can send email from your Gmail.",
+  gmail_settings_warn: "Gmail needs reconnecting",
 } as const;
 
 // SF-117: Pipedrive's field types in words (contracts/routes.md § Messages); any other type is "other".
@@ -336,6 +350,14 @@ export const templates = {
   pipedrive_imported_by: (name: string) => `Imported from Pipedrive by ${name}`,
   pipedrive_unsubscribed_by: (name: string) => `Unsubscribed by the Pipedrive import of ${name}`,
   pipedrive_already: (n: number) => `Already imported: ${n}`,
+  // SF-118: built only from the user's own address or numbers and times from the database
+  gmail_connected_as: (email: string) => `Connected as ${email}`,
+  gmail_wrong_account: (email: string) => `Connect the Gmail account you sign in with (${email}).`,
+  gmail_needs_reconnect: (email: string) => `Google no longer accepts the CRM's access to ${email}. Reconnect to carry on copying email.`,
+  gmail_test_sent: (email: string) => `Test email sent to ${email}. Check your inbox.`,
+  gmail_conversations: (n: number) => `${n} ${n === 1 ? "conversation" : "conversations"} copied`,
+  gmail_last_sync: (time: string) => `Last sync: ${time}`,
+  gmail_copying_since: (time: string) => `Copying since ${time}`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

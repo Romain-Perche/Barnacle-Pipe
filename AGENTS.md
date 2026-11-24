@@ -86,8 +86,12 @@ OAuth code flow and database sessions.
   (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
   `person_emails`, bulk inserts through `bulk.ts`: `newIds`, `inChunks`, `col`, `insertCustomValues`, shared with the
   Pipedrive import).
-- `src/server/pipedrive/` — the Pipedrive import (SF-117): `crypto.ts` (`sealToken` / `openToken`: AES-256-GCM, key
-  `PIPEDRIVE_TOKEN_KEY` from `pipedriveConfig()` in `env.ts`, bound to the user), `api.ts` (the six GET calls by plain
+- `src/server/crypto/seal.ts` — the one sealing of saved tokens of outside services (SF-117, shared since SF-118):
+  `sealToken(key, purpose, userId, token)` / `openToken(…)`, `TokenUnreadable`; AES-256-GCM, version 1 ‖ IV ‖ tag ‖
+  cipher, additional data `"<purpose>:<userId>"` (purposes `pipedrive-token`, `gmail-token`); one key per service
+  (`PIPEDRIVE_TOKEN_KEY`, `GMAIL_TOKEN_KEY`), each decoded by `readTokenKey()` in `env.ts`.
+- `src/server/pipedrive/` — the Pipedrive import (SF-117): tokens sealed by `crypto/seal.ts` with
+  `PIPEDRIVE_TOKEN_KEY` from `pipedriveConfig()` in `env.ts`, bound to the user; `api.ts` (the six GET calls by plain
   `fetch`, token in the `x-api-token` header only, 10 s time-out, `PipedriveRefused` / `PipedriveSlowDown` /
   `PipedriveBadRequest` / `PipedriveUnreachable`, `retrySeconds`, `usePipedriveFetchForTests`), `fake-pipedrive.ts`
   (`FakePipedrive`, `fakePipedrive()` the development instance: tokens `fake-pipedrive-token` / `fake-pipedrive-other`),
@@ -100,16 +104,37 @@ OAuth code flow and database sessions.
   `reportLines`, `namesForReport` through `visiblePerson()`). `pipedrive_links` (company + kind + Pipedrive id) is the
   "never twice" key; `pipedrive_imports` holds one run per user (one open at a time), `pipedrive_connections` one sealed
   token per user. Timeline kinds `pipedrive_imported` / `pipedrive_unsubscribed`.
+- `src/server/gmail/` — Gmail connect and sync (SF-118); settings from `gmailConfig()` in `env.ts` (real / fake / off).
+  `rules.ts` (pure: `GMAIL_SCOPES` = `gmail.modify` + `gmail.send`, `hasAllScopes`, `parseAddressList`, `decodeHeader`,
+  `readMessage`, `decideCopy`, `classifyGoogleError`, `buildMime` (`BadHeader` on CR/LF), `testEmail`), `google-api.ts`
+  (every Google call by plain `fetch`, 10 s: consent address, token, revoke, certs, Gmail; `GoogleKeyRefused` /
+  `GoogleUnavailable` / `HistoryGone`; `useGmailFetchForTests`), `push.ts` (`verifyPushToken`: Google's OIDC token with
+  node:crypto, keys cached by max-age; `receiveGmailPush`), `connections.ts` (`gmailSettings`, `gmailNeedsReconnect`,
+  `connectFromCallback`, `finishConnect`, `disconnect`, `forgetGmailInTx` + `afterGmailForgotten` used by
+  `users.deactivate`, `markNeedsReconnect`; `loadKey` is the ONLY reader of `token_cipher`), `sync.ts` (`syncConnection`:
+  a lease column, history since `history_id` or a listing when it is gone, at most 300 `messages.get` per run, one
+  `sql.begin()` per stored message; `renewWatch`; `runGmailCheck` the 15-minute job), `send.ts` (`sendGmail`, the one
+  way to send: `GmailNotConnected` / `GmailNeedsReconnect` / `GmailUnavailable`), `fake-gmail.ts` (`FakeGoogleMail`,
+  `fakeGmail()`: `MemoryStore` in tests, `.fake-gmail/state.json` in development). No Google call inside `sql.begin()`.
+  Tables `gmail_connections` (one per user, kept after disconnect), `email_threads`, `email_messages`, `email_attachments`
+  (names and sizes only).
 - `src/app/(app)/settings/` (SF-117) — Settings (`page.tsx`, `PipedriveSection.tsx`, `RemoveTokenConfirm.tsx`,
-  `actions.ts`), linked by `footerNav` in `nav.ts` at the bottom of the sidebar; `settings/pipedrive-import/` — the import
+  `actions.ts`; SF-118: `GmailCard.tsx`, `GmailDisconnectConfirm.tsx`, the actions `startGmailConnect`, `disconnectGmail`,
+  `sendTestEmail`, and `gmail/callback/route.ts`), linked by `footerNav` in `nav.ts` at the bottom of the sidebar (SF-118:
+  `SettingsLink` in `UnreadLink.tsx` shows the orange "!" while Gmail needs reconnecting; `currentSidebar()` in
+  `notifications/actions.ts` refreshes it with the unread count); `settings/pipedrive-import/` — the import
   page (`page.tsx`, `maxDuration = 60`; `ChooseStep.tsx`, `ProgressStep.tsx`, `ReportStep.tsx`, `Counts.tsx`,
   `StopConfirm.tsx`, `actions.ts`) and `ImportRunner.tsx` (client: one part, `router.refresh()`, the next part a second
   later or after Pipedrive's wait). `records/import/StepBar.tsx` takes a `steps` prop.
-- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
-  files, custom fields: `custom-fields.ts`). The fake Pipedrive needs no seeding.
+- `src/app/gmail/push/route.ts` (Pub/Sub push, Google's token) and `src/app/cron/gmail/route.ts` (the 15-minute check,
+  `CRON_SECRET`), scheduled by `vercel.json` (SF-118); `src/app/dev/fake-google/gmail` (the fake consent screen) and
+  `src/app/dev/fake-gmail` (the fake mailbox page), 404 unless the Gmail mode is `fake`.
+- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, gmail (SF-118: Ada Fake's fake Gmail
+  connection and three conversations), notes, activities, ambassadors, files, custom fields: `custom-fields.ts`). The
+  fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
-- `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage and Pipedrive
-  v2 / v1 schemas).
+- `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage, Pipedrive
+  v2 / v1, Gmail and Pub/Sub schemas).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),
   `tests/support/reset.ts` (empties every app table; lead sources back to the six starting ones).
 
@@ -135,7 +160,8 @@ npm test && npm run typecheck
 
 Each test names what it covers (`// covers FR-003, US1 scenario 2`). Fakes only for outside services
 (Google Sign-In: `tests/fakes/google.ts`; Supabase Storage: `tests/fakes/storage.ts`, checked against
-`storage_v0_openapi.json`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
+`storage_v0_openapi.json`; Gmail and Pub/Sub: `tests/fakes/gmail.ts`, checked against `gmail-api.json` and
+`pubsub-api.json`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
 `pipedrive_v2_openapi.json` and `pipedrive_v1_openapi.yml` by `tests/fakes/pipedrive-schema.ts`; each checked against
 its schema; see `.factory/test-env.md`).
 
