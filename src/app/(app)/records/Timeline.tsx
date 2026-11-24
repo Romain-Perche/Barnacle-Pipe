@@ -48,6 +48,11 @@ export function Line({ e, onDeal, filePage }: { e: TimelineEvent & { file?: Time
       return <>Added{by(e.actorName)}</>;
     case "imported":
       return <>{templates.imported_event(e.actorName ?? "")}</>;
+    // SF-117
+    case "pipedrive_imported":
+      return <>{templates.pipedrive_imported_by(e.actorName ?? "")}</>;
+    case "pipedrive_unsubscribed":
+      return <>{templates.pipedrive_unsubscribed_by(e.actorName ?? "")}</>;
     case "edited":
       return (
         <>

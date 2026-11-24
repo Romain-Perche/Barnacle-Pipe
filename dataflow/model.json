@@ -24,6 +24,10 @@
     {
       "id": "supabase",
       "label": "Supabase Storage (third party)"
+    },
+    {
+      "id": "pipedrive",
+      "label": "Pipedrive (third party)"
     }
   ],
   "groups": [
@@ -71,6 +75,11 @@
       "id": "files",
       "label": "Files",
       "description": "Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage."
+    },
+    {
+      "id": "pipedrive",
+      "label": "Pipedrive import",
+      "description": "Connects a Pipedrive token and imports people, organisations and deals page by page, never twice."
     }
   ],
   "actors": [
@@ -95,6 +104,11 @@
       "id": "supabase-storage",
       "label": "Supabase Storage",
       "zone": "supabase"
+    },
+    {
+      "id": "pipedrive-api",
+      "label": "Pipedrive API",
+      "zone": "pipedrive"
     }
   ],
   "processes": [
@@ -337,6 +351,20 @@
         "src/app/(app)/records/file-actions.ts",
         "src/app/(app)/files"
       ]
+    },
+    {
+      "id": "pipedrive-import",
+      "label": "Pipedrive import",
+      "zone": "app",
+      "group": "pipedrive",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/api.ts",
+        "src/server/pipedrive/connection.ts",
+        "src/server/pipedrive/crypto.ts",
+        "src/app/(app)/settings/pipedrive-import",
+        "src/app/(app)/settings/actions.ts"
+      ]
     }
   ],
   "stores": [
@@ -554,6 +582,24 @@
       "group": "database",
       "sources": [
         "migrations/0011_files.sql"
+      ]
+    },
+    {
+      "id": "pipedrive-connections-table",
+      "label": "Sealed Pipedrive tokens",
+      "zone": "postgres",
+      "group": "pipedrive",
+      "sources": [
+        "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "id": "pipedrive-imports-table",
+      "label": "Pipedrive imports and links",
+      "zone": "postgres",
+      "group": "pipedrive",
+      "sources": [
+        "migrations/0012_pipedrive.sql"
       ]
     }
   ],
@@ -2073,6 +2119,138 @@
       "data": "files section",
       "sources": [
         "src/app/(app)/records/FilesSection.tsx"
+      ]
+    },
+    {
+      "from": "session-guard",
+      "to": "pipedrive-import",
+      "data": "signed-in user",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "pipedrive-import",
+      "data": "API token, import choices",
+      "sources": [
+        "src/app/(app)/settings/actions.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "staff",
+      "data": "progress and report",
+      "sources": [
+        "src/app/(app)/settings/pipedrive-import/page.tsx"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "pipedrive-api",
+      "data": "token header, page requests",
+      "sources": [
+        "src/server/pipedrive/api.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-api",
+      "to": "pipedrive-import",
+      "data": "people, organisations, deals, fields",
+      "sources": [
+        "src/server/pipedrive/api.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "pipedrive-connections-table",
+      "data": "token sealed with AES-256-GCM",
+      "sources": [
+        "src/server/pipedrive/connection.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-connections-table",
+      "to": "pipedrive-import",
+      "data": "sealed token",
+      "sources": [
+        "src/server/pipedrive/connection.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "pipedrive-import",
+      "data": "PIPEDRIVE_URL, token key",
+      "sources": [
+        "src/server/env.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "pipedrive-imports-table",
+      "data": "run state, links",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-imports-table",
+      "to": "pipedrive-import",
+      "data": "cursor, links",
+      "sources": [
+        "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "persons-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "organisations-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "custom-values-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "timeline-table",
+      "data": "imported records",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/imports/bulk.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "pipedrive-connections-table",
+      "data": "schema",
+      "sources": [
+        "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "pipedrive-imports-table",
+      "data": "schema",
+      "sources": [
+        "migrations/0012_pipedrive.sql"
       ]
     }
   ]

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c9b023a8902841b912aac0765c74ce4821348c36e8fd5488a31f67fbefa1ce3e",
+  "claims": [
+    {
+      "id": "claim_d55389c642f14a80ae944375add69edd",
+      "statement": "Pipedrive tokens are sealed with AES-256-GCM and sent only in the x-api-token header.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/pipedrive/api.ts",
+          "version": "repo-file-v1:sha256:273a81723a576789f0e1fd655911c5273e4d9c47f81cf9fea086c7624c5cb92a"
+        },
+        {
+          "resource": "repo://src/server/pipedrive/crypto.ts",
+          "version": "repo-file-v1:sha256:95172e1ab5186b62070b89b7dbb1b3c61ad6c6f828f0715a28b0f902e23deacf"
+        }
+      ]
+    },
+    {
+      "id": "claim_5201a195d2a7449aa8e8582a10af9af1",
+      "statement": "The import runs part by part from the open page, with Pipedrive calls outside the page transaction and pipedrive_links as the never-twice key.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/pipedrive/imports.ts#L1-L10",
+          "version": "repo-lines-v1:sha256:09957171343fe5a2dfc7ea73ef67d9fca1b9c84a7ca15ee18831bfdc61ecfb3c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMDNiZjk0Yjk3Y2U4OGU0ZTZiYmEwNzlmYTA0NWM0NDA1Nzc5YWI2YTAwNDIwMTlhNjdjNWUzZGQzYTAyMWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkMDZkN2UzNDk2MDZkODliYWQwNzE5ZDRhMGU3Mzk0OTcyMDQzZThkMGQwMTgwOGVhOWUwYjdhZmEyZjE4ZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlMGRkM2QwMmZmNzk1MzY0ZDE0Mjg0ZmZlYjhjOTczM2VjYjdhNTUwZGVkNTEyYTY0YTc3NjM4OTFkMThjOTYifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-24T14:34:59.724Z"
+  }
+}

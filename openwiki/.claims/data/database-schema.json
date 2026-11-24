@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:25f82a182363e1d1fae9222d85c9d840bfd67af4e033c6fa87099d4aa74eabd9",
+  "pageVersion": "sha256:d5e18e3e3fae7eb8266961ce621cda2b6a2e9d583abd9d3752e052ff69698964",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -37,8 +37,8 @@
       "statement": "An integration test fails if any table in the public schema lacks row level security.",
       "evidence": [
         {
-          "resource": "repo://tests/integration/rls.test.ts#L14-L32",
-          "version": "repo-lines-v1:sha256:0177b4a1269ec651cec054c74501ad70d7a5977fed880d471fba25e7a6a33cc9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
+          "resource": "repo://tests/integration/rls.test.ts#L14-L34",
+          "version": "repo-lines-v1:sha256:46a80f119a36bc732fdd08345691d77420ea4869d35efcb0c7fa0afe25195a17:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDJlMzMyYmE2MzViZTY4Nzc5NzQyM2RiZGQ5ZTA2YmJjYzkyZmJjNTc0YmY3YmU0OTAwYmYzMmNiMGRiMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODRiM2VhNjlmMzg4MWRlNjhiZTY0NDQwY2RhODA4ZDk2YTMzZGQwMGMyZmMwYTBlMjJmNjkzNDAyOTk3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MzcwMTcyOGI0NzJjODdmMTU4ZDM3NWM2MDZjNzFlNTk5MDg0MmJkNGNmNzMwYzFjZTJhZDA5NDI4YjA1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMzVlZDdjNWFhMGZjMmMxNDU4ZTdlMmM4Y2RhOGE1MmNjYWQwODRiYjAyY2RjNjkwMTM0NWU4MDZkZjY2ZTQifQ"
         }
       ]
     },
@@ -161,10 +161,20 @@
           "version": "repo-file-v1:sha256:cfad8a7ab2aff393afa5a996224df7562769922f5be339b113e8090c55f1ae6c"
         }
       ]
+    },
+    {
+      "id": "claim_6c6a5d476ab444e6bfab38d9080f8f62",
+      "statement": "Migration 0012 adds pipedrive_connections, pipedrive_imports and pipedrive_links, with a unique index allowing one open import per user.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0012_pipedrive.sql",
+          "version": "repo-file-v1:sha256:ab720ea93a23250ae361ccb698fe75dbcd3eee99d6c27c0c4b415cef940407d4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T11:56:37.160Z"
+    "at": "2026-11-24T14:34:59.724Z"
   }
 }
