@@ -203,7 +203,7 @@ Files in `src/server/campaigns/` named `merge.ts`, `content.ts` and `rules.ts` a
 - [X] T052 [P] Add a `docs/DECISIONS.md (SF-119)` block to `tests/unit/decisions.test.ts` checking those three lines (design A, shared drafts, tags follow renames).
 - [X] T053 [P] Update `AGENTS.md` § Layout: `src/server/campaigns/` (`merge.ts`, `content.ts`, `rules.ts` pure and client-safe; `campaigns.ts`; `preview.ts`) and `src/app/(app)/campaigns/` (pages, actions, `CampaignEditor.tsx`, `BlockList.tsx`, `MergeTagMenu.tsx`, `PreviewPersonPicker.tsx`, `CampaignPreview.tsx`: the sandboxed frame), one entry each in the style of the others; mention `next.config.ts` `bodySizeLimit` in the README if it lists settings.
 - [X] T054 [P] Check `src/app/(app)/campaigns/` against `docs/DESIGN.md` and design A of `design-options.html`: `// ` section labels, `[ … ]` buttons, the DRAFT tag, header buttons, two columns.
-- [ ] T055 Run `npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; fix every failure; keep the complete failure output in the report when something cannot be fixed.
+- [X] T055 Run `npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; fix every failure; keep the complete failure output in the report when something cannot be fixed.
 - [X] T056 Confirm nothing outside the plan changed: `git diff --stat main` shows no `package.json` / `package-lock.json` change (dependencies.json is `[]`).
 - [X] T057 Confirm `grep -rn "dangerouslySetInnerHTML\|allow-scripts\|allow-same-origin\|allow-forms\|allow-top-navigation" src/app/\(app\)/campaigns` finds nothing.
 - [X] T058 Confirm no text from a URL is shown: `new` and `delete` parameters read only as `1` / an id in `src/app/(app)/campaigns/page.tsx` and `[id]/page.tsx`.
@@ -291,11 +291,11 @@ US1 → US2 (tags) → US3 (layouts) → US4 (pasted HTML, safe frame) → US5 (
 
 ## Fix round 2 (AI review 2026-11-24)
 
-- [ ] T066 Check first that it fails now: in `AGENTS.md`, `grep -c "The fake Pipedrive needs no seeding" AGENTS.md`
+- [X] T066 Check first that it fails now: in `AGENTS.md`, `grep -c "The fake Pipedrive needs no seeding" AGENTS.md`
   must print `1`, and that line must name both `campaigns.ts` and `segments.ts`. Now it prints `2` and each line names
   only one. No repo test: it is a docs line (plan.md § Fix round 2).
-- [ ] T067 In `AGENTS.md` § Layout, the `src/seed/` entry: replace the two copies of the second line with one line
+- [X] T067 In `AGENTS.md` § Layout, the `src/seed/` entry: replace the two copies of the second line with one line
   "files, custom fields: `custom-fields.ts`, campaigns: `campaigns.ts`, segments: `segments.ts`). The fake Pipedrive
   needs no seeding." Change nothing else in `AGENTS.md`.
-- [ ] T068 Run T066's check again (it prints `1`, both seeders named), then `npm test && npm run typecheck` to confirm
+- [X] T068 Run T066's check again (it prints `1`, both seeders named), then `npm test && npm run typecheck` to confirm
   nothing else changed.

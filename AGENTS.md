@@ -141,8 +141,7 @@ OAuth code flow and database sessions.
   `StopConfirm.tsx`, `actions.ts`) and `ImportRunner.tsx` (client: one part, `router.refresh()`, the next part a second
   later or after Pipedrive's wait). `records/import/StepBar.tsx` takes a `steps` prop.
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
-  files, custom fields: `custom-fields.ts`, campaigns: `campaigns.ts`). The fake Pipedrive needs no seeding.
-  files, custom fields: `custom-fields.ts`, segments: `segments.ts`). The fake Pipedrive needs no seeding.
+  files, custom fields: `custom-fields.ts`, campaigns: `campaigns.ts`, segments: `segments.ts`). The fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage and Pipedrive
   v2 / v1 schemas).
