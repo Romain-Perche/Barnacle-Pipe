@@ -393,7 +393,7 @@ export class FakeGoogleMail {
         }
         c.used = true;
         if (createHash("sha256").update(f.get("code_verifier")!).digest("base64url") !== c.challenge) return oauthError(400, "invalid_grant", "Bad Request");
-        const refresh = c.offline ? `1//fake-${randomBytes(24).toString("base64url")}` : null;
+        const refresh = c.offline ? `fake-refresh-${randomBytes(24).toString("base64url")}` : null;
         if (refresh) s.refresh[refresh] = { email: c.email, scopes: c.scopes, status: "active" };
         const access = this.newAccess(s, c.email, c.scopes, refresh);
         return json(200, { access_token: access, expires_in: ACCESS_SECONDS - 1, scope: c.scopes.join(" "), token_type: "Bearer", ...(refresh ? { refresh_token: refresh } : {}) });
@@ -406,7 +406,7 @@ export class FakeGoogleMail {
   }
 
   private newAccess(s: FakeState, email: string, scopes: string[], refresh: string | null): string {
-    const token = `ya29.fake-${randomBytes(24).toString("base64url")}`;
+    const token = `fake-access-${randomBytes(24).toString("base64url")}`;
     s.access[token] = { email, scopes, refresh, expires: this.now() + ACCESS_SECONDS * 1000, dead: false };
     return token;
   }
