@@ -97,3 +97,4 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - Only Google Calendar events with a CRM person as a guest come into the CRM (2026-11-24)
 - Saved segments are shared by the whole team. Their recipients are worked out when a campaign is sent, not when the segment is saved: the segment and the send confirmation say so and show the count at that moment (2026-11-24)
 - Activity reminders are in the app (the Notifications page and the sidebar count, like assignments) and by email, which Google Calendar sends from the email reminder the CRM puts on the synced event; the CRM sends no reminder email itself (2026-11-24)
+- Unsubscribe links are a random token per person stored in the CRM, with no expiry; no teammate is told when someone unsubscribes; a teammate's Consent change is shown as 'Consent: <old> → <new>'; the edit form changes Consent only when the field was changed on that form (SF-121)

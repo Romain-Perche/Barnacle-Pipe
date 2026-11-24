@@ -28,7 +28,7 @@ tests depend on.
 
 ## Phase 1: Setup
 
-- [ ] T001 Check the highest migration number on `main` (`git ls-tree --name-only origin/main migrations/`). Name
+- [x] T001 Check the highest migration number on `main` (`git ls-tree --name-only origin/main migrations/`). Name
   the new file `migrations/00NN_unsubscribe.sql`, with NN the next free number (`0012` if still free; SF-117 to
   SF-120 also plan 0012). Re-read the `timeline_events_kind_check` list of the last migration on `main` and note
   every kind it lists, for T003.
@@ -37,7 +37,7 @@ tests depend on.
 
 ## Phase 2: Foundational (blocks every story)
 
-- [ ] T002 [P] Add the messages to `src/server/messages.ts`.
+- [x] T002 [P] Add the messages to `src/server/messages.ts`.
   - In `messages`:
     - `unsubscribe_lead`: "Stop receiving campaign emails from Barnacle Labs."
     - `unsubscribe_done`: "You're unsubscribed. You won't get any more campaign emails from us."
@@ -49,7 +49,7 @@ tests depend on.
     - `unsubscribed_mail_app_event`: "Unsubscribed from campaigns through their mail app"
     - `consent_changed_event(from, to)`: "Consent: ${from} → ${to}"
   - Extend `tests/unit/messages.test.ts` with these exact texts.
-- [ ] T003 Write the migration `migrations/00NN_unsubscribe.sql` exactly as in data-model.md § Migration.
+- [x] T003 Write the migration `migrations/00NN_unsubscribe.sql` exactly as in data-model.md § Migration.
   - The new column:
     - `alter table persons add column unsubscribe_token text not null default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '') check (unsubscribe_token ~ '^[0-9a-f]{64}$')`
     - `persons_unsubscribe_token_key unique (unsubscribe_token)`
@@ -58,7 +58,7 @@ tests depend on.
   - `timeline_events_custom_check` is rewritten so that `consent_changed` holds `old_value` and `new_value` (both
     not null, with `actor_id` not null). `unsubscribed_link` and `unsubscribed_mail_app` have `actor_id is null and person_id is not null`.
   - Use only statements allowed in a transaction. No `create table`.
-- [ ] T004 Extend `tests/integration/migrate.test.ts`. Apply the new migration on a fresh database and check:
+- [x] T004 Extend `tests/integration/migrate.test.ts`. Apply the new migration on a fresh database and check:
   - existing persons each get a distinct 64-hex token;
   - Postgres's own refusals: 23514 for a token `'abc'` or an uppercase-hex token, 23505 for a duplicate token, 23514
     for `consent_changed` with no `old_value`, and 23514 for `unsubscribed_link` with an `actor_id`.
@@ -67,9 +67,9 @@ tests depend on.
   behaviour copied comes from the PostgreSQL 17 documentation: "Constraints" (check 23514, unique 23505),
   "UUID Functions" (`gen_random_uuid`), and "Transaction Isolation" § Read Committed (a second `update` re-checks its
   `where` after the row lock, which the one-line guarantee relies on).
-- [ ] T005 [P] Add `"unsubscribed_link" | "unsubscribed_mail_app" | "consent_changed"` to `EventKind` in
+- [x] T005 [P] Add `"unsubscribed_link" | "unsubscribed_mail_app" | "consent_changed"` to `EventKind` in
   `src/server/records/timeline.ts`, with a `// SF-121` comment.
-- [ ] T006 [P] Write the pure rules in `src/server/records/unsubscribe-rules.ts`:
+- [x] T006 [P] Write the pure rules in `src/server/records/unsubscribe-rules.ts`:
   - `isTokenShape(s)`: true when `s` matches `/^[0-9a-f]{64}$/`.
   - `unsubscribeLinks(base, token)`. It strips trailing slashes from `base` and returns:
     - `pageUrl` `${base}/unsubscribe/${token}`;
@@ -77,12 +77,12 @@ tests depend on.
     - `listUnsubscribePost` `"List-Unsubscribe=One-Click"`.
   - `isOneClickBody(form: URLSearchParams | FormData)`: true when `get("List-Unsubscribe") === "One-Click"`.
   - Also export the types `UnsubscribeVia = "link" | "mail_app"` and `UnsubscribeLinks`.
-- [ ] T007 [P] Write `tests/unit/unsubscribe-rules.test.ts` (covers FR-002, FR-006, FR-012). Check:
+- [x] T007 [P] Write `tests/unit/unsubscribe-rules.test.ts` (covers FR-002, FR-006, FR-012). Check:
   - `isTokenShape` for a valid token and for one with a character changed to `g`, cut to 63, extended to 65,
     uppercase, and empty;
   - `unsubscribeLinks` with and without a trailing slash on the base;
   - `isOneClickBody` for `One-Click`, `one-click`, a missing key and another key.
-- [ ] T008 Write `unsubscribeByToken(token, via)` in `src/server/records/unsubscribe.ts`:
+- [x] T008 Write `unsubscribeByToken(token, via)` in `src/server/records/unsubscribe.ts`:
   - Return `"not_found"` with no query when `!isTokenShape(token)`.
   - In one `sql.begin`, run
     `update persons set consent = 'unsubscribed' where unsubscribe_token = ${token} and consent = 'subscribed' returning id::int as id`.
@@ -108,41 +108,41 @@ Consent Unsubscribed plus one `unsubscribed_link` line with no actor.
 
 ### Tests for User Story 1
 
-- [ ] T009 [P] [US1] In `tests/integration/unsubscribe.test.ts`, test `unsubscribeByToken(token, "link")` for a
+- [x] T009 [P] [US1] In `tests/integration/unsubscribe.test.ts`, test `unsubscribeByToken(token, "link")` for a
   subscribed person (covers FR-005, US1 scenario 2). Check:
   - the result is `"done"` and the consent is `unsubscribed`;
   - `readTimeline` shows one `unsubscribed_link` entry with `actorName` null;
   - `version` is unchanged;
   - the owner's unread count (`src/server/notifications.ts`) is the same before and after (FR-018).
-- [ ] T010 [P] [US1] In `tests/integration/unsubscribe.test.ts`, check that `unsubscribePageState` returns `"ready"`
+- [x] T010 [P] [US1] In `tests/integration/unsubscribe.test.ts`, check that `unsubscribePageState` returns `"ready"`
   for a subscribed person and that calling it writes nothing: consent stays `subscribed` and there is no timeline
   line (covers FR-004, US1 scenarios 1 and 3).
-- [ ] T011 [P] [US1] In `tests/integration/unsubscribe-routes.test.ts`, call `POST` from
+- [x] T011 [P] [US1] In `tests/integration/unsubscribe-routes.test.ts`, call `POST` from
   `src/app/unsubscribe/[token]/confirm/route.ts` with a `Request` and `{ params: Promise.resolve({ token }) }`. Check:
   - with a valid token: `303`, `Location` ending `/unsubscribe/<token>`, the person unsubscribed, and no `set-cookie`;
   - with a stubbed throwing `unsubscribeByToken` (`vi.mock` of `@/server/records/unsubscribe`): `303` to
     `/unsubscribe/<token>?error=unavailable`.
 
   Covers FR-005 and the edge case where the database is down.
-- [ ] T012 [P] [US1] Extend `tests/unit/proxy-matcher.test.ts`. With no session cookie, `proxy()` on
+- [x] T012 [P] [US1] Extend `tests/unit/proxy-matcher.test.ts`. With no session cookie, `proxy()` on
   `/unsubscribe/<64 hex>` and `/unsubscribe/<64 hex>/confirm` returns no redirect to `/sign-in`, and
   `/unsubscribeX` or `/unsubscribe` alone still redirects (covers FR-001).
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Add `unsubscribePageState(token)` to `src/server/records/unsubscribe.ts`. It returns
+- [x] T013 [US1] Add `unsubscribePageState(token)` to `src/server/records/unsubscribe.ts`. It returns
   `"error"` when `isPreview()` (before any query) and `"not_found"` when the shape is bad. Otherwise it runs
   `select consent from persons where unsubscribe_token = ${token}` and returns `ready` (subscribed), `done`
   (unsubscribed) or `not_found` (no row). It catches database errors and returns `"error"`.
-- [ ] T014 [US1] Add `/^\/unsubscribe\/[^/]+(\/(confirm|one-click))?\/?$/` to `PUBLIC` in `src/proxy.ts`, and add a
+- [x] T014 [US1] Add `/^\/unsubscribe\/[^/]+(\/(confirm|one-click))?\/?$/` to `PUBLIC` in `src/proxy.ts`, and add a
   comment (SF-121: public, the token is the authority).
-- [ ] T015 [US1] Write `src/app/unsubscribe/[token]/confirm/route.ts` with `export const dynamic = "force-dynamic"`
+- [x] T015 [US1] Write `src/app/unsubscribe/[token]/confirm/route.ts` with `export const dynamic = "force-dynamic"`
   and `POST(req, { params })`.
   - It calls `unsubscribeByToken(token, "link")` and answers
     `NextResponse.redirect(new URL(`/unsubscribe/${encodeURIComponent(token)}`, appBaseUrl()), 303)`.
   - When the call throws, it adds `?error=unavailable` to that address.
   - It never reads or sets cookies and exports no `GET`.
-- [ ] T016 [US1] Write `src/app/unsubscribe/[token]/page.tsx` (design A, contracts/routes.md):
+- [x] T016 [US1] Write `src/app/unsubscribe/[token]/page.tsx` (design A, contracts/routes.md):
   - `export const dynamic = "force-dynamic"` and `export const metadata = { robots: { index: false, follow: false } }`.
   - The layout: `<main className="outside"><div className="panel"><Wordmark centre="#FAF6F1" />`, then the label
     `// EMAIL PREFERENCES` (`<span className="c">//</span>`), then `<h1>Unsubscribe</h1>`.
@@ -155,7 +155,7 @@ Consent Unsubscribed plus one `unsubscribed_link` line with no actor.
     - `error`: `.err` `unsubscribe_error`.
   - It shows no name, no email and no link into the app, and offers no way to subscribe again. It uses no
     `requireUser`.
-- [ ] T017 [US1] Show the two unsubscribe kinds in `src/app/(app)/records/Timeline.tsx`. `unsubscribed_link` →
+- [x] T017 [US1] Show the two unsubscribe kinds in `src/app/(app)/records/Timeline.tsx`. `unsubscribed_link` →
   `<>{templates.unsubscribed_link_event}</>` and `unsubscribed_mail_app` →
   `<>{templates.unsubscribed_mail_app_event}</>`, with no `by()`. The tag stays CHANGE (no change to
   `timeline-view.ts`).
@@ -173,7 +173,7 @@ Consent Unsubscribed plus one `unsubscribed_link` line with no actor.
 
 ### Tests for User Story 2
 
-- [ ] T018 [P] [US2] In `tests/integration/unsubscribe-routes.test.ts`, call `POST` from
+- [x] T018 [P] [US2] In `tests/integration/unsubscribe-routes.test.ts`, call `POST` from
   `src/app/unsubscribe/[token]/one-click/route.ts`. Check:
   - urlencoded body `List-Unsubscribe=One-Click` → `200`, `text/plain`, `Cache-Control: no-store`, and one
     `unsubscribed_mail_app` line with no actor;
@@ -184,12 +184,12 @@ Consent Unsubscribed plus one `unsubscribed_link` line with no actor.
   - a stubbed throwing `unsubscribeByToken` → `503`.
 
   Covers FR-006, FR-008, US2 scenarios 1-3 and the database-down edge case.
-- [ ] T019 [P] [US2] Extend `tests/unit/proxy-matcher.test.ts`: with no cookie,
+- [x] T019 [P] [US2] Extend `tests/unit/proxy-matcher.test.ts`: with no cookie,
   `POST /unsubscribe/<64 hex>/one-click` is not redirected (covers US2 scenario 1).
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Write `src/app/unsubscribe/[token]/one-click/route.ts` with `export const dynamic = "force-dynamic"`
+- [x] T020 [US2] Write `src/app/unsubscribe/[token]/one-click/route.ts` with `export const dynamic = "force-dynamic"`
   and `POST` only.
   - Read the body with `req.formData()`. When that fails, or there is no content type, use
     `new URLSearchParams(await req.text())`. Call `isOneClickBody`: false → `400 "Bad request"`.
@@ -209,37 +209,37 @@ Consent Unsubscribed plus one `unsubscribed_link` line with no actor.
 
 ### Tests for User Story 3
 
-- [ ] T021 [P] [US3] In `tests/integration/unsubscribe.test.ts`, check two people (covers FR-002, US3 scenario 1):
+- [x] T021 [P] [US3] In `tests/integration/unsubscribe.test.ts`, check two people (covers FR-002, US3 scenario 1):
   - they have different tokens, each matching `^[0-9a-f]{64}$`;
   - `unsubscribeLinksFor` contains neither the id, the name nor the email;
   - reading the token again gives the same value.
-- [ ] T022 [P] [US3] In `tests/integration/unsubscribe.test.ts`, change a token by one character, add one, and
+- [x] T022 [P] [US3] In `tests/integration/unsubscribe.test.ts`, change a token by one character, add one, and
   remove one (covers FR-008, US3 scenario 2, SC-002). For each:
   - `unsubscribePageState` returns `"not_found"`;
   - `unsubscribeByToken` returns `"not_found"`;
   - nobody's consent changes.
-- [ ] T023 [P] [US3] In `tests/integration/unsubscribe.test.ts`, check repeats (covers FR-007, FR-015, US3
+- [x] T023 [P] [US3] In `tests/integration/unsubscribe.test.ts`, check repeats (covers FR-007, FR-015, US3
   scenario 3, SC-004):
   - unsubscribe twice in sequence: `"done"` both times and one line;
   - `Promise.all` of two `unsubscribeByToken` calls on a fresh person: both `"done"` and exactly one line;
   - a mix of `"link"` and `"mail_app"` at the same moment: one line.
-- [ ] T024 [P] [US3] In `tests/integration/unsubscribe.test.ts`, delete a person through the existing person delete,
+- [x] T024 [P] [US3] In `tests/integration/unsubscribe.test.ts`, delete a person through the existing person delete,
   then check that `unsubscribePageState` and `unsubscribeByToken` return `"not_found"`, exactly as for a made-up
   token (covers FR-008, US3 scenario 4, SC-005).
-- [ ] T025 [P] [US3] In `tests/integration/unsubscribe.test.ts`, check an archived person and a private person
+- [x] T025 [P] [US3] In `tests/integration/unsubscribe.test.ts`, check an archived person and a private person
   (covers FR-010, US3 scenario 5):
   - both can be unsubscribed;
   - the creator's or owner's `readTimeline` shows the line;
   - for the private person, another teammate cannot read the person, so the line is not shown to them
     (`visiblePerson`).
-- [ ] T026 [P] [US3] Render the page component with `searchParams` `{ next: "https://evil", message: "<b>x</b>" }`
+- [x] T026 [P] [US3] Render the page component with `searchParams` `{ next: "https://evil", message: "<b>x</b>" }`
   and check that neither value appears in the output (`renderToStaticMarkup` of the awaited page, in
   `tests/integration/unsubscribe-routes.test.ts`). Also check that for each state the output has no `href` into the
   app and no person name or email (covers FR-009, FR-013, US1 scenario 4).
 
 ### Implementation for User Story 3
 
-- [ ] T027 [US3] Make any fix the T021-T026 tests need in `src/server/records/unsubscribe.ts` (expected: none
+- [x] T027 [US3] Make any fix the T021-T026 tests need in `src/server/records/unsubscribe.ts` (expected: none
   beyond Phase 2).
 
 ---
@@ -258,7 +258,7 @@ on that form (FR-019): a form opened before the person unsubscribed never subscr
 
 ### Tests for User Story 4
 
-- [ ] T028 [P] [US4] In `tests/integration/people.test.ts`, change the assertion at line 163. Every edit in this file
+- [x] T028 [P] [US4] In `tests/integration/people.test.ts`, change the assertion at line 163. Every edit in this file
   now sends `consentShown` (the stored value). A Consent-only edit (`consent` ≠ `consentShown`) now writes
   `{ kind: "consent_changed", actorName: "Linus Fake", oldValue: "Subscribed", newValue: "Unsubscribed" }` and no
   `edited` entry. An edit of Consent and Role writes `edited` with `fields: ["Role"]` (or the role field's label) plus
@@ -269,13 +269,13 @@ on that form (FR-019): a form opened before the person unsubscribed never subscr
 
   In the existing form-data unit test (or a new `tests/unit/form-data.test.ts`), check that `personFormFromData`
   reads `consentShown`, and gives `""` when it is absent.
-- [ ] T029 [P] [US4] In `tests/integration/unsubscribe.test.ts`, run the full cycle (covers US4 scenarios 2-3, FR-003):
+- [x] T029 [P] [US4] In `tests/integration/unsubscribe.test.ts`, run the full cycle (covers US4 scenarios 2-3, FR-003):
   1. unsubscribe through the link;
   2. run `updatePerson` with consent `subscribed` and `consentShown` `unsubscribed` → `consent_changed`
      "Unsubscribed" → "Subscribed";
   3. `unsubscribePageState` → `"ready"`;
   4. `unsubscribeByToken` → a second `unsubscribed_link` line.
-- [ ] T030 [P] [US4] In `tests/integration/unsubscribe.test.ts`, test the stale-form case (covers FR-019, US4
+- [x] T030 [P] [US4] In `tests/integration/unsubscribe.test.ts`, test the stale-form case (covers FR-019, US4
   scenario 4, Edge Cases):
   1. read the subscribed person's form `version`;
   2. unsubscribe through the link;
@@ -284,13 +284,13 @@ on that form (FR-019): a form opened before the person unsubscribed never subscr
   Expect `status: "saved"` (no `edit_conflict`), the new Role, consent `unsubscribed`, an `edited` line with
   `["Role"]` and no `consent_changed`. Then a save with an empty first name (refused) followed by a valid save with
   the same `consentShown` `subscribed`: consent still `unsubscribed`, no `consent_changed`.
-- [ ] T031 [P] [US4] In `tests/integration/unsubscribe-routes.test.ts`, check that the rendered page has no form or
+- [x] T031 [P] [US4] In `tests/integration/unsubscribe-routes.test.ts`, check that the rendered page has no form or
   link containing "subscribe" other than the `[ UNSUBSCRIBE ]` form, in states `ready`, `done` and `not_found`
   (covers US4 scenario 1).
 
 ### Implementation for User Story 4
 
-- [ ] T032 [US4] Keep the stored Consent unless the form changed it (FR-019, contracts/routes.md § Person edit):
+- [x] T032 [US4] Keep the stored Consent unless the form changed it (FR-019, contracts/routes.md § Person edit):
   - add an optional `consentShown?: string` to `PersonForm` in `src/server/records/rules.ts` (create forms and imports leave it out);
   - read it in `personFields` in `src/server/records/form-data.ts` (`text(fd, "consentShown")`);
   - in `src/app/(app)/records/PersonForm.tsx`, edit mode only (`id !== undefined`), add
@@ -303,7 +303,7 @@ on that form (FR-019): a form opened before the person unsubscribed never subscr
     `edited` event when nothing is left.
   - Then call `recordEvent(db, { personId: id, kind: "consent_changed", actorId, oldValue: CONSENT_LABELS[before.consent], newValue: CONSENT_LABELS[after.consent] })`.
   - Leave person create and the imports unchanged.
-- [ ] T033 [US4] Add `case "consent_changed"` to `src/app/(app)/records/Timeline.tsx`:
+- [x] T033 [US4] Add `case "consent_changed"` to `src/app/(app)/records/Timeline.tsx`:
   `<>{templates.consent_changed_event(e.oldValue ?? "", e.newValue ?? "")}{by(e.actorName)}</>`.
 
 ---
@@ -317,14 +317,14 @@ test and production modes.
 
 ### Tests for User Story 5
 
-- [ ] T034 [P] [US5] In `tests/integration/unsubscribe.test.ts`, test `unsubscribeLinksFor(id)` with
+- [x] T034 [P] [US5] In `tests/integration/unsubscribe.test.ts`, test `unsubscribeLinksFor(id)` with
   `APP_URL=https://crm.example.test/` (covers FR-012, US5 scenarios 1-2, SC-006). Check:
   - `pageUrl` is `https://crm.example.test/unsubscribe/<token>`;
   - `listUnsubscribe` is `<https://crm.example.test/unsubscribe/<token>/one-click>`;
   - `listUnsubscribePost` is `List-Unsubscribe=One-Click`;
   - a person id that does not exist gives `null`;
   - the token taken from each address, used with `unsubscribeByToken`, unsubscribes only that person.
-- [ ] T035 [P] [US5] In `tests/integration/unsubscribe-routes.test.ts`, check the dev page `src/app/dev/unsubscribe-links/page.tsx`
+- [x] T035 [P] [US5] In `tests/integration/unsubscribe-routes.test.ts`, check the dev page `src/app/dev/unsubscribe-links/page.tsx`
   (covers FR-017):
   - with `APP_ENV=test`, it renders every person's three values;
   - with `APP_ENV=production`, and with `VERCEL_ENV=preview`, it calls `notFound()` (expect the
@@ -333,13 +333,13 @@ test and production modes.
 
 ### Implementation for User Story 5
 
-- [ ] T036 [US5] Add to `src/server/records/unsubscribe.ts`:
+- [x] T036 [US5] Add to `src/server/records/unsubscribe.ts`:
   - `unsubscribeLinksFor(personId: number): Promise<UnsubscribeLinks | null>`: it reads only `unsubscribe_token`
     by id and returns `unsubscribeLinks(appBaseUrl(), token)`, with a doc comment "the one function campaign
     sending uses";
   - `listUnsubscribeLinks()`: every person, ordered by `lower(last_name), lower(first_name), id`, as
     `{ id, name, links }`.
-- [ ] T037 [US5] Add `/^\/dev\/unsubscribe-links\/?$/` to `PUBLIC` in `src/proxy.ts`. Write
+- [x] T037 [US5] Add `/^\/dev\/unsubscribe-links\/?$/` to `PUBLIC` in `src/proxy.ts`. Write
   `src/app/dev/unsubscribe-links/page.tsx`:
   - It calls `notFound()` unless `isFakeAllowed()`, before any query.
   - It uses the `outside` / `panel` layout with the label `// UNSUBSCRIBE LINKS · DEVELOPMENT AND TEST ONLY`.
@@ -349,24 +349,24 @@ test and production modes.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T038 [P] Update `README.md`. In the `APP_URL` row of § Settings, add "also the base of unsubscribe links (https
+- [x] T038 [P] Update `README.md`. In the `APP_URL` row of § Settings, add "also the base of unsubscribe links (https
   in production)". Add a short `## Unsubscribe` section covering:
   - `/unsubscribe/<token>`, `/confirm` and `/one-click` (RFC 8058);
   - `/dev/unsubscribe-links`;
   - `unsubscribeLinksFor` for campaign sending;
   - that there is no setting.
-- [ ] T039 [P] Update the `AGENTS.md` Layout. Add an SF-121 line:
+- [x] T039 [P] Update the `AGENTS.md` Layout. Add an SF-121 line:
   - `records/unsubscribe-rules.ts` (pure) and `records/unsubscribe.ts` (the token reads without `visiblePerson()`,
     `unsubscribeLinksFor` for campaigns);
   - `src/app/unsubscribe/[token]/` (page, `confirm/`, `one-click/`) and `src/app/dev/unsubscribe-links/`;
   - the kinds `unsubscribed_link`, `unsubscribed_mail_app` and `consent_changed`.
-- [ ] T040 [P] Add a line at the end of `docs/DECISIONS.md`: "- Unsubscribe links are a random token per person
+- [x] T040 [P] Add a line at the end of `docs/DECISIONS.md`: "- Unsubscribe links are a random token per person
   stored in the CRM, with no expiry; no teammate is told when someone unsubscribes; a teammate's Consent change is
   shown as 'Consent: <old> → <new>'; the edit form changes Consent only when the field was changed on that form
   (SF-121)".
-- [ ] T041 Run `npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`
+- [x] T041 Run `npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`
   and fix any failure. Then walk through quickstart.md § By hand.
-- [ ] T042 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
+- [x] T042 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
   schema) and `## Schemas` (each schema's GitHub URL at its commit).
   - Extend the existing "Supabase Postgres" line in `## Services` (no fake, a real local PostgreSQL 17, no public
     schema). Mention the new migration's column `persons.unsubscribe_token` and the three kinds, and the 23514/23505

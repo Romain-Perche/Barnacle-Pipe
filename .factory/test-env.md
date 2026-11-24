@@ -138,6 +138,17 @@
   check), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a
   second open import, paused without a reason, People without consent, nothing ticked, a person link with an
   organisation id, `how = 'copied'`, a 256-character company name).
+  The unsubscribe code (SF-121: `src/server/records/unsubscribe.ts`) keeps to the same pooler limits: no fake, the real
+  local PostgreSQL 17, no public schema; no session state, each unsubscribe one `sql.begin()` with a conditional
+  `update persons … where unsubscribe_token = $1 and consent = 'subscribed' returning id` (Read Committed re-checks the
+  `where` after the row lock, so two requests at once write one line; `tests/integration/unsubscribe.test.ts` runs them
+  with `Promise.all`). Its column and kinds come from `migrations/0013_unsubscribe.sql` (`persons.unsubscribe_token`, a
+  64-hex `gen_random_uuid()` default per row, unique; kinds `unsubscribed_link`, `unsubscribed_mail_app`,
+  `consent_changed`), applied on a fresh database by `migrate.test.ts`, which also checks existing rows each get a
+  distinct token and Postgres's own refusals (23514: token `'abc'` or uppercase hex, `consent_changed` without
+  `old_value`/`new_value` or actor, an unsubscribe kind with an actor; 23505: a duplicate token). Mail apps' RFC 8058
+  one-click POSTs are not an outside service: the tests call the route handler straight with RFC 8058's body
+  (`List-Unsubscribe=One-Click`, urlencoded and multipart).
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json

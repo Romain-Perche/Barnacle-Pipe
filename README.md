@@ -122,7 +122,7 @@ Environment variables. `.env.example` lists them all, with no secret values. Sec
 | `FIRST_ADMIN_EMAIL` | production | barnacle.ai address of the first admin. Their first sign-in creates them as an admin. Empty with no users: the sign-in page says the CRM isn't set up yet. |
 | `GOOGLE_CLIENT_ID` | real Google sign-in | From the Internal OAuth app in the barnacle.ai Google Workspace. |
 | `GOOGLE_CLIENT_SECRET` | real Google sign-in | Secret. |
-| `APP_URL` | real Google sign-in | Public base URL, e.g. `http://localhost:3000`. The OAuth redirect URI is `${APP_URL}/auth/google/callback`. Also anchors the check of the return path after sign-in (`http://localhost:3000` when unset). |
+| `APP_URL` | real Google sign-in | Public base URL, e.g. `http://localhost:3000`. The OAuth redirect URI is `${APP_URL}/auth/google/callback`. Also anchors the check of the return path after sign-in (`http://localhost:3000` when unset), and is also the base of unsubscribe links (https in production). |
 | `SUPABASE_URL` | production (files) | `https://<project>.supabase.co`. Empty with `APP_ENV` `development`/`test`: the fake file storage is used. Empty otherwise: every file action answers "Files can't be reached right now. Try again in a minute."; the rest of the app works. |
 | `SUPABASE_SECRET_KEY` | with `SUPABASE_URL` | Supabase secret key (or the legacy `service_role` key). Secret, server only, never sent to the browser. |
 | `FILES_BUCKET` | optional | The private Storage bucket of file contents. Default `crm-files`. |
@@ -201,6 +201,23 @@ come in a later step).
   (`src/server/pipedrive/fake-pipedrive.ts`, nothing to seed) accepts `fake-pipedrive-token` ("Fake Person", "Fakeco
   Pipedrive": 60 organisations, 300 people; its owners match the fake users ada@ and margaret@, plus "Jane Fake" who has
   no CRM user) and `fake-pipedrive-other` ("Otherco Pipedrive"); any other token is refused.
+
+## Unsubscribe
+
+Every person has a random unsubscribe token (64 hex characters, `persons.unsubscribe_token`, made by the database, no
+expiry). The addresses need no sign-in; the token is the only authority:
+
+- `/unsubscribe/<token>`: the page. Opening it changes nothing; `[ UNSUBSCRIBE ]` posts to `/unsubscribe/<token>/confirm`,
+  which sets Consent to Unsubscribed and adds "Unsubscribed from campaigns through the unsubscribe link" to the person's
+  timeline (no actor, nobody notified).
+- `/unsubscribe/<token>/one-click`: RFC 8058 one-click for mail apps (`POST` with `List-Unsubscribe=One-Click`; answers
+  `200`, `400`, `404` or `503` in plain text).
+- Campaign sending takes the page link and both headers (`List-Unsubscribe`, `List-Unsubscribe-Post`) from
+  `unsubscribeLinksFor(personId)` in `src/server/records/unsubscribe.ts`, built on `APP_URL`.
+- `/dev/unsubscribe-links` (development and test only) lists every person's link and headers.
+
+There is no setting. Only a teammate can subscribe a person again, from the edit form ("Consent: Unsubscribed →
+Subscribed by <name>"); the form changes Consent only when the field was changed on it.
 
 ## Production notes
 
