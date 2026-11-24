@@ -38,7 +38,7 @@ Integration (`tests/integration/`, real Postgres + `StorageFake`):
   delete but lists and downloads; deleting a deal/person/organisation for good removes rows and queues contents
   (US5, FR-011, FR-012).
 - `files-unreachable.test.ts` — Storage down: start/finish/download answer `files_unreachable`; `listFiles` still works.
-- `migrate.test.ts` — 0010 on a fresh database; Postgres's own refusals: a file on two records, 0 bytes, over 25 MB,
+- `migrate.test.ts` — 0011 on a fresh database; Postgres's own refusals: a file on two records, 0 bytes, over 25 MB,
   a 256-character name, a `file_added` without `file_name`, a `file_deleted` without `deleted_file_id`; the pooler scan
   still passes (no session state).
 - `seed.test.ts` — the files seeder twice gives no duplicates; its private files are hidden from other users.

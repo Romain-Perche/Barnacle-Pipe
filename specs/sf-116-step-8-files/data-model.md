@@ -1,9 +1,13 @@
 # Data model: Files (SF-116)
 
-## Migration `migrations/0010_files.sql`
+## Migration `migrations/0011_files.sql`
 
 Only statements allowed in a transaction; RLS on after every `create table` (no policies). Check the current name of
-`timeline_events_kind_check` before dropping it (0009 recreated it under that name).
+`timeline_events_kind_check` before dropping it (0009 recreated it under that name). Number 0011, not 0010: SF-115
+(Custom fields) uses `0010_custom_fields.sql` and rewrites the same constraint at the same time. So the new constraint
+also lists SF-115's `custom_set`, `custom_changed` and `custom_cleared`, with the comment below; SF-115's migration lists
+`file_added` and `file_deleted` the same way. Whichever pull request merges first, neither migration drops the other's
+kinds (`scripts/migrate.ts` applies every file not yet applied, in name order, so 0010 may also run after 0011).
 
 ```sql
 -- SF-116: files on deals, people and organisations; contents in Supabase Storage (specs/sf-116-step-8-files/data-model.md).
@@ -59,11 +63,15 @@ alter table timeline_events add column file_size bigint null;
 alter table timeline_events add column deleted_file_id bigint null;
 create index timeline_events_file_idx on timeline_events (file_id) where file_id is not null;
 create index timeline_events_deleted_file_idx on timeline_events (deleted_file_id) where deleted_file_id is not null;
+-- 'custom_set', 'custom_changed' and 'custom_cleared' belong to SF-115 (Custom fields, 0010_custom_fields.sql), which
+-- rewrites this same constraint and lists 'file_added' and 'file_deleted' in turn. Both lists hold every kind of both
+-- steps so that neither migration drops the other's kinds, whichever one merges or runs first.
 alter table timeline_events drop constraint timeline_events_kind_check;
 alter table timeline_events add constraint timeline_events_kind_check
   check (kind in ('added', 'edited', 'archived', 'restored', 'person_linked', 'person_unlinked', 'handed_over', 'moved',
                   'won', 'lost', 'reopened', 'note', 'imported',
                   'ambassador_added', 'ambassador_removed', 'referrer_set', 'referrer_changed', 'referrer_cleared',
+                  'custom_set', 'custom_changed', 'custom_cleared',
                   'file_added', 'file_deleted'));
 alter table timeline_events add constraint timeline_events_file_check
   check ((kind in ('file_added', 'file_deleted')) = (file_name is not null)

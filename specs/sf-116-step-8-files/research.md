@@ -1,7 +1,7 @@
 # Research: Files (SF-116)
 
-Each section: Decision, Rationale, Alternatives considered. Nothing is left as NEEDS CLARIFICATION; choices a person
-should confirm are in spec.md § Clarifications ("decided by the factory, to confirm").
+Each section: Decision, Rationale, Alternatives considered. Nothing is left as NEEDS CLARIFICATION; the factory's
+choices were confirmed by a person at plan review (spec.md § Clarifications, 2026-11-24).
 
 ## 1. Talking to Supabase Storage: plain `fetch`, no library
 
@@ -132,4 +132,4 @@ should confirm are in spec.md § Clarifications ("decided by the factory, to con
   the way `ActivityOverlays` does (SF-109): no client state, `[ CLOSE ]` / `[ CANCEL ]` are links back. Names are text
   nodes only; links use plain `<a>` (never `next/link`, which would prefetch the download route).
 - PDF: name and `[ PREVIEW ]` open `/files/<id>/preview` in a new tab (`target="_blank" rel="noopener noreferrer"`),
-  where the browser's own viewer shows it (choice to confirm, spec Clarifications).
+  where the browser's own viewer shows it (confirmed at plan review, spec Clarifications).

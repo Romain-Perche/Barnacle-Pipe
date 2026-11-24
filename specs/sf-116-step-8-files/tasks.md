@@ -11,7 +11,7 @@ description: "Task list for SF-116 Files"
 
 **Tests**: Requested by the repo (AGENTS.md § Tests) and the spec (SC-002, SC-004 to SC-006): Vitest unit tests and Vitest integration tests against a real local Postgres (`crm_test`) with the Storage fake. No browser tests (docs/DECISIONS.md, 2026-11-23): never start the app in a browser. Each test file names what it covers (`// covers FR-009, US3 scenario 2`). Write each story's tests first and see them fail before the code.
 
-**Organization**: Tasks are grouped by user story. Exact message texts are in contracts/routes.md § Messages: use them verbatim, from `src/server/messages.ts` only. The migration, entities, state changes and fake data are in data-model.md. Pages, parameters, routes, actions and domain functions are in contracts/routes.md. Storage calls, settings, the bucket and the fake are in contracts/storage.md. Decisions are in research.md (§n below). No new dependency (`dependencies.json` is `[]`): do not add any package, and in particular no `@supabase/*`. No blueprint applies (`blueprints.json` is `[]`, no blueprint index in this run), so there are no blueprint tasks and no `Departs from blueprint` line. The choices "decided by the factory, to confirm" in spec.md § Clarifications are built as written there. Outside services: Supabase Storage (schema; T014) and Supabase Postgres (no schema; T015); the recipe is T046, the last task. Fake users: Ada Fake and Grace Fake (admins), Linus Fake and Margaret Fake (users), Alan Fake (deactivated). Where the spec says "Bob Fake (an admin)", use Grace Fake.
+**Organization**: Tasks are grouped by user story. Exact message texts are in contracts/routes.md § Messages: use them verbatim, from `src/server/messages.ts` only. The migration, entities, state changes and fake data are in data-model.md. Pages, parameters, routes, actions and domain functions are in contracts/routes.md. Storage calls, settings, the bucket and the fake are in contracts/storage.md. Decisions are in research.md (§n below). No new dependency (`dependencies.json` is `[]`): do not add any package, and in particular no `@supabase/*`. No blueprint applies (`blueprints.json` is `[]`, no blueprint index in this run), so there are no blueprint tasks and no `Departs from blueprint` line. The four factory choices in spec.md § Clarifications were confirmed by a person at plan review and are built as written there. Outside services: Supabase Storage (schema; T014) and Supabase Postgres (no schema; T015); the recipe is T046, the last task. Fake users: Ada Fake and Grace Fake (admins), Linus Fake and Margaret Fake (users), Alan Fake (deactivated). Where the spec says "Bob Fake (an admin)", use Grace Fake.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -24,7 +24,7 @@ description: "Task list for SF-116 Files"
 
 **Purpose**: The schema, the pure rules and the texts every story uses.
 
-- [ ] T001 Write `migrations/0010_files.sql` exactly as data-model.md § Migration.
+- [ ] T001 Write `migrations/0011_files.sql` exactly as data-model.md § Migration.
   - **`files`**:
     - `name text not null check (char_length(name) between 1 and 255)`
     - `size bigint not null check (size between 1 and 26214400)`
@@ -50,7 +50,8 @@ description: "Task list for SF-116 Files"
     - `file_size bigint null`
     - `deleted_file_id bigint null` (no FK)
     - indexes `timeline_events_file_idx` and `timeline_events_deleted_file_idx` (partial, `is not null`)
-    - `timeline_events_kind_check` replaced, keeping every kind of 0009 plus `'file_added', 'file_deleted'`
+    - `timeline_events_kind_check` replaced, keeping every kind of 0009 plus SF-115's `'custom_set', 'custom_changed', 'custom_cleared'` plus `'file_added', 'file_deleted'`
+    - above it, the comment of data-model.md: the custom kinds belong to SF-115 (`0010_custom_fields.sql`), which rewrites the same constraint; both lists hold every kind of both steps so neither migration drops the other's, whichever merges first
     - `timeline_events_file_check` as data-model.md: file kinds ⇔ `file_name` set; `file_size` only on `file_added`; `file_id` only on `file_added`; `deleted_file_id` set ⇔ `file_deleted`; `actor_id` required on file kinds
   - First confirm the constraint name with `\d timeline_events` on a migrated database. No `begin`/`commit`/`concurrently`.
 - [ ] T002 [P] Add the messages and templates of contracts/routes.md § Messages to `src/server/messages.ts` under an `// SF-116` comment.
@@ -156,10 +157,10 @@ description: "Task list for SF-116 Files"
     - the happy path: sign upload → PUT → info → ranged read → sign → signed GET with `download` gives an attachment, the same bytes, and an expired token refused.
 - [ ] T015 [US1] Supabase Postgres has no public schema on GitHub. The tests use a real local PostgreSQL 17, and the new code follows Supabase's documentation https://supabase.com/docs/guides/database/connecting-to-postgres (transaction-mode pooler). It copies these limits: no prepared statements (`prepare: false`, unchanged in `src/server/db.ts`), no session state (no `set`, `listen` or session advisory lock), every multi-statement change in one `sql.begin()`, at most 5 connections, and no network call inside a transaction. Extend `tests/integration/migrate.test.ts`:
   - scan `src/server/files/*.ts` for `set `/`listen`/`pg_advisory_lock` and fail on any;
-  - check that `migrations/0010_files.sql` has no `begin`/`commit`/`concurrently`;
-  - apply 0010 on a fresh database;
+  - check that `migrations/0011_files.sql` has no `begin`/`commit`/`concurrently`;
+  - apply 0011 on a fresh database (0010 is SF-115's number; this branch may not have it);
   - check Postgres's own 23514/23502 refusals: a file on two records and on none, `size` 0 and 26214401, a 256-character name, `kind = 'svg'`, a `file_added` event without `file_name`, a `file_deleted` event without `deleted_file_id`, `file_size` on a `file_deleted`;
-  - check that the kind check still accepts `'note'` and `'referrer_set'`;
+  - check that the kind check still accepts `'note'` and `'referrer_set'`, and accepts SF-115's `'custom_set'`, `'custom_changed'` and `'custom_cleared'`;
   - check that RLS is on for the three new tables.
 - [ ] T016 [US1] Integration tests in `tests/integration/files.test.ts` (`// covers FR-001, FR-002, US1 scenarios 1–6, SC-002, SC-005`), using `StorageFake` and helpers in a new `tests/integration/file-helpers.ts` (`uploadFile(actor, target, name, bytes, contentType?)` = start → fake PUT → finish):
   - a 2.1 MB PDF on a deal, a PNG on a person and an `.xlsx` on an organisation are each listed by `listFiles` with name, size, kind, uploader and date, newest first;
@@ -387,18 +388,22 @@ description: "Task list for SF-116 Files"
   - `records/FilesSection.tsx`, `AddFiles.tsx`, `FileOverlays.tsx`, `file-actions.ts`;
   - `src/app/(app)/files/` and `src/app/dev/fake-storage/`;
   - `tests/fakes/storage.ts` (checked against `storage_v0_openapi.json`); `src/seed/files.ts` in the seeder registry list.
-- [ ] T043 [P] At the end of `docs/DECISIONS.md`, add the three choices people made in the spec, one line each, exactly:
+- [ ] T043 [P] At the end of `docs/DECISIONS.md`, add the seven choices people made in the spec, one line each, exactly:
   - `- Files use design A: a "// FILES" table between "// NEXT ACTIVITIES" and "// TIMELINE" on record pages and the deal drawer, the image preview in a box over the page, FILE entries on the timeline (SF-116)`
   - `- Anyone who can see a record can delete its files, as with notes (SF-116)`
   - `- A person's or organisation's "// FILES" lists only their own files; their deals' files show only as FILE entries on the timeline (SF-116)`
+  - `- A file upload goes straight from the browser to the file store through a write-only link valid for up to 2 hours; the app refuses to finish an upload started more than 2 hours ago, and every link that reads a file lasts 60 seconds (SF-116)`
+  - `- A PDF preview opens in a new browser tab, in the browser's own PDF viewer (SF-116)`
+  - `- The Kind column shows JPG, PNG, GIF, WEBP or PDF for files that can be previewed, otherwise the name's ending in capitals when it is 1 to 5 letters or digits, else FILE (SF-116)`
+  - `- With no file store set up, every file action shows "Files can't be reached right now. Try again in a minute." and nothing is stored anywhere else (SF-116)`
 
-  Do not add the factory's "to confirm" choices, and no blueprint line. Run `tests/unit/decisions.test.ts`.
+  No blueprint line. Run `tests/unit/decisions.test.ts`.
 - [ ] T044 [P] Extend `tests/unit/messages.test.ts` with the SF-116 codes and templates (exact texts of contracts/routes.md § Messages), and `tests/unit/nav.test.ts` only if the sidebar changed (it should not).
 - [ ] T045 Run `npm run test:schemas`, `npm run typecheck` and `npm test` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`. Fix every failure and keep the full failure output when reporting. Then check quickstart.md § Automated checks is fully covered.
 - [ ] T046 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its schema) and `## Schemas` (each schema's GitHub URL at its commit).
   - **Services**:
     - Supabase Storage: fake `src/server/files/fake-storage.ts`, wrapped by `tests/fakes/storage.ts` and checked against `storage_v0_openapi.json`. It copies 409 on an existing object, 413 over 26214400 bytes, `InvalidJWT` for an expired or wrong token, 60 s read addresses and 2 h upload addresses. In the running app it is reached at `/dev/fake-storage` when `SUPABASE_URL` is empty.
-    - Supabase Postgres: keep the existing line and add SF-116's tables (`migrations/0010_files.sql`) and its pooler limits.
+    - Supabase Postgres: keep the existing line and add SF-116's tables (`migrations/0011_files.sql`) and its pooler limits.
   - **Schemas**: keep `oauth2-api.json` and add `storage_v0_openapi.json`: https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json.
 
 ---
