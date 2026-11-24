@@ -412,7 +412,12 @@
     scenario 2,…"` for a subset; it first removes the "SF119 …" people, fields and drafts of an earlier run). Notes: column
     headers, block labels and the merge tag list are upper-cased by CSS (compare case-insensitively); an image block saves only
     with an `https://` address (a `data:` image is refused), so the scripts use https://example.test/… there (not loaded
-    offline) and a `data:` PNG only in pasted HTML; the US2-5 script also checks "rename then delete without saving".
+    offline) and a `data:` PNG only in pasted HTML. Fix round 1 scenarios: Edge case 13 (rename then delete, no save in
+    between) is in `scenarios-sf119-b.js` (run with US2 4/5); it deletes the field through the admin page
+    (`/admin/custom-fields?kind=people&delete=<id>`, the `alertdialog`'s submit button), never by SQL: `deleteField` writes the
+    `last` name onto `campaigns.merge_links`, which a SQL delete skips. Edge case 14 (Reply-to "not-an-email" through the normal
+    form shows the app's message: `#campaign-form` has `noValidate`) is checked inside US1 scenario 4 of `scenarios-sf119-a.js`.
+    All 43 SF-119 scenarios pass (a then b after one reset).
 
 ## Smoke checks
 1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json

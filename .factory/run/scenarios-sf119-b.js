@@ -114,15 +114,18 @@ async function htmlDraft(p, name, html) {
     if (run("US2 scenario 5")) check("US2 scenario 5", !g5n.includes("Unknown") && g5s === "Note: {{SF119 Gone | n/a}}" && g5u.includes("Unknown merge tags: {{SF119 Gone | n/a}}") && g5p.includes("Unknown merge tags: {{SF119 Gone | n/a}}") && !g5c.includes("Unknown merge tags"),
       `saved "{{sf119 gone | n/a}}" (recognised); after delete: subject "${g5s}", notes ${JSON.stringify(g5u)}; after changing the tag: ${JSON.stringify(g5c)}`);
     // US2-5: an admin deletes the field
-    q(`delete from custom_values where field_id=${fid}; delete from custom_fields where id=${fid}`);
+    // delete through the admin page (deleteField keeps the field's last name on the drafts' links)
+    await go(p, `/admin/custom-fields?kind=people&delete=${fid}`);
+    await H.submit(p, p.locator('[role="alertdialog"] button[type="submit"]'));
+    const gone5 = q(`select count(*) from custom_fields where id=${fid}`);
     await go(p, `/campaigns/${id}`);
     const s5 = await p.locator("#campaign-subject").inputValue();
     const n5 = await p.locator(".campaign-notes").innerText();
     await p.fill("#campaign-subject", "Food: {{First name}}");
     await p.locator(".blk textarea").first().fill("Changed");
     const n5b = await p.locator(".campaign-notes").innerText();
-    check("US2-5 after rename then delete", s5 === "Food: {{SF119 Dietary needs | none given}}" && n5.includes("Unknown merge tags: {{SF119 Dietary needs | none given}}") && !n5b.includes("Unknown merge tags"),
-      `after delete (by SQL, as the admin delete does): subject "${s5}"; notes ${JSON.stringify(n5)}; after changing the tags: ${JSON.stringify(n5b)}`);
+    check("Edge case 13", s5 === "Food: {{SF119 Dietary needs | none given}}" && n5.includes("Unknown merge tags: {{SF119 Dietary needs | none given}}") && !n5b.includes("Unknown merge tags"),
+      `after delete in the admin page (rows left ${gone5}): subject "${s5}"; notes ${JSON.stringify(n5)}; after changing the tags: ${JSON.stringify(n5b)}`);
   }
 
   if (run("US3 scenario 1") || run("US3 scenario 2") || run("US3 scenario 3")) {
