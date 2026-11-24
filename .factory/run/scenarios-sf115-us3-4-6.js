@@ -1,4 +1,4 @@
-// SF-115 US3, US4, US6 + edges 6, 12 (lists, delete, privacy). Run after reset-db.sh.
+// SF-115 US3, US4, US6 + edges 6, 13 (lists, delete, privacy). Run after reset-db.sh.
 const H = require("./sf115-lib.js"); const { check, q, go, submit, main, fieldId, more } = H;
 const nm = (id) => q(`select trim(first_name||' '||last_name) from persons where id=${id}`);
 const names = (p) => p.locator("main table tbody tr").evaluateAll((rs) => rs.map((r) => r.querySelector("td")?.innerText.split("\n")[0].trim()));
@@ -75,7 +75,7 @@ const same = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].s
   const e12 = [];
   for (const u of ["/people", "/organisations", "/deals/list"]) { await go(a, u); const h = await a.content(); const hd = await a.locator("main table thead").innerText(); e12.push(`${u}: cf inputs ${(h.match(/name="cf\d/g) || []).length}, headers ${JSON.stringify(hd.replace(/\s+/g, " "))}`); }
   const mainHtml = await (async () => { await go(a, "/people"); return a.locator("main table thead th").count(); })();
-  check("Edge case 12", e12.every((x) => x.includes("cf inputs 0")) && mainHtml === 8, e12.join("; ") + ` (people: ${mainHtml} built-in columns, as on main)`);
+  check("Edge case 13", e12.every((x) => x.includes("cf inputs 0")) && mainHtml === 8, e12.join("; ") + ` (people: ${mainHtml} built-in columns, as on main)`);
   q("update custom_fields set in_list=true where kind='person' and id<>" + X + "; update custom_fields set in_list=true where kind<>'person'");
   // US4-1 / US6-2: delete confirmation
   q("insert into custom_values (field_id, person_id, choice_id) values (1, 31, 1)"); // archived Fay Mockup

@@ -317,10 +317,13 @@
     `role="dialog"`). The seed's person fields are ids 1–5 (Diet single choice with removed "Pescatarian", Birthday date,
     Newsletter topics multiple, Head count number, Notes long text), organisation 6–7, deal 8–9 (Contract end, Signed NDA).
     Persons 36 (Cara), 38–42 are visible to Ada; 37 (Dora) is private to Linus; 31 (Fay Mockup) archived; 35 (Sam) Alan's.
-    - `scenarios-sf115-us1.js`: US1 1–8, edges 1, 2, 4, 9 (admin page, non-admin action replay).
-    - `scenarios-sf115-us2.js`: US2 1–7, edges 3, 5, 7, 8, 10, 11 (forms, pages, drawer, timeline, archived, hand-over).
-    - `scenarios-sf115-us3-4-6.js`: US3 1–5, US4 1–5, US6 1–3, edges 6, 12 (lists as Grace, delete box, privacy).
-    - `scenarios-sf115-us5.js`: US5 1–5 (CSV import; preview needs the consent radio "Subscribed").
+    Edge numbers follow the spec after fix round 1 (Edge 7 is the "empty" text filter; the old 7–12 are now 8–13).
+    - `scenarios-sf115-us1.js`: US1 1–8, edges 1, 2, 4, 10 (admin page, non-admin action replay).
+    - `scenarios-sf115-us2.js`: US2 1–7, edges 3, 5, 8, 9, 11, 12 (forms, pages, drawer, timeline, archived, hand-over).
+    - `scenarios-sf115-us3-4-6.js`: US3 1–5, US4 1–5, US6 1–3, edges 6, 13 (lists as Grace, delete box, privacy).
+    - `scenarios-sf115-edge7.js`: edge 7 (`cf<id>=empty` on a Text / Long text filter is text; "Empty" only on Single choice / Yes/No).
+    - `scenarios-sf115-us5.js`: US5 1–5 (CSV import; preview needs the consent radio "Subscribed"). Import warnings list rows
+      as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
 
 ## Smoke checks
 1. test -s .factory/schemas/oauth2-api.json

@@ -46,7 +46,7 @@ const pv = (email, f) => q(`select coalesce(v.text_value, v.number_value::text, 
   // US5-2
   const v2 = [pv("ann@csv.example", 1), pv("ann@csv.example", 3), pv("bob@csv.example", 3), pv("dan@csv.example", 1), pv("bob@csv.example", 1), pv("cid@csv.example", 3)];
   const warnChoice = (prev.match(/[^\n]*Pescatarian[^\n]*/) || ["none"])[0]; const warnNope = (prev.match(/[^\n]*Nope[^\n]*/) || ["none"])[0];
-  check("US5 scenario 2", v2.join("|") === "Vegan|AI,Hiring|AI|Vegetarian||Events" && w(/Pescatarian[\s\S]{0,120}2|2 rows[\s\S]{0,60}Pescatarian/) && w(/Nope/),
+  check("US5 scenario 2", v2.join("|") === "Vegan|AI,Hiring|AI|Vegetarian||Events" && w(/Pescatarian[^\n]*\(rows \d+, \d+\)/) && w(/Nope/),
     `values Ann diet/topics, Bob topics, Dan diet, Bob diet, Cid topics = ${JSON.stringify(v2)}; preview warnings: "${warnChoice}" / "${warnNope}"; in report too=${/Pescatarian/.test(report) && /Nope/.test(report)}`);
   // US5-3
   const v3 = ["ann", "bob", "cid", "dan", "fay", "gil", "hal", "ivy"].map((n) => n + ":" + pv(n + "@csv.example", FL));
@@ -54,9 +54,9 @@ const pv = (email, f) => q(`select coalesce(v.text_value, v.number_value::text, 
   // US5-4
   const v4 = { annBd: pv("ann@csv.example", 2), bobBd: pv("bob@csv.example", 2), cidBd: pv("cid@csv.example", 2), danBd: pv("dan@csv.example", 2), annM: pv("ann@csv.example", MO), bobM: pv("bob@csv.example", MO), cidM: pv("cid@csv.example", MO), danM: pv("dan@csv.example", MO), annN: pv("ann@csv.example", 4), bobN: pv("bob@csv.example", 4), cidN: pv("cid@csv.example", 4) };
   const imported = q("select string_agg(first_name, ',' order by first_name) from persons where last_name='Csvfake'");
-  const eveReason = (prev.match(/[^\n]*too long[^\n]*/i) || ["none"])[0];
+  const eveReason = (prev.match(/[^\n]*Keep the Ftext under 255 characters[^\n]*/i) || ["none"])[0];
   check("US5 scenario 4", v4.annBd === "2026-11-24" && v4.bobBd === "2026-11-24" && v4.cidBd === "2026-11-24" && v4.danBd === "" && v4.annM === "123450" && v4.bobM === "100000" && v4.cidM === "" && v4.danM === "" && v4.annN === "3.0000" && v4.bobN === "" && v4.cidN === "1.5000"
-    && imported === "Ann,Bob,Cid,Dan,Fay,Gil,Hal,Ivy" && w(/31\/02\/2026/) && w(/abc/) && w(/12\.345/) && /too long/i.test(prev),
+    && imported === "Ann,Bob,Cid,Dan,Fay,Gil,Hal,Ivy" && w(/31\/02\/2026/) && w(/abc/) && w(/12\.345/) && /Keep the Ftext under 255 characters/i.test(prev),
     `${JSON.stringify(v4)}; imported ${imported} (Eve not: "${eveReason.slice(0, 120)}"); warnings for 31/02/2026, abc, £x, 12.345: ${["31/02/2026", "abc", "£x", "12.345"].map((x) => x + "=" + prev.includes(x)).join(",")}`);
   // US5-5: preview, delete a mapped field, then import
   const csv5 = "First name,Last name,Email,Ftext,head count met fake\r\nJo,Gonefake,jo@csv.example,keep me,7\r\n";

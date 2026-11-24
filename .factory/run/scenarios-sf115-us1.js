@@ -1,4 +1,4 @@
-// SF-115 US1 + edges 1, 2, 4, 9 (admin page). Run after reset-db.sh. node scenarios-sf115-us1.js
+// SF-115 US1 + edges 1, 2, 4, 10 (admin page). Run after reset-db.sh. node scenarios-sf115-us1.js
 const H = require("./sf115-lib.js"); const { check, q, go, submit, main, addField, fieldId, more } = H;
 (async () => {
   const b = await H.chromium.launch(); const p = await H.newPage(b, "ada@barnacle.ai", "Ada Fake");
@@ -137,6 +137,6 @@ const H = require("./sf115-lib.js"); const { check, q, go, submit, main, addFiel
     const vals = u.includes("edit") ? (await p.locator("input,option").evaluateAll((es) => es.map((e) => e.value + "|" + e.textContent).join(" "))) : "";
     spots.push(`${u}: text=${(t.includes("<b>Fake</b>") || u.includes("edit")) && (u.includes("field=") || t.includes("<i>Choice</i>") || vals.includes("<i>Choice</i>")) && (!u.includes("edit") || (vals.includes("|<b>Fake</b>") || vals.includes("<b>Fake</b>|")))} noTag=${!/<b>Fake<\/b>/.test(h)}`);
   }
-  check("Edge case 9", spots.every((s) => !s.includes("false")), spots.join("; "));
+  check("Edge case 10", spots.every((s) => !s.includes("false")), spots.join("; "));
   await b.close();
 })();

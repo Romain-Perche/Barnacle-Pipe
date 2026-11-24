@@ -1,4 +1,4 @@
-// SF-115 US2 + edges 3, 5, 7, 8, 10, 11 (values on records). Run after reset-db.sh.
+// SF-115 US2 + edges 3, 5, 8, 9, 11, 12 (spec numbering after fix round 1). Run after reset-db.sh.
 const H = require("./sf115-lib.js"); const { check, q, go, submit, main, addField, fieldId, more } = H;
 const save = (p) => submit(p, p.locator('main button:has-text("[ SAVE ]")').first());
 const tl = async (p) => { const t = await main(p); return t.slice(t.indexOf("// TIMELINE")); };
@@ -88,7 +88,7 @@ const ncustom = (pid) => q(`select count(*) from timeline_events where person_id
   // Edge 8: multiple choice all ticks removed
   await go(p, "/people/41/edit"); for (const c of await p.locator(`[name="cf.${id.topics}"]`).all()) await c.uncheck(); await save(p);
   const t8 = await tl(p); const v8 = q(`select count(*) from custom_values where person_id=41 and field_id=${id.topics}`);
-  check("Edge case 8", v8 === "0" && t8.includes("Newsletter topics (fake) cleared") && /Newsletter topics \(fake\)\s+—/i.test(await more(p)), `value rows ${v8}; timeline has 'Newsletter topics (fake) cleared'=${t8.includes("Newsletter topics (fake) cleared")}`);
+  check("Edge case 9", v8 === "0" && t8.includes("Newsletter topics (fake) cleared") && /Newsletter topics \(fake\)\s+—/i.test(await more(p)), `value rows ${v8}; timeline has 'Newsletter topics (fake) cleared'=${t8.includes("Newsletter topics (fake) cleared")}`);
   // US2-7: rename Diet after the changes
   await go(p, `/admin/custom-fields?kind=people&field=${id.diet}`); await p.locator('[role="dialog"] input[name="name"]').first().fill("Diet now"); await submit(p, p.locator('[role="dialog"] button:has-text("[ SAVE ]")'));
   await go(p, "/people/41"); const t7 = await tl(p);
@@ -118,7 +118,7 @@ const ncustom = (pid) => q(`select count(*) from timeline_events where person_id
   const counts = []; for (const f of [id.head, id.money, id.flag]) { await go(p, `/admin/custom-fields?kind=people&delete=${f}`); counts.push(q(`select count(*) from custom_values where field_id=${f}`) + ":" + ((await main(p)).match(/\d+ (people|person)/) || ["?"])[0]); }
   const f7 = [];
   for (const qs of [`cf${id.head}_from=0&cf${id.head}_to=0`, `cf${id.money}_from=0&cf${id.money}_to=0`, `cf${id.flag}=no`]) { await go(p, "/people?" + qs); f7.push(await p.locator("main table tbody tr").allInnerTexts().then((r) => r.map((x) => x.split("\t")[0]).join("|"))); }
-  check("Edge case 7", /Head count met \(fake\)\s+0\s/i.test(m7) && /Fake money\s+£0\s/i.test(m7) && /Fake flag\s+No\s/i.test(m7) && f7.every((x) => x.includes("Fakeperson") === false && x.length > 0) ,
+  check("Edge case 8", /Head count met \(fake\)\s+0\s/i.test(m7) && /Fake money\s+£0\s/i.test(m7) && /Fake flag\s+No\s/i.test(m7) && f7.every((x) => x.includes("Fakeperson") === false && x.length > 0) ,
     `in_list=${in7}; page ${JSON.stringify(m7.replace(/\s+/g, " "))}; delete box counts (db:box) ${counts.join(", ")}; filters =0 / £0 / No list: ${JSON.stringify(f7)}`);
   // Edge 10: deal money field
   await addField(p, "deals", "Fake deal money", "money", null, true); const dm = fieldId("deal", "Fake deal money");
@@ -128,7 +128,7 @@ const ncustom = (pid) => q(`select count(*) from timeline_events where person_id
   await go(p, "/deals"); const board1 = await main(p); await go(p, "/deals/list"); const list1 = (await main(p)).match(/\d+ deals? ·[^\n]*/i)?.[0];
   const set10 = q(`select money_pence from custom_values where deal_id=54 and field_id=${dm}`);
   const strip = (t) => t.replace(/£99,999/g, "");
-  check("Edge case 10", set10 === "9999900" && q("select value_pence from deals where id=54") === val0 && (board0.match(/£[\d,.]+[km]?/g) || []).join() === (strip(board1).match(/£[\d,.]+[km]?/g) || []).join() && list0 === list1,
+  check("Edge case 11", set10 === "9999900" && q("select value_pence from deals where id=54") === val0 && (board0.match(/£[\d,.]+[km]?/g) || []).join() === (strip(board1).match(/£[\d,.]+[km]?/g) || []).join() && list0 === list1,
     `custom money set=${set10}; deal value ${val0} unchanged; board £ amounts equal=${(board0.match(/£[\d,.]+[km]?/g) || []).join() === (strip(board1).match(/£[\d,.]+[km]?/g) || []).join()}; list total "${list0}" → "${list1}"`);
   // Edge 11: hand-over (Alan's private Sam Leftfake 35, deal 52)
   q(`insert into custom_values (field_id, person_id, text_value) values (${id.text}, 35, 'Leaver value')`);
@@ -138,7 +138,7 @@ const ncustom = (pid) => q(`select count(*) from timeline_events where person_id
   await submit(p, p.locator("form.handover").getByRole("button", { name: "[ HAND OVER ]" }));
   const m = await H.newPage(b, "margaret@barnacle.ai", "Margaret Fake");
   await go(m, "/people/35"); const hp = await more(m); await go(m, "/deals/52"); const hd = await more(m) || "";
-  check("Edge case 11", /Fake text\s+Leaver value/i.test(hp || "") && /Contract end \(fake\)\s+0?1 May 2027/i.test(hd), `Margaret's person page: ${JSON.stringify((hp || "none").replace(/\s+/g, " ").slice(0, 120))}; deal page: ${JSON.stringify(hd.replace(/\s+/g, " "))}`);
+  check("Edge case 12", /Fake text\s+Leaver value/i.test(hp || "") && /Contract end \(fake\)\s+0?1 May 2027/i.test(hd), `Margaret's person page: ${JSON.stringify((hp || "none").replace(/\s+/g, " ").slice(0, 120))}; deal page: ${JSON.stringify(hd.replace(/\s+/g, " "))}`);
   // US2-3 last part: kind with no custom fields shows no section
   q("delete from custom_fields where kind='organisation'"); await go(p, "/organisations/3"); const o = await main(p); await go(p, "/organisations/3/edit"); const oe = await main(p);
   check("US2 scenario 3 (no fields)", !o.includes("// MORE DETAILS") && !oe.includes("// MORE DETAILS"), "organisation page and form with no organisation fields: no // MORE DETAILS");
