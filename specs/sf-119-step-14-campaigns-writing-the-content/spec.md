@@ -8,6 +8,14 @@
 
 **Input**: User description: "Step 14 - Campaigns: writing the content. A Campaigns page where users write campaign drafts (`docs/PRODUCT.md` section 4, "Writing the email"): a name, the sender name, a reply-to address, the subject and preview text with merge tags (first name, last name, organisation and the other person fields, custom fields included), and the content, built from blank with a few simple layouts or pasted as HTML. A preview shows the email for a chosen person in the CRM, with what a merge tag shows when the person's field is empty. Drafts can be edited, duplicated and deleted. Pasted HTML is shown safely in the app. Not in this issue: recipients, the sender address, test send and sending (a later issue), starting from a saved template (a later issue)."
 
+## Clarifications
+
+### Session 2026-11-24
+
+- Q: Which design? → A: Design: A, one edit page with the draft (// DETAILS, // CONTENT) on the left and a live preview for a chosen person on the right; the Campaigns page is a table (see `design-options.html`).
+- Q: Who can edit and delete a campaign draft? → A: Everyone on the team can edit, duplicate and delete every draft.
+- Q: When an admin renames a people custom field, what happens to merge tags that use it? → A: The tags follow the rename and show the new name, in the subject, the preview text, layout blocks and pasted HTML; a tag typed by hand is matched to its field when the draft is saved.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Start and save a campaign draft (Priority: P1)
@@ -41,7 +49,8 @@ While writing the subject, the preview text or the content, the user inserts mer
 1. **Given** the subject, the preview text or a content text, **When** the user opens "Insert merge tag", **Then** it lists First name, Last name, Full name, Email, Phone, Organisation, Role, Lead source, LinkedIn, Owner and Labels, then every people custom field by its current name in the admin's order, and inserts the chosen tag at the cursor as `{{<field name>}}`.
 2. **Given** an inserted tag, **When** the user fills in "If empty, show" (at most 100 characters), **Then** the tag becomes `{{<field name> | <text>}}`; the same can be typed by hand, including in pasted HTML.
 3. **Given** a tag typed by hand, **When** its field name matches a merge field ignoring case and spaces at either end, **Then** it is recognised; **When** it matches none, **Then** the draft is still saved and the edit page and the preview list it under "Unknown merge tags: {{Favourite colour}}".
-4. **Given** a draft using a custom field tag, **When** an admin renames or deletes that custom field, **Then** the tag no longer matches and is listed as an unknown merge tag until the user changes it.
+4. **Given** a saved draft using the tag `{{Diet | none given}}` in its subject, a text block and its pasted HTML, **When** an admin renames the custom field "Diet" to "Dietary needs" and the user reopens the draft, **Then** every one of those tags shows as `{{Dietary needs | none given}}` and the preview still shows the person's value.
+5. **Given** a saved draft using a custom field tag, **When** an admin deletes that custom field, **Then** the tag shows with the field's last name and is listed under "Unknown merge tags" until the user changes it.
 
 ---
 
@@ -82,7 +91,7 @@ A user who has an email designed elsewhere chooses "Paste HTML", pastes it, save
 
 ### User Story 5 - Preview the email for a person (Priority: P1)
 
-The user opens the preview of a draft and chooses a person from the CRM. The preview shows the email as that person would receive it: the sender name, the subject and preview text and the content with the person's values in the merge tags, and the "If empty, show" text — or nothing — where the person's field is empty.
+On the right of the draft's edit page, the user chooses a person from the CRM. The preview shows the email as that person would receive it: the sender name, the subject and preview text and the content with the person's values in the merge tags, and the "If empty, show" text — or nothing — where the person's field is empty.
 
 **Why this priority**: The preview is how the user checks merge tags and content before a test send or sending exist; the description makes it part of this issue.
 
@@ -90,12 +99,13 @@ The user opens the preview of a draft and chooses a person from the CRM. The pre
 
 **Acceptance Scenarios**:
 
-1. **Given** a draft, **When** the user opens its preview with no person chosen, **Then** each merge tag shows as its field name in brackets, e.g. "[First name]", and a person picker is offered.
-2. **Given** the person picker, **When** the user types part of a name or email address, **Then** it offers only people they can see (private people follow SF-92), not archived, at most 20 at a time.
-3. **Given** a chosen person, **When** the preview is shown, **Then** it shows "From: <sender name>", "Reply-to: <address>" (when set), the subject, the preview text and the content, with each tag replaced by the person's value, formatted as on the person page (custom values as in SF-115; Labels joined by commas; Email and Phone the first of each; Full name first and last name); a tag whose field is empty shows its "If empty, show" text, or nothing when it has none.
-4. **Given** the preview, **When** it is shown, **Then** under the content it shows the unsubscribe line every campaign email will end with (PRODUCT section 4), with a link that does nothing in the preview.
-5. **Given** person values containing markup such as "<b>Fake</b>", **When** they fill a tag, **Then** they show as plain text, in layout and pasted HTML content alike.
-6. **Given** the chosen person, **When** the draft is saved or another user opens it, **Then** the chosen person is not stored on the draft; each user chooses their own.
+1. **Given** a draft's edit page, **When** no person is chosen, **Then** the "// PREVIEW FOR" picker is empty and each merge tag in the preview shows as its field name in brackets, e.g. "[First name]".
+2. **Given** a chosen person, **When** the user types in the subject, the preview text or a block, or changes the content, without saving, **Then** the preview shows the new text with the person's values within 2 seconds.
+3. **Given** the person picker, **When** the user types part of a name or email address, **Then** it offers only people they can see (private people follow SF-92), not archived, at most 20 at a time.
+4. **Given** a chosen person, **When** the preview is shown, **Then** it shows "From: <sender name>", "Reply-to: <address>" (when set), the subject, the preview text and the content, with each tag replaced by the person's value, formatted as on the person page (custom values as in SF-115; Labels joined by commas; Email and Phone the first of each; Full name first and last name); a tag whose field is empty shows its "If empty, show" text, or nothing when it has none.
+5. **Given** the preview, **When** it is shown, **Then** under the content it shows the unsubscribe line every campaign email will end with (PRODUCT section 4), with a link that does nothing in the preview.
+6. **Given** person values containing markup such as "<b>Fake</b>", **When** they fill a tag, **Then** they show as plain text, in layout and pasted HTML content alike.
+7. **Given** the chosen person, **When** the draft is saved or another user opens it, **Then** the chosen person is not stored on the draft; each user chooses their own.
 
 ---
 
@@ -146,17 +156,18 @@ From the Campaigns page or a draft's edit page, the user duplicates a draft to s
 - **FR-007**: The subject, the preview text, every text-bearing layout block (heading, text, button label, image alternative text) and pasted HTML MUST accept merge tags written `{{<field name>}}` or `{{<field name> | <if empty>}}`, matched by field name ignoring case and outer spaces.
 - **FR-008**: The merge fields MUST be First name, Last name, Full name, Email, Phone, Organisation, Role, Lead source, LinkedIn, Owner, Labels and every people custom field by its current name; an "Insert merge tag" list MUST offer them in that order with an optional "If empty, show" text of at most 100 characters.
 - **FR-009**: Tags matching no merge field MUST NOT stop a save; the edit page and the preview MUST list them as "Unknown merge tags".
+- **FR-009a**: A saved tag naming a people custom field MUST stay linked to that field: after a rename it shows the field's new name everywhere in the draft (subject, preview text, blocks, pasted HTML); after the field is deleted it shows its last name and is an unknown merge tag.
 
 **Content**
 
 - **FR-010**: Content MUST be either layout blocks or pasted HTML. Layouts offered: Blank, Text, Text with a button, Newsletter (blocks as in User Story 3). Block types: Heading, Text, Button, Image, Divider, with the limits of User Story 3 and at most 50 blocks; links only `https://`, `http://` or `mailto:` (image addresses `https://`).
 - **FR-011**: Text typed into layout blocks MUST be shown as plain text (markup not applied); line breaks kept and web addresses turned into links.
-- **FR-012**: Pasted HTML (at most 500,000 characters) MUST be stored exactly as pasted.
+- **FR-012**: Pasted HTML (at most 500,000 characters) MUST be kept exactly as pasted, except that custom field tags in it follow renames (FR-009a).
 - **FR-013**: Switching from layout to HTML MUST start the HTML box with the HTML of the layout content; switching from HTML to a layout MUST ask for confirmation first; both are only kept on save.
 
 **Preview and safety**
 
-- **FR-014**: A preview MUST show the draft as received by a chosen person: sender name, reply-to, subject, preview text, content and the unsubscribe line, with merge tags filled in as in User Story 5; with no person chosen it shows "[<field name>]" for each tag.
+- **FR-014**: The edit page MUST show, beside the draft, a preview that follows what is typed without saving and shows the draft as received by a chosen person: sender name, reply-to, subject, preview text, content and the unsubscribe line, with merge tags filled in as in User Story 5; with no person chosen it shows "[<field name>]" for each tag.
 - **FR-015**: The person picker MUST offer only people the user can see and who are not archived; a person's values MUST never be shown to a user who cannot see that person; the chosen person MUST NOT be stored on the draft.
 - **FR-016**: Person values put into the content MUST be inserted as plain text, never as markup.
 - **FR-017**: Pasted HTML and the content built from it MUST be shown in the app so that no script, event handler, form, frame or link inside it can run code in the app, read or change the app's page, cookies, session or data, send a form or navigate the app page; links open in a new browser tab.
@@ -165,14 +176,14 @@ From the Campaigns page or a draft's edit page, the user duplicates a draft to s
 
 - **FR-018**: Every Campaigns page MUST require a signed-in user and every campaign action MUST check the signed-in user first, on every request.
 - **FR-019**: Every message shown MUST be one of the app's fixed messages (with draft, field and user names from the database as the only inserted text); text from the page address MUST never be shown.
-- **FR-020**: The Campaigns page and the draft edit page MUST follow `docs/DESIGN.md` and the existing signed-in pages (design B sidebar layout, "// " section labels, `[ ... ]` bracket buttons, the delete confirmation in a box over the page like other confirmations).
+- **FR-020**: The Campaigns page and the draft edit page MUST follow `docs/DESIGN.md` and the existing signed-in pages (design B sidebar layout, "// " section labels, `[ ... ]` bracket buttons, the delete confirmation in a box over the page like other confirmations) and design A of `design-options.html`: "Campaigns" after "Activities" in the sidebar; the Campaigns page a table with `[ NEW CAMPAIGN ]` in the header; the edit page with `[ SAVE ]`, `[ DUPLICATE ]` and `[ DELETE ]` in the header, "// DETAILS" and "// CONTENT" (with a Layout / Paste HTML switch) on the left and "// PREVIEW FOR" with the person picker and the email on the right.
 - **FR-021**: The fake data command MUST add, without duplicates when run again, a few clearly fake drafts: one per layout using merge tags with and without "If empty, show" text (one using a people custom field), and one with pasted HTML that contains a harmless script, to show it does nothing.
 
 ### Key Entities
 
 - **Campaign**: a draft email written by the team; has a name, a sender name, a reply-to address, a subject, a preview text, content, a status (only "Draft" in this issue), who created it and when, and who last edited it and when. Shared by the whole team. Recipients, sender address and sending come in a later issue.
 - **Content**: either an ordered list of blocks (Heading, Text, Button, Image, Divider with their texts and links) or one piece of pasted HTML.
-- **Merge tag**: a placeholder `{{<field name> | <if empty>}}` in the subject, preview text or content, filled in from a person's field when the email is previewed (and later sent).
+- **Merge tag**: a placeholder `{{<field name> | <if empty>}}` in the subject, preview text or content, filled in from a person's field when the email is previewed (and later sent); once saved, a custom field tag is linked to its field and follows renames.
 - **Merge field**: a person field or people custom field a tag can name (see FR-008).
 - **Person** (from SF-90/SF-92/SF-115): the source of merge values, under the existing private rules.
 
@@ -189,9 +200,8 @@ From the Campaigns page or a draft's edit page, the user duplicates a draft to s
 
 ## Assumptions
 
-- Campaign drafts are shared by the whole team, like email templates and segments (DECISIONS 2026-11-24): everyone sees, edits, duplicates and deletes every draft. A draft is not a CRM record, so the admin-only delete rule for records does not apply.
-- The design follows the existing patterns (a list like the Activities list, an edit page in the one-column record page style); `/speckit-clarify` may offer design options as for earlier steps.
-- Merge tags name fields by their shown name so they can be typed in pasted HTML; this is why a renamed custom field's tag becomes unknown rather than following the rename. Organisation and deal custom fields, and organisation fields other than the name, are not merge fields in this issue.
+- Campaign drafts are shared by the whole team (clarified 2026-11-24), like email templates and segments: everyone sees, edits, duplicates and deletes every draft. A draft is not a CRM record, so the admin-only delete rule for records does not apply.
+- Merge tags are written with the field's shown name so they can be typed in pasted HTML; on save they are linked to the field so they follow renames (clarified 2026-11-24). Organisation and deal custom fields, and organisation fields other than the name, are not merge fields in this issue.
 - A draft may be incomplete; the checks that a campaign is ready to send (sender name, subject, content, no unknown tags, sender address, recipients) come with sending in a later issue.
 - The unsubscribe line in the preview is a stand-in; the real link, the plain-text version of the email and how pasted HTML is sent come with sending.
 - Images are linked by web address; uploading images for campaigns is not part of this issue.

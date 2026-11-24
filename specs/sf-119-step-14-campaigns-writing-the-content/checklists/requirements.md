@@ -33,4 +33,4 @@
 
 - HTML, merge tag syntax (`{{…}}`) and links are named because they are what users type and see, not implementation choices.
 - FR-017 states the safety outcome for pasted HTML (nothing runs, nothing reaches the app or the session), not how it is achieved.
-- Choices made without asking (shared drafts, tags by field name, no rich text in blocks, design following existing patterns) are listed under Assumptions; `/speckit-clarify` is the place to revisit them, the design first.
+- Clarified 2026-11-24: design A, shared drafts, custom field tags follow renames. Remaining defaults (no rich text in blocks, no autosave, images by web address) are listed under Assumptions.
