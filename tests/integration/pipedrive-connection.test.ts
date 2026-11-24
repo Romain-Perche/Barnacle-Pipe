@@ -221,3 +221,25 @@ describe("the Settings page and its actions", () => {
     expect(await sql`select 1 from pipedrive_connections`).toHaveLength(0);
   });
 });
+
+// covers SC-007: nothing logged during a refused save, a full import or a refused part contains any part of the token
+describe("logs", () => {
+  it("never hold the token", async () => {
+    const { runToEnd, start } = await import("./pipedrive-helpers");
+    const logged: unknown[] = [];
+    const spies = (["log", "info", "warn", "error", "debug"] as const).map((m) => vi.spyOn(console, m).mockImplementation((...args) => void logged.push(...args)));
+    try {
+      await saveToken(linus.id, "test-token-refused-secret");
+      await saveToken(linus.id, TOKEN);
+      fake.addPerson(1001, { first_name: "Logged", last_name: "Fake", owner_id: 1 });
+      await runToEnd(linus.id, await start(linus.id));
+      fake.refuseToken(TOKEN);
+      await runToEnd(linus.id, await start(linus.id));
+    } finally {
+      for (const s of spies) s.mockRestore();
+    }
+    const text = logged.map((x) => (x instanceof Error ? `${x.message} ${x.stack}` : typeof x === "string" ? x : JSON.stringify(x))).join("\n");
+    expect(text).not.toContain(TOKEN.slice("test-token-".length));
+    expect(text).not.toContain("refused-secret");
+  });
+});
