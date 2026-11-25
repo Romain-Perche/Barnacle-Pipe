@@ -5,7 +5,7 @@ description: The sidebar shell shared by every signed-in page, the nav registry,
 tags: [ui, layout, navigation, messages, sign-in-page]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T11:28:51.796Z
+    at: 2026-11-24T18:25:19.853Z
 sources:
   - id: openwiki-source-9c37e70856dfc7e98b60d790
     resource: repo://src/app/(app)/%5B...missing%5D/page.tsx
@@ -27,7 +27,7 @@ sources:
     resource: repo://src/server/messages.ts
   - id: openwiki-source-8bf427df8e393c62d99adf6b
     resource: repo://src/server/sign-in-page.ts
-generated: { by: "claude-code", at: "2026-11-24T11:28:51.796Z" }
+generated: { by: "claude-code", at: "2026-11-24T18:25:19.853Z" }
 ---
 
 # Signed-in layout, pages and messages
@@ -37,7 +37,7 @@ generated: { by: "claude-code", at: "2026-11-24T11:28:51.796Z" }
 Every signed-in page lives under `src/app/(app)/` and gets `layout.tsx`:
 
 - a blue left sidebar with the Barnacle wordmark (`src/app/Wordmark.tsx`);
-- the **Main** nav from `mainNav` in `nav.ts` (today `Home`, `Deals`, `People`, `Organisations`, `Ambassadors` (the [Ambassadors](people-and-organisations.md#ambassadors-and-referrals) page), `Activities` (the [Activities](activities.md) list) and `Notifications`, which shows the user's unread mention count: `layout.tsx` gives the start value and `UnreadLink.tsx` keeps it current, see below);
+- the **Main** nav from `mainNav` in `nav.ts` (today `Home`, `Deals`, `People`, `Organisations`, `Ambassadors` (the [Ambassadors](people-and-organisations.md#ambassadors-and-referrals) page), `Activities` (the [Activities](activities.md) list), `Campaigns` (the [Campaigns](campaigns.md) drafts), `Segments` (the [Segments](segments.md) pages) and `Notifications`, which shows the user's unread mention count: `layout.tsx` gives the start value and `UnreadLink.tsx` keeps it current, see below);
 - an `// ADMIN` group with `adminNav` (today `Users`, `Lead sources and labels`, `Pipelines` and `Custom fields` (see [Custom fields](custom-fields.md)), rendered only when the user's role is `admin`;
 - the user's name and a `[ Sign out ]` button (the `signOut` server action, see
   [Sessions and access control](../auth/sessions-and-access-control.md)).

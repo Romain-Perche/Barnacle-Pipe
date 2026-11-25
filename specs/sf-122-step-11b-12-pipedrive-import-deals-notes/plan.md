@@ -23,7 +23,7 @@ Each of these pages is saved whole in one transaction that also moves the cursor
   later import can bring it in.
 - **No notifications**: notes get no mention rows, and an activity's `assigned_by` is its assignee.
 - **Notes as text**: note HTML becomes plain text through a small pure function.
-- **Schema and dependencies**: one migration (`0013_pipedrive_deals.sql`), one more pinned Pipedrive schema (a full
+- **Schema and dependencies**: one migration (`0017_pipedrive_deals.sql`), one more pinned Pipedrive schema (a full
   v1 file, for participants and downloads), no new dependency.
 
 ## Technical Context
@@ -33,7 +33,7 @@ Each of these pages is saved whole in one transaction that also moves the cursor
 **Primary Dependencies**: Next.js 16.4, React 19.3, `postgres` 4.1, all already present. Pipedrive and Supabase
 Storage through `fetch`. No addition (dependencies.json `[]`; research.md §11).
 
-**Storage**: PostgreSQL, migration `0013_pipedrive_deals.sql` (data-model.md). File contents go to Supabase Storage (the
+**Storage**: PostgreSQL, migration `0017_pipedrive_deals.sql` (data-model.md). File contents go to Supabase Storage (the
 SF-116 fake in development and tests).
 
 **Testing**: Vitest unit and integration tests on the local Postgres. The fake Pipedrive is checked against the v2
@@ -111,7 +111,7 @@ specs/sf-122-step-11b-12-pipedrive-import-deals-notes/
 ### Source Code (repository root)
 
 ```text
-migrations/0013_pipedrive_deals.sql                  # data-model.md § Migration
+migrations/0017_pipedrive_deals.sql                  # data-model.md § Migration
 scripts/fetch-schemas.mjs                            # + pipedrive_v1_full_openapi.yml
 src/server/
 ├── messages.ts                                      # contracts/routes.md § Messages
@@ -147,7 +147,7 @@ organisations) stay as they are.
    `{ file: "pipedrive_v1_full_openapi.yml", url: "https://raw.githubusercontent.com/konfig-sdks/openapi-examples/161ab49c45e45825ca3832945c59a3ba904321ba/pipedrive/openapi.yaml", sha256: "24230787d0c71b1e528a2824e8aa6d3137db26aa57973e65f3819b1fce825665" }`
    and update the head comment. Run `npm run test:schemas`. Then extend `tests/unit/fetch-schemas.test.ts`
    (contracts/pipedrive-api.md § Schemas).
-2. **Migration** `migrations/0013_pipedrive_deals.sql` exactly as data-model.md. First confirm the 0012 constraint
+2. **Migration** `migrations/0017_pipedrive_deals.sql` exactly as data-model.md. First confirm the 0012 constraint
    names. Extend `migrate.test.ts`.
 3. **Shared helpers**:
    - `bulk.ts`: `newIds` accepts `deals | timeline_events | activities`; `insertCustomValues` accepts kind `deals`
@@ -284,7 +284,7 @@ The AI review failed on three points. All three are reproduced and traced in the
   data only for the time of one part, like the page it belongs to; it never holds the token. This applies to every
   step that `fetchStep` reads (prepare, counts, pipelines, deals, archived deals, notes, activities, organisations,
   people). The files step already commits each file, so only its page call goes through the memo.
-- **Migration**: `migrations/0014_pipedrive_fetched.sql`: `alter table pipedrive_imports add column fetched jsonb;`
+- **Migration**: `migrations/0018_pipedrive_fetched.sql`: `alter table pipedrive_imports add column fetched jsonb;`
   (0013 is kept as it is, so a development database that has it stays valid).
 
 ### Files to change
@@ -295,7 +295,7 @@ The AI review failed on three points. All three are reproduced and traced in the
   owners unnamed), `imports.ts` (the files step's own items).
 - `src/server/pipedrive/report.ts`, `src/server/messages.ts` and `src/app/(app)/settings/pipedrive-import/ReportStep.tsx`
   (the "a private …" labels).
-- `migrations/0014_pipedrive_fetched.sql`, `tests/integration/migrate.test.ts`, `tests/support/reset.ts` if needed.
+- `migrations/0018_pipedrive_fetched.sql`, `tests/integration/migrate.test.ts`, `tests/support/reset.ts` if needed.
 - Tests: `tests/unit/pipedrive-records-page.test.ts` (or the deal-page unit test file in use),
   `tests/integration/pipedrive-resume-records.test.ts`, `tests/integration/pipedrive-files.test.ts` (or the file
   test in use).

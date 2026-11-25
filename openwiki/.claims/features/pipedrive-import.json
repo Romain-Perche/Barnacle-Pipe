@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:71756fffdc3d8cebaa557ca15d90cf5ce3a627e908e49c5dd39fdae1c7c3eae1",
+  "pageVersion": "sha256:c9b023a8902841b912aac0765c74ce4821348c36e8fd5488a31f67fbefa1ce3e",
   "claims": [
     {
       "id": "claim_d55389c642f14a80ae944375add69edd",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/pipedrive/api.ts",
-          "version": "repo-file-v1:sha256:bd296ee5cafdda44d116a814e003574ab87cfc6cbc5693e3c4a2aa29fdbc8e12"
+          "version": "repo-file-v1:sha256:273a81723a576789f0e1fd655911c5273e4d9c47f81cf9fea086c7624c5cb92a"
         },
         {
           "resource": "repo://src/server/pipedrive/crypto.ts",
@@ -21,42 +21,14 @@
       "statement": "The import runs part by part from the open page, with Pipedrive calls outside the page transaction and pipedrive_links as the never-twice key.",
       "evidence": [
         {
-          "resource": "repo://src/server/pipedrive/imports.ts#L1-L24",
-          "version": "repo-lines-v1:sha256:d825d17fd2592513855a09e7c166e540ab843c6205a73df8ff413c13ddd278ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMDNiZjk0Yjk3Y2U4OGU0ZTZiYmEwNzlmYTA0NWM0NDA1Nzc5YWI2YTAwNDIwMTlhNjdjNWUzZGQzYTAyMWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlMmZiNjBmYzMyM2RkMjM2NmQ2OWQyN2Q0OTY1OWY5MTRhODcyMDE5ZDRjMGZkOWM2YzNiM2FjZDE1NDI0NDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlMGRkM2QwMmZmNzk1MzY0ZDE0Mjg0ZmZlYjhjOTczM2VjYjdhNTUwZGVkNTEyYTY0YTc3NjM4OTFkMThjOTYifQ"
-        }
-      ]
-    },
-    {
-      "id": "claim_44a121e6aaf543d88926afb0b1ee5c10",
-      "statement": "After people, the import runs the steps pipelines, deals, archived_deals, notes, activities and files for the kinds ticked, and a link in pipedrive_links keeps any record from being imported twice.",
-      "evidence": [
-        {
-          "resource": "repo://migrations/0013_pipedrive_deals.sql",
-          "version": "repo-file-v1:sha256:6e9f84667cac800ae1e3a89f5a5124b671a3da5600962fa1504e121d3b40d362"
-        },
-        {
-          "resource": "repo://src/server/pipedrive/imports.ts",
-          "version": "repo-file-v1:sha256:b12613ebfba2d5472eefc6bd7d222105f34aff7128de8fd3f4dfd7154b115692"
-        }
-      ]
-    },
-    {
-      "id": "claim_8f7c413aa042433da84c1f0b5bc54c52",
-      "statement": "A part keeps the Pipedrive answers it already fetched across a slow-down in pipedrive_imports.fetched, and every save re-checks under lock that the user is active and holds the token.",
-      "evidence": [
-        {
-          "resource": "repo://migrations/0014_pipedrive_fetched.sql",
-          "version": "repo-file-v1:sha256:cc4eff1ef81f693a96237f099245724644ded4455e6a533cb044ba273cab00d0"
-        },
-        {
-          "resource": "repo://src/server/pipedrive/imports.ts",
-          "version": "repo-file-v1:sha256:b12613ebfba2d5472eefc6bd7d222105f34aff7128de8fd3f4dfd7154b115692"
+          "resource": "repo://src/server/pipedrive/imports.ts#L1-L10",
+          "version": "repo-lines-v1:sha256:09957171343fe5a2dfc7ea73ef67d9fca1b9c84a7ca15ee18831bfdc61ecfb3c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMDNiZjk0Yjk3Y2U4OGU0ZTZiYmEwNzlmYTA0NWM0NDA1Nzc5YWI2YTAwNDIwMTlhNjdjNWUzZGQzYTAyMWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkMDZkN2UzNDk2MDZkODliYWQwNzE5ZDRhMGU3Mzk0OTcyMDQzZThkMGQwMTgwOGVhOWUwYjdhZmEyZjE4ZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlMGRkM2QwMmZmNzk1MzY0ZDE0Mjg0ZmZlYjhjOTczM2VjYjdhNTUwZGVkNTEyYTY0YTc3NjM4OTFkMThjOTYifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T20:36:11.429Z"
+    "at": "2026-11-24T14:34:59.724Z"
   }
 }

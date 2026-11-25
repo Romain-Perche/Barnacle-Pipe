@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:4ed24f4248631c605878a257af5cae85f6498c36f062419b7c3f7d8a8bec0f6c",
+  "claims": [
+    {
+      "id": "claim_22f80d74680e41e08ad78f3ec3682e1d",
+      "statement": "saveCampaign locks the draft row, refuses a save when the version differs, and works out merge_links on the server.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/campaigns/campaigns.ts#L94-L130",
+          "version": "repo-lines-v1:sha256:76e6c34ef33c99d50f059195896a68e123f2bcc722f455dcf0e1b479e40a3d67:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2NjNiZDJhM2Q5ZDEyN2M2ODA2ZGZmNDM3MWJmNDhkMWVmOTcyYmE5ZDYyYzM2ZmEzMTdkMjRkNzg2MTk1ZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NmMzN2I0MThiN2Q4N2ZkMmYyOGUzMDBhMDI1ZmU0Mzc4N2ExM2EzMjIyYzcyZTYwMjdmYjg2N2NiNjQwN2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhODQ5MzUyMzQ1Yzc4YjIyNzliZjc0OTkxMmRmNWYwZjFlZTZjZjBiMDkyNmJmZjk5YjJjNGZjNGVhMTM4NzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlNTk4ZTFiNjg4ZDJhZWQxMzc4NjgwODU5YTdmNjQ3MWExMzMzZmY0ZGYxNDZiZjNiNDFkMTYyZWMwYTA1Y2YifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_24d50e7ce6a24e8e9e64e1ad4ab860e4",
+      "statement": "The preview picker and values go through visiblePerson and skip archived people.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/campaigns/preview.ts",
+          "version": "repo-file-v1:sha256:bb6f46502a55eaca1d2d61ae9544c2641832abb33a659dc8e34694218d688666"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-24T18:25:19.853Z"
+  }
+}

@@ -1,6 +1,6 @@
 # Data model: Pipedrive import — deals, notes, activities and files (SF-122)
 
-One migration, `migrations/0013_pipedrive_deals.sql`. It holds only statements allowed in a transaction, and adds no
+One migration, `migrations/0017_pipedrive_deals.sql`. It holds only statements allowed in a transaction, and adds no
 new table, so no new RLS line is needed. Every other table it writes already exists (SF-93, SF-95, SF-102, SF-109,
 SF-115, SF-116, SF-117).
 

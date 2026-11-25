@@ -1,4 +1,4 @@
-// covers FR-032, SC-010, edge case "another database role reads any app table"; SF-90 T016 (8 new tables); SF-93 T004 (4 new tables); SF-95 T004 (4 new tables); SF-103 T004 (csv_imports); SF-102 T004 (note_mentions); SF-109 T004 (activities); SF-115 T013 (custom fields); SF-116 T015 (files, file_uploads, file_cleanup); SF-117 T013 (pipedrive_connections, pipedrive_imports, pipedrive_links)
+// covers FR-032, SC-010, edge case "another database role reads any app table"; SF-90 T016 (8 new tables); SF-93 T004 (4 new tables); SF-95 T004 (4 new tables); SF-103 T004 (csv_imports); SF-102 T004 (note_mentions); SF-109 T004 (activities); SF-115 T013 (custom fields); SF-116 T015 (files, file_uploads, file_cleanup); SF-117 T013 (pipedrive_connections, pipedrive_imports, pipedrive_links); SF-119 T010 (campaigns); SF-120 T005 (segments)
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb, sql } from "@/server/db";
 import { makeUser, resetDb } from "./db-helpers";
@@ -27,6 +27,10 @@ describe("Row Level Security", () => {
         "files", "file_uploads", "file_cleanup",
         // SF-115
         "custom_fields", "custom_field_choices", "custom_values",
+        // SF-119
+        "campaigns",
+        // SF-120
+        "segments",
         // SF-117
         "pipedrive_connections", "pipedrive_imports", "pipedrive_links",
       ]),

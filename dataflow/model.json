@@ -80,6 +80,26 @@
       "id": "pipedrive",
       "label": "Pipedrive import",
       "description": "Connects a Pipedrive token and imports people, organisations and deals page by page, never twice."
+    },
+    {
+      "id": "unsubscribe",
+      "label": "Unsubscribe",
+      "description": "Lets an email recipient withdraw consent through a token link or RFC 8058 one-click."
+    },
+    {
+      "id": "segments",
+      "label": "Segments",
+      "description": "Saved, team-shared people segments and the count of people each one reaches."
+    },
+    {
+      "id": "campaigns",
+      "label": "Campaigns",
+      "description": "Team-shared email campaign drafts: details, content blocks, merge tags and a live preview."
+    },
+    {
+      "id": "gmail",
+      "label": "Gmail",
+      "description": "Connects a user's Gmail, copies mail into the CRM through push and a 15-minute check, and sends mail."
     }
   ],
   "actors": [
@@ -109,6 +129,18 @@
       "id": "pipedrive-api",
       "label": "Pipedrive API",
       "zone": "pipedrive"
+    },
+    {
+      "id": "email-recipient",
+      "label": "Email recipient / mail app"
+    },
+    {
+      "id": "gmail-api",
+      "label": "Google OAuth and Gmail API"
+    },
+    {
+      "id": "cloud-scheduler",
+      "label": "Vercel cron and Google Pub/Sub"
     }
   ],
   "processes": [
@@ -361,11 +393,82 @@
         "src/server/pipedrive/imports.ts",
         "src/server/pipedrive/api.ts",
         "src/server/pipedrive/connection.ts",
-        "src/server/pipedrive/crypto.ts",
+        "src/server/crypto/seal.ts",
         "src/app/(app)/settings/pipedrive-import",
+        "src/app/(app)/settings/actions.ts"
+      ]
+    },
+    {
+      "id": "unsubscribe",
+      "label": "Unsubscribe page and one-click",
+      "zone": "app",
+      "group": "unsubscribe",
+      "sources": [
+        "src/app/unsubscribe",
+        "src/server/records/unsubscribe.ts",
+        "src/server/records/unsubscribe-rules.ts"
+      ]
+    },
+    {
+      "id": "segments",
+      "label": "Saved segments and reach count",
+      "zone": "app",
+      "group": "segments",
+      "sources": [
+        "src/app/(app)/segments",
+        "src/server/segments"
+      ]
+    },
+    {
+      "id": "campaigns",
+      "label": "Campaign editor",
+      "zone": "app",
+      "group": "campaigns",
+      "sources": [
+        "src/app/(app)/campaigns",
+        "src/server/campaigns/campaigns.ts",
+        "src/server/campaigns/preview.ts"
+      ]
+    },
+    {
+      "id": "gmail-connect",
+      "label": "Gmail connect and disconnect",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
         "src/app/(app)/settings/actions.ts",
-        "src/server/pipedrive/records-page.ts",
-        "src/server/pipedrive/deal-rules.ts"
+        "src/app/(app)/settings/gmail/callback/route.ts",
+        "src/server/gmail/connections.ts"
+      ]
+    },
+    {
+      "id": "gmail-sync",
+      "label": "Gmail sync and push receiver",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/gmail/sync.ts",
+        "src/server/gmail/push.ts",
+        "src/app/gmail/push/route.ts",
+        "src/app/cron/gmail/route.ts"
+      ]
+    },
+    {
+      "id": "gmail-send",
+      "label": "Gmail send",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/gmail/send.ts"
+      ]
+    },
+    {
+      "id": "gmail-client",
+      "label": "Google API client",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/gmail/google-api.ts"
       ]
     }
   ],
@@ -602,6 +705,33 @@
       "group": "pipedrive",
       "sources": [
         "migrations/0012_pipedrive.sql"
+      ]
+    },
+    {
+      "id": "segments-table",
+      "label": "Postgres segments",
+      "zone": "postgres",
+      "group": "segments",
+      "sources": [
+        "migrations/0014_segments.sql"
+      ]
+    },
+    {
+      "id": "campaigns-table",
+      "label": "Postgres campaigns",
+      "zone": "app",
+      "group": "campaigns",
+      "sources": [
+        "migrations/0015_campaigns.sql"
+      ]
+    },
+    {
+      "id": "gmail-tables",
+      "label": "Gmail connections, threads, messages",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "migrations/0016_gmail.sql"
       ]
     }
   ],
@@ -2256,60 +2386,254 @@
       ]
     },
     {
-      "from": "pipedrive-import",
-      "to": "deals-table",
-      "data": "imported deals",
+      "from": "email-recipient",
+      "to": "unsubscribe",
+      "data": "unsubscribe token, confirm or one-click POST",
       "sources": [
-        "src/server/pipedrive/imports.ts"
+        "src/app/unsubscribe/[token]/confirm/route.ts",
+        "src/app/unsubscribe/[token]/one-click/route.ts"
       ]
     },
     {
-      "from": "pipedrive-import",
-      "to": "pipelines-table",
-      "data": "matched or created pipelines and stages",
+      "from": "unsubscribe",
+      "to": "email-recipient",
+      "data": "unsubscribe confirmation page",
       "sources": [
-        "src/server/pipedrive/imports.ts"
+        "src/app/unsubscribe/[token]/page.tsx"
       ]
     },
     {
-      "from": "pipedrive-import",
-      "to": "activities-table",
-      "data": "imported activities",
+      "from": "unsubscribe",
+      "to": "persons-table",
+      "data": "consent set to unsubscribed by token",
       "sources": [
-        "src/server/pipedrive/imports.ts"
+        "src/server/records/unsubscribe.ts"
       ]
     },
     {
-      "from": "pipedrive-import",
-      "to": "files-tables",
-      "data": "imported file rows",
-      "sources": [
-        "src/server/pipedrive/imports.ts"
-      ]
-    },
-    {
-      "from": "pipedrive-import",
-      "to": "supabase-storage",
-      "data": "copied Pipedrive files",
-      "sources": [
-        "src/server/pipedrive/imports.ts",
-        "src/server/files/storage.ts"
-      ]
-    },
-    {
-      "from": "pipedrive-import",
+      "from": "unsubscribe",
       "to": "timeline-table",
-      "data": "imported notes",
+      "data": "unsubscribed_link / unsubscribed_mail_app events",
       "sources": [
-        "src/server/pipedrive/imports.ts"
+        "src/server/records/unsubscribe.ts"
       ]
     },
     {
-      "from": "pipedrive-api",
-      "to": "pipedrive-import",
-      "data": "pipelines, deals, notes, activities, files",
+      "from": "migrate",
+      "to": "persons-table",
+      "data": "unsubscribe token column",
       "sources": [
-        "src/server/pipedrive/api.ts"
+        "migrations/0013_unsubscribe.sql"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "segments",
+      "data": "segment forms and counts requests",
+      "sources": [
+        "src/app/(app)/segments/actions.ts"
+      ]
+    },
+    {
+      "from": "segments",
+      "to": "segments-table",
+      "data": "segment definitions",
+      "sources": [
+        "src/server/segments/segments.ts"
+      ]
+    },
+    {
+      "from": "segments-table",
+      "to": "segments",
+      "data": "saved segments",
+      "sources": [
+        "src/server/segments/segments.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "segments",
+      "data": "visible people and deals for reach counts",
+      "sources": [
+        "src/server/segments/reach.ts"
+      ]
+    },
+    {
+      "from": "custom-values-table",
+      "to": "segments",
+      "data": "custom value tests for conditions",
+      "sources": [
+        "src/server/custom-fields/values.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "segments-table",
+      "data": "table definition",
+      "sources": [
+        "migrations/0014_segments.sql"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "campaigns",
+      "data": "campaign forms, blocks, preview person",
+      "sources": [
+        "src/app/(app)/campaigns/actions.ts"
+      ]
+    },
+    {
+      "from": "campaigns",
+      "to": "staff",
+      "data": "campaign list, editor and live preview",
+      "sources": [
+        "src/app/(app)/campaigns/page.tsx"
+      ]
+    },
+    {
+      "from": "campaigns",
+      "to": "campaigns-table",
+      "data": "campaign drafts",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "campaigns-table",
+      "to": "campaigns",
+      "data": "saved drafts",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "persons-table",
+      "to": "campaigns",
+      "data": "visible person merge values for preview",
+      "sources": [
+        "src/server/campaigns/preview.ts"
+      ]
+    },
+    {
+      "from": "custom-fields-table",
+      "to": "campaigns",
+      "data": "people custom field names for merge tags",
+      "sources": [
+        "src/server/campaigns/campaigns.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "campaigns-table",
+      "data": "table definition",
+      "sources": [
+        "scripts/migrate.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "gmail-connect",
+      "data": "connect or disconnect Gmail",
+      "sources": [
+        "src/app/(app)/settings/actions.ts"
+      ]
+    },
+    {
+      "from": "gmail-connect",
+      "to": "gmail-client",
+      "data": "consent, token, revoke calls",
+      "sources": [
+        "src/server/gmail/connections.ts"
+      ]
+    },
+    {
+      "from": "gmail-client",
+      "to": "gmail-api",
+      "data": "OAuth and Gmail requests",
+      "sources": [
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-api",
+      "to": "gmail-client",
+      "data": "tokens, profile, messages",
+      "sources": [
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-connect",
+      "to": "gmail-tables",
+      "data": "refresh token sealed with AES-256-GCM",
+      "sources": [
+        "src/server/gmail/connections.ts",
+        "src/server/crypto/seal.ts"
+      ]
+    },
+    {
+      "from": "cloud-scheduler",
+      "to": "gmail-sync",
+      "data": "push notice and 15-minute check",
+      "sources": [
+        "src/app/gmail/push/route.ts",
+        "src/app/cron/gmail/route.ts"
+      ]
+    },
+    {
+      "from": "gmail-tables",
+      "to": "gmail-sync",
+      "data": "sealed token, history id",
+      "sources": [
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-sync",
+      "to": "gmail-client",
+      "data": "history and message reads",
+      "sources": [
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-sync",
+      "to": "gmail-tables",
+      "data": "copied threads and messages",
+      "sources": [
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-tables",
+      "to": "gmail-send",
+      "data": "sealed token",
+      "sources": [
+        "src/server/gmail/send.ts"
+      ]
+    },
+    {
+      "from": "gmail-send",
+      "to": "gmail-client",
+      "data": "outgoing MIME message",
+      "sources": [
+        "src/server/gmail/send.ts"
+      ]
+    },
+    {
+      "from": "env-settings",
+      "to": "gmail-connect",
+      "data": "GMAIL_TOKEN_KEY, Google settings",
+      "sources": [
+        "src/server/env.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "gmail-tables",
+      "data": "schema",
+      "sources": [
+        "migrations/0016_gmail.sql"
       ]
     }
   ]

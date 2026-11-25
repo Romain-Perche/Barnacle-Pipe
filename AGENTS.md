@@ -47,6 +47,13 @@ OAuth code flow and database sessions.
   `file_uploads`), `deleteFile`, `cleanupPathsFor` (used by the three record deletes), `sweepFileCleanup` (table
   `file_cleanup`, swept after every file action: no cron)). No Storage call inside a transaction. `visibleFile()` in
   `records/visibility.ts`: every `files` read uses it. FILE timeline entries: kinds `file_added` / `file_deleted`.
+- SF-121 unsubscribe: `src/server/records/unsubscribe-rules.ts` (pure: `isTokenShape`, `unsubscribeLinks`, `isOneClickBody`)
+  and `src/server/records/unsubscribe.ts` (`unsubscribeByToken`, `unsubscribePageState`, `unsubscribeLinksFor` — the one
+  function campaign sending uses — and `listUnsubscribeLinks`; the only `persons` reads without `visiblePerson()`: the
+  token is the authority). Public pages: `src/app/unsubscribe/[token]/` (the page, `confirm/` and `one-click/` route
+  handlers, listed in `PUBLIC` in `src/proxy.ts`) and `src/app/dev/unsubscribe-links/` (development and test only).
+  Timeline kinds `unsubscribed_link`, `unsubscribed_mail_app` (no actor) and `consent_changed` (a teammate's Consent edit;
+  the person form sends `consentShown` and a save changes Consent only when the field was changed on that form).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
   `records/import/`: the CSV import screens shared by `/people/import` and `/organisations/import` (`ImportPages.tsx`:
   the four steps; `FileStep.tsx`: the only client part, sends the file in 512 KiB parts; `actions.ts`; `example.ts`).
@@ -80,14 +87,46 @@ OAuth code flow and database sessions.
 - `src/app/(app)/deals/` — the board (`Board.tsx`: native drag and drop), deal drawer and forms, `list/` (the deal
   list), `[id]/` (the deal page: `StageBar.tsx`, `LostBox.tsx`, `not-found.tsx`), `ViewSwitch.tsx` (Board / List);
   `src/app/(app)/admin/pipelines/` — the Pipelines admin pages.
+- `src/server/campaigns/` — campaign drafts (SF-119), shared by the whole team (no visibility rule): `merge.ts` (pure and
+  client-safe: the tag grammar `{{<name> | <if empty>}}`, the 11 built-in merge fields then people custom fields `cf:<id>`,
+  `resolveTag` link → built-in → custom → unknown, `rewriteNames` (custom field tags follow renames through `merge_links`),
+  `unknownTags`, `linksToStore`, `fillText` / `fillHtml` / `blockFill` with values HTML-escaped), `content.ts` (pure and
+  client-safe: blocks, `LAYOUTS`, `validateContent`, `blocksToHtml`, `frameDocument`: the preview's CSP and `<base
+  target="_blank">` first), `rules.ts` (pure and client-safe: limits in code points, `validateDraft`, `stillEmpty`,
+  `copyName`), `campaigns.ts` (list, open with renamed tags, create, save with the version check, duplicate, delete),
+  `preview.ts` (the picker search and a person's merge values, through `visiblePerson` / `getPerson`, never archived).
+  The pure files never import `@/server/db` or anything server-only: the editor imports them.
+- `src/app/(app)/campaigns/` (SF-119) — the Campaigns page (`page.tsx`, design A table, `?new=1` `NewCampaignBox.tsx`,
+  `?delete=<id>` `CampaignDeleteConfirm.tsx`), `[id]/` the edit page (`?delete=1`, `not-found.tsx`), `actions.ts`, and the
+  client parts: `CampaignEditor.tsx` (details, content, the live preview's filling), `BlockList.tsx`, `MergeTagMenu.tsx`,
+  `PreviewPersonPicker.tsx`, `CampaignPreview.tsx` (the email only inside `<iframe sandbox="allow-popups
+  allow-popups-to-escape-sandbox" srcDoc>`; never `dangerouslySetInnerHTML`). `next.config.ts` raises the server action
+  body limit to 4 MB for pasted HTML.
+- `src/server/segments/` (SF-120) — saved segments, shared by the whole team: `rules.ts` (pure: `Condition` / `Definition` /
+  `Reach` types, `readSegmentForm`, `validateSegmentForm` (ids kept only when among the form options), `readConditions`,
+  `describeSegment` (summary, // WHO and // CONDITIONS lines, "(deleted)", `broken`), `formToValues`), `reach.ts` (`reachWhere` on
+  `persons p` with `visiblePerson` and the deals through `visibleDeal`, archived deals never; `countReach`: one query, left out
+  archived → unsubscribed → no email; `reachedPeople`: person and first email, for the later campaign issue), `segments.ts`
+  (`listSegments`, `getSegment`, `segmentFormOptions`, `createSegment` / `updateSegment` (version check) / `deleteSegment`,
+  `countDefinition`). Table `segments` (conditions as jsonb, no foreign keys to things that can be deleted). Counts are worked
+  out at each read, never stored. `customProbe` in `custom-fields/values.ts` is the custom value test shared by the People
+  list filters and the segment reach.
+- `src/app/(app)/segments/` (SF-120) — the Segments table (`page.tsx`), `[id]/` the segment page (count strip, // WHO,
+  // CONDITIONS, `?confirm=delete` → `SegmentDeleteConfirm.tsx`), `new/` and `[id]/edit/` (the form on its own page),
+  `SegmentForm.tsx` (client: who, condition rows, [ COUNT AGAIN ]), `MultiPicker.tsx` (client: filtering multi-select with
+  chips), `ReachBlock.tsx`, `actions.ts`.
 - `src/server/imports/` — CSV import (SF-103): `csv.ts` (reading the file), `columns.ts` (fields, suggestions, mapping
   checks, example files), `rows.ts` (a row through `validatePerson`/`validateOrganisation`), `plan.ts` (what an import
   will do: duplicates, organisations, lists, owners, consent), `text.ts` (reasons and warnings) are pure; `imports.ts`
   (table `csv_imports`: upload in parts, columns, preview, `runImport` in one transaction locking `organisations` and
   `person_emails`, bulk inserts through `bulk.ts`: `newIds`, `inChunks`, `col`, `insertCustomValues`, shared with the
   Pipedrive import).
-- `src/server/pipedrive/` — the Pipedrive import (SF-117): `crypto.ts` (`sealToken` / `openToken`: AES-256-GCM, key
-  `PIPEDRIVE_TOKEN_KEY` from `pipedriveConfig()` in `env.ts`, bound to the user), `api.ts` (the six GET calls by plain
+- `src/server/crypto/seal.ts` — the one sealing of saved tokens of outside services (SF-117, shared since SF-118):
+  `sealToken(key, purpose, userId, token)` / `openToken(…)`, `TokenUnreadable`; AES-256-GCM, version 1 ‖ IV ‖ tag ‖
+  cipher, additional data `"<purpose>:<userId>"` (purposes `pipedrive-token`, `gmail-token`); one key per service
+  (`PIPEDRIVE_TOKEN_KEY`, `GMAIL_TOKEN_KEY`), each decoded by `readTokenKey()` in `env.ts`.
+- `src/server/pipedrive/` — the Pipedrive import (SF-117): tokens sealed by `crypto/seal.ts` with
+  `PIPEDRIVE_TOKEN_KEY` from `pipedriveConfig()` in `env.ts`, bound to the user; `api.ts` (the six GET calls by plain
   `fetch`, token in the `x-api-token` header only, 10 s time-out, `PipedriveRefused` / `PipedriveSlowDown` /
   `PipedriveBadRequest` / `PipedriveUnreachable`, `retrySeconds`, `usePipedriveFetchForTests`), `fake-pipedrive.ts`
   (`FakePipedrive`, `fakePipedrive()` the development instance: tokens `fake-pipedrive-token` / `fake-pipedrive-other`),
@@ -116,17 +155,38 @@ OAuth code flow and database sessions.
   step and cursor; cleared when they move), and every save re-checks under lock that the user is active and still holds
   the token (`lockRow`; else paused, nothing saved). A record private to another owner, or put on a record the importer
   cannot see, is never named in the report (`privateItem`: empty label, `args.privateKind`, shown "a private …").
+- `src/server/gmail/` — Gmail connect and sync (SF-118); settings from `gmailConfig()` in `env.ts` (real / fake / off).
+  `rules.ts` (pure: `GMAIL_SCOPES` = `gmail.modify` + `gmail.send`, `hasAllScopes`, `parseAddressList`, `decodeHeader`,
+  `readMessage`, `decideCopy`, `classifyGoogleError`, `buildMime` (`BadHeader` on CR/LF), `testEmail`), `google-api.ts`
+  (every Google call by plain `fetch`, 10 s: consent address, token, revoke, certs, Gmail; `GoogleKeyRefused` /
+  `GoogleUnavailable` / `HistoryGone`; `useGmailFetchForTests`), `push.ts` (`verifyPushToken`: Google's OIDC token with
+  node:crypto, keys cached by max-age; `receiveGmailPush`), `connections.ts` (`gmailSettings`, `gmailNeedsReconnect`,
+  `connectFromCallback`, `finishConnect`, `disconnect`, `forgetGmailInTx` + `afterGmailForgotten` used by
+  `users.deactivate`, `markNeedsReconnect`; `loadKey` is the ONLY reader of `token_cipher`), `sync.ts` (`syncConnection`:
+  a lease column, history since `history_id` or a listing when it is gone, at most 300 `messages.get` per run, one
+  `sql.begin()` per stored message; `renewWatch`; `runGmailCheck` the 15-minute job), `send.ts` (`sendGmail`, the one
+  way to send: `GmailNotConnected` / `GmailNeedsReconnect` / `GmailUnavailable`), `fake-gmail.ts` (`FakeGoogleMail`,
+  `fakeGmail()`: `MemoryStore` in tests, `.fake-gmail/state.json` in development). No Google call inside `sql.begin()`.
+  Tables `gmail_connections` (one per user, kept after disconnect), `email_threads`, `email_messages`, `email_attachments`
+  (names and sizes only).
 - `src/app/(app)/settings/` (SF-117) — Settings (`page.tsx`, `PipedriveSection.tsx`, `RemoveTokenConfirm.tsx`,
-  `actions.ts`), linked by `footerNav` in `nav.ts` at the bottom of the sidebar; `settings/pipedrive-import/` — the import
+  `actions.ts`; SF-118: `GmailCard.tsx`, `GmailDisconnectConfirm.tsx`, the actions `startGmailConnect`, `disconnectGmail`,
+  `sendTestEmail`, and `gmail/callback/route.ts`), linked by `footerNav` in `nav.ts` at the bottom of the sidebar (SF-118:
+  `SettingsLink` in `UnreadLink.tsx` shows the orange "!" while Gmail needs reconnecting; `currentSidebar()` in
+  `notifications/actions.ts` refreshes it with the unread count); `settings/pipedrive-import/` — the import
   page (`page.tsx`, `maxDuration = 60`; `ChooseStep.tsx`, `ProgressStep.tsx`, `ReportStep.tsx`, `Counts.tsx`,
   `StopConfirm.tsx`, `actions.ts`, SF-122 `KindChoice.tsx`: client, the six checkboxes, Deals / Notes / Activities / Files
   tick and lock People and Organisations) and `ImportRunner.tsx` (client: one part, `router.refresh()`, the next part a second
   later or after Pipedrive's wait). `records/import/StepBar.tsx` takes a `steps` prop.
-- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, notes, activities, ambassadors,
-  files, custom fields: `custom-fields.ts`). The fake Pipedrive needs no seeding.
+- `src/app/gmail/push/route.ts` (Pub/Sub push, Google's token) and `src/app/cron/gmail/route.ts` (the 15-minute check,
+  `CRON_SECRET`), scheduled by `vercel.json` (SF-118); `src/app/dev/fake-google/gmail` (the fake consent screen; its buttons post a plain form to `answer/route.ts`, a 303 to the callback) and
+  `src/app/dev/fake-gmail` (the fake mailbox page), 404 unless the Gmail mode is `fake`.
+- `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, gmail (SF-118: Ada Fake's fake Gmail
+  connection and three conversations), notes, activities, ambassadors, files, custom fields: `custom-fields.ts`,
+  campaigns: `campaigns.ts`, segments: `segments.ts`). The fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
-- `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage and Pipedrive
-  v2 / v1 schemas, plus the full Pipedrive v1 copy `pipedrive_v1_full_openapi.yml`).
+- `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage, Pipedrive
+  v2 / v1 (plus the full Pipedrive v1 copy `pipedrive_v1_full_openapi.yml`), Gmail and Pub/Sub schemas).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),
   `tests/support/reset.ts` (empties every app table; lead sources back to the six starting ones).
 
@@ -152,7 +212,8 @@ npm test && npm run typecheck
 
 Each test names what it covers (`// covers FR-003, US1 scenario 2`). Fakes only for outside services
 (Google Sign-In: `tests/fakes/google.ts`; Supabase Storage: `tests/fakes/storage.ts`, checked against
-`storage_v0_openapi.json`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
+`storage_v0_openapi.json`; Gmail and Pub/Sub: `tests/fakes/gmail.ts`, checked against `gmail-api.json` and
+`pubsub-api.json`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
 `pipedrive_v2_openapi.json` and `pipedrive_v1_openapi.yml` (a v1 path that file lacks: `pipedrive_v1_full_openapi.yml`;
 downloads checked for their content type only; the fake file host refuses the token) by `tests/fakes/pipedrive-schema.ts`; each checked against
 its schema; see `.factory/test-env.md`).

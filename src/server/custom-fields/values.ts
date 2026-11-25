@@ -176,6 +176,13 @@ const number = (raw: string) => { const n = parseNumber(raw); return n.ok ? n.va
 const pence = (raw: string) => { const m = parseMoney(raw); return m.ok ? m.pence : null; };
 const day = (raw: string) => { const d = parseDate(raw); return d.ok ? d.date : null; };
 
+// SF-120 (research.md §4): one custom value test on the record `alias`, shared by the list filters below and the segment
+// reach (src/server/segments/reach.ts), so the two never disagree: the record has a value of `field` passing `test`
+// (on `cv`). `not ${customProbe(…, sql`true`)}` is "no value".
+export function customProbe(db: Sql, field: Pick<CustomField, "id" | "kind">, alias: string, test: Fragment): Fragment {
+  return db`exists (select 1 from custom_values cv where cv.field_id = ${field.id} and cv.${db(TARGET_COLUMN[field.kind])} = ${db(alias)}.id and ${test})`;
+}
+
 // The list's custom filters (already checked by knownCustomQuery) and custom sort, for the list's record alias. Filters are
 // `exists` probes inside the list's `where`, after its visibility condition, so hidden records never match (US6-1).
 export function customListParts(
@@ -192,11 +199,10 @@ export function customListParts(
     const raw = query.custom[`cf${field.id}`];
     const from = query.custom[`cf${field.id}_from`];
     const to = query.custom[`cf${field.id}_to`];
-    const probe = (cond: Fragment) =>
-      db`exists (select 1 from custom_values cv where cv.field_id = ${field.id} and cv.${db(col)} = ${rec}.id and ${cond})`;
+    const probe = (cond: Fragment) => customProbe(db, { id: field.id, kind }, alias, cond);
     // "empty" means "no value" only for the types whose filter offers it (US3 scenario 3); for text it is text.
     if (raw === "empty" && (field.type === "single_choice" || field.type === "yes_no")) {
-      conditions.push(db`not exists (select 1 from custom_values cv where cv.field_id = ${field.id} and cv.${db(col)} = ${rec}.id)`);
+      conditions.push(db`not ${customProbe(db, { id: field.id, kind }, alias, db`true`)}`);
       continue;
     }
     switch (field.type) {

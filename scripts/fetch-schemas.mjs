@@ -1,8 +1,9 @@
 // `npm run test:schemas` (also run before `npm test`): downloads the schemas the test fakes of outside services are
 // checked against, each pinned to one commit and checked by sha256: Google's userinfo (tests/fakes/google.ts) and
 // Supabase Storage's OpenAPI file (SF-116, tests/fakes/storage.ts) and Pipedrive's v2 (JSON) and v1 (YAML) OpenAPI
-// files (SF-117, tests/fakes/pipedrive.ts), plus a fuller v1 copy (SF-122) that tests/fakes/pipedrive.ts uses for the v1
-// paths the Zenika file lacks (deal participants, file downloads). A file already there is skipped. The files stay
+// files (SF-117, tests/fakes/pipedrive.ts), a fuller v1 copy (SF-122) that tests/fakes/pipedrive.ts uses for the v1
+// paths the Zenika file lacks (deal participants, file downloads), and Gmail's and Cloud Pub/Sub's discovery files (SF-118,
+// tests/fakes/gmail.ts). A file already there is skipped. The files stay
 // out of git (.factory/schemas/ is ignored).
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -33,6 +34,16 @@ const SCHEMAS = [
     file: "pipedrive_v1_full_openapi.yml",
     url: "https://raw.githubusercontent.com/konfig-sdks/openapi-examples/161ab49c45e45825ca3832945c59a3ba904321ba/pipedrive/openapi.yaml",
     sha256: "24230787d0c71b1e528a2824e8aa6d3137db26aa57973e65f3819b1fce825665",
+  },
+  {
+    file: "gmail-api.json",
+    url: "https://raw.githubusercontent.com/googleapis/google-api-go-client/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json",
+    sha256: "839b7963df95481f3cd2ba7aa1e906f1fc67c4ae89719d09bb7305040e99f0fb",
+  },
+  {
+    file: "pubsub-api.json",
+    url: "https://raw.githubusercontent.com/googleapis/google-api-go-client/3f740bc15212818d4d0eb041b02c951457ff63fa/pubsub/v1/pubsub-api.json",
+    sha256: "df690a6912844276487a3dae9db3346e65b19aa5434ab0ae024fc89dcffffc17",
   },
 ];
 

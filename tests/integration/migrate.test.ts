@@ -281,6 +281,48 @@ describe("npm run db:migrate", () => {
     }
   });
 
+  // covers SF-120 T005, FR-005, FR-007: 0014_segments.sql on a fresh database: names, who, conditions as a list of at
+  // most 20, no foreign keys to things that can be deleted, row level security on
+  it("applies 0014_segments.sql: checked names, who and conditions, unique names ignoring case, RLS on", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0014_segments.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const seg = (name: string, who = "everyone", pipeline: number | null = null, stage: number | null = null, status: string | null = null, conditions: unknown = []) =>
+        c`insert into segments (name, who, pipeline_id, stage_id, deal_status, conditions, created_by, updated_by)
+          values (${name}, ${who}, ${pipeline}, ${stage}, ${status}, ${c.json(conditions as never)}, ${u.id}, ${u.id})`;
+      expect(await code(seg("Everyone"))).toBe("ok");
+      expect(await code(seg("EVERYONE"))).toBe("23505");
+      expect(await code(seg(" padded "))).toBe("23514");
+      expect(await code(seg(""))).toBe("23514");
+      expect(await code(seg("x".repeat(101)))).toBe("23514");
+      expect(await code(seg("x".repeat(100)))).toBe("ok");
+      expect(await code(seg("Bad who", "nobody"))).toBe("23514");
+      expect(await code(seg("Everyone with pipeline", "everyone", 1, null, "open"))).toBe("23514");
+      // No foreign key: a pipeline or stage id that does not exist (deleted) is kept.
+      expect(await code(seg("Pipeline", "pipeline", 999, null, "all"))).toBe("ok");
+      expect(await code(seg("Pipeline with stage", "pipeline", 999, 5, "open"))).toBe("23514");
+      expect(await code(seg("Stage", "stage", 999, 998, "won"))).toBe("ok");
+      expect(await code(seg("Stage no stage", "stage", 999, null, "won"))).toBe("23514");
+      expect(await code(seg("Bad status", "pipeline", 999, null, "closed"))).toBe("23514");
+      expect(await code(seg("Not a list", "everyone", null, null, null, { a: 1 }))).toBe("23514");
+      expect(await code(seg("21", "everyone", null, null, null, Array.from({ length: 21 }, () => ({}))))).toBe("23514");
+      expect(await code(seg("20", "everyone", null, null, null, Array.from({ length: 20 }, () => ({}))))).toBe("ok");
+      const [row] = await c`select version, created_at is not null as at from segments where name = 'Everyone'`;
+      expect(row).toEqual({ version: 1, at: true });
+      const rls = await c`select relname from pg_class where relname = 'segments' and relrowsecurity`;
+      expect(rls.length).toBe(1);
+      const idx = await c`select indexname from pg_indexes where indexname in ('segments_name_key', 'deals_stage_live_idx') order by indexname`;
+      expect(idx.map((r) => r.indexname)).toEqual(["deals_stage_live_idx", "segments_name_key"]);
+    } finally {
+      await c.end();
+    }
+  });
+
   // covers SF-117 T013, FR-006, FR-017: 0012_pipedrive.sql on a fresh database: connections, imports, links, two new kinds
   it("applies 0012_pipedrive.sql: one open import per user, state and kind checks, link checks, kinds kept and added", async () => {
     const db = await scratchDb();
@@ -336,13 +378,153 @@ describe("npm run db:migrate", () => {
     }
   });
 
-  // covers SF-122 data-model.md § Migration: 0013_pipedrive_deals.sql: the new columns, the records, step and pause checks,
-  // the link kinds and targets
-  it("applies 0013_pipedrive_deals.sql: new columns and defaults, records check, steps, pause reason, link checks", async () => {
+  // covers SF-118 T009, data-model.md § Migration: 0016_gmail.sql after 0015_campaigns.sql on a fresh database, its 23514/23505
+  // refusals, the cascade from a thread to its messages and attachments, RLS on the four tables
+  it("applies 0016_gmail.sql: connection state and cipher checks, message and attachment checks, one copy per account", async () => {
     const db = await scratchDb();
     const run = await runMigrate(db);
     expect(run.code, run.out).toBe(0);
-    expect(run.out).toContain("Applied 0013_pipedrive_deals.sql");
+    expect(run.out.indexOf("Applied 0015_campaigns.sql")).toBeGreaterThan(-1);
+    expect(run.out.indexOf("Applied 0016_gmail.sql")).toBeGreaterThan(run.out.indexOf("Applied 0015_campaigns.sql"));
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('linus@barnacle.ai', 'Linus') returning id`;
+      const cipher = Buffer.alloc(40, 1);
+      const conn = (cols: { email?: string; state?: string; cipher?: Buffer | null; expires?: Date | null }) =>
+        c`insert into gmail_connections (user_id, email, state, token_cipher, connected_at, watch_expires_at)
+          values (${u.id}, ${cols.email ?? "linus@barnacle.ai"}, ${cols.state ?? "working"},
+                  ${cols.cipher === undefined ? cipher : cols.cipher}, now(), ${cols.expires ?? null}) returning id`;
+      expect(await code(conn({ state: "disconnected" }))).toBe("23514");
+      expect(await code(conn({ cipher: null }))).toBe("23514");
+      expect(await code(conn({ email: "x@other.test" }))).toBe("23514");
+      expect(await code(conn({ email: " Linus@barnacle.ai" }))).toBe("23514");
+      expect(await code(conn({ state: "disconnected", cipher: null, expires: new Date() }))).toBe("23514");
+      expect(await code(conn({ state: "paused" }))).toBe("23514");
+      expect(await code(conn({ state: "disconnected", cipher: null }))).toBe("ok");
+      await c`delete from gmail_connections`;
+      const [g] = await conn({});
+      const [t] = await c`insert into email_threads (connection_id, gmail_thread_id, subject) values (${g.id}, 't1', 'Hi') returning id`;
+      const msg = (cols: { id: string; direction?: string; to?: object }) =>
+        c`insert into email_messages (connection_id, thread_id, gmail_message_id, direction, to_list, received_at)
+          values (${g.id}, ${t.id}, ${cols.id}, ${cols.direction ?? "received"}, ${c.json((cols.to ?? []) as never)}, now()) returning id`;
+      expect(await code(msg({ id: "m0", direction: "forwarded" }))).toBe("23514");
+      expect(await code(msg({ id: "m0", to: {} }))).toBe("23514");
+      expect(await code(msg({ id: "" }))).toBe("23514");
+      const [m] = await msg({ id: "m1", to: [{ email: "ana@example.test", name: null }] });
+      expect(await code(msg({ id: "m1" }))).toBe("23505");
+      const att = (cols: { position: number; name?: string; size?: number }) =>
+        c`insert into email_attachments (message_id, position, name, size) values (${m.id}, ${cols.position}, ${cols.name ?? "a.pdf"}, ${cols.size ?? 1})`;
+      expect(await code(att({ position: 0, size: -1 }))).toBe("23514");
+      expect(await code(att({ position: 0, name: "" }))).toBe("23514");
+      expect(await code(att({ position: 0, name: "x".repeat(256) }))).toBe("23514");
+      expect(await code(att({ position: 0, size: 20971520 }))).toBe("ok");
+      expect(await code(att({ position: 0 }))).toBe("23505");
+      // Deleting a thread takes its messages and their attachments with it.
+      await c`delete from email_threads where id = ${t.id}`;
+      const [{ n }] = await c`select (select count(*) from email_messages)::int + (select count(*) from email_attachments)::int as n`;
+      expect(n).toBe(0);
+      const rls = await c`select relname from pg_class where relname in ('gmail_connections', 'email_threads', 'email_messages', 'email_attachments') and relrowsecurity`;
+      expect(rls.length).toBe(4);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-120 T005: the segments code keeps to the pooler's limits (no session state); 0014 is transaction-safe
+  it("keeps the segments code and 0014_segments.sql free of session state", () => {
+    const dir = "src/server/segments";
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["rules.ts", "reach.ts", "segments.ts"]));
+    for (const file of readdirSync(dir)) {
+      const text = readFileSync(`${dir}/${file}`, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0014_segments.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration.match(/create table/gi)?.length).toBe(1);
+    expect(migration).toContain("alter table segments enable row level security;");
+  });
+
+  // covers SF-121 T004, FR-002, FR-003: 0013_unsubscribe.sql on a fresh database: a distinct 64-hex token for every
+  // person (existing rows included), Postgres's own refusals, the three kinds and their checks, other kinds kept
+  it("applies 0013_unsubscribe.sql: a distinct token per person, token checks, unsubscribe and consent kinds", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0013_unsubscribe.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      // Rows already there when the column is added: drop it, add people, run the migration's persons statements again.
+      await c`alter table persons drop column unsubscribe_token`;
+      for (const name of ["Cara", "Dev", "Eve"]) await c`insert into persons (first_name, owner_id, created_by) values (${name}, ${u.id}, ${u.id})`;
+      const migration = readFileSync("migrations/0013_unsubscribe.sql", "utf8");
+      const personsPart = migration.slice(0, migration.indexOf("alter table timeline_events"));
+      await c.unsafe(personsPart);
+      const [p] = await c`insert into persons (first_name, owner_id, created_by) values ('Fay', ${u.id}, ${u.id}) returning id, unsubscribe_token`;
+      const tokens = (await c`select unsubscribe_token from persons`).map((r) => r.unsubscribe_token as string);
+      expect(tokens).toHaveLength(4);
+      expect(new Set(tokens).size).toBe(4);
+      for (const t of tokens) expect(t).toMatch(/^[0-9a-f]{64}$/);
+      expect(await code(c`update persons set unsubscribe_token = 'abc' where id = ${p.id}`)).toBe("23514");
+      expect(await code(c`update persons set unsubscribe_token = ${"AB".repeat(32)} where id = ${p.id}`)).toBe("23514");
+      expect(await code(c`update persons set unsubscribe_token = ${tokens.find((t) => t !== p.unsubscribe_token)!} where id = ${p.id}`)).toBe("23505");
+      const ev = (kind: string, cols: { actor?: number | null; old?: string | null; neu?: string | null } = {}) =>
+        c`insert into timeline_events (person_id, kind, actor_id, old_value, new_value)
+          values (${p.id}, ${kind}, ${cols.actor === undefined ? u.id : cols.actor}, ${cols.old ?? null}, ${cols.neu ?? null})`;
+      expect(await code(ev("unsubscribed_link", { actor: null }))).toBe("ok");
+      expect(await code(ev("unsubscribed_mail_app", { actor: null }))).toBe("ok");
+      expect(await code(ev("unsubscribed_link"))).toBe("23514");
+      expect(await code(ev("unsubscribed_mail_app"))).toBe("23514");
+      expect(await code(ev("consent_changed", { old: "Subscribed", neu: "Unsubscribed" }))).toBe("ok");
+      expect(await code(ev("consent_changed", { neu: "Unsubscribed" }))).toBe("23514");
+      expect(await code(ev("consent_changed", { old: "Subscribed" }))).toBe("23514");
+      expect(await code(ev("consent_changed", { actor: null, old: "Subscribed", neu: "Unsubscribed" }))).toBe("23514");
+      expect(await code(ev("edited", { old: "x" }))).toBe("23514");
+      for (const kind of ["imported", "edited", "pipedrive_imported", "pipedrive_unsubscribed"]) expect(await code(ev(kind)), kind).toBe("ok");
+      expect(await code(c`insert into timeline_events (person_id, kind, actor_id, field_name, new_value) values (${p.id}, 'custom_set', ${u.id}, 'Diet', 'Vegan')`)).toBe("ok");
+      expect(await code(ev("unsubscribed_other", { actor: null }))).toBe("23514");
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-118 T009, T012: the Gmail code keeps to the pooler's limits (no session state); 0016 is transaction-safe
+  it("keeps the Gmail code and 0016_gmail.sql free of session state", () => {
+    const dir = "src/server/gmail";
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["rules.ts", "google-api.ts", "push.ts", "connections.ts", "sync.ts", "send.ts", "fake-gmail.ts"]));
+    for (const file of [...readdirSync(dir).map((f) => `${dir}/${f}`), "src/server/crypto/seal.ts"]) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0016_gmail.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration.match(/create table/gi)?.length).toBe(4);
+    expect(migration.match(/enable row level security/gi)?.length).toBe(4);
+  });
+
+  // covers SF-121 T004: the unsubscribe code keeps to the pooler's limits; the migration is transaction-safe, no table
+  it("keeps the unsubscribe code and 0013_unsubscribe.sql free of session state", () => {
+    for (const file of ["src/server/records/unsubscribe.ts", "src/server/records/unsubscribe-rules.ts"]) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    const migration = readFileSync("migrations/0013_unsubscribe.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration).not.toMatch(/create table/i);
+  });
+
+  // covers SF-122 data-model.md § Migration: 0017_pipedrive_deals.sql: the new columns, the records, step and pause checks,
+  // the link kinds and targets
+  it("applies 0017_pipedrive_deals.sql: new columns and defaults, records check, steps, pause reason, link checks", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0017_pipedrive_deals.sql");
     const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
     try {
       const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
@@ -384,18 +566,18 @@ describe("npm run db:migrate", () => {
     } finally {
       await c.end();
     }
-    const migration = readFileSync("migrations/0013_pipedrive_deals.sql", "utf8");
+    const migration = readFileSync("migrations/0017_pipedrive_deals.sql", "utf8");
     expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
     expect(migration).not.toMatch(/create table/i);
   });
 
-  // covers SF-122 fix round 1 (US5 scenario 5, SC-001): 0014_pipedrive_fetched.sql adds the nullable jsonb column
+  // covers SF-122 fix round 1 (US5 scenario 5, SC-001): 0018_pipedrive_fetched.sql adds the nullable jsonb column
   // pipedrive_imports.fetched (a part's answers kept across a slow-down), transaction-safe
-  it("applies 0014_pipedrive_fetched.sql: pipedrive_imports.fetched, nullable jsonb", async () => {
+  it("applies 0018_pipedrive_fetched.sql: pipedrive_imports.fetched, nullable jsonb", async () => {
     const db = await scratchDb();
     const run = await runMigrate(db);
     expect(run.code, run.out).toBe(0);
-    expect(run.out).toContain("Applied 0014_pipedrive_fetched.sql");
+    expect(run.out).toContain("Applied 0018_pipedrive_fetched.sql");
     const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
     try {
       const [col] = await c`select data_type, is_nullable from information_schema.columns where table_name = 'pipedrive_imports' and column_name = 'fetched'`;
@@ -403,7 +585,7 @@ describe("npm run db:migrate", () => {
     } finally {
       await c.end();
     }
-    const migration = readFileSync("migrations/0014_pipedrive_fetched.sql", "utf8");
+    const migration = readFileSync("migrations/0018_pipedrive_fetched.sql", "utf8");
     expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
   });
 
@@ -420,6 +602,60 @@ describe("npm run db:migrate", () => {
     expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
     expect(migration.match(/create table/gi)?.length).toBe(3);
     expect(migration.match(/enable row level security/gi)?.length).toBe(3);
+  });
+
+  // covers SF-119 T010, FR-003, FR-010, FR-012: 0015_campaigns.sql on a fresh database: Postgres's own refusals
+  it("applies 0015_campaigns.sql: name, content and status checks; RLS on", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out).toContain("Applied 0015_campaigns.sql");
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const add = (cols: Record<string, unknown>) =>
+        c`insert into campaigns ${c({ name: "Fake", created_by: u.id, updated_by: u.id, ...cols } as never)}`;
+      expect(await code(add({}))).toBe("ok");
+      expect(await code(add({ name: "n".repeat(100) }))).toBe("ok");
+      expect(await code(add({ name: "n".repeat(101) }))).toBe("23514");
+      expect(await code(add({ name: " x" }))).toBe("23514");
+      expect(await code(add({ name: "" }))).toBe("23514");
+      expect(await code(add({ status: "sent" }))).toBe("23514");
+      expect(await code(add({ content_kind: "blocks", blocks: c.json([{ type: "divider" }]) }))).toBe("ok");
+      expect(await code(add({ content_kind: "blocks", blocks: c.json([{ type: "divider" }]), html: "<p>x</p>" }))).toBe("23514");
+      expect(await code(add({ content_kind: "html" }))).toBe("23514");
+      expect(await code(add({ html: "<p>x</p>" }))).toBe("23514");
+      expect(await code(add({ content_kind: "html", html: "x".repeat(500_000) }))).toBe("ok");
+      expect(await code(add({ content_kind: "html", html: "x".repeat(500_001) }))).toBe("23514");
+      expect(await code(add({ content_kind: "blocks", blocks: c.json([]) }))).toBe("23514");
+      expect(await code(add({ content_kind: "blocks", blocks: c.json(Array.from({ length: 51 }, () => ({ type: "divider" }))) }))).toBe("23514");
+      expect(await code(add({ merge_links: c.json({}) }))).toBe("23514");
+      expect(await code(add({ subject: "s".repeat(256) }))).toBe("23514");
+      const rls = await c`select relname from pg_class where relname = 'campaigns' and relrowsecurity`;
+      expect(rls.length).toBe(1);
+    } finally {
+      await c.end();
+    }
+  });
+
+  // covers SF-119 T010: the campaigns code keeps to the pooler's limits (no session state); the migration is transaction-safe
+  it("keeps the campaigns code and 0015_campaigns.sql free of session state", () => {
+    const dir = "src/server/campaigns";
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["merge.ts", "content.ts", "rules.ts", "campaigns.ts", "preview.ts"]));
+    for (const file of readdirSync(dir)) {
+      const text = readFileSync(`${dir}/${file}`, "utf8");
+      expect(text, file).not.toMatch(/`\s*(set|listen|unlisten)\s/i);
+      expect(text, file).not.toMatch(/pg_advisory_lock\(|pg_try_advisory_lock\(/);
+    }
+    // The pure files stay client-safe (the editor imports them).
+    for (const file of ["merge.ts", "content.ts", "rules.ts"]) {
+      expect(readFileSync(`${dir}/${file}`, "utf8"), file).not.toMatch(/@\/server\/db|next\/headers|server-only/);
+    }
+    const migration = readFileSync("migrations/0015_campaigns.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration.match(/create table/gi)?.length).toBe(1);
+    expect(migration.match(/enable row level security/gi)?.length).toBe(1);
   });
 
   // covers SF-116 T015: the files code keeps to the pooler's limits (no session state); the migration is transaction-safe

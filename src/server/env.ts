@@ -70,10 +70,76 @@ export type PipedriveConfig = { mode: "real" | "fake"; baseUrl: string; key: Buf
 
 export function pipedriveConfig(): PipedriveConfig {
   const url = (process.env.PIPEDRIVE_URL ?? "").trim().replace(/\/+$/, "");
-  const rawKey = (process.env.PIPEDRIVE_TOKEN_KEY ?? "").trim();
-  const decoded = /^[A-Za-z0-9+/]+={0,2}$/.test(rawKey) ? Buffer.from(rawKey, "base64") : null;
-  const key = decoded && decoded.length === 32 ? decoded : null;
+  const key = readTokenKey(process.env.PIPEDRIVE_TOKEN_KEY);
   if (url) return { mode: "real", baseUrl: url, key };
   if (isFakeAllowed()) return { mode: "fake", baseUrl: "https://fake.pipedrive.invalid", key };
   return { mode: "real", baseUrl: "https://api.pipedrive.com", key };
+}
+
+// SF-117 / SF-118 (research.md §4): a token-sealing key (PIPEDRIVE_TOKEN_KEY, GMAIL_TOKEN_KEY) is base64 of exactly 32
+// bytes, spaces around it ignored; anything else is no key.
+export function readTokenKey(raw: string | undefined): Buffer | null {
+  const value = (raw ?? "").trim();
+  const decoded = /^[A-Za-z0-9+/]+={0,2}$/.test(value) ? Buffer.from(value, "base64") : null;
+  return decoded && decoded.length === 32 ? decoded : null;
+}
+
+// SF-118 (research.md §12, contracts/google.md § Settings): Gmail is
+// - real when GMAIL_PUBSUB_TOPIC is set and the Google client, APP_URL, GMAIL_TOKEN_KEY, the push service account and
+//   CRON_SECRET (16 characters or more) are all valid;
+// - fake (src/server/gmail/fake-gmail.ts) when there is no topic, fakes are allowed and GMAIL_TOKEN_KEY is valid (no
+//   built-in key, as for Pipedrive);
+// - else off: Settings says "Gmail can't be connected right now.", the cron and push routes do nothing.
+export type GmailConfig =
+  | {
+      mode: "real" | "fake";
+      clientId: string;
+      clientSecret: string;
+      appUrl: string;
+      tokenKey: Buffer;
+      topic: string;
+      pushAudience: string;
+      pushServiceAccount: string;
+      pushSubscription: string | null;
+      cronSecret: string;
+    }
+  | { mode: "off" };
+
+export const FAKE_GMAIL = {
+  clientId: "fake-gmail-client.apps.googleusercontent.com",
+  clientSecret: "fake-gmail-client-secret",
+  topic: "projects/crm-fake/topics/gmail-fake",
+  pushServiceAccount: "gmail-push-fake@crm-fake.iam.gserviceaccount.com",
+  pushSubscription: "projects/crm-fake/subscriptions/gmail-push-fake",
+} as const;
+
+export function gmailConfig(): GmailConfig {
+  const env = process.env;
+  const topic = (env.GMAIL_PUBSUB_TOPIC ?? "").trim();
+  const tokenKey = readTokenKey(env.GMAIL_TOKEN_KEY);
+  const cronSecret = env.CRON_SECRET ?? "";
+  const pushSubscription = (env.GMAIL_PUSH_SUBSCRIPTION ?? "").trim() || null;
+  if (topic) {
+    const clientId = env.GOOGLE_CLIENT_ID ?? "";
+    const clientSecret = env.GOOGLE_CLIENT_SECRET ?? "";
+    const appUrl = (env.APP_URL ?? "").trim().replace(/\/+$/, "");
+    const pushServiceAccount = (env.GMAIL_PUSH_SERVICE_ACCOUNT ?? "").trim();
+    if (!clientId || !clientSecret || !appUrl || !tokenKey || !pushServiceAccount || cronSecret.length < 16) return { mode: "off" };
+    const pushAudience = (env.GMAIL_PUSH_AUDIENCE ?? "").trim() || `${appUrl}/gmail/push`;
+    return { mode: "real", clientId, clientSecret, appUrl, tokenKey, topic, pushAudience, pushServiceAccount, pushSubscription, cronSecret };
+  }
+  if (!isFakeAllowed() || !tokenKey) return { mode: "off" };
+  const appUrl = appBaseUrl();
+  return {
+    mode: "fake",
+    clientId: FAKE_GMAIL.clientId,
+    clientSecret: FAKE_GMAIL.clientSecret,
+    appUrl,
+    tokenKey,
+    topic: FAKE_GMAIL.topic,
+    pushAudience: (env.GMAIL_PUSH_AUDIENCE ?? "").trim() || `${appUrl}/gmail/push`,
+    pushServiceAccount: FAKE_GMAIL.pushServiceAccount,
+    pushSubscription: FAKE_GMAIL.pushSubscription,
+    cronSecret,
+  };
 }

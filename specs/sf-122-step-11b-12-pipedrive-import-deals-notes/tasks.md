@@ -63,7 +63,7 @@ There are no browser tests (docs/DECISIONS.md, 2026-11-23). Each test file names
 - [x] T002 [P] Extend `tests/unit/fetch-schemas.test.ts` (`// SF-122: the full Pipedrive v1 schema`). The fresh copy
   downloads `pipedrive_v1_full_openapi.yml`, and once parsed with `yaml`'s `parse`, its `paths` contain
   `/deals/{id}/participants`, `/files/{id}/download`, `/notes`, `/files` and `/activityTypes`.
-- [x] T003 Write `migrations/0013_pipedrive_deals.sql` exactly as data-model.md § Migration. First confirm the 0012
+- [x] T003 Write `migrations/0017_pipedrive_deals.sql` exactly as data-model.md § Migration. First confirm the 0012
   constraint names (`pipedrive_imports_step_check`, `pipedrive_imports_pause_reason_check`,
   `pipedrive_links_kind_check`) with `select conname from pg_constraint where conrelid = 'pipedrive_imports'::regclass`
   (and likewise for `pipedrive_links`). The file holds:
@@ -758,7 +758,7 @@ See plan.md § Fix round 1. Tests first: each one fails on the current code.
     of 500 parts. Expect the import finished, every deal imported once with its followers and other linked people,
     and, from the fake's call log, each followers / participants call answered with 200 at most once per deal.
     This fails now (the cap is reached).
-- [x] T072 [Fix] `migrations/0014_pipedrive_fetched.sql`: `alter table pipedrive_imports add column fetched jsonb;`.
+- [x] T072 [Fix] `migrations/0018_pipedrive_fetched.sql`: `alter table pipedrive_imports add column fetched jsonb;`.
   Extend `migrate.test.ts`. (`data-model.md` already lists the column.)
 - [x] T073 [Fix] `imports.ts`: `lockRow` checks the user is `active` and the `pipedrive_connections` row exists for
   the import's company, both `for share`, and returns why it fails. `runFilesPart`: on that failure, set the path due

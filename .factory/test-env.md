@@ -64,6 +64,38 @@
   adds 2 pipelines, 30 deals, 40 notes, 30 activities and 6 files (PDF, PNG, 26 MB, empty, Drive link, email
   attachment). Engine hook `onSaveForTests` (APP_ENV=test only) runs inside every import transaction: tests use it to
   prove no Pipedrive call happens while one is open, to force a failure, or to move the cursor (a stale part).
+- Gmail API (SF-118; users.getProfile, watch, stop, history.list, messages.list/get/send, threads.get): fake
+  `src/server/gmail/fake-gmail.ts` (`FakeGoogleMail`), wrapped for the tests by `tests/fakes/gmail.ts` (`GmailFake`,
+  `installGmailFake()`, installed with `useGmailFetchForTests`), which checks every Gmail request and answer against the
+  schema `gmail-api.json` (path and method among `resources.users` methods, each query parameter declared for that
+  method, JSON body properties declared in `WatchRequest` / `Message`, every answer property declared in its response
+  schema — `Profile`, `WatchResponse`, `ListHistoryResponse` → `History` → `HistoryMessageAdded` → `Message`,
+  `ListMessagesResponse`, `Message` → `MessagePart` → `MessagePartHeader` / `MessagePartBody`, `Thread` — with the JSON
+  types, int64/uint64 as strings); a refused call throws and is kept in `violations`, which fails the test in afterEach.
+  The fake copies Gmail's behaviour: 401 for a dead or expired access token, 403 `insufficientPermissions` outside the
+  token's scopes, rising history ids, `history.list` 404 for a start id older than the kept history (`forgetHistory()`),
+  `messages.list` newest first with `q=after:<seconds>` and spam/bin left out, a watch for 7 days, `messages.send` puts
+  the message in the sender's mailbox with SENT (and INBOX when sent to self). Switches: `down()`, `refuseKey(email)`,
+  `failWatch(on)`, `forgetHistory()`, `advance(ms)`, `tamper(fn)`, `requests`, `mailbox(email)`, `sent(email)`,
+  `tokenStatus(token)`, `tokensOf(email)`, `watchOf(email)`. In the running app (APP_ENV development/test,
+  `GMAIL_PUBSUB_TOPIC` empty, `GMAIL_TOKEN_KEY` set) the same fake runs in process (state in `.fake-gmail/state.json`):
+  `[ CONNECT GMAIL ]` opens the fake consent screen `/dev/fake-google/gmail`, and `/dev/fake-gmail` puts mail in a
+  user's mailbox (with or without its notice), runs the 15-minute check, refuses the key, fails renewals, forgets history.
+  `start-app.sh` makes a key into /tmp/gmail-token-key (`GMAIL_TOKEN_KEY=` for "Gmail can't be connected right now.") and
+  sets `CRON_SECRET=fake-cron-secret-0123456789`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY` for every test.
+- Cloud Pub/Sub push (SF-118; Gmail's notices to `POST /gmail/push`): the same fake's `notice(email)` (a Google-signed
+  OIDC token by the fake's RSA key, served at the certs URL) and `GmailFake.deliver(email)` (to `receiveGmailPush`, the
+  route's own handler), every push body checked against `PubsubMessage` in the schema `pubsub-api.json` (`message`
+  properties declared, `data` base64, wrapper `{ message, subscription }`); `dropNotice(email)` drops one.
+- Google OAuth 2.0 token and revoke endpoints and Google's signing keys (SF-118; oauth2.googleapis.com/token, /revoke,
+  www.googleapis.com/oauth2/v3/certs): the same fake. No public schema on GitHub (google-api-go-client's oauth2 v1/v2
+  files only describe userinfo and tokeninfo); it follows Google's "Using OAuth 2.0 for Web Server Applications" and
+  "Authenticate push subscriptions" pages and RFC 6749 §5.1/§5.2/§6, RFC 7636, RFC 7009 §2.2 and RFC 7517, checked by
+  `tests/unit/gmail-fake-oauth.test.ts`: codes once and for 10 minutes, `invalid_grant` for an unknown/used/expired code,
+  a wrong `code_verifier` or a revoked/refused refresh token, `401 invalid_client` for a wrong secret, `400
+  invalid_request` for a missing parameter, `scope` with only the ticked scopes, a refresh token only with
+  `access_type=offline`, 1-hour access tokens that die with their refresh token, revoke `200` / `400 invalid_token`, a
+  JWK set (`kid`, `kty` RSA, `alg` RS256, `n`, `e`) with `cache-control: max-age`.
 - Supabase Postgres (through the Supavisor pooler): no fake — a real local PostgreSQL 17. No public schema
   on GitHub; follows Supabase's docs (https://supabase.com/docs/guides/database/connecting-to-postgres):
   transaction-mode pooler copied by always connecting with `prepare: false` and taking only
@@ -146,6 +178,11 @@
   on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a 61-character or
   `colour`-typed field, a second "diet" person field, a value row with two values or two targets, a second value for the
   same field and person, a `custom_set` without a field name, an `edited` event with an old value). No new outside service.
+  Saved segments (SF-120, `src/server/segments/`) keep to the same pooler limits: no `set`/`listen`/session advisory lock
+  (scanned by `tests/integration/migrate.test.ts`), each save one `sql.begin()` with an optimistic `version` check, counts
+  as one read-only query per segment; the table and index come from `migrations/0014_segments.sql` (only `create table` /
+  `create index`, RLS on), applied on a fresh database by the same test, which checks Postgres's own 23514 / 23505
+  refusals. No new outside service and no new fake.
   The Pipedrive import code (SF-117: `src/server/pipedrive/*.ts`, `deactivate()` in `users.ts`) keeps to the same pooler
   limits: no fake, the real local PostgreSQL 17, no public schema on GitHub, follows
   https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session advisory lock,
@@ -158,13 +195,43 @@
   check), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a
   second open import, paused without a reason, People without consent, nothing ticked, a person link with an
   organisation id, `how = 'copied'`, a 256-character company name).
-  SF-122 (`migrations/0013_pipedrive_deals.sql`: no new table; `want_*`, `*_total`, `*_done` columns, the records, step
+  SF-122 (`migrations/0017_pipedrive_deals.sql`: no new table; `want_*`, `*_total`, `*_done` columns, the records, step
   and pause-reason checks, link kinds deal / note / activity / file with their id columns) applied on a fresh database
   by `migrate.test.ts` (23514 for Deals without People, an unknown step, a note link with a deal id, a linked deal). The
   new steps keep the same rules: every Pipedrive call (followers, participants, the pipelines and stages lists, file
   downloads) and every Storage call (sign-upload, PUT) happens before `sql.begin()`; the `pipelines` step holds
   `lock table pipelines, stages in share row exclusive mode`; a file part queues its Storage path in `file_cleanup` before
   the upload and lists the file in the transaction that deletes that row.
+  The Gmail code (SF-118: `src/server/gmail/*.ts`, `src/server/crypto/seal.ts`, `deactivate()` in `users.ts`) keeps to the
+  same pooler limits: no fake, the real local PostgreSQL 17, no public schema on GitHub, follows
+  https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session advisory
+  lock, scanned by `tests/integration/migrate.test.ts`), overlapping syncs kept apart by a lease column
+  (`sync_lease_until`, `sync_again`) instead of a lock, every change one `sql.begin()` (one per stored message), and NO
+  Google (network) call inside a transaction: Google is called before (connect) or after commit (watch, stop, revoke).
+  Its tables come from `migrations/0016_gmail.sql` (`gmail_connections`, `email_threads`, `email_messages`,
+  `email_attachments`; RLS on each), applied on a fresh database after 0015 by `migrate.test.ts`, which also checks
+  Postgres's own 23514/23505 refusals (a disconnected row with a key, a working row without one, a non-barnacle address,
+  a disconnected row with a watch, direction `forwarded`, `to_list` `{}`, an attachment of size -1 or with an empty name,
+  a second copy of a message for one account) and the cascade from a thread to its messages and attachments.
+  The unsubscribe code (SF-121: `src/server/records/unsubscribe.ts`) keeps to the same pooler limits: no fake, the real
+  local PostgreSQL 17, no public schema; no session state, each unsubscribe one `sql.begin()` with a conditional
+  `update persons … where unsubscribe_token = $1 and consent = 'subscribed' returning id` (Read Committed re-checks the
+  `where` after the row lock, so two requests at once write one line; `tests/integration/unsubscribe.test.ts` runs them
+  with `Promise.all`). Its column and kinds come from `migrations/0013_unsubscribe.sql` (`persons.unsubscribe_token`, a
+  64-hex `gen_random_uuid()` default per row, unique; kinds `unsubscribed_link`, `unsubscribed_mail_app`,
+  `consent_changed`), applied on a fresh database by `migrate.test.ts`, which also checks existing rows each get a
+  distinct token and Postgres's own refusals (23514: token `'abc'` or uppercase hex, `consent_changed` without
+  `old_value`/`new_value` or actor, an unsubscribe kind with an actor; 23505: a duplicate token). Mail apps' RFC 8058
+  one-click POSTs are not an outside service: the tests call the route handler straight with RFC 8058's body
+  (`List-Unsubscribe=One-Click`, urlencoded and multipart).
+  SF-119 (campaign drafts) keeps to the same pooler limits in `src/server/campaigns/` (no `set`/`listen`/session advisory
+  lock; each change one `sql.begin()`, the save locking its row `for update`); its table comes from
+  `migrations/0015_campaigns.sql` (`campaigns`: drafts with a `version`, `content_kind` blocks/html, `blocks` jsonb,
+  `html`, `merge_links` jsonb), applied on a fresh database by `tests/integration/migrate.test.ts`, which also checks
+  Postgres's own 23514 refusals (a 101-character or untrimmed name, status `sent`, blocks with html, html kind without
+  html, html with no kind, `[]` or 51 blocks, 500,001 characters of HTML, `merge_links` `{}`, a 256-character subject)
+  and that the pure files (`merge.ts`, `content.ts`, `rules.ts`) import nothing server-only. No new outside service:
+  images or styles named in pasted HTML are fetched by the user's browser inside the sandboxed preview, never by the app.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -172,6 +239,8 @@
 - pipedrive_v2_openapi.json: https://github.com/soenneker/soenneker.pipedrive.openapiclient/blob/77695f9076c899e2ba1e7e8eb029aabb28abed27/openapi.json
 - pipedrive_v1_openapi.yml: https://github.com/Zenika/zenpipe/blob/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml
 - pipedrive_v1_full_openapi.yml: https://github.com/konfig-sdks/openapi-examples/blob/161ab49c45e45825ca3832945c59a3ba904321ba/pipedrive/openapi.yaml
+- gmail-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json
+- pubsub-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/pubsub/v1/pubsub-api.json
 
 - Pipedrive stand-in over HTTP (AI review, SF-117): `.factory/run/pipedrive-server.ts` serves Build's `FakePipedrive`
   (`buildDevFake()`, the same data as the in-process fake) on :9400 (`npx tsx .factory/run/pipedrive-server.ts`), for a second
@@ -188,7 +257,9 @@
   `initdb -D /tmp/pgdata -U postgres --auth=trust && pg_ctl -D /tmp/pgdata -o "-k /tmp -c listen_addresses=localhost" -l /tmp/pg.log start`
   and `psql -h localhost -U postgres -c "create database crm_test" -c "create database crm_dev"`.
 - Schemas: `.factory/schemas/oauth2-api.json`, `.factory/schemas/storage_v0_openapi.json`,
-  `.factory/schemas/pipedrive_v2_openapi.json`, `.factory/schemas/pipedrive_v1_openapi.yml` and `.factory/schemas/pipedrive_v1_full_openapi.yml`, downloaded by
+  `.factory/schemas/pipedrive_v2_openapi.json`, `.factory/schemas/pipedrive_v1_openapi.yml`,
+  `.factory/schemas/pipedrive_v1_full_openapi.yml`, `.factory/schemas/gmail-api.json` and
+  `.factory/schemas/pubsub-api.json`, downloaded by
   `npm run test:schemas` (run by `npm test` as `pretest`; commits above, sha256 checked).
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
@@ -205,6 +276,13 @@
     background (log `/tmp/app-$PORT.log`). Env: `PORT` (3000), `APP_ENV` (development; `APP_ENV=` for empty),
     `DATABASE_URL` (crm_dev), `FIRST_ADMIN_EMAIL` (ada@barnacle.ai; `FIRST_ADMIN_EMAIL=` for none), `VERCEL_ENV`,
     `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
+  - SF-120 segments: `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf120.js` (app on :3000 from
+    `start-app.sh`). It resets crm_dev itself (`reset-db.sh` + seed) and loads `.factory/run/sf120-setup.sql`: pipelines
+    RevPipe (stages RA, RB) and DelPipe (DA), 15 people "Rv …" (A1 on two deals with two addresses, A2 linked person, W1/W2
+    on a won deal, X1 on an archived deal, L1 archived+unsubscribed+no address, L2 unsubscribed+no address, L3 no address,
+    M1 only person of "Rv D9", G1 private (Grace), V1 on Grace's private deal, O1 at "Old Fakeco Archive", AL owned by
+    deactivated Alan Fake, Z1 at "Rv TempOrg" with the person Yes/No field "Rv Opted (fake)"). Expected for Ada: RA open 3,
+    all 5; RevPipe open 4 (left out 1/1/1); RB open 2, 1 after moving Rv D9 to RA. Runs all 23 SF-120 scenarios (~1 min; all pass, re-run in a second and third AI review, after the SF-121 merge).
     SF-117: `PIPEDRIVE_TOKEN_KEY` defaults to a key made once into /tmp/pipedrive-token-key (`PIPEDRIVE_TOKEN_KEY=` for
     "The Pipedrive import isn't set up yet."); `PIPEDRIVE_URL` empty → the in-process fake Pipedrive.
   - `bash .factory/run/reset-db.sh [db]` — empties every app table (users, sessions, people, organisations,
@@ -255,6 +333,21 @@
     Ben Referredfake (the removed choice Pescatarian, Head count 12), Dee Referredfake (Hiring), Sample Studios Fake
     (FAKE-001, £25,000), "Fake referral · website" (31 Mar 2027, NDA Yes) and the private "… · audit" (15 Jan 2027, NDA No),
     each with a "<Field> set to <value>" timeline entry by the record's creator.
+  - SF-118 AI review (Gmail connect and sync): `rm -rf .fake-gmail && bash .factory/run/reset-db.sh`, the app on :3000
+    (`start-app.sh`, fake Gmail), plus `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh` (edge 9:
+    Gmail off) and `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_PUBSUB_TOPIC=projects/fake/topics/x GOOGLE_CLIENT_ID=x
+    GOOGLE_CLIENT_SECRET=y GMAIL_PUSH_SERVICE_ACCOUNT=sa@fake NODE_USE_ENV_PROXY=1 HTTPS_PROXY=http://127.0.0.1:9
+    https_proxy=http://127.0.0.1:9 NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1 bash .factory/run/start-app.sh` (same
+    database, real-mode Gmail with Google unreachable: US3-2 "Gmail does not answer"). Then
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf118.js` (all 32, ~2.5 min; results in
+    /tmp/sf118-results.json). `.factory/run/gmail-ctl.ts` (run with `npx tsx`, env in its head comment) steers the dev fake
+    through `.fake-gmail/state.json` for what `/dev/fake-gmail` has no button for: a signed notice kept for later
+    (`notice`), a notice signed by another key (`badnotice`), moving a message to the bin (`trash`), `sendGmail` as a later
+    feature calls it (`send`), the Sent messages and token statuses. Users: Linus (main), Margaret (2nd mailbox, then
+    deactivated by Ada), Grace (two tabs). Fix round 1: `[ ALLOW ]` / `[ CANCEL ]` on the fake consent screen post a plain form to
+    `/dev/fake-google/gmail/answer` (a 303 to the callback), so the browser sends the `crm_gmail_oauth` cookie; the script
+    clicks them as a user would. Round 2: all 32 pass (needs `npm run test:schemas` first for smoke checks 1 and 4). Round 3 (after the origin/main merge with campaigns, segments, unsubscribe): all 32 pass again. On a fresh
+    database `reset-db.sh` fails (tables not made yet): run `start-app.sh` first (it migrates and seeds), then reset.
   - SF-117 AI review (Pipedrive import). Start, after the build on :3000: `nohup npx tsx .factory/run/pipedrive-server.ts >/tmp/pd.log 2>&1 &`,
     `PORT=3001 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_URL=http://localhost:9400 bash .factory/run/start-app.sh` and (edge 18)
     `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_TOKEN_KEY= bash .factory/run/start-app.sh`. Then, each on fresh data
@@ -324,6 +417,23 @@
     answer 303 (follow with `maxRedirects: 0` to read the Location); `/files/unavailable?reason=…` shows the message.
     `reset-db.sh` also empties `files`, `file_uploads`, `file_cleanup` (run `npm run db:migrate` first on an older
     crm_dev, else the truncate fails and nothing is seeded); `.fake-storage/` keeps old contents (harmless).
+  - Campaigns (SF-119). The seed (seeder "campaigns", last) adds five drafts, each only when no campaign has its name:
+    "Exec dinner – March (fake)" (Ada Fake; Text with a button; `{{First name | there}}`, `{{Organisation | your team}}`,
+    button https://example.test/dinner), "Welcome note (fake)" (Grace Fake; Blank), "Event recap (fake)" (Linus Fake; Text;
+    `{{Diet (fake) | not given}}` with its `merge_links` entry; skipped when the field is missing), "Newsletter – winter
+    (fake)" (Margaret Fake; Newsletter, image https://example.test/winter.png) and "Pasted HTML sample (fake)" (Ada Fake;
+    HTML with `<script>document.title='Changed (fake)'</script>`, an `onerror` image, a form posting to /campaigns and a
+    link to https://example.test/). Selectors: the edit page's subject `#campaign-subject`, the form `#campaign-form` (posted
+    by the header "[ SAVE ]" through `form=`), notices `.campaign-notes` ("Draft saved.", "Still empty: …", "Unknown merge
+    tags: …"), block cards `.blk` (buttons "↑" / "↓" named "Move <Block> up|down", "[ REMOVE ]"), the layout chooser
+    `.chooser`, the HTML box `textarea.html-box`, the merge tag menu buttons "[ INSERT MERGE TAG ]" (fields as `listitem`
+    buttons, input "If empty, show"), the picker `.preview-picker input` (results `.picker-list button`), the preview
+    `.mail-subject`, `.mail-from` and `iframe.mail-frame` (`frameLocator`). The switch boxes are `alertdialog`s with
+    "[ SWITCH ]" / "[ CANCEL ]"; the delete confirmation an `alertdialog` with "[ DELETE FOR GOOD ]". Checking the sandbox in
+    a browser (quickstart.md § By hand, step 4): open "Pasted HTML sample (fake)": the console shows "Blocked script
+    execution in 'about:srcdoc'…", `page.title()` stays "Barnacle CRM", the frame's links carry `target="_blank"`, its form
+    button sends nothing (no request to /campaigns), and the sidebar keeps its colours. Note: `start-app.sh` uses the
+    `DATABASE_URL` already set in the shell (crm_test when the test variables are exported).
   - SF-116 AI review scripts (each on fresh data: `bash .factory/run/reset-db.sh` first; helpers in `sf116-lib.js`, which
     makes the test files in `$TMPDIR/sf116-files`): `scenarios-sf116-a.js` (US1, US2), `scenarios-sf116-b.js` (US3; waits
     61 s for a read address to expire; US3-7 moves a file onto Alan Fake's private deal/person by SQL, then hands over to
@@ -494,7 +604,35 @@
     - `scenarios-sf115-us5.js`: US5 1–5 (CSV import; preview needs the consent radio "Subscribed"). Import warnings list rows
       as "(rows 3, 4)"; a Text cell over 255 shows the row reason "Keep the <field> under 255 characters.".
 
+  - SF-119 AI-review scenario scripts (all 41, :3000/crm_dev on fresh fake data, ~6 min together; helpers `sf119-lib.js`:
+    `newCampaign`, `save` (waits for [ SAVE ] to be enabled again, not for networkidle: a server-action POST can stay open),
+    `frameText`/`frameHtml` of `iframe.mail-frame`, `choosePerson`, `pickerNames`, `chooseLayout`, `camp(id)` row):
+    `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf119-a.js` (US1 1–5,
+    US5-7, US6 1–3, edge cases 1, 9–12) then `node .factory/run/scenarios-sf119-b.js` (US2–US5, edge cases 2–8; `ONLY="US4
+    scenario 2,…"` for a subset; it first removes the "SF119 …" people, fields and drafts of an earlier run). Notes: column
+    headers, block labels and the merge tag list are upper-cased by CSS (compare case-insensitively); an image block saves only
+    with an `https://` address (a `data:` image is refused), so the scripts use https://example.test/… there (not loaded
+    offline) and a `data:` PNG only in pasted HTML. Fix round 1 scenarios: Edge case 13 (rename then delete, no save in
+    between) is in `scenarios-sf119-b.js` (run with US2 4/5); it deletes the field through the admin page
+    (`/admin/custom-fields?kind=people&delete=<id>`, the `alertdialog`'s submit button), never by SQL: `deleteField` writes the
+    `last` name onto `campaigns.merge_links`, which a SQL delete skips. Edge case 14 (Reply-to "not-an-email" through the normal
+    form shows the app's message: `#campaign-form` has `noValidate`) is checked inside US1 scenario 4 of `scenarios-sf119-a.js`.
+    All 43 SF-119 scenarios pass (a then b after one reset; re-run after the merge with main that renumbered the migration
+    to 0014: still all pass, schemas by `npm run -s test:schemas`, app by `start-app.sh`; re-run again with the
+    migration at 0015 after the SF-120 merge: all 43 pass, ~7 min; fix round 2 (AGENTS.md only) review: the 3 smoke checks pass, `start-app.sh` then a then b after
+    one `reset-db.sh`: all 43 pass).
+
+  - SF-121 (AI review): `node .factory/run/scenarios-sf121.js [prefix…]` (NODE_PATH=/opt/playwright/node_modules) on a
+    fresh seed (app on :3000 from start-app.sh) runs every unsubscribe scenario: tokens and consents read with psql, the
+    one-click POSTs sent by `fetch` with no cookie, a temporary person deleted through the app (`?confirm=delete`), and
+    Edge 8 stops Postgres (`pg_ctl -D /tmp/pgdata -m fast stop`) then starts it again. Page checks use the visible text and
+    the DOM without `<script>`: Next.js's router payload always carries the address (never shown). Edge 10 and the https
+    part of US5 1: a second `npx next start -p 3002` with `APP_ENV=` (production) and `APP_URL=https://crm.example.com`
+    (`node .factory/run/check-sf121-edge10.js`: 404 "Page not found."), and one on :3003 with `APP_ENV=test` and the same
+    APP_URL to see https links on /dev/unsubscribe-links. ~1 min.
 ## Smoke checks
-1. test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml
+1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in
+4. test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json
+5. test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/cron/gmail)" = 401

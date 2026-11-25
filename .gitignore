@@ -10,3 +10,6 @@ openwiki/.run.json
 
 # SF-116: the fake file storage of local runs
 .fake-storage/
+
+# SF-118: the fake Gmail of local runs
+.fake-gmail/

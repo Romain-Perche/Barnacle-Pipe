@@ -2,10 +2,14 @@
 // deal handed to Margaret Fake."), research.md §8. The name is the server's copy from the database, never text from the URL;
 // the cookie lives 60 seconds and src/proxy.ts deletes it on the next page load, so it shows once.
 import { cookies } from "next/headers";
-import { messageFor, templates } from "@/server/messages";
+import { messageFor, messages, templates } from "@/server/messages";
 import { FLASH_COOKIE as COOKIE } from "@/server/records/flash-cookie";
 
-const CODES = ["person_deleted", "organisation_deleted", "person_no_longer_visible", "handed_over", "handover_none", "deal_deleted", "deal_no_longer_visible", "note_deleted", "note_not_found", "activity_deleted", "file_deleted", "file_not_found", "custom_field_deleted", "custom_choice_error"] as const;
+const CODES = ["person_deleted", "organisation_deleted", "person_no_longer_visible", "handed_over", "handover_none", "deal_deleted", "deal_no_longer_visible", "note_deleted", "note_not_found", "activity_deleted", "file_deleted", "file_not_found", "custom_field_deleted", "custom_choice_error", "segment_deleted", "segment_not_found",
+  // SF-119: a deleted campaign draft (its name from the database) and a draft another user deleted.
+  "campaign_deleted", "campaign_gone",
+  // SF-118: the Gmail notices shown once on Settings (`name`: the user's own address for gmail_test_sent, else empty).
+  "gmail_connected", "gmail_reconnected", "gmail_disconnected", "gmail_test_sent"] as const;
 export type FlashCode = (typeof CODES)[number];
 // `count`: people handed over, `deals`: deals handed over (handed_over only). `detail`: the refusal code of a
 // custom_choice_error (SF-115: a choice change refused in the custom field box; `name` is the choice typed).
@@ -33,6 +37,8 @@ function render(code: FlashCode, name: string, count: unknown, deals: unknown = 
     if (!isCount(count) || !isCount(deals) || count + deals < 1) return undefined;
     return templates.handed_over(name, count, deals);
   }
+  if (code === "gmail_test_sent") return templates.gmail_test_sent(name);
+  if (code === "gmail_connected" || code === "gmail_reconnected" || code === "gmail_disconnected") return messages[code];
   return templates[code](name);
 }
 
