@@ -84,7 +84,7 @@ Event and Ambassador, and no labels.
 | `/admin/pipelines`, `/admin/pipelines/<id>` | admins | Add, rename, reorder (↑/↓) and delete pipelines and their stages; deleting one that holds deals moves them to a stage you choose |
 | `/settings` | everyone | Your own settings (SF-117), linked at the bottom of the sidebar above `[ SIGN OUT ]`: "// PIPEDRIVE" with your Pipedrive API token (checked with Pipedrive before it is saved, stored encrypted, never shown again), "Connected to Pipedrive as <user> (<company>)." with the date saved, `[ REPLACE TOKEN ]` (`?replace=1`), `[ REMOVE TOKEN ]` (`?remove-token=1`, confirmed), `[ IMPORT FROM PIPEDRIVE ]`, and the line of an open import. Then (SF-118) the Gmail card: `[ CONNECT GMAIL ]`; connected: "Connected as …", last sync, conversations copied, copying since, `[ SEND ME A TEST EMAIL ]`, `[ DISCONNECT ]` (`?disconnect=1`, confirmed); `[ RECONNECT GMAIL ]` when Google no longer accepts the key (the sidebar's Settings link then shows an orange "!" on every page). See "Gmail" below |
 | `/settings/gmail/callback` | everyone | Where Google's consent screen sends the browser back (SF-118); then `/settings` |
-| `/settings/pipedrive-import` | everyone with a saved token | The Pipedrive import (SF-117, design B): step bar 1 CHOOSE · 2 IMPORTING · 3 REPORT. Choose People and/or Organisations (and the consent of people with no status in Pipedrive), watch the progress (counts, bars, waits, pause, `[ CONTINUE ]`, `[ STOP IMPORT ]` with `?stop=1`), then the report (`[ NEW IMPORT ]` with `?new=1`). See "Pipedrive import" below |
+| `/settings/pipedrive-import` | everyone with a saved token | The Pipedrive import (SF-117, SF-122, design B): step bar 1 CHOOSE · 2 IMPORTING · 3 REPORT. Choose People, Organisations, Deals, Notes, Activities and Files (the last four tick and lock People and Organisations; and the consent of people with no status in Pipedrive), watch the progress (counts, bars, waits, pause, `[ CONTINUE ]`, `[ STOP IMPORT ]` with `?stop=1`), then the report (`[ NEW IMPORT ]` with `?new=1`). See "Pipedrive import" below |
 | `/admin/custom-fields` | admins | Custom fields of people, organisations and deals (a tab per kind, `?kind=people\|organisations\|deals`): add (`?field=new`), rename, reorder (↑/↓), "Show in list" (at most 8 per kind), choices of choice fields, delete after a confirmation that counts the records with a value (`?delete=<id>`). Eight types: text, long text, number, money (£), date, single choice, multiple choice, yes/no; the type never changes. Values are filled in under "// MORE DETAILS" on the add and edit forms, shown on record pages and the deal drawer, logged on the timeline, shown as columns and filters of the lists (`?cf<id>=…`, `?cf<id>_from=…&cf<id>_to=…`, `?sort=cf<id>`) and can be mapped in the CSV import |
 
 ## Tests
@@ -100,8 +100,9 @@ npm run typecheck    # TypeScript
 The test database is emptied and reloaded by the tests: never point `DATABASE_URL` at a database you care about.
 
 The first `npm test` downloads the Google userinfo schema the fake Google sign-in is checked against, Supabase
-Storage's OpenAPI file the fake file storage is checked against, and Pipedrive's v2 (JSON) and v1 (YAML) OpenAPI files
-the fake Pipedrive is checked against, and Gmail's and Cloud Pub/Sub's discovery files the fake Gmail is checked against
+Storage's OpenAPI file the fake file storage is checked against, and Pipedrive's v2 (JSON) and v1 (YAML, plus a fuller
+v1 copy for deal participants and file downloads) OpenAPI files the fake Pipedrive is checked against, and Gmail's and
+Cloud Pub/Sub's discovery files the fake Gmail is checked against
 (`npm run test:schemas`, pinned files from GitHub, into the git-ignored
 `.factory/schemas/`): it needs network access once.
 
@@ -115,7 +116,7 @@ the fake Pipedrive is checked against, and Gmail's and Cloud Pub/Sub's discovery
 | `npm run db:migrate` | Apply the pending `migrations/*.sql`. Prints each one applied, or "Database is up to date.". Safe to run twice, or twice at once. |
 | `npm run db:seed` | Load fake data. Only when `APP_ENV` is exactly `development` or `test` and `VERCEL_ENV` is not `production`/`preview`; otherwise prints "Fake data can only be loaded when APP_ENV is development or test." and exits 1. Safe to run again. |
 | `npm test` | Unit and integration tests (runs `test:schemas` first). |
-| `npm run test:schemas` | Download the pinned Google, Gmail, Pub/Sub, Supabase Storage and Pipedrive (v2 and v1) schemas into `.factory/schemas/` when missing; does nothing otherwise. |
+| `npm run test:schemas` | Download the pinned Google, Gmail, Pub/Sub, Supabase Storage and Pipedrive (v2, v1 and the full v1 copy) schemas into `.factory/schemas/` when missing; does nothing otherwise. |
 | `npm run typecheck` | `tsc --noEmit`. |
 
 ## Settings
@@ -184,8 +185,8 @@ private rules on every request and then redirect to a Storage address valid for 
 
 ## Pipedrive import
 
-Any signed-in user can bring their Pipedrive people and organisations into the CRM (deals, notes, activities and files
-come in a later step).
+Any signed-in user can bring their Pipedrive people, organisations, deals, notes, activities and files into the CRM
+(SF-117, SF-122). Pipedrive emails are not imported: email will come from Gmail.
 
 - **The token**: each user pastes their own API token (Pipedrive: Personal preferences → API) on `/settings`. The app
   checks it with `GET /v1/users/me` before saving it, stores it encrypted with `PIPEDRIVE_TOKEN_KEY` (bound to its
@@ -199,22 +200,49 @@ come in a later step).
   are left out with a warning, never cut. Lists are matched, never added to. Owners are matched by email to active CRM
   users, else the importing user gets the record. An "Owner only" person is private, owned and created by its owner;
   organisations are always shared. People without a consent status in Pipedrive get the consent the user chooses.
+- **Deals, notes, activities and files** (SF-122): ticking any of them ticks People and Organisations, which stay
+  ticked (the server enforces it too). A deal, note, activity or file comes in only on a CRM record the import brought in
+  (imported or linked); otherwise it is listed with why, and a later import can still bring it in.
+  - **Pipelines and stages** are matched by name (ignoring case and surrounding spaces); the ones the CRM lacks are
+    created at the end, in Pipedrive's order, by any user's import (the one exception to admins-only pipelines); none
+    is ever renamed, reordered or deleted.
+  - **Deals**: title, value (GBP only), stage, owner, main person, organisation, other linked people (participants),
+    followers (active CRM users), labels (matched to offered deal labels), expected close date, status (Won / Lost with
+    Pipedrive's dates and lost reason, or "No reason given in Pipedrive."), Date added, archived, privacy ("Owner only" →
+    private, created by its owner) and matched custom fields. The stage bar starts at Pipedrive's last stage change; the
+    timeline has one "Imported from Pipedrive by …" entry.
+  - **Notes** go once on their deal, else person, else organisation, as plain text (line breaks and link text kept), at
+    Pipedrive's date, by their author; mentions are plain text and notify nobody.
+  - **Activities**: calls, meetings and tasks (any other type comes in as a task, counted per type), due date and time in
+    UK time, duration, note, links, assignee and done date; an import notifies nobody. Done calls and meetings raise
+    Last contacted.
+  - **Files** are copied into the CRM's file store (25 MB limit) and listed once, like notes, with Pipedrive's name,
+    date and uploader. Larger, empty, linked (Google Drive…) and email files are left out and listed or counted. A
+    file's path is queued for clean-up before its upload and listed in the same commit that takes it off the queue, so
+    nothing is ever half-stored. A download redirect is followed without the token. Ticking Files needs the file store:
+    "Files can't be reached right now." otherwise.
 - **Matching and linking**: a person whose email address one CRM person already has, or an organisation whose name a
   CRM organisation already has, is linked to it and left as it is (only a Subscribed person unsubscribed in Pipedrive
   becomes Unsubscribed). Every record imported or linked keeps its Pipedrive company and ID (`pipedrive_links`), so a
   Pipedrive record never leads to two CRM records, whether imports are repeated, resumed or run by two users at once; a
-  record deleted in the CRM is not added back.
-- **Parts, waits and pauses**: the import runs in parts of up to 100 records while its page is open (one part about
+  record deleted in the CRM is not added back (its later notes, activities and files are listed as on a deleted record).
+- **Parts, waits and pauses**: the import runs in parts (100 people or organisations, 20 deals, 200 notes or activities,
+  files one at a time for up to 15 seconds or 25 MB) while its page is open (one part about
   every second; no background job). When Pipedrive answers "too many requests" the page waits the time Pipedrive asks
   for (at most 5 minutes) and carries on. Closing the page pauses the import (after 30 seconds without a part);
   `[ CONTINUE ]` carries on from where it stopped; a failed part saves nothing and pauses with the reason.
-- **The report**: counts (imported, linked, already imported, not imported), every record not imported with why, the
-  owners without a CRM user, list values, custom fields and choices left out, and the other warnings. The latest report
+- **The report**: counts per kind (imported, linked, already imported, not imported), the pipelines and stages added,
+  every record not imported with why, the owners without a CRM user, private records of other owners (counted, never
+  named), list values, custom fields and choices left out, activity types imported as tasks, notes, activities and files
+  on Pipedrive leads, projects and emails, and the other warnings, with links to People, Organisations, Deals and
+  Activities. The latest report
   stays on the import page until the user starts another import.
 - **Locally and in tests**: leave `PIPEDRIVE_URL` empty and set a `PIPEDRIVE_TOKEN_KEY`. The fake Pipedrive
   (`src/server/pipedrive/fake-pipedrive.ts`, nothing to seed) accepts `fake-pipedrive-token` ("Fake Person", "Fakeco
-  Pipedrive": 60 organisations, 300 people; its owners match the fake users ada@ and margaret@, plus "Jane Fake" who has
-  no CRM user) and `fake-pipedrive-other` ("Otherco Pipedrive"); any other token is refused.
+  Pipedrive": 60 organisations, 300 people, 2 pipelines, 30 deals, 40 notes, 30 activities and 6 files (a PDF, a PNG, a
+  26 MB one, an empty one, a Drive link, an email attachment); its owners match the fake users ada@ and margaret@, plus
+  "Jane Fake" who has no CRM user) and `fake-pipedrive-other` ("Otherco Pipedrive"); any other token is refused. Files
+  go to the fake file store (`SUPABASE_URL` empty).
 
 ## Gmail
 

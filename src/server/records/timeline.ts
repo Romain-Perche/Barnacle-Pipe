@@ -82,6 +82,8 @@ export async function recordEvent(
     fieldName?: string;
     oldValue?: string | null;
     newValue?: string | null;
+    // SF-122: an imported entry keeps Pipedrive's date (default now()).
+    createdAt?: Date;
   },
 ): Promise<void> {
   const personId = "personId" in event ? event.personId : null;
@@ -90,12 +92,12 @@ export async function recordEvent(
   await db`
     insert into timeline_events (person_id, organisation_id, deal_id, kind, actor_id, fields, related_person_id, related_user_id,
                                  from_stage, to_stage, cause, reason, from_person_id, file_id, file_name, file_size, deleted_file_id,
-                                 field_name, old_value, new_value)
+                                 field_name, old_value, new_value, created_at)
     values (${personId}, ${organisationId}, ${dealId}, ${event.kind}, ${event.actorId}, ${event.fields ?? null},
             ${event.relatedPersonId ?? null}, ${event.relatedUserId ?? null}, ${event.fromStage ?? null},
             ${event.toStage ?? null}, ${event.cause ?? null}, ${event.reason ?? null}, ${event.fromPersonId ?? null},
             ${event.fileId ?? null}, ${event.fileName ?? null}, ${event.fileSize ?? null}, ${event.deletedFileId ?? null},
-            ${event.fieldName ?? null}, ${event.oldValue ?? null}, ${event.newValue ?? null})`;
+            ${event.fieldName ?? null}, ${event.oldValue ?? null}, ${event.newValue ?? null}, coalesce(${event.createdAt ?? null}::timestamptz, now()))`;
 }
 
 export type TimelineEntry = TimelineEvent & {

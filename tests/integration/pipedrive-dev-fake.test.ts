@@ -42,6 +42,32 @@ describe("the development fake Pipedrive", () => {
     expect(lines.some((l) => l.startsWith("Label not on the list: 'Cold'"))).toBe(true);
     expect(view.report.privateOthers).toBeGreaterThan(0);
   });
+  // covers SF-122 T063: the development fake's deals, notes, activities and files import once without error
+  it("imports its deals, notes, activities and files with the spec's cases in the report", async () => {
+    const { StorageFake } = await import("../fakes/storage");
+    const storage = new StorageFake().install();
+    try {
+      await connect(ada.id, DEV_TOKEN);
+      await runToEnd(ada.id, await start(ada.id, { consent: "unsubscribed", deals: true, notes: true, activities: true, files: true }));
+      const view = (await getImportView(ada.id))!;
+      expect(view.state).toBe("finished");
+      expect(view.progress.map((p) => [p.kind, p.done, p.total])).toEqual([
+        ["organisations", 60, 60], ["people", 300, 300], ["deals", 30, 30], ["notes", 40, 40], ["activities", 30, 30], ["files", 6, 6],
+      ]);
+      expect(view.counts.deals.imported).toBe(30);
+      expect(view.counts.files.imported).toBe(2);
+      const names = await namesForReport(ada.id, view.report);
+      const lines = reportLines(view.report, names).map((l) => l.text);
+      expect(lines.some((l) => /'deadline' activit(y|ies) imported as tasks\./.test(l))).toBe(true);
+      expect(lines).toContain("1 note on Pipedrive leads: not imported.");
+      expect(lines).toContain("1 file on Pipedrive emails: not imported.");
+      expect(view.report.pipelinesAdded).toEqual([{ name: "Fake Sales", stages: 4 }, { name: "Fake Partners", stages: 5 }]);
+      expect(view.report.warnings.some((w) => w.code === "pipedrive_deal_currency")).toBe(true);
+      expect(view.report.notImported.some((n) => n.code === "pipedrive_file_too_large" && n.args?.mb === "26.1")).toBe(true);
+    } finally {
+      storage.uninstall();
+    }
+  });
   it("accepts the other company's token and refuses any other", async () => {
     await connect(ada.id, DEV_OTHER_TOKEN);
     const { saveToken, getConnection } = await import("@/server/pipedrive/connection");

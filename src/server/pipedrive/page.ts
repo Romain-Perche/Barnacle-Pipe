@@ -17,11 +17,11 @@ import {
 } from "@/server/pipedrive/rules";
 import { isValidEmail, normaliseEmail, type Consent, type OrganisationFields, type PersonFields } from "@/server/records/rules";
 
-export type RecordKind = "person" | "organisation";
+export type RecordKind = "person" | "organisation" | "deal" | "note" | "activity" | "file";
 // A record of the report: its Pipedrive id and name (as data), and the reason or warning as a message code.
 export type ReportItem = { kind: RecordKind; pipedriveId: number; label: string; code: string; args?: Record<string, string | number> };
 export type LinkedItem = { kind: "person"; personId: number; pipedriveId: number } | { kind: "organisation"; organisationId: number; pipedriveId: number };
-export type ListMiss = { list: "lead_source" | "label"; value: string; records: number };
+export type ListMiss = { list: "lead_source" | "label" | "deal_label"; value: string; records: number };
 export type ChoiceMiss = { kind: RecordKind; field: string; value: string; records: number };
 export type OwnerMiss = { name: string; email: string; records: number };
 export type PdUsers = Record<string, { name: string; email: string }>;
@@ -42,7 +42,7 @@ type PlanBase = {
 
 const key = (text: string) => text.trim().toLowerCase();
 
-class Counter<T extends { records: number }> {
+export class Counter<T extends { records: number }> {
   private map = new Map<string, T>();
   add(k: string, make: () => Omit<T, "records">) {
     const cur = this.map.get(k) ?? ({ ...make(), records: 0 } as T);
@@ -55,7 +55,7 @@ class Counter<T extends { records: number }> {
 }
 
 // The CRM owner of a Pipedrive owner: the active CRM user with that email, else the importer (counted per owner).
-function ownerOf(pdOwner: number | null, users: Map<string, number>, pdUsers: PdUsers, importerId: number, owners: Record<string, OwnerMiss>): number {
+export function ownerOf(pdOwner: number | null, users: Map<string, number>, pdUsers: PdUsers, importerId: number, owners: Record<string, OwnerMiss>): number {
   if (pdOwner === null) return importerId;
   const u = pdUsers[String(pdOwner)];
   const id = u ? users.get(key(u.email)) : undefined;
@@ -66,8 +66,24 @@ function ownerOf(pdOwner: number | null, users: Map<string, number>, pdUsers: Pd
   return importerId;
 }
 
-const toItem = (kind: RecordKind, pipedriveId: number, label: string, p: Problem): ReportItem =>
+export const toItem = (kind: RecordKind, pipedriveId: number, label: string, p: Problem): ReportItem =>
   p.args === undefined ? { kind, pipedriveId, label, code: p.code } : { kind, pipedriveId, label, code: p.code, args: p.args };
+
+// SF-122 FR-021: a record private to another owner, or put on a record the importer cannot see, is never named in the
+// report: no label, `privateKind` (shown as "a private deal", "a private note"…), and no argument taken from the record
+// itself (its file name, an invalid value of it).
+export type PrivateKind = "deal" | "person" | "note" | "activity" | "file";
+export function privateItem(kind: RecordKind, pipedriveId: number, privateKind: PrivateKind, p: Problem): ReportItem {
+  const args: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(p.args ?? {})) {
+    if (k === "value") args[k] = "…";
+    else if (!(k === "name" && p.code === "file_name_too_long")) args[k] = v;
+  }
+  return { kind, pipedriveId, label: "", code: p.code, args: { ...args, privateKind } };
+}
+// toItem, or privateItem when `hidden`.
+export const itemFor = (kind: RecordKind, pipedriveId: number, label: string, p: Problem, hidden: PrivateKind | null): ReportItem =>
+  hidden === null ? toItem(kind, pipedriveId, label, p) : privateItem(kind, pipedriveId, hidden, p);
 
 // ---------------------------------------------------------------- organisations
 
@@ -189,7 +205,8 @@ export function planPersonPage(records: PdPerson[], l: PersonLookups): PersonPla
   const lists = new Counter<ListMiss>();
   const choices = new Counter<ChoiceMiss>();
   // Emails and CRM people taken by an earlier person of this page → that person's Pipedrive name.
-  const pageEmails = new Map<string, string>();
+  // null: a person private to another owner (never named, FR-021).
+  const pageEmails = new Map<string, string | null>();
   const claimed = new Map<number, string>();
   const unsubscribe = (personId: number | null, p: PdPerson) => {
     if (personId === null || p.marketingStatus !== "unsubscribed") return;
@@ -210,7 +227,7 @@ export function planPersonPage(records: PdPerson[], l: PersonLookups): PersonPla
     const emails = emailsOf(p);
     const earlier = emails.map((e) => pageEmails.get(e)).find((n) => n !== undefined);
     if (earlier !== undefined) {
-      notImported({ code: "pipedrive_email_other_person", args: { name: earlier } });
+      notImported(earlier === null ? { code: "pipedrive_email_other_person", args: { privatePerson: 1 } } : { code: "pipedrive_email_other_person", args: { name: earlier } });
       continue;
     }
     const matches = [...new Set(emails.flatMap((e) => l.emails.get(e) ?? []))];
@@ -243,12 +260,14 @@ export function planPersonPage(records: PdPerson[], l: PersonLookups): PersonPla
     }
     const ownerId = ownerOf(p.ownerId, l.users, l.pdUsers, l.importerId, plan.owners);
     const isPrivate = isOwnerOnly(p.visibleTo);
-    if (isPrivate && ownerId !== l.importerId) plan.privateOthers += 1;
+    const privateOther = isPrivate && ownerId !== l.importerId;
+    if (privateOther) plan.privateOthers += 1;
+    const hidden = privateOther ? ("person" as const) : null;
     let organisationId: number | null = null;
     if (p.orgId !== null) {
       organisationId = l.organisations.get(p.orgId) ?? null;
       if (organisationId === null && l.orgsNotImported.has(p.orgId)) {
-        plan.warnings.push(toItem("person", p.id, r.label, { code: "pipedrive_org_not_imported", args: { name: l.orgsNotImported.get(p.orgId)! } }));
+        plan.warnings.push(itemFor("person", p.id, r.label, { code: "pipedrive_org_not_imported", args: { name: l.orgsNotImported.get(p.orgId)! } }, hidden));
       }
     }
     let leadSourceId: number | null = null;
@@ -262,9 +281,9 @@ export function planPersonPage(records: PdPerson[], l: PersonLookups): PersonPla
       if (id === undefined) lists.add(`label\u0000${key(name)}`, () => ({ list: "label", value: name.trim() }));
       else if (!labelIds.includes(id)) labelIds.push(id);
     }
-    for (const w of r.warnings) plan.warnings.push(toItem("person", p.id, r.label, w));
+    for (const w of r.warnings) plan.warnings.push(itemFor("person", p.id, r.label, w, hidden));
     for (const m of r.missingChoices) choices.add(`${key(m.field)}\u0000${key(m.value)}`, () => ({ kind: "person", field: m.field, value: m.value }));
-    for (const e of emails) pageEmails.set(e, r.label);
+    for (const e of emails) pageEmails.set(e, privateOther ? null : r.label);
     plan.adds.push({
       pipedriveId: p.id,
       label: r.label,

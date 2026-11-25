@@ -2288,7 +2288,7 @@
     {
       "from": "pipedrive-api",
       "to": "pipedrive-import",
-      "data": "people, organisations, deals, fields",
+      "data": "people, organisations, deals, notes, activities, files",
       "sources": [
         "src/server/pipedrive/api.ts"
       ]
@@ -2634,6 +2634,80 @@
       "data": "schema",
       "sources": [
         "migrations/0016_gmail.sql"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "pipelines-table",
+      "data": "matched or created pipelines",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "stages-table",
+      "data": "matched or created stages",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "deals-table",
+      "data": "imported deals",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts",
+        "src/server/pipedrive/deal-rules.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "deal-people-table",
+      "data": "deal participants",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "deal-followers-table",
+      "data": "deal followers",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "activities-table",
+      "data": "imported activities",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts",
+        "src/server/pipedrive/deal-rules.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "files-tables",
+      "data": "imported file rows, cleanup paths",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "supabase-storage",
+      "data": "copied file contents",
+      "sources": [
+        "src/server/files/storage.ts",
+        "src/server/pipedrive/imports.ts"
       ]
     }
   ]

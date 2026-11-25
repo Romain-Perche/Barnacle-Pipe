@@ -2,6 +2,7 @@
 // SF-116 T013: and Supabase Storage's OpenAPI file
 // SF-117: and the two Pipedrive schemas
 // SF-118 T004: and Gmail's and Pub/Sub's discovery files
+// SF-122: the full Pipedrive v1 schema
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -24,6 +25,7 @@ describe("npm run test:schemas in a copy of the repo without .factory/schemas/",
   const storage = path.join(dir, ".factory/schemas/storage_v0_openapi.json");
   const pipedriveV2 = path.join(dir, ".factory/schemas/pipedrive_v2_openapi.json");
   const pipedriveV1 = path.join(dir, ".factory/schemas/pipedrive_v1_openapi.yml");
+  const pipedriveV1Full = path.join(dir, ".factory/schemas/pipedrive_v1_full_openapi.yml");
   const gmail = path.join(dir, ".factory/schemas/gmail-api.json");
   const pubsub = path.join(dir, ".factory/schemas/pubsub-api.json");
 
@@ -42,13 +44,18 @@ describe("npm run test:schemas in a copy of the repo without .factory/schemas/",
     const v1 = parse(readFileSync(pipedriveV1, "utf8"));
     expect(Object.keys(v1.paths)).toContain("/users/me");
     expect(Object.keys(v1.paths)).toContain("/users");
+    // SF-122: the full v1 copy has the paths the Zenika copy lacks, and the v1 paths the import reads.
+    const full = parse(readFileSync(pipedriveV1Full, "utf8"));
+    for (const p of ["/deals/{id}/participants", "/files/{id}/download", "/notes", "/files", "/activityTypes"]) {
+      expect(Object.keys(full.paths)).toContain(p);
+    }
     expect(JSON.parse(readFileSync(gmail, "utf8")).schemas.Profile.properties.emailAddress.type).toBe("string");
     expect(Object.keys(JSON.parse(readFileSync(pubsub, "utf8")).schemas.PubsubMessage.properties)).toContain("data");
   }, 60_000);
 
   it("does nothing on a second run (no download)", () => {
     const before = [statSync(file).mtimeMs, statSync(storage).mtimeMs];
-    expect(run().match(/already there/g)).toHaveLength(6);
+    expect(run().match(/already there/g)).toHaveLength(7);
     expect([statSync(file).mtimeMs, statSync(storage).mtimeMs]).toEqual(before);
   });
 

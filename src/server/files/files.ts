@@ -176,16 +176,18 @@ export async function finishFileUpload(actorId: number, uploadId: number): Promi
   return result;
 }
 
-// Lists a stored file: its row and its "added" FILE entry (in the caller's transaction). Also used by the fake data.
+// Lists a stored file: its row and its "added" FILE entry (in the caller's transaction). Also used by the fake data and
+// the Pipedrive import (SF-122), which passes Pipedrive's upload date as `addedAt` for both the row and the entry.
 export async function insertFile(
-  db: Sql, actorId: number, target: FileTarget, f: { name: string; size: number; kind: FileKind; path: string },
+  db: Sql, actorId: number, target: FileTarget, f: { name: string; size: number; kind: FileKind; path: string; addedAt?: Date },
 ): Promise<number> {
   const c = columns(target);
   const [row] = await db<{ id: number }[]>`
-    insert into files (deal_id, person_id, organisation_id, name, size, kind, storage_path, added_by)
-    values (${c.dealId}, ${c.personId}, ${c.organisationId}, ${f.name}, ${f.size}, ${f.kind}, ${f.path}, ${actorId})
+    insert into files (deal_id, person_id, organisation_id, name, size, kind, storage_path, added_by, added_at)
+    values (${c.dealId}, ${c.personId}, ${c.organisationId}, ${f.name}, ${f.size}, ${f.kind}, ${f.path}, ${actorId},
+            coalesce(${f.addedAt ?? null}::timestamptz, now()))
     returning id::int as id`;
-  await recordEvent(db, { ...target, kind: "file_added", actorId, fileId: row.id, fileName: f.name, fileSize: f.size });
+  await recordEvent(db, { ...target, kind: "file_added", actorId, fileId: row.id, fileName: f.name, fileSize: f.size, createdAt: f.addedAt });
   return row.id;
 }
 
