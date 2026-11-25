@@ -8,6 +8,12 @@
 
 **Input**: User description: "Step 17 - Activity reminders in the app. A reminder before each planned activity is due (`docs/PRODUCT.md` section 5, the reminders line in `docs/DECISIONS.md`): its assignee gets a notification on the Notifications page, with the sidebar count, like an assignment (\"Call: intro call with Bob Example at 10:00\"). It follows the activity when it is moved, reassigned, done or deleted, and is hidden like the activity when the assignee cannot see a linked record. Not in this issue: reminder emails (Google Calendar sends them, in the Calendar issue)."
 
+## Clarifications
+
+### Session 2026-11-25
+
+- Q: When should an activity's reminder arrive? → A: 15 minutes before a timed activity; 09:00 UK time on the due date when it has no time
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Be reminded before a planned activity is due (Priority: P1)
@@ -125,7 +131,7 @@ A developer or reviewer loads the fake data and sees reminders without waiting f
 
 ## Assumptions
 
-- Reminder lead times: 15 minutes before a timed activity, 09:00 UK time on the due date for an activity with no time (decided by the factory, to confirm). The Calendar issue should give the synced event's email reminder the same lead time.
+- Reminder lead times: 15 minutes before a timed activity, 09:00 UK time on the due date for an activity with no time (clarified). The Calendar issue should give the synced event's email reminder the same lead time.
 - Reminders are in-app only here (user request; `docs/DECISIONS.md`): the Notifications page and the sidebar count, like assignments. The CRM sends no reminder email itself.
 - A reminder appears when the user next loads or navigates a page after its reminder time; no live push to an open page, and no setting to turn reminders off or change the lead time in this issue.
 - One reminder per activity; there is no snooze, and no second notice when an activity becomes overdue (the Activities list already shows Overdue in red).
