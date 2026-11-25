@@ -131,7 +131,7 @@ describe("US4 scenario 2: Google no longer accepts the key", () => {
     expect((await conn()).last_synced_at).toEqual(lastSynced);
     expect(await h.conversations(linus.id)).toBe(count);
     expect(await gmailNeedsReconnect(linus.id)).toBe(true);
-    expect(await currentSidebar()).toEqual({ unread: 0, gmailWarn: true });
+    expect(await currentSidebar()).toEqual({ unread: 0, gmailWarn: true, warnLabel: "Gmail needs reconnecting" });
     const side = await layout();
     expect(side).toMatch(/>Settings<span class="warn" role="img" aria-label="Gmail needs reconnecting"[^>]*>!<\/span>/);
     const html = await page();
@@ -191,7 +191,7 @@ describe("US4 scenario 3: reconnect", () => {
     expect(html).toContain("Gmail · connected");
     expect(html).toContain("38 conversations copied");
     expect((await conn()).connected_at).toEqual(before.connected_at);
-    expect(await currentSidebar()).toEqual({ unread: 0, gmailWarn: false });
+    expect(await currentSidebar()).toEqual({ unread: 0, gmailWarn: false, warnLabel: null });
     expect(await layout()).not.toContain('class="warn"');
     fromAna("New conversation");
     fromAna("Re: Copied before", { threadId: copied.threadId });

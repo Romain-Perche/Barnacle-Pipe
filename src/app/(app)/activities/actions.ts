@@ -8,6 +8,8 @@ import * as activities from "@/server/activities/activities";
 import { addParam, afterTickPath, type ActivityForm } from "@/server/activities/rules";
 import { isSafeNext } from "@/server/auth/rules";
 import { requireUser } from "@/server/auth/session";
+import { calendarAfterChange } from "@/server/calendar/sync";
+import { runAfterResponse } from "@/server/calendar/soon";
 import { appBaseUrl } from "@/server/env";
 import { setFlash } from "@/server/records/flash";
 import { idFrom } from "@/server/records/form-data";
@@ -56,11 +58,17 @@ function refresh() {
   revalidatePath("/", "layout");
 }
 
+// SF-124: once the answer is sent, the activity's event follows in Google Calendar (saving never waits on Google).
+function toCalendar(id: number) {
+  runAfterResponse(() => calendarAfterChange([id]));
+}
+
 export async function scheduleActivity(prev: ActivityState, fd: FormData): Promise<ActivityState> {
   const user = await requireUser();
   const values = formFrom(fd);
   const result = await activities.scheduleActivity(user.id, values);
   if (result.status !== "ok") return { errors: errorsOf(result), values, seq: (prev?.seq ?? 0) + 1 };
+  toCalendar(result.id);
   refresh();
   redirect(backFrom(fd));
 }
@@ -72,6 +80,7 @@ export async function editActivity(prev: ActivityState, fd: FormData): Promise<A
   const version = idFrom(fd, "version");
   const result = id === null || version === null ? ({ status: "not_found" } as const) : await activities.editActivity(user.id, id, version, values);
   if (result.status !== "ok") return { errors: errorsOf(result), values, seq: (prev?.seq ?? 0) + 1 };
+  toCalendar(result.id);
   refresh();
   redirect(backFrom(fd));
 }
@@ -84,6 +93,7 @@ export async function tickActivity(fd: FormData): Promise<void> {
   const id = idFrom(fd, "id");
   const result = id === null ? ({ status: "not_found" } as const) : await activities.tickActivity(user.id, id);
   if (result.status !== "ok") redirect(addParam(back, "error", TICK_ERRORS[result.status]));
+  toCalendar(id!);
   refresh();
   redirect(afterTickPath(back, id!, text(fd, "followup") === "1"));
 }
@@ -94,6 +104,7 @@ export async function untickActivity(fd: FormData): Promise<void> {
   const id = idFrom(fd, "id");
   const result = id === null ? ({ status: "not_found" } as const) : await activities.untickActivity(user.id, id);
   if (result.status !== "ok") redirect(addParam(back, "error", TICK_ERRORS[result.status]));
+  toCalendar(id!);
   refresh();
   redirect(back);
 }
@@ -107,6 +118,7 @@ export async function deleteActivity(fd: FormData): Promise<void> {
   const version = idFrom(fd, "version");
   const result = id === null || version === null ? ({ status: "not_found" } as const) : await activities.deleteActivity(user.id, id, version);
   if (result.status !== "ok") redirect(addParam(back, "error", DELETE_ERRORS[result.status]));
+  toCalendar(id!);
   await setFlash({ code: "activity_deleted", name: "" });
   refresh();
   redirect(back);

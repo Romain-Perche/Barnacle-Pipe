@@ -314,7 +314,7 @@ export const messages = {
   gmail_connected: "Gmail connected.",
   gmail_reconnected: "Gmail reconnected.",
   gmail_cancelled: "Gmail was not connected.",
-  gmail_missing_scopes: "Gmail needs all the permissions asked for. Try again and tick every box.",
+  gmail_missing_scopes: "Google needs all the permissions asked for. Try again and tick every box.",
   gmail_disconnected: "Gmail disconnected.",
   gmail_disconnect_confirm: "Disconnect Gmail? New email will stop being copied. Emails already copied stay in the CRM.",
   gmail_test_failed: "The test email could not be sent. Try again in a minute.",
@@ -322,6 +322,13 @@ export const messages = {
   gmail_test_subject: "Barnacle CRM test email",
   gmail_test_text: "This is a test email from Barnacle CRM. If you can read it, the CRM can send email from your Gmail.",
   gmail_settings_warn: "Gmail needs reconnecting",
+  // SF-124: Google Calendar sync (contracts/routes.md § Messages).
+  calendar_syncing: "Syncing your activities with your Google Calendar",
+  calendar_missing: "Not synced: Calendar access missing",
+  calendar_reconnect: "Reconnect Google to sync your activities with your calendar.",
+  calendar_settings_warn: "Reconnect Google to sync your calendar",
+  calendar_untitled: "(No title)",
+  calendar_done_mark: "✓ ",
   // SF-121: the public unsubscribe page
   unsubscribe_lead: "Stop receiving campaign emails from Barnacle Labs.",
   unsubscribe_done: "You're unsubscribed. You won't get any more campaign emails from us.",
@@ -553,6 +560,10 @@ export const templates = {
   gmail_conversations: (n: number) => `${n} ${n === 1 ? "conversation" : "conversations"} copied`,
   gmail_last_sync: (time: string) => `Last sync: ${time}`,
   gmail_copying_since: (time: string) => `Copying since ${time}`,
+  // SF-124: the Calendar line of the Gmail card, and the title and description of the events the CRM writes.
+  calendar_line: (state: string) => `Calendar: ${state}`,
+  calendar_title: (typeLabel: string, subject: string) => `${typeLabel} · ${subject}`,
+  calendar_description: (note: string | null, url: string) => `${note ? `${note}\n\n` : ""}Open in Barnacle CRM: ${url}`,
   // SF-121: timeline lines (the consent labels of the time)
   unsubscribed_link_event: "Unsubscribed from campaigns through the unsubscribe link",
   unsubscribed_mail_app_event: "Unsubscribed from campaigns through their mail app",

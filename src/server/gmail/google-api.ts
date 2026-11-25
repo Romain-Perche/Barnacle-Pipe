@@ -7,7 +7,7 @@
 // - HistoryGone: history.list answered 404 (the start id is older than the history Gmail keeps).
 import { gmailConfig } from "@/server/env";
 import { CERTS_URL, fakeGmail, REVOKE_URL, TOKEN_URL } from "@/server/gmail/fake-gmail";
-import { classifyGoogleError, GMAIL_SCOPES, type GmailMessage } from "@/server/gmail/rules";
+import { askedScopes, classifyGoogleError, type GmailMessage } from "@/server/gmail/rules";
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GMAIL = "https://gmail.googleapis.com/gmail/v1/users/me";
@@ -41,7 +41,8 @@ export function useGmailFetchForTests(fn: Fetch | null): void {
   testFetch = fn;
 }
 
-function settings() {
+// Exported for the Calendar calls (SF-124, src/server/calendar/calendar-api.ts): one way to reach Google, one test switch.
+export function settings() {
   const c = gmailConfig();
   if (c.mode === "off") throw new GoogleUnavailable("off");
   const f: Fetch = testFetch ?? (c.mode === "fake" ? fakeGmail().fetch : fetch);
@@ -53,7 +54,7 @@ export function callbackUrl(appUrl: string): string {
 }
 
 // The consent address (research.md §2): same client as sign-in, PKCE S256, offline access, consent every time, the
-// user's own address as a hint. In fake mode the fake consent screen of this app.
+// user's own address as a hint; the Gmail scopes plus Calendar's when Calendar sync is on (SF-124 askedScopes()). In fake mode the fake consent screen of this app.
 export function consentUrl({ state, codeChallenge, loginHint }: { state: string; codeChallenge: string; loginHint: string }): string {
   const c = settings();
   const url = new URL(c.mode === "fake" ? `${c.appUrl}/dev/fake-google/gmail` : AUTH_URL);
@@ -61,7 +62,7 @@ export function consentUrl({ state, codeChallenge, loginHint }: { state: string;
     client_id: c.clientId,
     redirect_uri: callbackUrl(c.appUrl),
     response_type: "code",
-    scope: GMAIL_SCOPES.join(" "),
+    scope: askedScopes().join(" "),
     state,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
@@ -74,7 +75,7 @@ export function consentUrl({ state, codeChallenge, loginHint }: { state: string;
   return url.toString();
 }
 
-async function call(url: string, init: { method: string; headers?: Record<string, string>; body?: string }): Promise<Response> {
+export async function call(url: string, init: { method: string; headers?: Record<string, string>; body?: string }): Promise<Response> {
   const c = settings();
   try {
     return await c.fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
@@ -85,7 +86,7 @@ async function call(url: string, init: { method: string; headers?: Record<string
   }
 }
 
-async function readJson(res: Response): Promise<unknown> {
+export async function readJson(res: Response): Promise<unknown> {
   try {
     return await res.json();
   } catch {

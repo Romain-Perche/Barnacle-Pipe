@@ -1,6 +1,6 @@
 "use client";
 // SF-108, generalised by SF-118: the sidebar links whose state changes while the user moves around, the Notifications
-// count (UnreadLink) and the Settings "!" while Gmail needs reconnecting (SettingsLink). The shared layout is not
+// count (UnreadLink) and the Settings "!" while Gmail needs reconnecting or, SF-124, Calendar access is missing (SettingsLink). The shared layout is not
 // rendered again on client navigation, so after every navigation (a new address, or a click on a link to the page
 // already open) the state is asked again (`currentSidebar`), once for both links. The layout's values (full load,
 // refresh, revalidation) are the start values: the layout gives a new `key` on each render, so a fresh layout always
@@ -58,7 +58,7 @@ export function UnreadLink({ href, label, initial }: { href: string; label: stri
   return <SidebarLink href={href} label={label} count={count} />;
 }
 
-export function SettingsLink({ href, label, initial }: { href: string; label: string; initial: boolean }) {
-  const warn = useSidebar(initial, (s) => s.gmailWarn);
+export function SettingsLink({ href, label, initial }: { href: string; label: string; initial: string | null }) {
+  const warn = useSidebar(initial, (s) => s.warnLabel);
   return <SidebarLink href={href} label={label} warn={warn} />;
 }

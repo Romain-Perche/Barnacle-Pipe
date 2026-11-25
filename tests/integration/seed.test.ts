@@ -585,6 +585,51 @@ describe("fake Gmail (SF-118)", () => {
   });
 });
 
+// covers SF-124 FR-016 (T054): seeding twice gives Ada Fake the Calendar permission, one fake event per planned activity
+// of hers due today or later and exactly one Meeting from "Fake intro meeting" linked to a fake person; no duplicates.
+describe("fake Google Calendar (SF-124)", () => {
+  afterAll(() => vi.unstubAllEnvs());
+  it("puts Ada Fake's planned activities in her fake calendar and one meeting from Google in the CRM, once", async () => {
+    vi.stubEnv("GMAIL_TOKEN_KEY", Buffer.alloc(32, 0x5a).toString("base64"));
+    vi.stubEnv("GMAIL_PUBSUB_TOPIC", "");
+    vi.stubEnv("CALENDAR_SYNC", "on");
+    (globalThis as { __crmFakeGmail?: unknown }).__crmFakeGmail = undefined;
+    const { fakeGmail } = await import("@/server/gmail/fake-gmail");
+    const lines = await runSeeders(sql);
+    expect(lines.some((l) => /^added \d+ fake calendar events for Ada Fake's activities and 1 meeting from her fake calendar$/.test(l))).toBe(true);
+    const state = async () => {
+      const [c] = await sql<{ scopes: string; id: number }[]>`
+        select c.scopes, c.id::int as id from gmail_connections c join users u on u.id = c.user_id where u.name = 'Ada Fake'`;
+      const planned = await sql<{ id: number }[]>`
+        select a.id::int as id from activities a join users u on u.id = a.assignee_id
+        where u.name = 'Ada Fake' and a.done_at is null and a.due_on >= (now() at time zone 'Europe/London')::date
+          and not exists (select 1 from calendar_events ce where ce.activity_id = a.id and ce.origin = 'google')`;
+      const links = await sql<{ activity_id: number; origin: string }[]>`
+        select activity_id::int as activity_id, origin from calendar_events where connection_id = ${c.id} and state = 'synced' order by id`;
+      const meetings = await sql<{ subject: string; person: string }[]>`
+        select a.subject, p.last_name as person from calendar_events ce join activities a on a.id = ce.activity_id
+        join persons p on p.id = a.person_id where ce.origin = 'google'`;
+      const events = fakeGmail().calendarEvents("ada@barnacle.ai").filter((e) => e.status !== "cancelled");
+      return { c, planned: planned.map((p) => p.id).sort(), links, meetings, events: events.length };
+    };
+    const first = await state();
+    expect(first.c.scopes.split(" ")).toContain("https://www.googleapis.com/auth/calendar.events.owned");
+    expect(first.planned.length).toBeGreaterThan(0);
+    expect(first.links.filter((l) => l.origin === "crm").map((l) => l.activity_id).sort()).toEqual(first.planned);
+    expect(first.meetings).toEqual([{ subject: "Fake intro meeting", person: expect.stringMatching(/./) }]);
+    expect(first.events).toBe(first.planned.length + 1);
+    expect(await runSeeders(sql)).toContain("already there calendar events");
+    expect(await state()).toEqual(first);
+  });
+  it("is skipped with Calendar off", async () => {
+    vi.stubEnv("GMAIL_TOKEN_KEY", Buffer.alloc(32, 0x5a).toString("base64"));
+    vi.stubEnv("GMAIL_PUBSUB_TOPIC", "");
+    vi.stubEnv("CALENDAR_SYNC", "");
+    expect(await runSeeders(sql)).toContain("Calendar fake data skipped (CALENDAR_SYNC is not on).");
+    expect((await sql`select 1 from calendar_events`).length).toBe(0);
+  });
+});
+
 // covers SF-119 FR-021 (T050): five fake drafts, once: one per layout, one pasted HTML email with a script, one linked to
 // the people custom field "Diet (fake)"
 describe("fake campaigns (SF-119)", () => {

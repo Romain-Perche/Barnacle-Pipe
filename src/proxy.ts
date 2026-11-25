@@ -16,6 +16,9 @@ const PUBLIC = [
   /^\/dev\/fake-gmail\/?$/,
   /^\/gmail\/push\/?$/,
   /^\/cron\/gmail\/?$/,
+  // SF-124: Google Calendar change notices (channel token checked by the route) and the fake calendar page (404 outside fake mode).
+  /^\/calendar\/push\/?$/,
+  /^\/dev\/fake-calendar\/?$/,
   // SF-121: public by design, the token in the address is the authority (the page, its button, RFC 8058 one-click);
   // the development links page answers 404 outside development and test.
   /^\/unsubscribe\/[^/]+(\/(confirm|one-click))?\/?$/,

@@ -1,15 +1,18 @@
 // covers SF-118 FR-002 (scopes), FR-006 (key refused), FR-009 (what is copied), FR-010 (what is kept), FR-013 (sending
 // without header injection), US2 scenario 7, edge cases "Address match", "Drafts, spam, bin", "Messages with only HTML
 // or only attachments" (research.md §2, §5, §9, §10)
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   BadHeader,
   buildMime,
   classifyGoogleError,
   decideCopy,
   decodeHeader,
+  askedScopes,
+  CALENDAR_SCOPE,
   GMAIL_SCOPES,
   hasAllScopes,
+  hasCalendarScope,
   parseAddressList,
   readMessage,
   testEmail,
@@ -21,6 +24,9 @@ const SEND = "https://www.googleapis.com/auth/gmail.send";
 const b64 = (s: string) => Buffer.from(s, "utf8").toString("base64url");
 
 describe("scopes", () => {
+  // SF-118's two scopes alone: Calendar sync off (SF-124 adds the third scope when it is on).
+  beforeEach(() => void vi.stubEnv("CALENDAR_SYNC", ""));
+  afterEach(() => void vi.unstubAllEnvs());
   it("asks for exactly gmail.modify and gmail.send", () => {
     expect([...GMAIL_SCOPES]).toEqual([MODIFY, SEND]);
   });
@@ -31,6 +37,34 @@ describe("scopes", () => {
     expect(hasAllScopes(SEND)).toBe(false);
     expect(hasAllScopes("")).toBe(false);
     expect(hasAllScopes(`${MODIFY}x ${SEND}`)).toBe(false);
+  });
+});
+
+// covers SF-124 FR-001, US1 scenario 2, edge case "Calendar not set up" (research.md §2): with Calendar on, connecting
+// asks for calendar.events.owned on top of the two Gmail scopes, and a grant without it is refused.
+describe("scopes with Google Calendar (SF-124)", () => {
+  const CAL = "https://www.googleapis.com/auth/calendar.events.owned";
+  afterEach(() => void vi.unstubAllEnvs());
+  it("asks 3 scopes with Calendar on, 2 with it off", () => {
+    expect(CALENDAR_SCOPE).toBe(CAL);
+    vi.stubEnv("CALENDAR_SYNC", "on");
+    expect(askedScopes()).toEqual([MODIFY, SEND, CAL]);
+    vi.stubEnv("CALENDAR_SYNC", "");
+    expect(askedScopes()).toEqual([MODIFY, SEND]);
+  });
+  it("refuses a grant without the Calendar scope when on, accepts it when off", () => {
+    vi.stubEnv("CALENDAR_SYNC", "on");
+    expect(hasAllScopes(`${MODIFY} ${SEND}`)).toBe(false);
+    expect(hasAllScopes(`${MODIFY} ${SEND} ${CAL}`)).toBe(true);
+    expect(hasAllScopes(`${MODIFY} ${CAL}`)).toBe(false);
+    vi.stubEnv("CALENDAR_SYNC", "");
+    expect(hasAllScopes(`${MODIFY} ${SEND}`)).toBe(true);
+    expect(hasAllScopes(`${MODIFY} ${SEND}`, [MODIFY, SEND, CAL])).toBe(false);
+  });
+  it("tells whether a scopes text holds the Calendar scope", () => {
+    expect(hasCalendarScope(`${MODIFY} ${CAL}`)).toBe(true);
+    expect(hasCalendarScope(`${MODIFY} ${CAL}x`)).toBe(false);
+    expect(hasCalendarScope("")).toBe(false);
   });
 });
 

@@ -45,6 +45,8 @@ const FLASH = "crm_flash";
 beforeEach(async () => {
   vi.stubEnv("GMAIL_TOKEN_KEY", TEST_GMAIL_KEY);
   vi.stubEnv("GMAIL_PUBSUB_TOPIC", "");
+  // SF-118's Gmail-only connection: Calendar sync off (SF-124's three-scope connect is tests/integration/calendar-connect.test.ts).
+  vi.stubEnv("CALENDAR_SYNC", "");
   await resetDb();
   jar.clear();
   linus = await makeUser({ email: "linus@barnacle.ai", name: "Linus Fake" });
@@ -65,7 +67,7 @@ describe("US1 scenario 1: not connected", () => {
   it("shows the Gmail card after Pipedrive with [ CONNECT GMAIL ], and one Settings link with no \"!\"", async () => {
     expect(await gmailSettings(linus.id)).toMatchObject({ mode: "fake", state: "not_connected", conversations: 0 });
     expect(await gmailNeedsReconnect(linus.id)).toBe(false);
-    expect(await currentSidebar()).toEqual({ unread: 0, gmailWarn: false });
+    expect(await currentSidebar()).toEqual({ unread: 0, gmailWarn: false, warnLabel: null });
     const html = await page();
     expect(html.indexOf("PIPEDRIVE")).toBeGreaterThan(-1);
     expect(html.indexOf("GMAIL")).toBeGreaterThan(html.indexOf("PIPEDRIVE"));
@@ -136,7 +138,7 @@ describe("US1 scenarios 3-5 and FR-002: refusals store nothing", () => {
     expect(await h.connectGmail(fake, { scopes: [h.MODIFY] })).toBe("/settings?gmail=missing_scopes");
     expect(await h.connectionOf(linus.id)).toBeUndefined();
     expect(fake.tokensOf("linus@barnacle.ai").map((t) => t.status)).toEqual(["revoked"]);
-    expect(await page({ gmail: "missing_scopes" })).toContain("Gmail needs all the permissions asked for. Try again and tick every box.");
+    expect(await page({ gmail: "missing_scopes" })).toContain("Google needs all the permissions asked for. Try again and tick every box.");
   });
   it("a callback with no cookie, or with a cookie made for another user, is refused", async () => {
     const url = await h.startConnect();

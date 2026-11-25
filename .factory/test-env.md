@@ -87,7 +87,31 @@
   OIDC token by the fake's RSA key, served at the certs URL) and `GmailFake.deliver(email)` (to `receiveGmailPush`, the
   route's own handler), every push body checked against `PubsubMessage` in the schema `pubsub-api.json` (`message`
   properties declared, `data` base64, wrapper `{ message, subscription }`); `dropNotice(email)` drops one.
-- Google OAuth 2.0 token and revoke endpoints and Google's signing keys (SF-118; oauth2.googleapis.com/token, /revoke,
+- Google Calendar API v3 (SF-124; events.insert/patch/delete/list/watch, channels.stop on the primary calendar, scope
+  `calendar.events.owned`): fake `src/server/calendar/fake-calendar.ts`, plugged into the same `FakeGoogleMail.fetch`
+  (URLs under `https://www.googleapis.com/calendar/v3/`, state in the same `FakeState`, the same access tokens), wrapped
+  for the tests by `tests/fakes/gmail.ts` (`GmailFake`), which checks every Calendar request and answer against the schema
+  `calendar-api.json` (path and method among `resources.events` / `resources.channels` methods, each query parameter
+  declared for the method or among the top-level `parameters`, JSON bodies declared in `Event` / `Channel` recursively,
+  inline objects and string maps included, answers in `Event` / `Events` / `Channel` with their JSON types; violations
+  fail the test in `afterEach`; `tests/unit/calendar-fake.test.ts` shows a wrong field, query parameter, nested field and
+  answer property refused). The fake copies Calendar's behaviour: 403 `insufficientPermissions` without a Calendar scope,
+  base32hex ids (400 otherwise), 409 on an existing id, 404 on an unknown one, 410 on a patch or delete of a cancelled
+  event, 403 `forbiddenForNonOrganizer` on a title/time patch of someone else's event, `updated` and a change counter on
+  every write, a delete → `cancelled`, sync tokens `fake-sync-<n>` (410 below the floor after `expireCalendarTokens()`),
+  cancelled items listed only with a sync token or `showDeleted=true`, `watch` channels (≤ 7 days) and `channels/stop`.
+  Tester API: `addEvent` / `changeEvent` / `declineEvent` / `deleteEvent` (`{ deliver }`), `calendarEvents`,
+  `calendarNotice`, `deliverCalendar`, `dropCalendarNotice`, `setUnreachable` (every Google call, token endpoint included,
+  a network error), `expireCalendarTokens`, `removeScope`, `loseNextCalendarAnswer`, `refuseEventWrites`. In the running
+  app (fake Gmail and `CALENDAR_SYNC=on`, the default of `start-app.sh`) `/dev/fake-calendar` shows and changes each
+  user's fake events, switches Google unreachable, expires sync tokens and runs the 15-minute check.
+- Google Calendar push notifications (SF-124; Google's POST to `/calendar/push`, no body): no public schema on GitHub
+  (google-api-go-client's `calendar-api.json` only describes the `Channel` sent to `events.watch` / `channels.stop`); the
+  fake follows developers.google.com/calendar/api/guides/push: `calendarNotice(email)` gives exactly the headers
+  `X-Goog-Channel-ID`, `X-Goog-Channel-Token`, `X-Goog-Channel-Expiration`, `X-Goog-Resource-ID`, `X-Goog-Resource-URI`,
+  `X-Goog-Resource-State` (`sync` / `exists`), `X-Goog-Message-Number` (checked by `GmailFake`), only while a channel is
+  active; `tests/integration/calendar-push-route.test.ts` drives the route handler.
+- Google OAuth 2.0 token and revoke endpoints and Google's signing keys (SF-118, SF-124: the Calendar scope too; oauth2.googleapis.com/token, /revoke,
   www.googleapis.com/oauth2/v3/certs): the same fake. No public schema on GitHub (google-api-go-client's oauth2 v1/v2
   files only describe userinfo and tokeninfo); it follows Google's "Using OAuth 2.0 for Web Server Applications" and
   "Authenticate push subscriptions" pages and RFC 6749 §5.1/§5.2/§6, RFC 7636, RFC 7009 §2.2 and RFC 7517, checked by
@@ -213,6 +237,13 @@
   Postgres's own 23514/23505 refusals (a disconnected row with a key, a working row without one, a non-barnacle address,
   a disconnected row with a watch, direction `forwarded`, `to_list` `{}`, an attachment of size -1 or with an empty name,
   a second copy of a message for one account) and the cascade from a thread to its messages and attachments.
+  The Calendar code (SF-124: `src/server/calendar/*.ts`) keeps to the same pooler limits: no fake, the real local
+  PostgreSQL 17, no public schema; no session state and no Google call inside `sql.begin()` (scanned by
+  `tests/unit/calendar-no-session-state.test.ts`), overlapping syncs kept apart by a lease column (`calendar_lease_until`,
+  `calendar_sync_again`), conditional link writes and CRM-chosen event ids instead of locks across network calls. Its
+  columns and table come from `migrations/0019_calendar.sql` (calendar columns on `gmail_connections`,
+  `activities.updated_at`, `calendar_events` with RLS), applied on a fresh database by `migrate.test.ts` with its 23514 /
+  23505 refusals and `on delete set null` from activities.
   The unsubscribe code (SF-121: `src/server/records/unsubscribe.ts`) keeps to the same pooler limits: no fake, the real
   local PostgreSQL 17, no public schema; no session state, each unsubscribe one `sql.begin()` with a conditional
   `update persons … where unsubscribe_token = $1 and consent = 'subscribed' returning id` (Read Committed re-checks the
@@ -245,6 +276,7 @@
 - pipedrive_v1_openapi.yml: https://github.com/Zenika/zenpipe/blob/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml
 - pipedrive_v1_full_openapi.yml: https://github.com/konfig-sdks/openapi-examples/blob/161ab49c45e45825ca3832945c59a3ba904321ba/pipedrive/openapi.yaml
 - gmail-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json
+- calendar-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/calendar/v3/calendar-api.json
 - pubsub-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/pubsub/v1/pubsub-api.json
 
 - Pipedrive stand-in over HTTP (AI review, SF-117): `.factory/run/pipedrive-server.ts` serves Build's `FakePipedrive`
@@ -263,8 +295,8 @@
   and `psql -h localhost -U postgres -c "create database crm_test" -c "create database crm_dev"`.
 - Schemas: `.factory/schemas/oauth2-api.json`, `.factory/schemas/storage_v0_openapi.json`,
   `.factory/schemas/pipedrive_v2_openapi.json`, `.factory/schemas/pipedrive_v1_openapi.yml`,
-  `.factory/schemas/pipedrive_v1_full_openapi.yml`, `.factory/schemas/gmail-api.json` and
-  `.factory/schemas/pubsub-api.json`, downloaded by
+  `.factory/schemas/pipedrive_v1_full_openapi.yml`, `.factory/schemas/gmail-api.json`,
+  `.factory/schemas/pubsub-api.json` and `.factory/schemas/calendar-api.json`, downloaded by
   `npm run test:schemas` (run by `npm test` as `pretest`; commits above, sha256 checked).
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
@@ -647,8 +679,31 @@
     :3000; Edge case 3 replays migration 0017 on a pg_dump copy `sf123_mig`). Counts are compared at the minute before and
     at the reminder minute: seeded activities have reminders at round times too (e.g. 27 Nov 09:45). All pass.
     Second AI review (after the origin/main merge): start-app.sh, start-faketime-app.sh, reset-db.sh, then the script: 27/27 pass (~4 min).
+  - SF-124 AI review (Google Calendar sync, all 42 scenarios, ~14 min; edge numbers as in the fix-round spec, with edge 3 "Reassigned while needs reconnecting"). App on :3000 from `start-app.sh` (fake
+    Gmail, `CALENDAR_SYNC=on`). Fresh data: `rm -rf .fake-gmail /tmp/sf124-results.json && bash .factory/run/reset-db.sh`
+    (reset-db.sh now passes `GMAIL_TOKEN_KEY` from /tmp/gmail-token-key and `CALENDAR_SYNC=on` to the seed, so Ada Fake is
+    connected with Calendar; without them the gmail and calendar seeders skip). Then, in order, on the same data
+    (`NODE_PATH=/opt/playwright/node_modules`): `node .factory/run/scenarios-sf124-a.js` (US1 1-5, US2 1-8, US4 6, edges 5, 12),
+    `node .factory/run/scenarios-sf124-b.js [prefix…]` (US3, US4 1-5/7/8, edges 4, 6-11, 13, 14), `node
+    .factory/run/check-sf124-edge9.js` (edge 10: the edit posted anyway is refused), `node .factory/run/scenarios-sf124-c.js`
+    (edges 1, 2 and 3: reassigned while Ada's key is refused / her scopes lack Calendar / she is disconnected, then she reconnects), then `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 CALENDAR_SYNC= bash
+    .factory/run/start-app.sh` and `node .factory/run/check-sf124-edge14.js` (edge 15, Calendar off). Results in /tmp/sf124-results.json.
+    Helpers `sf124-lib.js` (fake-calendar page forms, activity box, `evOf(email, activityId)` live events of an activity
+    found by `extendedProperties.private.barnacleCrmActivity` or `calendar_events.google_event_id`) and
+    `calendar-ctl.ts` (`npx tsx`, env in its head comment: events, a change with no notice — description, location,
+    attendees, raw instants such as New York times —, a notice's headers kept for later and POSTed to `/calendar/push`).
+    Notes: fake page buttons are matched as `button` (the "Google is now unreachable." notice also contains "REACHABLE");
+    Next's route announcer is a `[role=alert]` holding the page title, so look for errors in `p.err`; a planned activity due in
+    the past is never first synced, so edge 5's 29 Mar 2026 call is synced while due in December, then moved (00:30Z–02:30Z,
+    shown 00:30–03:30 UK); US4 3 follows spec Clarifications › Plan 2026-11-25 (ticking a meeting from Google changes nothing
+    in Google, deleting it leaves the event); Margaret is deactivated in part c (reset before running a or b again).
+    Round 1: 41 of 41 scenarios pass; "Extra reassign while refused" fails (stale event, code review finding).
+    Round 2 (after fix round 1): 42 of 42 pass (edge 10 through check-sf124-edge9.js: the b script's own edit-refusal probe
+    reports FAIL because no [ EDIT ] is offered on the archived person's page, which is the SF-109 behaviour).
+    Round 3 (after merging origin/main with SF-123 reminders): same order on fresh data, 42 of 42 pass (edge 10 again through
+    check-sf124-edge9.js; the b script's probe FAIL is the same known false negative).
 ## Smoke checks
-1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json
+1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in
 4. test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json

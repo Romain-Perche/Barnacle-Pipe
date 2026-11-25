@@ -117,7 +117,7 @@ describe("pipedriveConfig", () => {
 });
 
 // covers SF-118 FR-003, FR-018, edge case "Gmail not set up" (research.md §12, contracts/google.md § Settings)
-import { gmailConfig, readTokenKey } from "@/server/env";
+import { calendarConfig, gmailConfig, readTokenKey } from "@/server/env";
 describe("readTokenKey", () => {
   it("decodes base64 of exactly 32 bytes (trimmed), else null", () => {
     expect(readTokenKey(` ${Buffer.alloc(32, 5).toString("base64")} `)?.equals(Buffer.alloc(32, 5))).toBe(true);
@@ -172,5 +172,22 @@ describe("gmailConfig", () => {
     expect(gmailConfig()).toEqual({ mode: "off" });
     withEnv({ ...real, APP_ENV: "development", VERCEL_ENV: "preview", GMAIL_PUBSUB_TOPIC: "" });
     expect(gmailConfig()).toEqual({ mode: "off" });
+  });
+});
+
+// covers SF-124 FR-015, edge case "Calendar not set up" (research.md §16): Calendar sync needs CALENDAR_SYNC=on and Gmail.
+describe("calendarConfig", () => {
+  const fakeGmail = { APP_ENV: "test", VERCEL_ENV: undefined, GMAIL_PUBSUB_TOPIC: "", GMAIL_TOKEN_KEY: Buffer.alloc(32, 8).toString("base64"), APP_URL: "" };
+  it("is fake with the fake Gmail and CALENDAR_SYNC=on; Google posts notices to APP_URL/calendar/push", () => {
+    withEnv({ ...fakeGmail, CALENDAR_SYNC: "on" });
+    expect(calendarConfig()).toEqual({ mode: "fake", pushAddress: "http://localhost:3000/calendar/push" });
+  });
+  it.each([undefined, "", "ON", "yes"])("is off with CALENDAR_SYNC=%j", (value) => {
+    withEnv({ ...fakeGmail, CALENDAR_SYNC: value });
+    expect(calendarConfig()).toEqual({ mode: "off" });
+  });
+  it("is off when Gmail is off", () => {
+    withEnv({ ...fakeGmail, GMAIL_TOKEN_KEY: "", CALENDAR_SYNC: "on" });
+    expect(calendarConfig()).toEqual({ mode: "off" });
   });
 });

@@ -5,7 +5,8 @@
 # (SF-117; default: a key made once into /tmp/pipedrive-token-key, never in the repo; set to "" for "not set up"),
 # PIPEDRIVE_URL (default empty: the fake Pipedrive), GMAIL_TOKEN_KEY (SF-118; default: a key made once into
 # /tmp/gmail-token-key; set to "" for "Gmail can't be connected right now."), GMAIL_PUBSUB_TOPIC (default empty: the
-# fake Gmail, /dev/fake-gmail), CRON_SECRET (default fake-cron-secret-0123456789, for curl on /cron/gmail).
+# fake Gmail, /dev/fake-gmail), CRON_SECRET (default fake-cron-secret-0123456789, for curl on /cron/gmail),
+# CALENDAR_SYNC (SF-124; default on: Google Calendar sync on the fake Google, /dev/fake-calendar; "" for off).
 set -e
 cd "$(dirname "$0")/../.."
 bash .factory/run/start-postgres.sh
@@ -20,6 +21,7 @@ export PIPEDRIVE_TOKEN_KEY=${PIPEDRIVE_TOKEN_KEY-$(cat /tmp/pipedrive-token-key)
 [ -s /tmp/gmail-token-key ] || openssl rand -base64 32 > /tmp/gmail-token-key
 export GMAIL_TOKEN_KEY=${GMAIL_TOKEN_KEY-$(cat /tmp/gmail-token-key)}
 export CRON_SECRET=${CRON_SECRET-fake-cron-secret-0123456789}
+export CALENDAR_SYNC=${CALENDAR_SYNC-on}
 [ -d node_modules ] || npm ci >/dev/null
 npm run -s db:migrate
 [ -n "$SKIP_SEED" ] || npm run -s db:seed || true

@@ -1,7 +1,7 @@
 // Design B: the shared layout of every signed-in page.
 import { Wordmark } from "@/app/Wordmark";
 import { requireUser } from "@/server/auth/session";
-import { gmailNeedsReconnect } from "@/server/gmail/connections";
+import { settingsWarning, settingsWarnLabel } from "@/server/gmail/connections";
 import { unreadCount } from "@/server/notifications";
 import { signOut } from "./actions";
 import { adminNav, footerNav, mainNav } from "./nav";
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const [unread, gmailWarn] = await Promise.all([unreadCount(user.id), gmailNeedsReconnect(user.id)]);
+  const [unread, warning] = await Promise.all([unreadCount(user.id), settingsWarning(user.id)]);
   return (
     <div className="shell">
       <RefreshOnHistory />
@@ -48,7 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <nav aria-label="You" className="me-nav">
             {footerNav.map((item) =>
               item.href === "/settings" ? (
-                <SettingsLink key={`${item.href}#${crypto.randomUUID()}`} {...item} initial={gmailWarn} />
+                <SettingsLink key={`${item.href}#${crypto.randomUUID()}`} {...item} initial={settingsWarnLabel(warning)} />
               ) : (
                 <SidebarLink key={item.href} {...item} />
               ),

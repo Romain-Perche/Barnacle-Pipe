@@ -3,6 +3,7 @@
 // them. Each change is one transaction: the activity row is locked `for update` through the same rule, then its linked
 // rows and the newly picked ones (through visiblePerson / visibleDeal); any archived one refuses the change.
 // Anyone who can see an activity can change it. A done call or meeting raises its person's "Last contacted".
+// SF-124: edits, ticks and unticks set updated_at (the later change wins against Google Calendar).
 // SF-123 (research.md §3–§4): its in-app reminder is `remind_at` / `reminder_read_at` on the row, set from `reminderFor`
 // when it is scheduled, moved or reassigned; `now` is a parameter so the tests pass the clock.
 import { sql, type Sql } from "@/server/db";
@@ -317,7 +318,7 @@ export async function editActivity(actorId: number, id: number, version: number,
     await db`
       update activities set type = ${value.type}, subject = ${value.subject}, due_on = ${value.dueOn}, due_time = ${value.dueTime},
              duration_minutes = ${value.durationMinutes}, note = ${value.note}, deal_id = ${value.dealId}, person_id = ${value.personId},
-             organisation_id = ${value.organisationId}, assignee_id = ${assignee}, version = version + 1
+             organisation_id = ${value.organisationId}, assignee_id = ${assignee}, version = version + 1, updated_at = now()
              ${reassigned ? db`, assigned_by = ${actorId}, assigned_at = now(), assignment_read_at = null` : db``}
              ${remind ? db`, remind_at = ${reminderFor(value, now)}, reminder_read_at = null` : db``}
       where id = ${id}`;
@@ -358,7 +359,7 @@ export async function tickActivity(actorId: number, id: number): Promise<TickRes
     const locked = await lockForTick(db, actorId, id);
     if (locked.status !== "ok") return locked;
     const [done] = await db<{ type: ActivityType; person_id: number | null; due_on: string; due_time: string | null; done_at: Date }[]>`
-      update activities set done_at = now(), done_by = ${actorId}, version = version + 1
+      update activities set done_at = now(), done_by = ${actorId}, version = version + 1, updated_at = now()
       where id = ${id} and done_at is null
       returning type, person_id::int as person_id, to_char(due_on, 'YYYY-MM-DD') as due_on, to_char(due_time, 'HH24:MI') as due_time, done_at`;
     if (done && done.type !== "task" && done.person_id !== null) {
@@ -380,7 +381,7 @@ export async function untickActivity(actorId: number, id: number, now: Date = ne
     const locked = await lockForTick(db, actorId, id);
     if (locked.status !== "ok") return locked;
     const past = dueMoment({ dueOn: locked.cur.due_on, dueTime: locked.cur.due_time }).getTime() <= now.getTime();
-    await db`update activities set done_at = null, done_by = null, version = version + 1
+    await db`update activities set done_at = null, done_by = null, version = version + 1, updated_at = now()
              ${past ? db`, remind_at = null, reminder_read_at = null` : db``}
              where id = ${id} and done_at is not null`;
     return { status: "ok" };

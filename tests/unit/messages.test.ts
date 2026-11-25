@@ -553,7 +553,7 @@ describe("Gmail messages (SF-118)", () => {
     expect(messageFor("gmail_connected")).toBe("Gmail connected.");
     expect(messageFor("gmail_reconnected")).toBe("Gmail reconnected.");
     expect(messageFor("gmail_cancelled")).toBe("Gmail was not connected.");
-    expect(messageFor("gmail_missing_scopes")).toBe("Gmail needs all the permissions asked for. Try again and tick every box.");
+    expect(messageFor("gmail_missing_scopes")).toBe("Google needs all the permissions asked for. Try again and tick every box.");
     expect(messageFor("gmail_disconnected")).toBe("Gmail disconnected.");
     expect(messageFor("gmail_disconnect_confirm")).toBe("Disconnect Gmail? New email will stop being copied. Emails already copied stay in the CRM.");
     expect(messageFor("gmail_test_failed")).toBe("The test email could not be sent. Try again in a minute.");

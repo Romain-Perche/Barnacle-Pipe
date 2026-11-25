@@ -7,6 +7,12 @@
 //   History → HistoryMessageAdded → Message, ListMessagesResponse, Message → MessagePart → MessagePartHeader /
 //   MessagePartBody, Thread), with the declared JSON types (int64/uint64 as strings);
 // - every push body it delivers checked against PubsubMessage in .factory/schemas/pubsub-api.json, `data` base64.
+// - SF-124: every Google Calendar request and answer checked against Calendar's discovery file
+//   (.factory/schemas/calendar-api.json): path and method among `resources.events` / `resources.channels` methods, each
+//   query parameter declared for that method or among the discovery's top-level `parameters`, JSON bodies declared in
+//   Event / Channel recursively (EventDateTime, EventReminder, EventAttendee, inline objects, string maps), answers in
+//   Event / Events / Channel with their JSON types; the push notices it delivers carry exactly Google's header names
+//   (Calendar push notifications have no schema: developers.google.com/calendar/api/guides/push).
 // The token, revoke and certs endpoints have no public schema (plan.md § Outside services): the fake copies RFC 6749,
 // 7009 and 7517, checked by tests/unit/gmail-fake-oauth.test.ts. A request or answer the schemas refuse throws, and is
 // also kept in `violations`, which fails the test in afterEach even when the app code swallowed the error.
@@ -20,14 +26,16 @@ import { receiveGmailPush } from "@/server/gmail/push";
 
 export const GMAIL_SCHEMA_PATH = path.join(process.cwd(), ".factory/schemas/gmail-api.json");
 export const PUBSUB_SCHEMA_PATH = path.join(process.cwd(), ".factory/schemas/pubsub-api.json");
+export const CALENDAR_SCHEMA_PATH = path.join(process.cwd(), ".factory/schemas/calendar-api.json");
 // A test key for GMAIL_TOKEN_KEY (32 bytes, base64): set by the Gmail tests, never used outside them.
 export const TEST_GMAIL_KEY = Buffer.alloc(32, 0x5a).toString("base64");
 
 type Prop = { type?: string; format?: string; $ref?: string; items?: Prop; additionalProperties?: Prop; properties?: Record<string, Prop> };
+type Param = { location: string };
 type Schema = { id: string; type: string; properties: Record<string, Prop> };
 type Method = { httpMethod: string; path: string; parameters?: Record<string, { location: string }>; request?: { $ref: string }; response?: { $ref: string } };
 type Resource = { methods?: Record<string, Method>; resources?: Record<string, Resource> };
-type Discovery = { rootUrl: string; servicePath: string; schemas: Record<string, Schema>; resources: Record<string, Resource> };
+type Discovery = { rootUrl: string; servicePath: string; schemas: Record<string, Schema>; resources: Record<string, Resource>; parameters?: Record<string, Param> };
 
 function load(file: string): Discovery {
   if (!existsSync(file)) throw new Error(`${file} is missing: run "npm run test:schemas" to download it.`);
@@ -38,6 +46,7 @@ function load(file: string): Discovery {
 
 export const gmailSchema = load(GMAIL_SCHEMA_PATH);
 export const pubsubSchema = load(PUBSUB_SCHEMA_PATH);
+export const calendarSchema = load(CALENDAR_SCHEMA_PATH);
 
 const methods: (Method & { name: string; re: RegExp; pathParams: string[] })[] = [];
 (function walk(r: Resource, prefix: string) {
@@ -54,6 +63,33 @@ function methodOf(httpMethod: string, pathname: string) {
   if (!found) throw new Error(`gmail-api.json has no ${httpMethod} ${pathname}`);
   return found;
 }
+
+// SF-124: Calendar's events and channels methods, matched on the path under calendar/v3/.
+const calendarMethods: (Method & { name: string; re: RegExp })[] = [];
+for (const r of ["events", "channels"]) {
+  for (const [name, m] of Object.entries(calendarSchema.resources[r].methods ?? {})) {
+    calendarMethods.push({ ...m, name: `${r}.${name}`, re: new RegExp(`^/${calendarSchema.servicePath}${m.path.replace(/\{[^}]+\}/g, "([^/]+)")}$`) });
+  }
+}
+// Exact paths (events/watch) before patterns (events/{eventId}).
+calendarMethods.sort((a, b) => (a.path.includes("{eventId}") ? 1 : 0) - (b.path.includes("{eventId}") ? 1 : 0));
+
+function calendarMethodOf(httpMethod: string, pathname: string) {
+  const found = calendarMethods.find((m) => m.httpMethod === httpMethod && m.re.test(pathname));
+  if (!found) throw new Error(`calendar-api.json has no ${httpMethod} ${pathname}`);
+  return found;
+}
+
+// The header names of a Calendar push notice (developers.google.com/calendar/api/guides/push).
+export const CALENDAR_NOTICE_HEADERS = [
+  "x-goog-channel-expiration",
+  "x-goog-channel-id",
+  "x-goog-channel-token",
+  "x-goog-message-number",
+  "x-goog-resource-id",
+  "x-goog-resource-state",
+  "x-goog-resource-uri",
+];
 
 function checkValue(where: string, value: unknown, p: Prop, schemas: Record<string, Schema>, file: string) {
   if (p.$ref) return checkObject(where, value, schemas[p.$ref], schemas, file);
@@ -79,6 +115,12 @@ function checkValue(where: string, value: unknown, p: Prop, schemas: Record<stri
     case "object":
       if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`${where} must be an object in ${file}`);
       if (p.additionalProperties) for (const [k, v] of Object.entries(value)) checkValue(`${where}.${k}`, v, p.additionalProperties, schemas, file);
+      if (p.properties) {
+        for (const [k, v] of Object.entries(value)) {
+          if (!p.properties[k]) throw new Error(`${where} has no property "${k}" (${file})`);
+          checkValue(`${where}.${k}`, v, p.properties[k], schemas, file);
+        }
+      }
       return;
   }
 }
@@ -128,8 +170,45 @@ export class GmailFake extends FakeGoogleMail {
     this.tamperNext = fn;
   }
 
+  private async checkCalendar(req: Request, url: URL): Promise<Response> {
+    const m = calendarMethodOf(req.method, url.pathname);
+    for (const name of url.searchParams.keys()) {
+      const p = m.parameters?.[name] ?? calendarSchema.parameters?.[name];
+      if (!p || p.location !== "query") throw new Error(`${m.name} has no query parameter "${name}" in calendar-api.json`);
+    }
+    const text = req.method === "GET" || req.method === "DELETE" ? "" : await req.clone().text();
+    if (text) {
+      if (!m.request) throw new Error(`${m.name} takes no body in calendar-api.json`);
+      checkObject(`${m.name} body`, JSON.parse(text), calendarSchema.schemas[m.request.$ref], calendarSchema.schemas, "calendar-api.json");
+    }
+    const res = await this.fetch(req);
+    if (!res.ok || !m.response) return res;
+    let body = (await res.json()) as Record<string, unknown>;
+    if (this.tamperNext) {
+      body = this.tamperNext(body);
+      this.tamperNext = null;
+    }
+    checkObject(`${m.name} answer`, body, calendarSchema.schemas[m.response.$ref], calendarSchema.schemas, "calendar-api.json");
+    return new Response(JSON.stringify(body), { status: res.status, headers: res.headers });
+  }
+
+  // The notice Google posts carries exactly the push guide's headers.
+  override calendarNotice(email: string, state: "sync" | "exists" = "exists"): Headers | null {
+    const h = super.calendarNotice(email, state);
+    if (h) {
+      const names = [...h.keys()].sort();
+      if (JSON.stringify(names) !== JSON.stringify(CALENDAR_NOTICE_HEADERS)) {
+        const msg = `a Calendar notice must carry exactly ${CALENDAR_NOTICE_HEADERS.join(", ")}; got ${names.join(", ")}`;
+        this.violations.push(msg);
+        throw new Error(msg);
+      }
+    }
+    return h;
+  }
+
   private async check(req: Request): Promise<Response> {
     const url = new URL(req.url);
+    if (url.href.startsWith("https://www.googleapis.com/calendar/v3/")) return this.checkCalendar(req, url);
     if (url.origin !== "https://gmail.googleapis.com") {
       if (!["https://oauth2.googleapis.com", "https://www.googleapis.com"].includes(url.origin)) throw new Error(`no Google call to ${url.origin}`);
       return this.fetch(req);

@@ -42,6 +42,24 @@ describe("proxy without a session (SF-118)", () => {
   );
 });
 
+// covers SF-124 FR-013, FR-015: Google Calendar's notices and the fake calendar page pass without a session (they check
+// their own proof, or answer 404 outside fake mode); nearby addresses still need one.
+describe("proxy without a session (SF-124)", () => {
+  const run = (path: string, method = "GET") => proxy(new NextRequest(new URL(path, "http://localhost:3000"), { method }));
+  it.each([
+    ["/calendar/push", "POST"],
+    ["/calendar/push/", "POST"],
+    ["/dev/fake-calendar", "GET"],
+    ["/dev/fake-calendar/", "GET"],
+  ])("lets %s through", (path, method) => {
+    expect(matches(path)).toBe(true);
+    expect(run(path, method).headers.get("location")).toBeNull();
+  });
+  it.each(["/calendar/push/x", "/calendar", "/dev/fake-calendar/x"])("sends %s to sign-in", (path) => {
+    expect(run(path).headers.get("location")).toMatch(/^http:\/\/localhost:3000\/sign-in\?next=/);
+  });
+});
+
 // covers SF-121 FR-001, US2 scenario 1, FR-017 (T012, T019, T035): the unsubscribe page, its button, one-click and the
 // development links page need no session; anything else still goes to sign-in
 describe("public unsubscribe addresses (SF-121)", () => {

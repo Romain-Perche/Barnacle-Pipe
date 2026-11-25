@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   activityState, afterTickPath, cardLine, dueMoment, durationOptions, existsInUk, formatCardDue, formatDue, REMINDER_LEAD_MINUTES, reminderAt,
-  reminderFor, ukInstant, UNTIMED_REMINDER_TIME, validateActivity, weekBounds,
+  reminderFor, ukInstant, UNTIMED_REMINDER_TIME, ukWallClock, validateActivity, weekBounds,
   type ActivityForm,
 } from "@/server/activities/rules";
 import { countLabel } from "@/server/format";
@@ -95,6 +95,15 @@ describe("UK time", () => {
     expect(ukInstant("2026-07-01", null).toISOString()).toBe("2026-06-30T23:00:00.000Z");
     expect(existsInUk("2026-03-29", "01:30")).toBe(false);
     expect(existsInUk("2026-03-29", "02:00")).toBe(true);
+  });
+});
+
+// covers SF-124 SC-005 (research.md §5): the UK wall clock of an instant, either side of the clock change.
+describe("ukWallClock", () => {
+  it("reads an instant as a UK day and time", () => {
+    expect(ukWallClock(new Date("2026-03-29T01:30:00Z"))).toEqual({ day: "2026-03-29", time: "02:30" });
+    expect(ukWallClock(new Date("2026-12-04T15:00:00Z"))).toEqual({ day: "2026-12-04", time: "15:00" });
+    expect(ukWallClock(new Date("2026-07-01T23:30:00Z"))).toEqual({ day: "2026-07-02", time: "00:30" });
   });
 });
 

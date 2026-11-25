@@ -29,32 +29,37 @@ flowchart LR
     n13[["Signed-in app and user admin"]]
     n14[["Unsubscribe"]]
     n15["Barnacle admin"]
-    n16["Vercel cron and Google Pub/Sub"]
-    n17["Developer or Vercel build"]
-    n18["Email recipient / mail app"]
-    n19["Google OAuth and Gmail API"]
-    n20["Barnacle staff user"]
+    n16["Google Calendar API"]
+    n17["Vercel cron and Google Pub/Sub"]
+    n18["Developer or Vercel build"]
+    n19["Email recipient / mail app"]
+    n20["Google OAuth and Gmail API"]
+    n21["Barnacle staff user"]
     subgraph z1["GOOGLE (THIRD PARTY)"]
-        n21["Google OAuth and userinfo API"]
+        n22["Google OAuth and userinfo API"]
     end
     subgraph z2["PIPEDRIVE (THIRD PARTY)"]
-        n22["Pipedrive API"]
+        n23["Pipedrive API"]
     end
     subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
-        n23["Supabase Storage"]
+        n24["Supabase Storage"]
     end
     n8 -->|"17 flows"| n2
-    n8 -->|"7 flows"| n20
+    n8 -->|"activity changes to mirror"| n7
+    n8 -->|"7 flows"| n21
     n2 -->|"12 flows"| n8
     n2 -->|"next activity per deal"| n4
     n15 -->|"2 flows"| n8
     n15 -->|"pipeline and stage changes"| n4
     n15 -->|"new user email, role and status changes"| n13
     n13 -->|"2 flows"| n8
-    n13 -->|"sidebar and signed-in pages"| n20
-    n1 -->|"campaign list, editor and live preview"| n20
+    n13 -->|"sidebar and signed-in pages"| n21
+    n16 -->|"events, sync tokens"| n7
+    n7 -->|"event and channel requests"| n16
+    n7 -->|"meetings and moves from Google"| n2
+    n1 -->|"campaign list, editor and live preview"| n21
     n8 -->|"label changes seen on deals"| n5
-    n16 -->|"push notice and 15-minute check"| n7
+    n17 -->|"2 flows"| n7
     n12 -->|"4 flows"| n2
     n8 -->|"custom inputs, values, filters"| n4
     n2 -->|"2 flows"| n1
@@ -62,10 +67,10 @@ flowchart LR
     n5 -->|"7 flows"| n4
     n4 -->|"9 flows"| n5
     n4 -->|"4 flows"| n2
-    n4 -->|"board, deal drawer and forms"| n20
+    n4 -->|"board, deal drawer and forms"| n21
     n5 -->|"visible referred deals and totals"| n8
-    n17 -->|"migrate command / seed command"| n3
-    n18 -->|"unsubscribe token, confirm or one-click POST"| n14
+    n18 -->|"migrate command / seed command"| n3
+    n19 -->|"unsubscribe token, confirm or one-click POST"| n14
     n11 -->|"3 flows"| n12
     n11 -->|"GMAIL_TOKEN_KEY, Google settings"| n7
     n11 -->|"2 flows"| n3
@@ -73,14 +78,14 @@ flowchart LR
     n6 -->|"files section"| n4
     n6 -->|"2 flows"| n2
     n6 -->|"files section"| n8
-    n6 -->|"303 to a 60-second read address"| n20
-    n6 -->|"signed upload address, info, delete requests"| n23
+    n6 -->|"303 to a 60-second read address"| n21
+    n6 -->|"signed upload address, info, delete requests"| n24
     n2 -->|"file rows visible to the user"| n6
-    n19 -->|"tokens, profile, messages"| n7
-    n7 -->|"OAuth and Gmail requests"| n19
-    n12 -->|"auth code, PKCE verifier, client id and secret"| n21
-    n12 -->|"2 flows"| n20
-    n21 -->|"access token, then email, domain and name"| n12
+    n20 -->|"tokens, profile, messages"| n7
+    n7 -->|"OAuth and Gmail requests"| n20
+    n12 -->|"auth code, PKCE verifier, client id and secret"| n22
+    n12 -->|"2 flows"| n21
+    n22 -->|"access token, then email, domain and name"| n12
     n3 -->|"13 flows"| n2
     n3 -->|"table definition"| n1
     n3 -->|"fake deals / table definitions"| n5
@@ -89,12 +94,12 @@ flowchart LR
     n3 -->|"schema"| n9
     n3 -->|"table definition"| n10
     n8 -->|"current unread count"| n13
-    n22 -->|"people, organisations, deals, notes, activities, files"| n9
+    n23 -->|"people, organisations, deals, notes, activities, files"| n9
     n9 -->|"3 flows"| n2
     n9 -->|"5 flows"| n5
-    n9 -->|"token header, page requests"| n22
-    n9 -->|"progress and report"| n20
-    n9 -->|"copied file contents"| n23
+    n9 -->|"token header, page requests"| n23
+    n9 -->|"progress and report"| n21
+    n9 -->|"copied file contents"| n24
     n8 -->|"crm_flash cookie"| n12
     n12 -->|"4 flows"| n8
     n12 -->|"2 flows"| n13
@@ -102,17 +107,17 @@ flowchart LR
     n12 -->|"signed-in user"| n6
     n12 -->|"signed-in user"| n9
     n2 -->|"4 flows"| n12
-    n20 -->|"7 flows"| n8
-    n20 -->|"campaign forms, blocks, preview person"| n1
-    n20 -->|"deal form fields, board drags"| n4
-    n20 -->|"4 flows"| n12
-    n20 -->|"files to add, delete, download, preview"| n6
-    n20 -->|"connect or disconnect Gmail"| n7
-    n20 -->|"API token, import choices"| n9
-    n20 -->|"segment forms and counts requests"| n10
-    n20 -->|"file contents (PUT to signed address)"| n23
-    n23 -->|"object info and first bytes"| n6
-    n14 -->|"unsubscribe confirmation page"| n18
+    n21 -->|"7 flows"| n8
+    n21 -->|"campaign forms, blocks, preview person"| n1
+    n21 -->|"deal form fields, board drags"| n4
+    n21 -->|"4 flows"| n12
+    n21 -->|"files to add, delete, download, preview"| n6
+    n21 -->|"connect or disconnect Gmail"| n7
+    n21 -->|"API token, import choices"| n9
+    n21 -->|"segment forms and counts requests"| n10
+    n21 -->|"file contents (PUT to signed address)"| n24
+    n24 -->|"object info and first bytes"| n6
+    n14 -->|"unsubscribe confirmation page"| n19
     n14 -->|"2 flows"| n2
     n13 -->|"users table and error messages"| n15
     n13 -->|"private deals handed to a new owner"| n5
@@ -124,7 +129,7 @@ flowchart LR
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n15,n16,n17,n18,n19,n20,n21,n22,n23 actor
+    class n15,n16,n17,n18,n19,n20,n21,n22,n23,n24 actor
     class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11,n12,n13,n14 group
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
     style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
@@ -139,7 +144,7 @@ flowchart LR
 | Deals | Pipelines, stages and the deal board, with deals kept private by their person. | Deals board and deal pages, Pipelines admin |
 | Deals database | The Postgres tables for pipelines, stages, deals, their stage time, labels, linked people and followers. | Postgres deal followers, Postgres deal labels and label links, Postgres deal people, Postgres deal stage periods, Postgres deals, Postgres pipelines, Postgres stages |
 | Files | Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage. | Files on records |
-| Gmail | Connects a user's Gmail, copies mail into the CRM through push and a 15-minute check, and sends mail. | Google API client, Gmail connect and disconnect, Gmail send, Gmail sync and push receiver, Gmail connections, threads, messages |
+| Gmail | Connects a user's Gmail, copies mail into the CRM through push and a 15-minute check, and sends mail. | Google Calendar client, Calendar event links, Calendar sync and push receiver, Google API client, Gmail connect and disconnect, Gmail send, Gmail sync and push receiver, Gmail connections, threads, messages |
 | People and organisations | Staff list, search, create, edit, archive and delete people and organisations, with a timeline and shared lead sources and labels. | Activities (calls, meetings, tasks), Ambassadors and referrals, Lead sources and labels admin, CSV import, Postgres csv_imports, Custom fields, Postgres note mentions, Notes and @mentions, Notifications page, Organisation pages and actions, People pages and actions, One-shot delete notice |
 | Pipedrive import | Connects a Pipedrive token and imports people, organisations and deals page by page, never twice. | Sealed Pipedrive tokens, Pipedrive import, Pipedrive imports and links |
 | Segments | Saved, team-shared people segments and the count of people each one reaches. | Saved segments and reach count, Postgres segments |
@@ -163,47 +168,50 @@ flowchart LR
     n3[["Command line (developer machine or Vercel build)"]]
     n4[["Postgres (Supabase or local)"]]
     n5["Barnacle admin"]
-    n6["Vercel cron and Google Pub/Sub"]
-    n7["Developer or Vercel build"]
-    n8["Email recipient / mail app"]
-    n9[("Environment settings (.env.local / Vercel)")]
-    n10["Google OAuth and Gmail API"]
-    n11[("SQL migration files")]
-    n12["Barnacle staff user"]
+    n6["Google Calendar API"]
+    n7["Vercel cron and Google Pub/Sub"]
+    n8["Developer or Vercel build"]
+    n9["Email recipient / mail app"]
+    n10[("Environment settings (.env.local / Vercel)")]
+    n11["Google OAuth and Gmail API"]
+    n12[("SQL migration files")]
+    n13["Barnacle staff user"]
     subgraph z1["GOOGLE (THIRD PARTY)"]
-        n13["Google OAuth and userinfo API"]
+        n14["Google OAuth and userinfo API"]
     end
     subgraph z2["PIPEDRIVE (THIRD PARTY)"]
-        n14["Pipedrive API"]
+        n15["Pipedrive API"]
     end
     subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
-        n15["Supabase Storage"]
+        n16["Supabase Storage"]
     end
-    n1 -->|"58 flows"| n4
-    n1 -->|"14 flows"| n12
+    n1 -->|"59 flows"| n4
+    n1 -->|"14 flows"| n13
     n4 -->|"35 flows"| n1
     n5 -->|"4 flows"| n1
     n2 -->|"3 flows"| n1
-    n6 -->|"push notice and 15-minute check"| n1
-    n7 -->|"migrate command / seed command"| n3
-    n8 -->|"unsubscribe token, confirm or one-click POST"| n1
-    n9 -->|"5 flows"| n1
-    n9 -->|"2 flows"| n3
+    n6 -->|"events, sync tokens"| n1
+    n1 -->|"event and channel requests"| n6
+    n7 -->|"2 flows"| n1
+    n8 -->|"migrate command / seed command"| n3
+    n9 -->|"unsubscribe token, confirm or one-click POST"| n1
+    n10 -->|"5 flows"| n1
+    n10 -->|"2 flows"| n3
     n1 -->|"5 flows"| n2
-    n1 -->|"2 flows"| n15
-    n10 -->|"tokens, profile, messages"| n1
-    n1 -->|"OAuth and Gmail requests"| n10
-    n1 -->|"auth code, PKCE verifier, client id and secret"| n13
-    n13 -->|"access token, then email, domain and name"| n1
+    n1 -->|"2 flows"| n16
+    n11 -->|"tokens, profile, messages"| n1
+    n1 -->|"OAuth and Gmail requests"| n11
+    n1 -->|"auth code, PKCE verifier, client id and secret"| n14
+    n14 -->|"access token, then email, domain and name"| n1
     n3 -->|"15 flows"| n4
     n3 -->|"schema / table definition"| n1
-    n11 -->|"SQL migration text"| n3
-    n14 -->|"people, organisations, deals, notes, activities, files"| n1
-    n1 -->|"token header, page requests"| n14
-    n12 -->|"17 flows"| n1
-    n12 -->|"file contents (PUT to signed address)"| n15
-    n15 -->|"object info and first bytes"| n1
-    n1 -->|"unsubscribe confirmation page"| n8
+    n12 -->|"SQL migration text"| n3
+    n15 -->|"people, organisations, deals, notes, activities, files"| n1
+    n1 -->|"token header, page requests"| n15
+    n13 -->|"17 flows"| n1
+    n13 -->|"file contents (PUT to signed address)"| n16
+    n16 -->|"object info and first bytes"| n1
+    n1 -->|"unsubscribe confirmation page"| n9
     n1 -->|"users table and error messages"| n5
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -211,8 +219,8 @@ flowchart LR
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n5,n6,n7,n8,n10,n12,n13,n14,n15 actor
-    class n9,n11 store
+    class n5,n6,n7,n8,n9,n11,n13,n14,n15,n16 actor
+    class n10,n12 store
     class n1,n2,n3,n4 zone
     style z1 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
     style z2 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
@@ -285,30 +293,32 @@ flowchart LR
     n14[["Database commands"]]
     n15[["Deals"]]
     n16[["Files"]]
-    n17[["Pipedrive import"]]
-    n18[["People and organisations"]]
-    n19[["Segments"]]
-    n20[["Sign-in and sessions"]]
-    n21[["Unsubscribe"]]
-    n22[["Signed-in app and user admin"]]
-    n18 -->|"2 flows"| n1
-    n18 -->|"4 flows"| n7
-    n1 -->|"activity rows / assignments by others"| n18
+    n17[["Gmail"]]
+    n18[["Pipedrive import"]]
+    n19[["People and organisations"]]
+    n20[["Segments"]]
+    n21[["Sign-in and sessions"]]
+    n22[["Unsubscribe"]]
+    n23[["Signed-in app and user admin"]]
+    n19 -->|"2 flows"| n1
+    n19 -->|"4 flows"| n7
+    n1 -->|"activity rows / assignments by others"| n19
     n1 -->|"next activity per deal"| n15
     n1 -->|"done activities read into timelines"| n10
-    n18 -->|"lead source and label changes"| n2
-    n2 -->|"2 flows"| n18
-    n20 -->|"2 flows"| n9
-    n20 -->|"first admin added"| n11
-    n20 -->|"first admin, name, last sign-in time"| n12
-    n18 -->|"2 flows"| n6
-    n18 -->|"6 flows"| n10
-    n18 -->|"field and choice definitions"| n3
-    n18 -->|"saved record values"| n4
+    n17 -->|"meetings and moves from Google"| n1
+    n19 -->|"lead source and label changes"| n2
+    n2 -->|"2 flows"| n19
+    n21 -->|"2 flows"| n9
+    n21 -->|"first admin added"| n11
+    n21 -->|"first admin, name, last sign-in time"| n12
+    n19 -->|"2 flows"| n6
+    n19 -->|"6 flows"| n10
+    n19 -->|"field and choice definitions"| n3
+    n19 -->|"saved record values"| n4
     n3 -->|"people custom field names for merge tags"| n13
-    n3 -->|"field definitions for forms and lists"| n18
-    n4 -->|"record values, list columns and filters"| n18
-    n4 -->|"custom value tests for conditions"| n19
+    n3 -->|"field definitions for forms and lists"| n19
+    n4 -->|"record values, list columns and filters"| n19
+    n4 -->|"custom value tests for conditions"| n20
     n15 -->|"2 flows"| n7
     n15 -->|"2 flows"| n10
     n16 -->|"file rows, upload and cleanup records"| n5
@@ -324,28 +334,28 @@ flowchart LR
     n14 -->|"table definitions"| n9
     n14 -->|"fake users added / table definitions"| n11
     n14 -->|"fake users / table definitions"| n12
-    n6 -->|"organisations and their people"| n18
-    n7 -->|"2 flows"| n18
+    n6 -->|"organisations and their people"| n19
+    n7 -->|"2 flows"| n19
     n7 -->|"visible person merge values for preview"| n13
-    n7 -->|"visible people and deals for reach counts"| n19
-    n17 -->|"imported activities"| n1
-    n17 -->|"imported records"| n4
-    n17 -->|"imported file rows, cleanup paths"| n5
-    n17 -->|"imported records"| n6
-    n17 -->|"imported records"| n7
-    n17 -->|"imported records"| n10
-    n9 -->|"session state with user role and status"| n20
-    n10 -->|"2 flows"| n18
-    n21 -->|"consent set to unsubscribed by token"| n7
-    n21 -->|"unsubscribed_link / unsubscribed_mail_app events"| n10
-    n22 -->|"private people handed to a new owner"| n7
-    n22 -->|"revoked sessions of deactivated users"| n9
-    n22 -->|"2 flows"| n10
-    n22 -->|"who changed which user, and how"| n11
-    n22 -->|"added users, role and status changes"| n12
-    n12 -->|"3 flows"| n20
-    n12 -->|"active users matched as owners"| n18
-    n12 -->|"user list"| n22
+    n7 -->|"visible people and deals for reach counts"| n20
+    n18 -->|"imported activities"| n1
+    n18 -->|"imported records"| n4
+    n18 -->|"imported file rows, cleanup paths"| n5
+    n18 -->|"imported records"| n6
+    n18 -->|"imported records"| n7
+    n18 -->|"imported records"| n10
+    n9 -->|"session state with user role and status"| n21
+    n10 -->|"2 flows"| n19
+    n22 -->|"consent set to unsubscribed by token"| n7
+    n22 -->|"unsubscribed_link / unsubscribed_mail_app events"| n10
+    n23 -->|"private people handed to a new owner"| n7
+    n23 -->|"revoked sessions of deactivated users"| n9
+    n23 -->|"2 flows"| n10
+    n23 -->|"who changed which user, and how"| n11
+    n23 -->|"added users, role and status changes"| n12
+    n12 -->|"3 flows"| n21
+    n12 -->|"active users matched as owners"| n19
+    n12 -->|"user list"| n23
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -353,7 +363,7 @@ flowchart LR
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11,n12 store
-    class n13,n14,n15,n16,n17,n18,n19,n20,n21,n22 stub
+    class n13,n14,n15,n16,n17,n18,n19,n20,n21,n22,n23 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -567,41 +577,56 @@ config:
   layout: elk
 ---
 flowchart LR
-    n1["Vercel cron and Google Pub/Sub"]
-    n2["Google OAuth and Gmail API"]
-    n3["Barnacle staff user"]
+    n1["Google Calendar API"]
+    n2["Vercel cron and Google Pub/Sub"]
+    n3["Google OAuth and Gmail API"]
+    n4["Barnacle staff user"]
     subgraph z1["NEXT.JS APP SERVER (VERCEL OR LOCAL)"]
-        n4("Google API client")
-        n5("Gmail connect and disconnect")
-        n6("Gmail send")
-        n7("Gmail sync and push receiver")
-        n8[("Gmail connections, threads, messages")]
+        n5("Google Calendar client")
+        n6[("Calendar event links")]
+        n7("Calendar sync and push receiver")
+        n8("Google API client")
+        n9("Gmail connect and disconnect")
+        n10("Gmail send")
+        n11("Gmail sync and push receiver")
+        n12[("Gmail connections, threads, messages")]
     end
-    n9[["Database commands"]]
-    n10[["Settings"]]
-    n1 -->|"push notice and 15-minute check"| n7
-    n10 -->|"GMAIL_TOKEN_KEY, Google settings"| n5
-    n2 -->|"tokens, profile, messages"| n4
-    n4 -->|"OAuth and Gmail requests"| n2
-    n5 -->|"consent, token, revoke calls"| n4
-    n5 -->|"refresh token sealed with AES-256-GCM"| n8
-    n6 -->|"outgoing MIME message"| n4
-    n7 -->|"history and message reads"| n4
-    n7 -->|"copied threads and messages"| n8
-    n8 -->|"sealed token"| n6
-    n8 -->|"sealed token, history id"| n7
-    n9 -->|"schema"| n8
-    n3 -->|"connect or disconnect Gmail"| n5
+    n13[["Database"]]
+    n14[["Database commands"]]
+    n15[["People and organisations"]]
+    n16[["Settings"]]
+    n15 -->|"activity changes to mirror"| n7
+    n1 -->|"events, sync tokens"| n5
+    n5 -->|"event and channel requests"| n1
+    n6 -->|"event links"| n7
+    n7 -->|"meetings and moves from Google"| n13
+    n7 -->|"event pull, push, watch calls"| n5
+    n7 -->|"event links and agreed bodies"| n6
+    n2 -->|"Calendar push notice"| n7
+    n2 -->|"push notice and 15-minute check"| n11
+    n16 -->|"GMAIL_TOKEN_KEY, Google settings"| n9
+    n3 -->|"tokens, profile, messages"| n8
+    n8 -->|"OAuth and Gmail requests"| n3
+    n9 -->|"consent, token, revoke calls"| n8
+    n9 -->|"refresh token sealed with AES-256-GCM"| n12
+    n10 -->|"outgoing MIME message"| n8
+    n11 -->|"15-minute calendar check"| n7
+    n11 -->|"history and message reads"| n8
+    n11 -->|"copied threads and messages"| n12
+    n12 -->|"sealed token"| n10
+    n12 -->|"sealed token, history id"| n11
+    n14 -->|"schema"| n12
+    n4 -->|"connect or disconnect Gmail"| n9
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n1,n2,n3 actor
-    class n4,n5,n6,n7 process
-    class n8 store
-    class n9,n10 stub
+    class n1,n2,n3,n4 actor
+    class n5,n7,n8,n9,n10,n11 process
+    class n6,n12 store
+    class n13,n14,n15,n16 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -638,16 +663,18 @@ flowchart LR
     n17[["Deals"]]
     n18[["Deals database"]]
     n19[["Files"]]
-    n20[["Sign-in and sessions"]]
-    n21[["Signed-in app and user admin"]]
+    n20[["Gmail"]]
+    n21[["Sign-in and sessions"]]
+    n22[["Signed-in app and user admin"]]
     n3 -->|"2 flows"| n15
+    n3 -->|"activity changes to mirror"| n20
     n3 -->|"activities list and next activities"| n2
     n15 -->|"activity rows"| n3
     n15 -->|"assignments by others"| n10
     n1 -->|"new, renamed and removed lead sources and labels"| n5
     n1 -->|"field and choice changes"| n7
     n4 -->|"ambassadors, referred people and deals, latest updates"| n2
-    n21 -->|"unread count request after navigation"| n10
+    n22 -->|"unread count request after navigation"| n10
     n5 -->|"lead source and label changes"| n15
     n5 -->|"label changes seen on deals"| n18
     n15 -->|"2 flows"| n6
@@ -672,7 +699,7 @@ flowchart LR
     n9 -->|"timeline notes"| n2
     n9 -->|"note events"| n15
     n10 -->|"assignment read marks"| n15
-    n10 -->|"current unread count"| n21
+    n10 -->|"current unread count"| n22
     n10 -->|"read marks"| n8
     n10 -->|"notifications list"| n2
     n11 -->|"2 flows"| n15
@@ -683,15 +710,15 @@ flowchart LR
     n12 -->|"delete notice"| n13
     n12 -->|"person lists, details and timeline"| n2
     n15 -->|"2 flows"| n4
-    n13 -->|"crm_flash cookie"| n20
-    n20 -->|"signed-in user check"| n3
-    n20 -->|"signed-in user check"| n4
-    n20 -->|"admin check"| n5
-    n20 -->|"admin check, signed-in user"| n7
-    n20 -->|"signed-in user check"| n9
-    n20 -->|"signed-in user check"| n10
-    n20 -->|"signed-in user and admin check"| n11
-    n20 -->|"signed-in user and admin check"| n12
+    n13 -->|"crm_flash cookie"| n21
+    n21 -->|"signed-in user check"| n3
+    n21 -->|"signed-in user check"| n4
+    n21 -->|"admin check"| n5
+    n21 -->|"admin check, signed-in user"| n7
+    n21 -->|"signed-in user check"| n9
+    n21 -->|"signed-in user check"| n10
+    n21 -->|"signed-in user and admin check"| n11
+    n21 -->|"signed-in user and admin check"| n12
     n2 -->|"activity form, tick, delete"| n3
     n2 -->|"ambassador list and page requests"| n4
     n2 -->|"CSV file in parts, column mapping, run request"| n6
@@ -700,7 +727,7 @@ flowchart LR
     n2 -->|"organisation form fields, search and filters"| n11
     n2 -->|"person form fields, search and filters"| n12
     n15 -->|"note events"| n9
-    n21 -->|"hand-over notice"| n13
+    n22 -->|"hand-over notice"| n13
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
@@ -710,7 +737,7 @@ flowchart LR
     class n1,n2 actor
     class n3,n4,n5,n6,n7,n9,n10,n11,n12,n13 process
     class n8,n14 store
-    class n15,n16,n17,n18,n19,n20,n21 stub
+    class n15,n16,n17,n18,n19,n20,n21,n22 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
     style z2 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
@@ -1007,6 +1034,10 @@ flowchart LR
 | Ambassadors and referrals | process | People and organisations | Next.js app server (Vercel or local) | `src/app/(app)/ambassadors`, `src/server/records/ambassadors.ts`, `src/server/records/referral-rules.ts` |
 | Signed-in layout and sidebar | process | Signed-in app and user admin | Next.js app server (Vercel or local) | `src/app/(app)/layout.tsx`, `src/app/(app)/nav.ts` |
 | Browser cookies (crm_session, crm_oauth) | store | Sign-in and sessions | Staff browser | `src/server/auth/cookie.ts` |
+| Google Calendar API | actor |  |  |  |
+| Google Calendar client | process | Gmail | Next.js app server (Vercel or local) | `src/server/calendar/calendar-api.ts` |
+| Calendar event links | store | Gmail | Next.js app server (Vercel or local) | `migrations/0019_calendar.sql` |
+| Calendar sync and push receiver | process | Gmail | Next.js app server (Vercel or local) | `src/app/calendar/push/route.ts`, `src/server/calendar/push.ts`, `src/server/calendar/soon.ts`, `src/server/calendar/sync.ts` |
 | Campaign editor | process | Campaigns | Next.js app server (Vercel or local) | `src/app/(app)/campaigns`, `src/server/campaigns/campaigns.ts`, `src/server/campaigns/preview.ts` |
 | Postgres campaigns | store | Campaigns | Next.js app server (Vercel or local) | `migrations/0015_campaigns.sql` |
 | Lead sources and labels admin | process | People and organisations | Next.js app server (Vercel or local) | `src/app/(app)/admin/lead-sources-and-labels`, `src/server/records/choices.ts` |
@@ -1076,6 +1107,7 @@ flowchart LR
 | From | To | Data | Sources |
 |---|---|---|---|
 | Activities (calls, meetings, tasks) | Postgres activities | scheduled, edited, done activities | `src/server/activities/activities.ts` |
+| Activities (calls, meetings, tasks) | Calendar sync and push receiver | activity changes to mirror | `src/server/activities/activities.ts`, `src/server/calendar/soon.ts` |
 | Activities (calls, meetings, tasks) | persons, emails, phones and person_labels tables | last contacted after done call or meeting | `src/server/activities/activities.ts` |
 | Activities (calls, meetings, tasks) | Barnacle staff user | activities list and next activities | `src/app/(app)/activities/NextActivities.tsx`, `src/app/(app)/activities/page.tsx` |
 | Postgres activities | Activities (calls, meetings, tasks) | activity rows | `src/server/activities/list.ts` |
@@ -1092,6 +1124,12 @@ flowchart LR
 | Browser cookies (crm_session, crm_oauth) | Google sign-in routes | OAuth state and PKCE verifier | `src/app/auth/google/callback/route.ts` |
 | Browser cookies (crm_session, crm_oauth) | Request proxy (cookie gate) | crm_flash cookie to clear | `src/proxy.ts` |
 | Browser cookies (crm_session, crm_oauth) | Session check, end and sign-out | session token | `src/app/auth/end/route.ts`, `src/server/auth/session.ts` |
+| Google Calendar API | Google Calendar client | events, sync tokens | `src/server/calendar/calendar-api.ts` |
+| Google Calendar client | Google Calendar API | event and channel requests | `src/server/calendar/calendar-api.ts` |
+| Calendar event links | Calendar sync and push receiver | event links | `src/server/calendar/sync.ts` |
+| Calendar sync and push receiver | Postgres activities | meetings and moves from Google | `src/server/calendar/sync.ts` |
+| Calendar sync and push receiver | Google Calendar client | event pull, push, watch calls | `src/server/calendar/sync.ts` |
+| Calendar sync and push receiver | Calendar event links | event links and agreed bodies | `src/server/calendar/sync.ts` |
 | Campaign editor | Postgres campaigns | campaign drafts | `src/server/campaigns/campaigns.ts` |
 | Campaign editor | Barnacle staff user | campaign list, editor and live preview | `src/app/(app)/campaigns/page.tsx` |
 | Postgres campaigns | Campaign editor | saved drafts | `src/server/campaigns/campaigns.ts` |
@@ -1099,6 +1137,7 @@ flowchart LR
 | Lead sources and labels admin | Postgres deal labels and label links | label changes seen on deals | `src/server/records/choices.ts` |
 | lead_sources and labels tables | CSV import | lead sources and labels to match | `src/server/imports/imports.ts` |
 | lead_sources and labels tables | People pages and actions | lead source and label choices | `src/server/records/choices.ts` |
+| Vercel cron and Google Pub/Sub | Calendar sync and push receiver | Calendar push notice | `src/app/calendar/push/route.ts` |
 | Vercel cron and Google Pub/Sub | Gmail sync and push receiver | push notice and 15-minute check | `src/app/cron/gmail/route.ts`, `src/app/gmail/push/route.ts` |
 | Sign-in rules and session creation | Google sign-in routes | session token or refusal code | `src/app/auth/google/callback/route.ts`, `src/server/auth/sign-in.ts` |
 | Sign-in rules and session creation | sessions table (token hashes) | new session token hash, expiry | `src/server/auth/session.ts`, `src/server/auth/sign-in.ts` |
@@ -1162,6 +1201,7 @@ flowchart LR
 | Gmail connect and disconnect | Google API client | consent, token, revoke calls | `src/server/gmail/connections.ts` |
 | Gmail connect and disconnect | Gmail connections, threads, messages | refresh token sealed with AES-256-GCM | `src/server/crypto/seal.ts`, `src/server/gmail/connections.ts` |
 | Gmail send | Google API client | outgoing MIME message | `src/server/gmail/send.ts` |
+| Gmail sync and push receiver | Calendar sync and push receiver | 15-minute calendar check | `src/server/gmail/sync.ts` |
 | Gmail sync and push receiver | Google API client | history and message reads | `src/server/gmail/sync.ts` |
 | Gmail sync and push receiver | Gmail connections, threads, messages | copied threads and messages | `src/server/gmail/sync.ts` |
 | Gmail connections, threads, messages | Gmail send | sealed token | `src/server/gmail/send.ts` |

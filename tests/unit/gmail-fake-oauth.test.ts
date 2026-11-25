@@ -107,3 +107,27 @@ describe("revoke (RFC 7009 §2.2) and certs (RFC 7517)", () => {
     for (const k of ["kid", "n", "e"]) expect(typeof keys[0][k]).toBe("string");
   });
 });
+
+// covers SF-124 FR-001, FR-015, T021: the Calendar scope through the fake consent (granular: an unticked box is not in
+// `scope`), codes once, and the unreachable switch reaching the token endpoint too.
+describe("the Calendar scope and the unreachable switch (SF-124)", () => {
+  const CAL = "https://www.googleapis.com/auth/calendar.events.owned";
+  it("grants the Calendar scope only when ticked", async () => {
+    expect((await exchange(code({ scopes: [MODIFY, SEND, CAL] }))).body!.scope).toBe(`${MODIFY} ${SEND} ${CAL}`);
+    const without = (await exchange(code({ scopes: [MODIFY, SEND] }))).body!.scope as string;
+    expect(without.split(" ")).not.toContain(CAL);
+  });
+  it("a reused code answers invalid_grant", async () => {
+    const c = code({ scopes: [MODIFY, SEND, CAL] });
+    expect((await exchange(c)).status).toBe(200);
+    expect(await exchange(c)).toMatchObject({ status: 400, body: { error: "invalid_grant" } });
+  });
+  it("unreachable: the token call fails as a network error, then works again", async () => {
+    const c = code({ scopes: [MODIFY, SEND, CAL] });
+    fake.setUnreachable(true);
+    await expect(exchange(c)).rejects.toBeInstanceOf(TypeError);
+    fake.setUnreachable(false);
+    expect((await exchange(code())).status).toBe(200);
+    expect(fake.violations).toEqual([]);
+  });
+});

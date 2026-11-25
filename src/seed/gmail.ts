@@ -13,10 +13,28 @@ import { gmailConfig } from "@/server/env";
 import { finishConnect } from "@/server/gmail/connections";
 import { fakeGmail } from "@/server/gmail/fake-gmail";
 import { callbackUrl, exchangeGmailCode, getProfile } from "@/server/gmail/google-api";
-import { GMAIL_SCOPES } from "@/server/gmail/rules";
+import { askedScopes } from "@/server/gmail/rules";
 import { syncConnection } from "@/server/gmail/sync";
 
 const ADA = "ada@barnacle.ai";
+
+// Ada Fake allows every asked permission on the fake consent screen (SF-124: Calendar's too when Calendar sync is on),
+// then the key is stored as the callback does. False when the fake gave no key.
+export async function connectAda(adaId: number, appUrl: string, clientId: string): Promise<boolean> {
+  const verifier = randomBytes(32).toString("base64url");
+  const code = fakeGmail().consent({
+    email: ADA,
+    scopes: askedScopes(),
+    codeChallenge: createHash("sha256").update(verifier).digest("base64url"),
+    redirectUri: callbackUrl(appUrl),
+    clientId,
+    offline: true,
+  });
+  const tokens = await exchangeGmailCode(code, verifier);
+  if (!tokens.refreshToken) return false;
+  await finishConnect(adaId, { refreshToken: tokens.refreshToken, accessToken: tokens.accessToken, scope: tokens.scope, profile: await getProfile(tokens.accessToken) });
+  return true;
+}
 
 export async function seedGmail(sql: Sql): Promise<string[]> {
   const cfg = gmailConfig();
@@ -35,20 +53,7 @@ export async function seedGmail(sql: Sql): Promise<string[]> {
   if (people.length < 3) return ["Gmail fake data skipped (no fake people)."];
 
   const fake = fakeGmail();
-  if (!existing || existing.state !== "working") {
-    const verifier = randomBytes(32).toString("base64url");
-    const code = fake.consent({
-      email: ADA,
-      scopes: [...GMAIL_SCOPES],
-      codeChallenge: createHash("sha256").update(verifier).digest("base64url"),
-      redirectUri: callbackUrl(cfg.appUrl),
-      clientId: cfg.clientId,
-      offline: true,
-    });
-    const tokens = await exchangeGmailCode(code, verifier);
-    if (!tokens.refreshToken) return ["Gmail fake data skipped (the fake gave no key)."];
-    await finishConnect(ada.id, { refreshToken: tokens.refreshToken, accessToken: tokens.accessToken, scope: tokens.scope, profile: await getProfile(tokens.accessToken) });
-  }
+  if ((!existing || existing.state !== "working") && !(await connectAda(ada.id, cfg.appUrl, cfg.clientId))) return ["Gmail fake data skipped (the fake gave no key)."];
   const [conn] = await sql<{ id: number }[]>`select id::int as id from gmail_connections where user_id = ${ada.id}`;
   const [p1, p2, p3] = people;
   const at = (minutes: number) => new Date(fake.now() + minutes * 60_000);

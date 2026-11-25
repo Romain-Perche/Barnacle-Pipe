@@ -5,6 +5,7 @@
 import type { Sql } from "@/server/db";
 import { seedActivities } from "@/seed/activities";
 import { seedAmbassadors } from "@/seed/ambassadors";
+import { seedCalendar } from "@/seed/calendar";
 import { seedCampaigns } from "@/seed/campaigns";
 import { seedCustomFields } from "@/seed/custom-fields";
 import { seedDeals } from "@/seed/deals";
@@ -25,6 +26,9 @@ export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] =
   { name: "notes", run: seedNotes },
   // SF-109: calls, meetings and tasks, with assignment notifications (after the records they are on).
   { name: "activities", run: seedActivities },
+  // SF-124: Ada Fake's fake Google Calendar: her planned activities and one meeting from Google with a fake person
+  // (after gmail and activities; fake Gmail and CALENDAR_SYNC=on only).
+  { name: "calendar", run: seedCalendar },
   // SF-114: ambassadors, referred people and deals (after the users, organisations and pipelines they use).
   { name: "ambassadors", run: seedAmbassadors },
   // SF-116: files on deals, people and organisations, through the (fake) file storage, with their FILE entries.

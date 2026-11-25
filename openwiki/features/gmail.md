@@ -16,12 +16,16 @@ sources:
     resource: repo://src/server/env.ts
   - id: sf118-src-vercel
     resource: repo://vercel.json
+  - id: openwiki-source-5e8222fa4f836ecb84cdb72d
+    resource: repo://migrations/0019_calendar.sql
+  - id: openwiki-source-5f48a9b55cca47c928e3fea2
+    resource: repo://src/server/calendar/sync.ts
   - id: openwiki-source-142c3db3613355a16ad2c16c
     resource: repo://src/server/crypto/seal.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T20:17:37.578Z
-generated: { by: "claude-code", at: "2026-11-24T20:17:37.578Z" }
+    at: 2026-11-25T13:24:53.309Z
+generated: { by: "claude-code", at: "2026-11-25T13:24:53.309Z" }
 ---
 
 # Gmail connect and sync
@@ -56,6 +60,24 @@ How data moves is in [dataflow/DATAFLOW.md](../../dataflow/DATAFLOW.md); the set
   transaction.
 - Tables (`migrations/0016_gmail.sql`): `gmail_connections` (one per user), `email_threads`, `email_messages`,
   `email_attachments` (names and sizes only, never contents).
+
+## Google Calendar sync (SF-124)
+
+When `CALENDAR_SYNC=on` and Gmail is set up (`calendarConfig()` in `env.ts`), the same connection also syncs the user's
+Google Calendar both ways, in `src/server/calendar/`. A connection whose `scopes` lack the Calendar scope shows a
+"missing" Calendar state and Settings warns; the sidebar "!" covers it.
+
+- `syncCalendar` (`sync.ts`) takes its own lease, then pulls Google's changes (sync token, or a full listing after a
+  410) and pushes a reconcile of activities against `calendar_events`. A linked event goes through a three-way merge
+  (the later change wins); a new eligible event with a visible CRM person as guest becomes a Meeting. At most 200
+  Google writes per run. No Google call is made inside a transaction.
+- Calls are plain `fetch` in `calendar-api.ts` (`sendUpdates=none`, never attendees). Notices arrive at the public
+  `src/app/calendar/push/route.ts` (`push.ts` checks channel id, token hash and resource id); `runGmailCheck` also calls
+  `runCalendarCheck` to renew channels and catch missed notices.
+- Activity actions and record deletes start the sync after the response (`soon.ts`), so saving never waits on Google.
+- Table `calendar_events` and the `calendar_*` columns on `gmail_connections` come from `migrations/0019_calendar.sql`;
+  `activities.updated_at` is new. Moves from Google set the reminder as CRM edits do. The fake Calendar lives in the fake
+  Gmail and is shown at `/dev/fake-calendar`.
 
 ## Sending
 

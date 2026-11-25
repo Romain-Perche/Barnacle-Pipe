@@ -1,18 +1,20 @@
 // The fake Google consent screen for Gmail (SF-118 research.md §14, FR-018), development and tests only: the account
-// (pre-filled from login_hint), the two permissions as ticked boxes, [ ALLOW ] and [ CANCEL ]. 404 unless fakes are
+// (pre-filled from login_hint), the asked permissions as ticked boxes (SF-124: Calendar's too when Calendar sync is on), [ ALLOW ] and [ CANCEL ]. 404 unless fakes are
 // allowed and Gmail runs on the fake. Both buttons post a plain form to ./answer (a 303 to the callback).
 import { notFound } from "next/navigation";
 import { Wordmark } from "@/app/Wordmark";
 import { appBaseUrl, gmailConfig, isFakeAllowed } from "@/server/env";
+import { askedScopes, CALENDAR_SCOPE } from "@/server/gmail/rules";
 
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
-const BOXES = [
-  { scope: "https://www.googleapis.com/auth/gmail.modify", label: "Read, change and send your email" },
-  { scope: "https://www.googleapis.com/auth/gmail.send", label: "Send email as you" },
-];
+const LABELS: Record<string, string> = {
+  "https://www.googleapis.com/auth/gmail.modify": "Read, change and send your email",
+  "https://www.googleapis.com/auth/gmail.send": "Send email as you",
+  [CALENDAR_SCOPE]: "See, create, change and delete events on calendars you own",
+};
 
 export default async function FakeGmailConsentPage({ searchParams }: Props) {
   if (!isFakeAllowed() || gmailConfig().mode !== "fake") notFound();
@@ -36,9 +38,9 @@ export default async function FakeGmailConsentPage({ searchParams }: Props) {
             <span>Account</span>
             <input className="input" name="email" type="text" autoComplete="off" defaultValue={one(q.login_hint)} />
           </label>
-          {BOXES.map((b) => (
-            <label key={b.scope} className="check">
-              <input type="checkbox" name={`scope:${b.scope}`} defaultChecked /> {b.label}
+          {askedScopes().map((scope) => (
+            <label key={scope} className="check">
+              <input type="checkbox" name={`scope:${scope}`} defaultChecked /> {LABELS[scope]}
             </label>
           ))}
           <button className="btn solid" type="submit" name="decision" value="allow">
