@@ -127,3 +127,4 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - Deleting in the CRM a meeting that came from Google leaves the Google event; the CRM changes only its title and times, never its guests, description or reminders (SF-124)
 - An event deleted in Google, or a meeting from Google that the user declines, ends its sync for good; the activity stays (SF-124)
 - Calendar sync runs in the 15-minute Gmail job; changes made in the CRM are sent after the response, never while saving (SF-124)
+- After a disconnect, Calendar sync starts again from the new connection: changes made in Google while disconnected are not read; the CRM's values are sent again (SF-124)

@@ -175,6 +175,13 @@ async function mine(conn: Conn, activityId: string): Promise<ActivityRow | null>
 
 const endLink = (linkId: string) => sql`update calendar_events set state = 'ended', updated_at = now() where id = ${linkId} and state = 'synced'`;
 
+// Tests only: awaited in applyLinkedChange just before its transaction (to change the activity in between).
+let beforeMerge: (() => Promise<void>) | null = null;
+export function beforeMergeForTests(fn: (() => Promise<void>) | null): void {
+  if (process.env.APP_ENV !== "test") throw new Error("beforeMergeForTests is for tests only.");
+  beforeMerge = fn;
+}
+
 // A change to a linked event (research.md §9). True when the activity changed.
 async function applyLinkedChange(conn: Conn, link: LinkRow, item: GoogleEvent): Promise<boolean> {
   if (link.state !== "synced" || link.activity_id === null) return false;
@@ -188,13 +195,16 @@ async function applyLinkedChange(conn: Conn, link: LinkRow, item: GoogleEvent): 
   const googleUpdated = new Date(item.updated ?? 0);
   // Nothing changed in Google since the link last saw the event (the CRM's own write, or a notice delivered twice).
   if (!when || (link.google_updated_at && googleUpdated.getTime() <= link.google_updated_at.getTime())) return false;
+  if (beforeMerge) await beforeMerge();
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     const [l] = await db<LinkRow[]>`
       select id::text as id, activity_id::text as activity_id, google_event_id, origin, state, base, synced_version, sent_hash, dirty, google_updated_at
       from calendar_events where id = ${link.id} and state = 'synced' and activity_id = ${a.id} for update`;
     if (!l) return false;
-    const [cur] = await db<ActivityRow[]>`select ${ACTIVITY(db)} from activities a where a.id = ${a.id} for update`;
+    const [cur] = await db<ActivityRow[]>`select ${ACTIVITY(db)} from activities a
+      where a.id = ${a.id} and a.assignee_id = ${conn.userId} and ${visibleActivity(db, conn.userId)} for update`;
+    // Reassigned or hidden meanwhile: nothing is written (the next push step 1 handles the link).
     if (!cur) return false;
     const crm = valuesOf(cur);
     const base = isBase(l.base) ? l.base : crm;
@@ -335,9 +345,12 @@ async function push(conn: Conn, access: string, now: Date): Promise<PushTotals> 
   }
 
   // 3. Missing: links whose insert was not confirmed, then planned activities due today or later with no link at all.
-  // A link left by a connection that no longer syncs (its user disconnected) does not block the new assignee's event.
+  // A link left by a connection that does not sync (needs reconnecting, disconnected, or without Calendar) does not block
+  // the new assignee's event: it is detached (activity_id null), never deleted, so it still names the old event, which
+  // that connection's step 1 removes when it syncs with Calendar again (FR-006).
   await sql`
-    delete from calendar_events ce using activities a, gmail_connections oc
+    update calendar_events ce set activity_id = null, updated_at = now()
+    from activities a, gmail_connections oc
     where a.id = ce.activity_id and oc.id = ce.connection_id and a.assignee_id = ${conn.userId} and ce.connection_id <> ${conn.id}
       and ce.origin = 'crm' and ce.state <> 'ended' and (oc.state <> 'working' or not ${hasCalendar(sql, "oc")})`;
   if (!t.more) {
@@ -525,6 +538,18 @@ export async function calendarAfterChange(activityIds: number[], now = new Date(
 }
 
 // The user's connection id, for the connect callback.
+// After a save that may change who sees which activities (a person or deal made private or public, a hand-over): every
+// connection with Calendar syncs, removing the events of activities its user no longer sees and adding the new ones.
+export async function calendarAfterVisibilityChange(now = new Date()): Promise<void> {
+  try {
+    if (calendarConfig().mode === "off") return;
+    const rows = await sql<{ id: string }[]>`select c.id::text as id from gmail_connections c where c.state = 'working' and ${hasCalendar(sql)} order by c.id`;
+    for (const r of rows) await syncCalendar(Number(r.id), now).catch(() => {});
+  } catch {
+    // The 15-minute check catches up.
+  }
+}
+
 export async function calendarConnectionOf(userId: number): Promise<number | null> {
   const [row] = await sql<{ id: string }[]>`select id::text as id from gmail_connections where user_id = ${userId}`;
   return row ? Number(row.id) : null;

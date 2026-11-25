@@ -10,7 +10,7 @@ import * as people from "@/server/records/people";
 import type { SaveResult } from "@/server/records/common";
 import type { PersonForm } from "@/server/records/rules";
 import type { FormState } from "../records/form-state";
-import { calendarAfterChange } from "@/server/calendar/sync";
+import { calendarAfterChange, calendarAfterVisibilityChange } from "@/server/calendar/sync";
 import { runAfterResponse } from "@/server/calendar/soon";
 
 async function answer(result: SaveResult, values: PersonForm, prev: FormState<PersonForm>, id: number | null): Promise<FormState<PersonForm>> {
@@ -41,7 +41,10 @@ export async function updatePerson(prev: FormState<PersonForm>, formData: FormDa
   if (id === null) redirect("/people");
   const values = personFormFromData(formData);
   const version = idFrom(formData, "version") ?? 0;
-  return answer(await people.updatePerson(user.id, id, version, values), values, prev, id);
+  const result = await people.updatePerson(user.id, id, version, values);
+  // SF-124: once the answer is sent, events of activities the change hid (a person made private) leave Google Calendar.
+  if (result.status === "saved") runAfterResponse(() => calendarAfterVisibilityChange());
+  return answer(result, values, prev, id);
 }
 
 async function archiveOrRestore(formData: FormData, change: (actorId: number, id: number) => Promise<"ok" | "not_found">) {

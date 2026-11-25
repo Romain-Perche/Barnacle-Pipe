@@ -38,6 +38,9 @@ const { installGmailFake, TEST_GMAIL_KEY } = await import("../fakes/gmail");
 const { makeOrganisation, makePerson, makeUser, resetDb } = await import("./db-helpers");
 const { makeDeal, makePipeline } = await import("./deal-helpers");
 const c = await import("./calendar-helpers");
+const { signInAs } = await import("./gmail-helpers");
+const { afterResponseSettled } = await import("@/server/calendar/soon");
+const { updatePerson } = await import("@/app/(app)/people/actions");
 
 const ADA = "ada@barnacle.ai";
 const BOB = "bob@barnacle.ai";
@@ -261,6 +264,21 @@ describe("SC-004, FR-013: no guests, no invitations, no leaks", () => {
     await sql`update persons set private = false where id = ${ana}`;
     await c.sync(ada.id);
     expect(c.live(fake, ADA)).toHaveLength(1);
+  });
+  // covers FR-006, Fix round 1 (3): the person's save itself sends the change, not the 15-minute check.
+  it("hidden by a teammate's save of the person (made private): the event leaves Google once the answer is sent", async () => {
+    const ana = await makePerson({ firstName: "Ana", lastName: "Fake", createdBy: bob.id, ownerId: bob.id });
+    const id = await c.schedule(ada.id, { personId: String(ana) });
+    await after([id]);
+    expect(c.live(fake, ADA)).toHaveLength(1);
+    await signInAs(jar, bob.id);
+    const [{ version }] = await sql<{ version: number }[]>`select version from persons where id = ${ana}`;
+    const fd = new FormData();
+    for (const [k, v] of Object.entries({ id: String(ana), version: String(version), firstName: "Ana", lastName: "Fake", ownerId: String(bob.id), private: "on" })) fd.set(k, v);
+    await expect(updatePerson(undefined as never, fd)).rejects.toMatchObject({ to: `/people/${ana}` });
+    await afterResponseSettled();
+    expect(c.live(fake, ADA)).toEqual([]);
+    expect(await c.linkOf(id)).toBeUndefined();
   });
   it("a refusal (400) for one event: the others still sync, and it is not retried until its next change", async () => {
     const a = await c.schedule(ada.id, { subject: "A" });

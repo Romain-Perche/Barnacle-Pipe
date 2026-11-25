@@ -189,7 +189,9 @@ OAuth code flow and database sessions.
   `CalendarRefused(kind)`), `fake-calendar.ts` (the fake Calendar inside `FakeGoogleMail`: events, sync tokens, channels,
   notices, unreachable), `sync.ts` (`syncCalendar`: a calendar lease, pull (sync token, 410 → listing) then push, a
   reconcile of `calendar_events` against the activities: no outbox; `renewCalendarChannel`, `runCalendarCheck` called by
-  `runGmailCheck`, `calendarAfterChange`), `push.ts` (`receiveCalendarPush`: channel id + token sha256 + resource id),
+  `runGmailCheck`, `calendarAfterChange`, `calendarAfterVisibilityChange` after person / deal saves and hand-overs; a
+  reassigned activity's link on a connection that is not syncing is detached (activity_id null), never deleted, so its
+  event is removed when that connection syncs again; `beforeMergeForTests` tests only), `push.ts` (`receiveCalendarPush`: channel id + token sha256 + resource id),
   `soon.ts` (`runAfterResponse`: `after()` from `next/server`; activity actions and record deletes use it, so saving never
   waits on Google). No Google call inside `sql.begin()`. Table `calendar_events` (one link per activity: origin `crm` /
   `google`, state `creating` / `synced` / `ended`, the agreed `base`); calendar columns on `gmail_connections`;

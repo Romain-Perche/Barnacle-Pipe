@@ -32,7 +32,7 @@ const A = await import("@/server/activities/activities");
 const { ukInstant } = await import("@/server/activities/rules");
 const { listActivities } = await import("@/server/activities/list");
 const { parseActivitiesQuery } = await import("@/server/records/list-query");
-const { calendarAfterChange } = await import("@/server/calendar/sync");
+const { beforeMergeForTests, calendarAfterChange } = await import("@/server/calendar/sync");
 const { gmailSettings } = await import("@/server/gmail/connections");
 const { runGmailCheck } = await import("@/server/gmail/sync");
 const { installGmailFake, TEST_GMAIL_KEY } = await import("../fakes/gmail");
@@ -244,5 +244,29 @@ describe("edge case \"Google no longer accepts the key\"", () => {
     expect(c.eventOf(fake, ADA, one.eventId)?.summary).toBe("Call · Changed in the CRM, again");
     expect(await c.activity(two.id)).toMatchObject({ due_on: c.day(12), due_time: "12:00" });
     expect(c.live(fake, ADA)).toHaveLength(2);
+  });
+});
+
+// covers FR-013, FR-006, Fix round 1 (2): a Google change is never written to an activity that left the user between the
+// read and the merge (reassigned meanwhile).
+describe("FR-013: reassigned just before the merge", () => {
+  it("the move in Google is not written to the teammate's activity", async () => {
+    const { id, eventId } = await synced({ dueOn: c.day(1), dueTime: "10:00" });
+    await fake.changeEvent(ADA, eventId, { start: at(1, "14:00"), end: at(1, "14:30") });
+    let version = 0;
+    beforeMergeForTests(async () => {
+      beforeMergeForTests(null);
+      const a = (await c.activity(id))!;
+      const r = await A.editActivity(ada.id, id, a.version, c.form({ subject: a.subject, note: a.note ?? "", dueOn: c.day(1), dueTime: "10:00", assigneeId: String(bob.id), personId: String(ana), organisationId: String(org) }));
+      expect(r.status).toBe("ok");
+      version = await c.versionOf(id);
+    });
+    try {
+      await c.sync(ada.id);
+    } finally {
+      beforeMergeForTests(null);
+    }
+    expect(version).toBeGreaterThan(0);
+    expect(await c.activity(id)).toMatchObject({ due_on: c.day(1), due_time: "10:00", assignee_id: bob.id, version });
   });
 });

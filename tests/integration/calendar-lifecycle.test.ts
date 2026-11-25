@@ -30,7 +30,7 @@ vi.mock("next/navigation", () => ({
 const { closeDb, sql } = await import("@/server/db");
 const A = await import("@/server/activities/activities");
 const { calendarAfterChange, syncCalendar } = await import("@/server/calendar/sync");
-const { disconnect, gmailSettings, settingsWarning } = await import("@/server/gmail/connections");
+const { disconnect, gmailSettings, markNeedsReconnect, settingsWarning } = await import("@/server/gmail/connections");
 const { runGmailCheck } = await import("@/server/gmail/sync");
 const { deactivate } = await import("@/server/users");
 const { installGmailFake, TEST_GMAIL_KEY } = await import("../fakes/gmail");
@@ -135,5 +135,36 @@ describe("concurrency", () => {
     for (const id of ids) expect((await c.linkOf(id))?.state).toBe("synced");
     const [{ again }] = await sql<{ again: boolean }[]>`select calendar_sync_again as again from gmail_connections where id = ${conn}`;
     expect(again).toBe(false);
+  });
+});
+
+// covers FR-006, Fix round 1 (1): a call reassigned while the old assignee's connection cannot be reached leaves her
+// event until that connection syncs again with Calendar access; then it is removed, and the new assignee keeps one.
+describe("FR-006: reassigned while the old assignee's calendar does not sync", () => {
+  const LINUS = "linus@barnacle.ai";
+  it.each([
+    ["needs reconnecting (key refused)", async () => markNeedsReconnect(await c.connectionIdOf(ada.id))],
+    ["working without the Calendar scope", async () => void (await sql`update gmail_connections set scopes = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send' where user_id = ${ada.id}`)],
+    ["disconnected", () => disconnect(ada.id)],
+  ])("%s: Linus gets one event at once, Ada's goes when she connects again", async (_name, cut) => {
+    const linus = await makeUser({ email: LINUS, name: "Linus Fake" });
+    await c.connectCalendar(jar, fake, linus.id);
+    const id = await c.schedule(ada.id, { subject: "Moved on", dueOn: c.day(1) });
+    await calendarAfterChange([id]);
+    expect(c.live(fake, ADA).filter((e) => e.summary === "Call · Moved on")).toHaveLength(1);
+    await cut();
+    const r = await A.editActivity(ada.id, id, await c.versionOf(id), c.form({ subject: "Moved on", dueOn: c.day(1), assigneeId: String(linus.id) }));
+    expect(r.status).toBe("ok");
+    await c.sync(linus.id);
+    expect(c.live(fake, LINUS).filter((e) => e.summary === "Call · Moved on")).toHaveLength(1);
+    // Ada's connection cannot be reached: her event is left as it was for now.
+    expect(c.live(fake, ADA).filter((e) => e.summary === "Call · Moved on")).toHaveLength(1);
+    await c.connectCalendar(jar, fake, ada.id);
+    await c.sync(ada.id);
+    expect(c.live(fake, ADA).filter((e) => e.summary === "Call · Moved on")).toHaveLength(0);
+    expect(c.live(fake, LINUS).filter((e) => e.summary === "Call · Moved on")).toHaveLength(1);
+    const rows = await sql<{ connection_id: number }[]>`
+      select connection_id::int as connection_id from calendar_events where activity_id = ${id} or activity_id is null`;
+    expect(rows).toEqual([{ connection_id: await c.connectionIdOf(linus.id) }]);
   });
 });

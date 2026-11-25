@@ -12,7 +12,7 @@ import { setFlash } from "@/server/records/flash";
 import { dealFormFromData, idFrom } from "@/server/records/form-data";
 import { toId } from "@/server/records/rules";
 import type { FormState } from "../records/form-state";
-import { calendarAfterChange } from "@/server/calendar/sync";
+import { calendarAfterChange, calendarAfterVisibilityChange } from "@/server/calendar/sync";
 import { runAfterResponse } from "@/server/calendar/soon";
 
 const LIST = "/deals/list";
@@ -64,7 +64,10 @@ export async function updateDeal(prev: FormState<DealForm>, formData: FormData):
   if (id === null) redirect("/deals");
   const values = dealFormFromData(formData);
   const version = idFrom(formData, "version") ?? 0;
-  return answer(await deals.updateDeal(user.id, id, version, values), values, prev, backFrom(formData));
+  const result = await deals.updateDeal(user.id, id, version, values);
+  // SF-124: once the answer is sent, events of activities the change hid (a deal made private) leave Google Calendar.
+  if (result.status === "saved" || result.status === "no_longer_visible") runAfterResponse(() => calendarAfterVisibilityChange());
+  return answer(result, values, prev, backFrom(formData));
 }
 
 // Called by Board.tsx after a drop (not a form). "stale" makes the board show the deal_changed message; the fresh

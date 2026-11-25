@@ -677,7 +677,7 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
 
 ## Fix round 1 (AI review)
 
-- [ ] T059 Write the failing test first in `tests/integration/calendar-lifecycle.test.ts` (real Postgres, the fake
+- [x] T059 Write the failing test first in `tests/integration/calendar-lifecycle.test.ts` (real Postgres, the fake
   Google Calendar of `tests/fakes/gmail.ts`), `// covers FR-006, Fix round 1 (1)`: Ada (connected with Calendar) and
   Linus (connected with Calendar); a planned call due tomorrow assigned to Ada; sync Ada → one event in Ada's fake
   calendar. Then, for each of three cases (separate tests): (a) Ada's key refused (`markNeedsReconnect`), (b) Ada's
@@ -686,22 +686,22 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
   reached). Then Ada connects again with Calendar (the fake consent callback) and Ada's sync runs → Ada's fake calendar
   has no event for the call, Linus's still has exactly one, and `calendar_events` has one row for the call (Linus's).
   Today case (a) leaves Ada's event live after her sync: the test fails until T061 is built.
-- [ ] T060 Write the failing test in `tests/integration/calendar-pull.test.ts`, `// covers FR-013, FR-006, Fix round 1
+- [x] T060 Write the failing test in `tests/integration/calendar-pull.test.ts`, `// covers FR-013, FR-006, Fix round 1
   (2)`: Ada's synced call due tomorrow at 10:00; the fake calendar moves the event to 14:00 (notice not delivered). Add
   to `src/server/calendar/sync.ts` a tests-only hook `beforeMergeForTests(fn | null)` (as the Pipedrive import's
   `onSaveForTests`), awaited in `applyLinkedChange` just before `sql.begin()`; the test sets it to reassign the call to
   Linus, then runs Ada's sync → the call stays due 10:00 with its version unchanged, and Ada's link is not changed by
   the merge. Fails today (the merge writes 14:00 to Linus's activity).
-- [ ] T061 In `src/server/calendar/sync.ts` push step 3, replace the `delete from calendar_events …` of another
+- [x] T061 In `src/server/calendar/sync.ts` push step 3, replace the `delete from calendar_events …` of another
   connection's link with `update calendar_events set activity_id = null, updated_at = now()` (same conditions:
   `origin = 'crm'`, `state <> 'ended'`, connection not `working` or without Calendar). Update the comment above it.
   T059 passes.
-- [ ] T062 In `applyLinkedChange` (`src/server/calendar/sync.ts`), add `and a.assignee_id = ${conn.userId} and
+- [x] T062 In `applyLinkedChange` (`src/server/calendar/sync.ts`), add `and a.assignee_id = ${conn.userId} and
   ${visibleActivity(db, conn.userId)}` to the `for update` read of the activity. T060 passes.
-- [ ] T063 Call `runAfterResponse(() => calendarAfterChange([]))` after a successful save in `updatePerson`
+- [x] T063 Call `runAfterResponse(() => calendarAfterChange([]))` after a successful save in `updatePerson`
   (`src/app/(app)/people/actions.ts`), `updateDeal` (`src/app/(app)/deals/actions.ts`) and `handOver`
   (`src/app/(app)/admin/users/actions.ts`), with a `// SF-124:` comment as in the delete actions.
-- [ ] T064 Add the `docs/DECISIONS.md` line "After a disconnect, Calendar sync starts again from the new connection:
+- [x] T064 Add the `docs/DECISIONS.md` line "After a disconnect, Calendar sync starts again from the new connection:
   changes made in Google while disconnected are not read; the CRM's values are sent again (SF-124)" and the AGENTS.md
   note on detached links (plan.md Fix round 1, point 4).
 - [ ] T065 Run `npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`.

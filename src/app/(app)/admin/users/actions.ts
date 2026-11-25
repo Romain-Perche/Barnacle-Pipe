@@ -4,6 +4,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertAdminForAction } from "@/server/auth/session";
+import { runAfterResponse } from "@/server/calendar/soon";
+import { calendarAfterVisibilityChange } from "@/server/calendar/sync";
 import { setFlash } from "@/server/records/flash";
 import { handOverPrivateRecords } from "@/server/records/handover";
 import * as users from "@/server/users";
@@ -60,6 +62,9 @@ export async function handOver(formData: FormData) {
   const chooseAgain = `${PAGE}?handover=${userId}&error=handover_choose_user`;
   if (!Number.isSafeInteger(to) || to <= 0) redirect(chooseAgain);
   const result = await handOverPrivateRecords(actor.id, userId, to);
+  // SF-124: once the answer is sent, events of activities on the handed records that the assignee no longer sees leave
+  // Google Calendar.
+  if (result.status === "handed") runAfterResponse(() => calendarAfterVisibilityChange());
   revalidatePath("/admin/users");
   revalidatePath("/people");
   revalidatePath("/deals");
