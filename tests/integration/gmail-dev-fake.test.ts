@@ -204,3 +204,26 @@ describe("a tester's run through the fake pages", () => {
     expect(await h.connectionOf(linus.id)).toBeFalsy();
   });
 });
+
+// covers SF-124 FR-001, US1 scenario 2, T031: the fake consent screen shows one box per asked scope, Calendar's too when
+// Calendar sync is on; leaving it unticked is refused at the callback.
+describe("the Calendar box on the fake consent screen (SF-124)", () => {
+  const CAL = "https://www.googleapis.com/auth/calendar.events.owned";
+  it("shows the Calendar box when Calendar is on, not when off", async () => {
+    vi.stubEnv("CALENDAR_SYNC", "on");
+    const on = renderToStaticMarkup(await ConsentPage({ searchParams: Promise.resolve(params(await h.startConnect())) }));
+    expect(on).toContain("See, create, change and delete events on calendars you own");
+    expect(on).toContain(`name="scope:${CAL}"`);
+    vi.stubEnv("CALENDAR_SYNC", "");
+    const off = renderToStaticMarkup(await ConsentPage({ searchParams: Promise.resolve(params(await h.startConnect())) }));
+    expect(off).not.toContain("See, create, change and delete events");
+  });
+  it("unticking Calendar gives missing_scopes; all ticked connects with Calendar", async () => {
+    vi.stubEnv("CALENDAR_SYNC", "on");
+    expect(await follow(await post(allowForm(await h.startConnect(), { scopes: [MODIFY, SEND] })))).toBe("/settings?gmail=missing_scopes");
+    expect(await h.connectionOf(linus.id)).toBeFalsy();
+    await h.signInAs(jar, linus.id);
+    expect(await follow(await post(allowForm(await h.startConnect())))).toBe("/settings");
+    expect((await h.connectionOf(linus.id))?.scopes.split(" ")).toContain(CAL);
+  });
+});

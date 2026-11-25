@@ -72,7 +72,7 @@ async function synced(o: Parameters<typeof c.form>[0] = {}) {
   expect(link.state).toBe("synced");
   return { id, eventId: link.google_event_id };
 }
-const keep = (a: c.ActivityRow) => ({ type: a.type, note: a.note, person_id: a.person_id, organisation_id: a.organisation_id, deal_id: a.deal_id, assignee_id: a.assignee_id, done: a.done });
+const keep = (a: import("./calendar-helpers").ActivityRow) => ({ type: a.type, note: a.note, person_id: a.person_id, organisation_id: a.organisation_id, deal_id: a.deal_id, assignee_id: a.assignee_id, done: a.done });
 
 describe("US3 scenarios 1-3: moved or renamed in Google", () => {
   it("moved to 11:00–12:00 with its notice: due then for 1 hour; record pages and the Activities list show it", async () => {

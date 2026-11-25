@@ -143,6 +143,7 @@ Environment variables. `.env.example` lists them all, with no secret values. Sec
 | `GMAIL_PUSH_AUDIENCE` | optional | The push token's audience. Default `${APP_URL}/gmail/push`. |
 | `GMAIL_PUSH_SUBSCRIPTION` | optional | `projects/<project>/subscriptions/<name>`. When set, notices from any other subscription are refused. |
 | `CRON_SECRET` | production | At least 16 characters. Secret. Vercel sends it to `/cron/gmail` as `Authorization: Bearer …`; without it the route answers 401. |
+| `CALENDAR_SYNC` | optional | `on`: activities sync both ways with each user's Google Calendar (SF-124), through the Gmail connection (needs Gmail set up). Anything else: off; connecting asks only the Gmail permissions and nothing syncs. |
 | `VERCEL_ENV` | set by Vercel | `preview`: sign-in off, no database. `production`: `vercel-build` migrates. `production` or `preview`: the fake login and fake data are refused, whatever `APP_ENV` says. |
 
 There is no session secret: session tokens are random and only their SHA-256 is stored.
@@ -273,6 +274,37 @@ not the user's sign-in address. Only the refresh key is stored, sealed with `GMA
   the fake consent screen `/dev/fake-google/gmail`, and `/dev/fake-gmail` puts received or sent mail in a user's fake
   mailbox (with or without delivering its notice), runs the 15-minute check, refuses the key, fails renewals and forgets
   Gmail's history. `npm run db:seed` connects Ada Fake with three copied conversations. The tests set their own key.
+
+## Google Calendar
+
+With `CALENDAR_SYNC=on` (SF-124), `[ CONNECT GMAIL ]` also asks for `calendar.events.owned` (the events of calendars the
+user owns), and the activities of each connected user sync both ways with their primary Google Calendar. Users
+connected before see "Calendar access missing" and the orange "!" on Settings until they reconnect once; their Gmail
+keeps being copied meanwhile.
+
+- **CRM → Google**: each planned activity due today or later gets one private event in its assignee's calendar (no
+  guests, no invitations, `sendUpdates=none`): "Call · subject" at its UK time and duration (30 minutes with no
+  duration), or an all-day, free event with no time; the note and a link to the activity in the description; an email
+  and a pop-up 15 minutes before for activities with a time, no reminder for those without. Editing, ticking ("✓ "),
+  reassigning and deleting follow, once the response is sent (`after()`); anything missed is sent by the 15-minute check.
+- **Google → CRM**: moving or renaming a synced event changes the activity's date, time, duration and subject (the later
+  change wins when both sides changed). A deleted event, or a declined meeting, ends the sync; the activity stays. A new
+  event with a guest who is a CRM person the user can see becomes a Meeting on that person and their organisation.
+  Google posts change notices to `POST /calendar/push` (each channel has its own secret token, kept as a sha256);
+  `GET /cron/gmail` also syncs every calendar and renews its channel daily.
+- **Google Cloud setup before go-live**:
+  1. In the same Google Cloud project as sign-in and Gmail, enable the **Google Calendar API**.
+  2. On the OAuth consent screen (Internal app), add the scope `.../auth/calendar.events.owned`.
+  3. The push address is `${APP_URL}/calendar/push`: HTTPS with a valid certificate (Vercel's is). If `events.watch` is
+     refused for the domain, verify the domain in Google Search Console for the project; until then sync still works
+     through the 15-minute check.
+  4. Set `CALENDAR_SYNC=on` in Vercel (Production; Preview only with real settings).
+  5. Every user connected before this goes live sees the "!" and reconnects once.
+- **Locally and in tests**: with the fake Gmail (above) and `CALENDAR_SYNC=on`, the same fake Google answers Calendar
+  calls (`src/server/calendar/fake-calendar.ts`). `/dev/fake-calendar` shows each user's fake events (title, times,
+  description, guests, reminders, private/free, declined), creates, changes, declines or deletes one with or without
+  delivering its notice, makes Google unreachable and reachable again, expires sync tokens and runs the 15-minute check.
+  `npm run db:seed` puts Ada Fake's planned activities in her fake calendar and brings in one "Fake intro meeting".
 
 ## Unsubscribe
 

@@ -181,12 +181,28 @@ OAuth code flow and database sessions.
 - `src/app/gmail/push/route.ts` (Pub/Sub push, Google's token) and `src/app/cron/gmail/route.ts` (the 15-minute check,
   `CRON_SECRET`), scheduled by `vercel.json` (SF-118); `src/app/dev/fake-google/gmail` (the fake consent screen; its buttons post a plain form to `answer/route.ts`, a 303 to the callback) and
   `src/app/dev/fake-gmail` (the fake mailbox page), 404 unless the Gmail mode is `fake`.
+- `src/server/calendar/` — Google Calendar two-way sync (SF-124), on SF-118's connection, key and Google helpers (`call`,
+  `readJson`, `settings`, `refreshAccessToken`, `loadKey`); settings from `calendarConfig()` in `env.ts` (`CALENDAR_SYNC=on`
+  and Gmail set up). `rules.ts` (pure: `eventBody` / `googleEventBody`, `bodyHash`, `eventTimes`, `fromEvent`, `subjectFromTitle`,
+  `merge` (three-way, the later change wins), `decideIncoming`, `classifyCalendarError`, `newEventId`), `calendar-api.ts`
+  (events insert/patch/delete/list/watch and channels.stop by plain `fetch`, `sendUpdates=none`, never attendees;
+  `CalendarRefused(kind)`), `fake-calendar.ts` (the fake Calendar inside `FakeGoogleMail`: events, sync tokens, channels,
+  notices, unreachable), `sync.ts` (`syncCalendar`: a calendar lease, pull (sync token, 410 → listing) then push, a
+  reconcile of `calendar_events` against the activities: no outbox; `renewCalendarChannel`, `runCalendarCheck` called by
+  `runGmailCheck`, `calendarAfterChange`), `push.ts` (`receiveCalendarPush`: channel id + token sha256 + resource id),
+  `soon.ts` (`runAfterResponse`: `after()` from `next/server`; activity actions and record deletes use it, so saving never
+  waits on Google). No Google call inside `sql.begin()`. Table `calendar_events` (one link per activity: origin `crm` /
+  `google`, state `creating` / `synced` / `ended`, the agreed `base`); calendar columns on `gmail_connections`;
+  `activities.updated_at`. A connection's Calendar state (`syncing` / `missing`) is derived from its `scopes`;
+  `settingsWarning()` gives the sidebar "!". Routes: `src/app/calendar/push/route.ts` (public, `maxDuration = 60`) and
+  `src/app/dev/fake-calendar/` (the fake calendar page, 404 unless fake Gmail and Calendar on).
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, gmail (SF-118: Ada Fake's fake Gmail
-  connection and three conversations), notes, activities, ambassadors, files, custom fields: `custom-fields.ts`,
+  connection and three conversations), notes, activities, calendar (SF-124: Ada Fake's fake calendar and one meeting
+  from Google: `calendar.ts`), ambassadors, files, custom fields: `custom-fields.ts`,
   campaigns: `campaigns.ts`, segments: `segments.ts`). The fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage, Pipedrive
-  v2 / v1 (plus the full Pipedrive v1 copy `pipedrive_v1_full_openapi.yml`), Gmail and Pub/Sub schemas).
+  v2 / v1 (plus the full Pipedrive v1 copy `pipedrive_v1_full_openapi.yml`), Gmail, Pub/Sub and Google Calendar schemas).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),
   `tests/support/reset.ts` (empties every app table; lead sources back to the six starting ones).
 
@@ -212,8 +228,8 @@ npm test && npm run typecheck
 
 Each test names what it covers (`// covers FR-003, US1 scenario 2`). Fakes only for outside services
 (Google Sign-In: `tests/fakes/google.ts`; Supabase Storage: `tests/fakes/storage.ts`, checked against
-`storage_v0_openapi.json`; Gmail and Pub/Sub: `tests/fakes/gmail.ts`, checked against `gmail-api.json` and
-`pubsub-api.json`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
+`storage_v0_openapi.json`; Gmail, Pub/Sub and Google Calendar: `tests/fakes/gmail.ts`, checked against `gmail-api.json`,
+`pubsub-api.json` and `calendar-api.json`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY` and `CALENDAR_SYNC=on`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
 `pipedrive_v2_openapi.json` and `pipedrive_v1_openapi.yml` (a v1 path that file lacks: `pipedrive_v1_full_openapi.yml`;
 downloads checked for their content type only; the fake file host refuses the token) by `tests/fakes/pipedrive-schema.ts`; each checked against
 its schema; see `.factory/test-env.md`).

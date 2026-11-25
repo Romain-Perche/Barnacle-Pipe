@@ -87,7 +87,31 @@
   OIDC token by the fake's RSA key, served at the certs URL) and `GmailFake.deliver(email)` (to `receiveGmailPush`, the
   route's own handler), every push body checked against `PubsubMessage` in the schema `pubsub-api.json` (`message`
   properties declared, `data` base64, wrapper `{ message, subscription }`); `dropNotice(email)` drops one.
-- Google OAuth 2.0 token and revoke endpoints and Google's signing keys (SF-118; oauth2.googleapis.com/token, /revoke,
+- Google Calendar API v3 (SF-124; events.insert/patch/delete/list/watch, channels.stop on the primary calendar, scope
+  `calendar.events.owned`): fake `src/server/calendar/fake-calendar.ts`, plugged into the same `FakeGoogleMail.fetch`
+  (URLs under `https://www.googleapis.com/calendar/v3/`, state in the same `FakeState`, the same access tokens), wrapped
+  for the tests by `tests/fakes/gmail.ts` (`GmailFake`), which checks every Calendar request and answer against the schema
+  `calendar-api.json` (path and method among `resources.events` / `resources.channels` methods, each query parameter
+  declared for the method or among the top-level `parameters`, JSON bodies declared in `Event` / `Channel` recursively,
+  inline objects and string maps included, answers in `Event` / `Events` / `Channel` with their JSON types; violations
+  fail the test in `afterEach`; `tests/unit/calendar-fake.test.ts` shows a wrong field, query parameter, nested field and
+  answer property refused). The fake copies Calendar's behaviour: 403 `insufficientPermissions` without a Calendar scope,
+  base32hex ids (400 otherwise), 409 on an existing id, 404 on an unknown one, 410 on a patch or delete of a cancelled
+  event, 403 `forbiddenForNonOrganizer` on a title/time patch of someone else's event, `updated` and a change counter on
+  every write, a delete → `cancelled`, sync tokens `fake-sync-<n>` (410 below the floor after `expireCalendarTokens()`),
+  cancelled items listed only with a sync token or `showDeleted=true`, `watch` channels (≤ 7 days) and `channels/stop`.
+  Tester API: `addEvent` / `changeEvent` / `declineEvent` / `deleteEvent` (`{ deliver }`), `calendarEvents`,
+  `calendarNotice`, `deliverCalendar`, `dropCalendarNotice`, `setUnreachable` (every Google call, token endpoint included,
+  a network error), `expireCalendarTokens`, `removeScope`, `loseNextCalendarAnswer`, `refuseEventWrites`. In the running
+  app (fake Gmail and `CALENDAR_SYNC=on`, the default of `start-app.sh`) `/dev/fake-calendar` shows and changes each
+  user's fake events, switches Google unreachable, expires sync tokens and runs the 15-minute check.
+- Google Calendar push notifications (SF-124; Google's POST to `/calendar/push`, no body): no public schema on GitHub
+  (google-api-go-client's `calendar-api.json` only describes the `Channel` sent to `events.watch` / `channels.stop`); the
+  fake follows developers.google.com/calendar/api/guides/push: `calendarNotice(email)` gives exactly the headers
+  `X-Goog-Channel-ID`, `X-Goog-Channel-Token`, `X-Goog-Channel-Expiration`, `X-Goog-Resource-ID`, `X-Goog-Resource-URI`,
+  `X-Goog-Resource-State` (`sync` / `exists`), `X-Goog-Message-Number` (checked by `GmailFake`), only while a channel is
+  active; `tests/integration/calendar-push-route.test.ts` drives the route handler.
+- Google OAuth 2.0 token and revoke endpoints and Google's signing keys (SF-118, SF-124: the Calendar scope too; oauth2.googleapis.com/token, /revoke,
   www.googleapis.com/oauth2/v3/certs): the same fake. No public schema on GitHub (google-api-go-client's oauth2 v1/v2
   files only describe userinfo and tokeninfo); it follows Google's "Using OAuth 2.0 for Web Server Applications" and
   "Authenticate push subscriptions" pages and RFC 6749 §5.1/§5.2/§6, RFC 7636, RFC 7009 §2.2 and RFC 7517, checked by
@@ -213,6 +237,13 @@
   Postgres's own 23514/23505 refusals (a disconnected row with a key, a working row without one, a non-barnacle address,
   a disconnected row with a watch, direction `forwarded`, `to_list` `{}`, an attachment of size -1 or with an empty name,
   a second copy of a message for one account) and the cascade from a thread to its messages and attachments.
+  The Calendar code (SF-124: `src/server/calendar/*.ts`) keeps to the same pooler limits: no fake, the real local
+  PostgreSQL 17, no public schema; no session state and no Google call inside `sql.begin()` (scanned by
+  `tests/unit/calendar-no-session-state.test.ts`), overlapping syncs kept apart by a lease column (`calendar_lease_until`,
+  `calendar_sync_again`), conditional link writes and CRM-chosen event ids instead of locks across network calls. Its
+  columns and table come from `migrations/0019_calendar.sql` (calendar columns on `gmail_connections`,
+  `activities.updated_at`, `calendar_events` with RLS), applied on a fresh database by `migrate.test.ts` with its 23514 /
+  23505 refusals and `on delete set null` from activities.
   The unsubscribe code (SF-121: `src/server/records/unsubscribe.ts`) keeps to the same pooler limits: no fake, the real
   local PostgreSQL 17, no public schema; no session state, each unsubscribe one `sql.begin()` with a conditional
   `update persons … where unsubscribe_token = $1 and consent = 'subscribed' returning id` (Read Committed re-checks the
@@ -240,6 +271,7 @@
 - pipedrive_v1_openapi.yml: https://github.com/Zenika/zenpipe/blob/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml
 - pipedrive_v1_full_openapi.yml: https://github.com/konfig-sdks/openapi-examples/blob/161ab49c45e45825ca3832945c59a3ba904321ba/pipedrive/openapi.yaml
 - gmail-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json
+- calendar-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/calendar/v3/calendar-api.json
 - pubsub-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/pubsub/v1/pubsub-api.json
 
 - Pipedrive stand-in over HTTP (AI review, SF-117): `.factory/run/pipedrive-server.ts` serves Build's `FakePipedrive`
@@ -258,8 +290,8 @@
   and `psql -h localhost -U postgres -c "create database crm_test" -c "create database crm_dev"`.
 - Schemas: `.factory/schemas/oauth2-api.json`, `.factory/schemas/storage_v0_openapi.json`,
   `.factory/schemas/pipedrive_v2_openapi.json`, `.factory/schemas/pipedrive_v1_openapi.yml`,
-  `.factory/schemas/pipedrive_v1_full_openapi.yml`, `.factory/schemas/gmail-api.json` and
-  `.factory/schemas/pubsub-api.json`, downloaded by
+  `.factory/schemas/pipedrive_v1_full_openapi.yml`, `.factory/schemas/gmail-api.json`,
+  `.factory/schemas/pubsub-api.json` and `.factory/schemas/calendar-api.json`, downloaded by
   `npm run test:schemas` (run by `npm test` as `pretest`; commits above, sha256 checked).
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then

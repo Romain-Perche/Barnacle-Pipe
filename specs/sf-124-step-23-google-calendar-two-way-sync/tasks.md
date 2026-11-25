@@ -59,20 +59,20 @@ description: "Task list for SF-124 Google Calendar: two-way sync"
 
 ## Phase 1: Setup
 
-- [ ] T001 Merge `origin/main` into the branch (SF-122: `migrations/0017_pipedrive_deals.sql`,
+- [x] T001 Merge `origin/main` into the branch (SF-122: `migrations/0017_pipedrive_deals.sql`,
   `migrations/0018_pipedrive_fetched.sql`, Pipedrive activities inserted with their own ids). Resolve conflicts by
   keeping both sides, then run `npm test && npm run typecheck` green before going on.
   - If `migrations/0019_*.sql` already exists (SF-123), use the next free number for every later mention of
     `0019_calendar.sql`.
   - If `activities.updated_at` already exists, skip its `alter table` in T004 and keep the rest.
-- [ ] T002 [P] Add the `calendar-api.json` entry to `SCHEMAS` in `scripts/fetch-schemas.mjs`, exactly as in
+- [x] T002 [P] Add the `calendar-api.json` entry to `SCHEMAS` in `scripts/fetch-schemas.mjs`, exactly as in
   contracts/google.md § Schemas: url
   `https://raw.githubusercontent.com/googleapis/google-api-go-client/3f740bc15212818d4d0eb041b02c951457ff63fa/calendar/v3/calendar-api.json`,
   sha256 `eee07d697ad19b3d19c667ce6033a769c8f5bb37e33f5abf394bac47363395ec`.
   - Update the head comment ("… and Google Calendar's discovery file (SF-124, tests/fakes/gmail.ts)");
   - update the README command line;
   - update `tests/unit/fetch-schemas.test.ts` if it lists the files.
-- [ ] T003 [P] Add the setting `CALENDAR_SYNC`:
+- [x] T003 [P] Add the setting `CALENDAR_SYNC`:
   - in `.env.example` after the Gmail block: `CALENDAR_SYNC=on` with the comment "on: sync activities with each
     user's Google Calendar (needs Gmail set up). Anything else: off.";
   - a row in README § Settings;
@@ -84,7 +84,7 @@ description: "Task list for SF-124 Google Calendar: two-way sync"
 
 ## Phase 2: Foundational (blocking prerequisites)
 
-- [ ] T004 Write `migrations/0019_calendar.sql` exactly as data-model.md § Migration:
+- [x] T004 Write `migrations/0019_calendar.sql` exactly as data-model.md § Migration:
   - on `gmail_connections`: `calendar_connected_at timestamptz null`, `calendar_sync_token text null check
     (char_length(calendar_sync_token) <= 4096)`, `calendar_last_synced_at timestamptz null`, `calendar_channel_id text
     null check (char_length(calendar_channel_id) <= 64)`, `calendar_channel_resource_id text null check
@@ -114,26 +114,26 @@ description: "Task list for SF-124 Google Calendar: two-way sync"
   - then `alter table calendar_events enable row level security;` and the two indexes
     `calendar_events_connection_idx (connection_id, state)` and `calendar_events_orphan_idx (connection_id) where
     activity_id is null`.
-- [ ] T005 Add `calendar_events` to the `truncate` list of `tests/support/reset.ts` (before `activities` and
+- [x] T005 Add `calendar_events` to the `truncate` list of `tests/support/reset.ts` (before `activities` and
   `gmail_connections`), and to `.factory/run/reset-db.sh` if it lists tables.
-- [ ] T006 [P] Extend `tests/integration/migrate.test.ts` (`// covers SF-124 data-model.md § Migration`):
+- [x] T006 [P] Extend `tests/integration/migrate.test.ts` (`// covers SF-124 data-model.md § Migration`):
   - the new columns exist with their types;
   - RLS is enabled on `calendar_events`;
   - an insert breaking each check is refused: a 4-character event id, origin `other`, state `creating` with origin
     `google`, a 63-character `sent_hash`, a disconnected connection with a channel id, a channel id without a token
     hash;
   - deleting an activity sets `calendar_events.activity_id` to null.
-- [ ] T007 [P] Add `calendarConfig()` to `src/server/env.ts` (research.md §16): `{ mode: "off" }` unless
+- [x] T007 [P] Add `calendarConfig()` to `src/server/env.ts` (research.md §16): `{ mode: "off" }` unless
   `process.env.CALENDAR_SYNC === "on"` and `gmailConfig().mode !== "off"`; otherwise `{ mode: gmailConfig().mode,
   pushAddress: \`${appUrl}/calendar/push\` }`. Unit test in `tests/unit/env.test.ts` (or the existing env test): off
   when unset, `"ON"`, or Gmail off; fake with Gmail fake.
-- [ ] T008 [P] Add the messages and templates of contracts/routes.md § Messages to `src/server/messages.ts`, verbatim,
+- [x] T008 [P] Add the messages and templates of contracts/routes.md § Messages to `src/server/messages.ts`, verbatim,
   and change `gmail_missing_scopes` to "Google needs all the permissions asked for. Try again and tick every box."
   Update the existing tests that assert the old text.
-- [ ] T009 [P] Export `ukWallClock(instant: Date): { day: string; time: string }` from
+- [x] T009 [P] Export `ukWallClock(instant: Date): { day: string; time: string }` from
   `src/server/activities/rules.ts`, the existing `parts()` under a public name. Unit test in
   `tests/unit/activity-rules.test.ts`: 2026-03-29T01:30Z → `2026-03-29` `02:30`; 2026-12-04T15:00Z → `15:00`.
-- [ ] T010 [P] In `src/server/gmail/rules.ts`, add:
+- [x] T010 [P] In `src/server/gmail/rules.ts`, add:
   - `CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events.owned"`;
   - `askedScopes()`: `GMAIL_SCOPES` plus `CALENDAR_SCOPE` when `calendarConfig().mode !== "off"`;
   - `hasAllScopes(scope, asked = askedScopes())`;
@@ -141,10 +141,10 @@ description: "Task list for SF-124 Google Calendar: two-way sync"
 
   Extend `tests/unit/gmail-rules.test.ts` (`// covers FR-001`): 3 scopes with Calendar on, 2 with it off; a grant
   without the Calendar scope fails `hasAllScopes` when on and passes when off.
-- [ ] T011 In `src/server/gmail/google-api.ts`:
+- [x] T011 In `src/server/gmail/google-api.ts`:
   - export `call`, `readJson` and `settings` (no behaviour change);
   - make `consentUrl` ask `askedScopes().join(" ")`.
-- [ ] T012 [P] Create `src/server/calendar/rules.ts`, part 1 (pure, imports nothing server-only), per
+- [x] T012 [P] Create `src/server/calendar/rules.ts`, part 1 (pure, imports nothing server-only), per
   contracts/routes.md § Domain functions:
   - the types `SyncValues`, `ActivityForEvent`, `GoogleEvent`, `EventBody`;
   - `REMINDER_MINUTES_TIMED = 15`, `DEFAULT_EVENT_MINUTES = 30` (no all-day reminder constant);
@@ -161,13 +161,13 @@ description: "Task list for SF-124 Google Calendar: two-way sync"
   - 404/410 on `write` → `event_gone`;
   - 409 on `insert` → `exists`;
   - 429 and 503 → `unavailable`.
-- [ ] T013 Create `src/server/calendar/calendar-api.ts` (contracts/google.md § Calls): `listEvents`, `insertEvent`,
+- [x] T013 Create `src/server/calendar/calendar-api.ts` (contracts/google.md § Calls): `listEvents`, `insertEvent`,
   `patchEvent`, `deleteEvent`, `watchEvents`, `stopChannel`.
   - Base `https://www.googleapis.com/calendar/v3`, calendar `primary`.
   - `sendUpdates=none` on insert, patch and delete.
   - Through T011's `call` and `readJson`; errors `GoogleKeyRefused`, `GoogleUnavailable`, and `CalendarRefused(kind)`
     with `kind` from `classifyCalendarError` (status and reason only, never Google's text).
-- [ ] T014 Create `src/server/calendar/fake-calendar.ts` and plug it into `FakeGoogleMail.fetch` in
+- [x] T014 Create `src/server/calendar/fake-calendar.ts` and plug it into `FakeGoogleMail.fetch` in
   `src/server/gmail/fake-gmail.ts` for URLs starting `https://www.googleapis.com/calendar/v3/` (contracts/google.md
   § Fake).
   - New `FakeState` fields `calendars`, `channels`, `unreachable`, with defaults when an older state file has none.
@@ -187,13 +187,13 @@ description: "Task list for SF-124 Google Calendar: two-way sync"
     `receiveCalendarPush(calendarNotice(email))`; import it lazily to avoid a cycle.
   - Record `sendUpdates` and any `attendees` the app sends, in `requests`.
   - `consent()` grants the Calendar scope when it was asked and ticked.
-- [ ] T015 [P] Create `src/server/calendar/soon.ts`: `runAfterResponse(task)` calls `after(task)` from `next/server`.
+- [x] T015 [P] Create `src/server/calendar/soon.ts`: `runAfterResponse(task)` calls `after(task)` from `next/server`.
   If that throws (outside a request scope), it runs `void task().catch(() => {})`. Errors are never rethrown.
-- [ ] T016 [P] In `src/server/activities/activities.ts`, set `updated_at = now()` in the `update activities` of
+- [x] T016 [P] In `src/server/activities/activities.ts`, set `updated_at = now()` in the `update activities` of
   `editActivity`, `tickActivity` and `untickActivity`. Integration test in `tests/integration/activities.test.ts`
   (or a new `tests/integration/activity-updated-at.test.ts`; `// covers FR-011`): each of the three moves
   `updated_at` forward, and a refused edit (version conflict) does not.
-- [ ] T017 Create `src/server/calendar/sync.ts`, the frame (research.md §12, §14):
+- [x] T017 Create `src/server/calendar/sync.ts`, the frame (research.md §12, §14):
   - `takeCalendarLease` / `releaseCalendarLease` (`calendar_lease_until` 2 minutes, `calendar_sync_again`; only rows
     `state = 'working'` whose `scopes` has the Calendar scope);
   - `syncCalendar(connectionId, now)`: lease → `loadKey` → `refreshAccessToken` → pull → push → release, again while
@@ -205,7 +205,7 @@ description: "Task list for SF-124 Google Calendar: two-way sync"
   - `runCalendarCheck(connectionId, now)`.
 
   Pull and push are filled in by US2, US3 and US4.
-- [ ] T018 In `src/server/gmail/connections.ts`, make `markNeedsReconnect` also clear `calendar_lease_until` and
+- [x] T018 In `src/server/gmail/connections.ts`, make `markNeedsReconnect` also clear `calendar_lease_until` and
   `calendar_sync_again`. In `src/server/gmail/sync.ts` `runGmailCheck`, after each connection's Gmail part and watch
   renewal, call `runCalendarCheck(connectionId, now)` inside the same try, within the 240 s budget.
 
@@ -224,7 +224,7 @@ planned activities due today or later are in the fake calendar.
 
 ### Tests for User Story 1
 
-- [ ] T019 [US1] Download `calendar-api.json` from
+- [x] T019 [US1] Download `calendar-api.json` from
   `https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/calendar/v3/calendar-api.json`
   at commit `3f740bc15212818d4d0eb041b02c951457ff63fa` into `.factory/schemas/` (`git init -q
   /tmp/google-api-go-client && git -C /tmp/google-api-go-client fetch -q --depth 1
@@ -245,7 +245,7 @@ planned activities due today or later are in the fake calendar.
     - an answer with an undeclared property, made with the fake's `tamper`, throws;
     - and the fake's 409, 410 (token below `syncFloor` and patch of a cancelled event), 403 `insufficientPermissions`,
       403 `forbiddenForNonOrganizer` and `unreachable` behaviours.
-- [ ] T020 [P] [US1] Download `gmail-api.json` from
+- [x] T020 [P] [US1] Download `gmail-api.json` from
   `https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json`
   at commit `3f740bc15212818d4d0eb041b02c951457ff63fa` into `.factory/schemas/` (`git init -q
   /tmp/google-api-go-client && git -C /tmp/google-api-go-client fetch -q --depth 1
@@ -255,7 +255,7 @@ planned activities due today or later are in the fake calendar.
   - In `tests/unit/gmail-fake-schema.test.ts`, a `watch` body with `topic` instead of `topicName` throws through
     `tests/fakes/gmail.ts`.
   - The connect flow of this issue (getProfile, watch) still passes the checks.
-- [ ] T021 [P] [US1] Google OAuth 2.0 consent, token and revoke endpoints have no public schema on GitHub. The fake
+- [x] T021 [P] [US1] Google OAuth 2.0 consent, token and revoke endpoints have no public schema on GitHub. The fake
   (`src/server/gmail/fake-gmail.ts`, consent screen `/dev/fake-google/gmail`) follows Google's "Using OAuth 2.0 for Web
   Server Applications" page (developers.google.com/identity/protocols/oauth2/web-server), RFC 6749 §4.1 / §5.2 / §6 and
   RFC 7009. It copies:
@@ -272,7 +272,7 @@ planned activities due today or later are in the fake calendar.
   - a grant with it unticked returns a `scope` without `calendar.events.owned`;
   - a reused code → `invalid_grant`;
   - `unreachable` → the token call throws `TypeError`.
-- [ ] T022 [P] [US1] Supabase Postgres has no public schema on GitHub: tests use the real local Postgres (`crm_test`),
+- [x] T022 [P] [US1] Supabase Postgres has no public schema on GitHub: tests use the real local Postgres (`crm_test`),
   never a fake. The code follows Supabase's "Connect to your database" page (supabase.com/docs/guides/database/
   connecting-to-postgres, transaction-mode Supavisor pooler: no prepared-statement or session state across
   transactions). It copies these limits: one statement or one short `sql.begin()` per change, no `set`, `listen` or
@@ -282,7 +282,7 @@ planned activities due today or later are in the fake calendar.
   `src/server/calendar/` and fails on `listen(`, `sql.unsafe(` with `set `, `pg_advisory_lock`, or a
   `calendar-api` call between `sql.begin(` and its closing (a simple scan of `sql.begin(` blocks for `insertEvent|
   patchEvent|deleteEvent|listEvents|watchEvents|stopChannel|refreshAccessToken`).
-- [ ] T023 [US1] Integration test `tests/integration/calendar-connect.test.ts` (`// covers FR-001, FR-002, FR-003,
+- [x] T023 [US1] Integration test `tests/integration/calendar-connect.test.ts` (`// covers FR-001, FR-002, FR-003,
   US1 scenarios 1-5, edge case "Calendar not set up"`), using the `gmail-helpers.ts` pattern:
   1. the consent address asks the 3 scopes; after allowing all, `gmailSettings().calendar === "syncing"`,
      `settingsWarning() === null`, a channel is stored (id, resource id, a 32-byte token hash, never the token);
@@ -296,7 +296,7 @@ planned activities due today or later are in the fake calendar.
   5. a never-connected assignee → activities saved, no fake calendar has events;
   6. `CALENDAR_SYNC` stubbed `""` → consent asks 2 scopes, `calendar === "off"`, no "!" for Calendar, scheduling
      puts nothing in any fake calendar.
-- [ ] T024 [P] [US1] Unit test `tests/unit/gmail-card.test.ts` (`// covers FR-017, US1 scenarios 1 and 3`). It renders
+- [x] T024 [P] [US1] Unit test `tests/unit/gmail-card.test.ts` (`// covers FR-017, US1 scenarios 1 and 3`). It renders
   `GmailCard` with `renderToStaticMarkup` (as `tests/integration/gmail-send.test.ts` does).
   - `syncing`: heading "Gmail · connected", and the line "Calendar: Syncing your activities with your Google
     Calendar" after the SF-118 lines.
@@ -306,7 +306,7 @@ planned activities due today or later are in the fake calendar.
 
 ### Implementation for User Story 1
 
-- [ ] T025 [US1] In `src/server/gmail/connections.ts` (data-model.md § State changes, research.md §3):
+- [x] T025 [US1] In `src/server/gmail/connections.ts` (data-model.md § State changes, research.md §3):
   - `gmailSettings` returns `calendar: "off" | "syncing" | "missing"`;
   - add `settingsWarning(userId): Promise<"gmail" | "calendar" | null>`;
   - `finishConnect`:
@@ -318,7 +318,7 @@ planned activities due today or later are in the fake calendar.
     - after commit, calls `renewCalendarChannel(id, now)` best effort;
     - exposes the connection id to the callback;
   - `connectFromCallback` uses `hasAllScopes(tokens.scope)` (asked scopes).
-- [ ] T026 [US1] In `src/server/calendar/sync.ts`, implement `renewCalendarChannel(connectionId, now)` (research.md
+- [x] T026 [US1] In `src/server/calendar/sync.ts`, implement `renewCalendarChannel(connectionId, now)` (research.md
   §11):
   - `watchEvents` with `{ id: randomUUID(), type: "web_hook", address: calendarConfig().pushAddress, token:
     randomBytes(32).toString("base64url"), params: { ttl: "604800" } }`;
@@ -328,22 +328,22 @@ planned activities due today or later are in the fake calendar.
   - on `GoogleKeyRefused`, `markNeedsReconnect`.
 
   `runCalendarCheck` renews when `calendar_channel_renewed_at` is null or older than 20 h.
-- [ ] T027 [US1] In `src/server/calendar/sync.ts`, the first pull. With no `calendar_sync_token`: a full `listEvents`
+- [x] T027 [US1] In `src/server/calendar/sync.ts`, the first pull. With no `calendar_sync_token`: a full `listEvents`
   (`showDeleted=true`, paging), handling only items with `updated >= calendar_connected_at`, then storing
   `nextSyncToken` and `calendar_last_synced_at`. Item handling is filled in by US3 and US4.
-- [ ] T028 [US1] In `src/app/(app)/settings/gmail/callback/route.ts`, after `connected` / `reconnected` with Calendar
+- [x] T028 [US1] In `src/app/(app)/settings/gmail/callback/route.ts`, after `connected` / `reconnected` with Calendar
   granted, call `runAfterResponse(() => syncCalendar(connectionId))`.
-- [ ] T029 [US1] In `src/app/(app)/settings/GmailCard.tsx`, build design A per contracts/routes.md § Gmail card:
+- [x] T029 [US1] In `src/app/(app)/settings/GmailCard.tsx`, build design A per contracts/routes.md § Gmail card:
   - the Calendar `<li>` via `templates.calendar_line(...)`;
   - for `missing`: the `.err` message `messages.calendar_reconnect` above the lines, and the `[ RECONNECT GMAIL ]`
     form (`startGmailConnect`) before `[ SEND ME A TEST EMAIL ]`.
 
   Pass `gmail.calendar` from `src/app/(app)/settings/page.tsx`.
-- [ ] T030 [US1] Replace `gmailNeedsReconnect` with `settingsWarning` in `src/app/(app)/layout.tsx` and
+- [x] T030 [US1] Replace `gmailNeedsReconnect` with `settingsWarning` in `src/app/(app)/layout.tsx` and
   `currentSidebar()` in `src/app/(app)/notifications/actions.ts`. The footer Settings `SidebarLink` / `UnreadLink`
   gets `warn` when non-null, with `aria-label` `messages.gmail_settings_warn` or `messages.calendar_settings_warn`.
   Keep SF-108's client refresh working, and update its existing tests.
-- [ ] T031 [US1] On `/dev/fake-google/gmail` (`src/app/dev/fake-google/gmail/page.tsx`), show one tick box per asked
+- [x] T031 [US1] On `/dev/fake-google/gmail` (`src/app/dev/fake-google/gmail/page.tsx`), show one tick box per asked
   scope, the Calendar one labelled "See, create, change and delete events on calendars you own". The answer route
   passes the ticked scopes to `consent()`. Extend `tests/integration/gmail-dev-fake.test.ts`: the box shows when
   Calendar is on, and unticking it gives `missing_scopes`.
@@ -361,7 +361,7 @@ fake calendar. Then edit, reschedule, tick, untick, reassign to Bob and delete, 
 
 ### Tests for User Story 2
 
-- [ ] T032 [P] [US2] Unit tests in `tests/unit/calendar-rules.test.ts` (`// covers FR-005, FR-006, SC-005, US2
+- [x] T032 [P] [US2] Unit tests in `tests/unit/calendar-rules.test.ts` (`// covers FR-005, FR-006, SC-005, US2
   scenarios 1-3, 5`):
   - `eventBody` for "Call Ada about the proposal", call, 2 Dec 2026 10:00, 30 min, note "Bring the price list", id 7:
     - summary `"Call · Call Ada about the proposal"`;
@@ -380,7 +380,7 @@ fake calendar. Then edit, reschedule, tick, untick, reassign to Bob and delete, 
   - 25 Oct 2026 01:30 → the first (BST) reading;
   - `googleEventBody` has only `summary`, `start`, `end`, with no "Meeting · " and no "✓ ";
   - `bodyHash` is stable under key order.
-- [ ] T033 [US2] Integration test `tests/integration/calendar-push-out.test.ts` (`// covers FR-004, FR-005, FR-006,
+- [x] T033 [US2] Integration test `tests/integration/calendar-push-out.test.ts` (`// covers FR-004, FR-005, FR-006,
   FR-007, FR-013, SC-001, SC-003, SC-004, US2 scenarios 1-8, edge cases "Private records", "Deleted linked record"`).
   Call the domain functions, then `calendarAfterChange` / `syncCalendar` directly.
   - Schedule → one event with the values of T032.
@@ -403,10 +403,10 @@ fake calendar. Then edit, reschedule, tick, untick, reassign to Bob and delete, 
 
 ### Implementation for User Story 2
 
-- [ ] T034 [US2] In `src/server/calendar/rules.ts`, implement `eventTimes`, `eventBody` and `googleEventBody`
+- [x] T034 [US2] In `src/server/calendar/rules.ts`, implement `eventTimes`, `eventBody` and `googleEventBody`
   (research.md §4-§5), using `ukInstant`, `TYPE_LABELS`, `templates.calendar_title`,
   `templates.calendar_description`, `messages.calendar_done_mark`. Also `bodyHash` (sha256 hex of key-sorted JSON).
-- [ ] T035 [US2] In `src/server/calendar/sync.ts`, implement the push `pushConnection(conn, access, now)` exactly as
+- [x] T035 [US2] In `src/server/calendar/sync.ts`, implement the push `pushConnection(conn, access, now)` exactly as
   research.md §7 steps 1–4, at most 200 Google writes per run (set `calendar_sync_again` when more remain):
   - gone, moved away or hidden (with `visibleActivity(db, userId)`): crm-origin `deleteEvent` then delete the row;
     google-origin → `state = 'ended'` with no Google call; crm-origin `ended` rows whose activity is null are deleted;
@@ -418,10 +418,10 @@ fake calendar. Then edit, reschedule, tick, untick, reassign to Bob and delete, 
   - `event_refused` → `synced_version = version`, `dirty = false` (a `creating` row is deleted).
 
   Every link write is conditional on the row's id, state and `activity_id`, and none is inside a Google call.
-- [ ] T036 [US2] In `src/server/calendar/sync.ts`, implement `calendarAfterChange(activityIds)`: the working
+- [x] T036 [US2] In `src/server/calendar/sync.ts`, implement `calendarAfterChange(activityIds)`: the working
   Calendar connections of those activities' assignees and links, plus every connection with a link whose
   `activity_id is null`; `syncCalendar` each; errors swallowed.
-- [ ] T037 [US2] Call `runAfterResponse(() => calendarAfterChange(ids))` after each successful result:
+- [x] T037 [US2] Call `runAfterResponse(() => calendarAfterChange(ids))` after each successful result:
   - in `src/app/(app)/activities/actions.ts`: schedule (and the follow-up schedule) with the new id, and edit, tick,
     untick and delete with `[id]`;
   - in `src/app/(app)/people/actions.ts` `deletePerson`, `src/app/(app)/organisations/actions.ts`
@@ -442,7 +442,7 @@ change and drop it for another, run the check, and confirm the activities show t
 
 ### Tests for User Story 3
 
-- [ ] T038 [P] [US3] Unit tests in `tests/unit/calendar-rules.test.ts` (`// covers FR-008, FR-011, US3 scenarios 2-3,
+- [x] T038 [P] [US3] Unit tests in `tests/unit/calendar-rules.test.ts` (`// covers FR-008, FR-011, US3 scenarios 2-3,
   edge cases "Times Google allows but the CRM does not", "Title limits", "Activity on the clock change"`):
   - `fromEvent`:
     - `2026-12-04T10:00:00-05:00`–`11:00-05:00` → `2026-12-04` `15:00` 60;
@@ -465,7 +465,7 @@ change and drop it for another, run the check, and confirm the activities show t
     - a tie → Google;
     - null duration with a time equals 30;
   - `isCancelled`, `selfDeclined`.
-- [ ] T039 [US3] Integration test `tests/integration/calendar-pull.test.ts` (`// covers FR-008, FR-010, FR-011, FR-018,
+- [x] T039 [US3] Integration test `tests/integration/calendar-pull.test.ts` (`// covers FR-008, FR-010, FR-011, FR-018,
   SC-002, US3 scenarios 1-6, edge cases "Both sides changed", "Archived records", "Times Google allows but the CRM does
   not", "Title limits", "Google no longer accepts the key"`):
   - move to 4 Dec 11:00–12:00 with `deliver: true` → the activity is `2026-12-04` `11:00` 60; `nextActivities`, the
@@ -486,14 +486,14 @@ change and drop it for another, run the check, and confirm the activities show t
 
 ### Implementation for User Story 3
 
-- [ ] T040 [US3] In `src/server/calendar/rules.ts`, implement `fromEvent`, `subjectFromTitle`, `merge`, `isCancelled`
+- [x] T040 [US3] In `src/server/calendar/rules.ts`, implement `fromEvent`, `subjectFromTitle`, `merge`, `isCancelled`
   and `selfDeclined` (research.md §5, §6, §9). `fromEvent` uses `ukWallClock`; durations are rounded down to a
   multiple of 5 and clamped to 5…1440.
-- [ ] T041 [US3] In `src/server/calendar/sync.ts`, implement the incremental pull: `listEvents` with
+- [x] T041 [US3] In `src/server/calendar/sync.ts`, implement the incremental pull: `listEvents` with
   `calendar_sync_token` and paging. On `sync_token_gone`, a full listing with `showDeleted=true` handling items with
   `updated >= calendar_last_synced_at − 1 hour`. Then store `nextSyncToken` and `calendar_last_synced_at = now`. The
   push runs after the pull in the same `syncCalendar`.
-- [ ] T042 [US3] In `src/server/calendar/sync.ts`, implement `applyLinkedChange(conn, link, item)` (research.md §9):
+- [x] T042 [US3] In `src/server/calendar/sync.ts`, implement `applyLinkedChange(conn, link, item)` (research.md §9):
   - ignore `ended` rows, deleted, reassigned or hidden activities;
   - `isCancelled` (any origin), or `selfDeclined` (origin `google`) → `state = 'ended'`;
   - else, in one `sql.begin()` locking the link and the activity `for update`, merge the "when" and "subject" groups
@@ -502,7 +502,7 @@ change and drop it for another, run the check, and confirm the activities show t
       version + 1, updated_at = now()` (never type, note, links, assignee or done state; archived links do not
       refuse);
     - the link gets `base`, `google_updated_at`, `synced_version` (unless `dirty`) and `dirty`.
-- [ ] T043 [US3] Wire the push route:
+- [x] T043 [US3] Wire the push route:
   - create `src/server/calendar/push.ts` `receiveCalendarPush(headers, now)` (research.md §11, contracts/routes.md
     § Routes);
   - create `src/app/calendar/push/route.ts` (`POST`, `dynamic = "force-dynamic"`, `maxDuration = 60`, empty bodies);
@@ -526,7 +526,7 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
 
 ### Tests for User Story 4
 
-- [ ] T044 [P] [US4] Unit tests in `tests/unit/calendar-rules.test.ts` (`// covers FR-009, US4 scenarios 2, 6, 7,
+- [x] T044 [P] [US4] Unit tests in `tests/unit/calendar-rules.test.ts` (`// covers FR-009, US4 scenarios 2, 6, 7,
   edge cases "Recurring events", "Event declined"`). `decideIncoming` returns null for:
   - a cancelled event;
   - `eventType` `outOfOffice` / `focusTime` / `workingLocation` / `birthday` / `fromGmail`;
@@ -539,7 +539,7 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
 
   It returns the guests' addresses trimmed and lower-cased, in order, otherwise (`" ANA.K@example.test "` →
   `"ana.k@example.test"`).
-- [ ] T045 [US4] Integration test `tests/integration/calendar-incoming.test.ts` (`// covers FR-009, FR-018, SC-003,
+- [x] T045 [US4] Integration test `tests/integration/calendar-incoming.test.ts` (`// covers FR-009, FR-018, SC-003,
   US4 scenarios 1-8, edge cases "Recurring events", "Event declined", clarifications "(No title)", "archived
   organisation", "meetings from Google"`):
   - "Intro with Ana" 8 Dec 2026 15:00–15:45 with guest `ANA.K@example.test` → one planned Meeting, due `2026-12-08`
@@ -565,8 +565,8 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
 
 ### Implementation for User Story 4
 
-- [ ] T046 [US4] In `src/server/calendar/rules.ts`, implement `decideIncoming(e, { since, now })` (research.md §10).
-- [ ] T047 [US4] In `src/server/calendar/sync.ts`, implement `importEvent(conn, item)` for unlinked items
+- [x] T046 [US4] In `src/server/calendar/rules.ts`, implement `decideIncoming(e, { since, now })` (research.md §10).
+- [x] T047 [US4] In `src/server/calendar/sync.ts`, implement `importEvent(conn, item)` for unlinked items
   (research.md §10):
   1. one query finds the first guest address in order whose `person_emails` person has `archived_at is null` and
      `visiblePerson(db, userId)`;
@@ -582,7 +582,7 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
 
 ### Tests for the push notifications (first used here end to end)
 
-- [ ] T048 [US4] Google Calendar push notifications have no public schema on GitHub: the fake follows Google's "Push
+- [x] T048 [US4] Google Calendar push notifications have no public schema on GitHub: the fake follows Google's "Push
   notifications" page (developers.google.com/calendar/api/guides/push). It copies:
   - a POST with no body and the headers `X-Goog-Channel-ID`, `X-Goog-Channel-Token`, `X-Goog-Channel-Expiration`,
     `X-Goog-Resource-ID`, `X-Goog-Resource-URI`, `X-Goog-Resource-State` (`sync` first, then `exists` /
@@ -606,14 +606,14 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
 
 ## Phase 7: Polish & cross-cutting concerns
 
-- [ ] T049 [P] Disconnect and deactivation (research.md §15) in `src/server/gmail/connections.ts`:
+- [x] T049 [P] Disconnect and deactivation (research.md §15) in `src/server/gmail/connections.ts`:
   - `forgetGmailInTx` also clears the calendar token, channel, lease and `calendar_connected_at`, and returns `{ token,
     channel }`;
   - `afterGmailForgotten(f)` first calls `stopChannel` (best effort), then the SF-118 steps.
 
   Update the callers `disconnect()`, `src/server/users.ts` `deactivate` and `src/app/(app)/admin/users/actions.ts`, and
   the existing tests that read the old return value.
-- [ ] T050 Integration test `tests/integration/calendar-lifecycle.test.ts` (`// covers FR-003, FR-007, FR-010, edge
+- [x] T050 Integration test `tests/integration/calendar-lifecycle.test.ts` (`// covers FR-003, FR-007, FR-010, edge
   cases "Disconnect or deactivation", "Google no longer accepts the key"`):
   - after a disconnect or deactivation the fake channel is stopped, the events are left, and a reschedule leaves its
     event unchanged;
@@ -623,7 +623,7 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
   - a 403 `insufficientPermissions` from the fake removes the Calendar scope → `calendar === "missing"` and the "!",
     while Gmail stays `working`;
   - two `syncCalendar` at once → one runs and the other sets `calendar_sync_again`; still one event each.
-- [ ] T051 Create `src/app/dev/fake-calendar/page.tsx` and `actions.ts` (research.md §17, FR-015). It gives 404 unless
+- [x] T051 Create `src/app/dev/fake-calendar/page.tsx` and `actions.ts` (research.md §17, FR-015). It gives 404 unless
   `isFakeAllowed()`, Gmail mode `fake` and Calendar on. It shows each fake user's events: title, start–end or all-day
   date, description, guests, reminders, private/free, declined. It has forms to:
   - create (title, date, start, end or all-day, guests, recurring tick), change, decline and delete, each with
@@ -636,18 +636,18 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
   - add `/^\/dev\/fake-calendar\/?$/` to `PUBLIC` in `src/proxy.ts`;
   - every action revalidates the page;
   - texts are fake-page labels only.
-- [ ] T052 Integration test `tests/integration/calendar-dev-fake.test.ts` (`// covers FR-015`):
+- [x] T052 Integration test `tests/integration/calendar-dev-fake.test.ts` (`// covers FR-015`):
   - 404 outside fake mode and with Calendar off;
   - the page lists an event's fields;
   - each action changes the fake, and with "deliver" the CRM;
   - unreachable then reachable plus "run the check" converges.
-- [ ] T053 [P] Create `src/seed/calendar.ts` (data-model.md § Fake data, FR-016) and register it in `src/seed/index.ts`
+- [x] T053 [P] Create `src/seed/calendar.ts` (data-model.md § Fake data, FR-016) and register it in `src/seed/index.ts`
   after `activities` and `gmail`. `src/seed/gmail.ts` asks `askedScopes()` and reconnects a Gmail-only Ada. Messages
   per the registry style ("already there calendar events" on a re-run).
-- [ ] T054 Extend `tests/integration/seed.test.ts` (`// covers FR-016`): seeding twice gives Ada the Calendar scope,
+- [x] T054 Extend `tests/integration/seed.test.ts` (`// covers FR-016`): seeding twice gives Ada the Calendar scope,
   one fake event per planned activity of hers due today or later, and exactly one Meeting from "Fake intro meeting"
   linked to a fake person. No duplicates on the second run.
-- [ ] T055 [P] Update `AGENTS.md` § Layout:
+- [x] T055 [P] Update `AGENTS.md` § Layout:
   - `src/server/calendar/`: `rules.ts` pure, `calendar-api.ts`, `fake-calendar.ts`, `sync.ts` (the reconcile, no
     Google call inside `sql.begin()`), `push.ts`, `soon.ts`;
   - `calendar_events`;
@@ -656,14 +656,14 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
   - the `CALENDAR_SYNC` setting;
   - the seeder;
   - the Calendar checks in `tests/fakes/gmail.ts` against `calendar-api.json`.
-- [ ] T056 [P] Append to the end of `docs/DECISIONS.md` the six lines of plan.md § Build steps 11 (scope, no Google
+- [x] T056 [P] Append to the end of `docs/DECISIONS.md` the six lines of plan.md § Build steps 11 (scope, no Google
   reminder for all-day activities, private/free events, meetings from Google, deleted or declined in Google ends sync, the
   15-minute job and after-response pushes), each ending "(SF-124)". There is no "Departs from blueprint" line (no
   blueprint).
-- [ ] T057 Run `npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`.
+- [x] T057 Run `npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`.
   Everything must be green, with no `violations` left in the fake checks. Check every quickstart.md automated row has
   its test.
-- [ ] T058 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
+- [x] T058 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
   schema) and `## Schemas` (each schema's GitHub URL at its commit).
   - Services: Google Calendar API (fake `src/server/calendar/fake-calendar.ts` via `FakeGoogleMail`, schema
     `calendar-api.json`); Google Calendar push notifications (no schema, the push guide); Gmail API (`gmail-api.json`);
