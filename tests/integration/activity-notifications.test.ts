@@ -25,7 +25,8 @@ beforeEach(async () => {
 });
 afterAll(closeDb);
 
-const forBob = (over = {}) => activityForm({ assigneeId: String(bob.id), dealId: String(deal), dueOn: "2026-11-25", dueTime: "10:00", ...over });
+// SF-123: due dates in the past, so these activities get no reminder (activity-reminders.test.ts covers those).
+const forBob = (over = {}) => activityForm({ assigneeId: String(bob.id), dealId: String(deal), dueOn: "2020-11-25", dueTime: "10:00", ...over });
 const assignments = async (user: number) => (await listNotifications(user)).items.filter((i): i is AssignmentView => i.kind === "assignment");
 
 describe("assignment notifications", () => {
@@ -40,13 +41,13 @@ describe("assignment notifications", () => {
     const a = items[0] as AssignmentView;
     expect(a).toMatchObject({ id, byName: "Ada Fake", type: "call", subject: "Call Ada about the proposal", href: `/deals/${deal}`, read: false });
     expect(templates.assigned_you(a.byName, a.type, a.subject)).toBe("Ada Fake assigned you a call: Call Ada about the proposal");
-    expect(templates.activity_due(formatDue(a))).toBe("Due 25 Nov 2026 10:00");
+    expect(templates.activity_due(formatDue(a))).toBe("Due 25 Nov 2020 10:00");
     expect(a.createdAt).toBeInstanceOf(Date);
   });
 
   it("gives nothing for an activity assigned to oneself", async () => {
     okId(await scheduleActivity(bob.id, forBob()));
-    okId(await scheduleActivity(ada.id, activityForm()));
+    okId(await scheduleActivity(ada.id, activityForm({ dueOn: "2020-11-25" })));
     expect(await unreadCount(bob.id)).toBe(0);
     expect(await unreadCount(ada.id)).toBe(0);
     expect(await assignments(bob.id)).toEqual([]);

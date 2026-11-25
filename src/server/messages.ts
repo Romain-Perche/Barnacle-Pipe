@@ -375,6 +375,8 @@ export const templates = {
   assignee_cannot_see: (name: string) => `${name} can't see this record, so the activity can't be assigned to them.`,
   assigned_you: (by: string, type: string, subject: string) => `${by} assigned you a ${type}: ${subject}`,
   activity_due: (text: string) => `Due ${text}`,
+  // SF-123: "Call: intro call with Bob Example at 10:00" (no " at …" without a time).
+  reminder_title: (type: string, subject: string, time: string | null) => (time === null ? `${type}: ${subject}` : `${type}: ${subject} at ${time}`),
   done_by: (name: string) => `Done by ${name}`,
   next_activity: (day: string, type: string) => `Next: ${day} · ${type}`,
   activity_deleted: (_name: string) => "Activity deleted.",

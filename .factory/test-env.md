@@ -205,6 +205,11 @@
   html, html with no kind, `[]` or 51 blocks, 500,001 characters of HTML, `merge_links` `{}`, a 256-character subject)
   and that the pure files (`merge.ts`, `content.ts`, `rules.ts`) import nothing server-only. No new outside service:
   images or styles named in pasted HTML are fetched by the user's browser inside the sandboxed preview, never by the app.
+  SF-123 (activity reminders in the app) adds no outside service, schema, fake or setting: `migrations/0017_activity_reminders.sql`
+  adds `remind_at` / `reminder_read_at` to `activities` (plus a backfill `update` and a partial index), and the reminder
+  tests (`tests/unit/activities-rules.test.ts`, `tests/integration/activity-reminders.test.ts`) pass an explicit `now` to
+  `scheduleActivity` / `editActivity` / `untickActivity` and `listNotifications` / `unreadCount` / `openNotification` /
+  `markAllRead` (no clock tricks, no sleeps); the action and page tests set `remind_at` in the past by SQL. No email is sent.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json

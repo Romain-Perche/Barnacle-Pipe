@@ -3,6 +3,9 @@
 // to them (the one rule in visibility.ts): a deal made private hides it, sharing it again brings it back.
 // SF-109 (research.md §7): an activity assigned to the user by someone else is a notification too, kept on the
 // activity row (assigned_by / assigned_at / assignment_read_at), shown only while visibleActivity() holds for them.
+// SF-123 (research.md §5): a planned activity's reminder is a third kind, for its current assignee (themselves included),
+// kept on the activity row (remind_at / reminder_read_at), shown from `remind_at` while planned and visibleActivity()
+// holds. Every reminder read and write goes through myReminders(); `now` is a parameter so the tests pass the clock.
 import type { ActivityType } from "@/server/activities/rules";
 import { sql, type Sql } from "@/server/db";
 import { notificationPreview } from "@/server/records/notes-rules";
@@ -15,12 +18,22 @@ export type AssignmentView = {
   kind: "assignment"; id: number; byName: string; type: ActivityType; subject: string; dueOn: string; dueTime: string | null;
   durationMinutes: number | null; href: string; createdAt: Date; read: boolean;
 };
-export type NotificationView = MentionView | AssignmentView;
-export type NotificationRef = { kind: "mention" | "assignment"; id: number };
+export type ReminderView = {
+  kind: "reminder"; id: number; type: ActivityType; subject: string; dueOn: string; dueTime: string | null;
+  durationMinutes: number | null; href: string; createdAt: Date; read: boolean;
+};
+export type NotificationView = MentionView | AssignmentView | ReminderView;
+export type NotificationRef = { kind: "mention" | "assignment" | "reminder"; id: number };
 
 // The user's own live assignment notifications they can see now. Needs `a` (activities).
 function myAssignments(db: Sql, userId: number) {
   return db`a.assignee_id = ${userId} and a.assigned_by <> ${userId} and ${visibleActivity(db, userId)}`;
+}
+
+// The user's own reminders shown at `now`: planned, their time come, visible. Needs `a` (activities).
+function myReminders(db: Sql, userId: number, now: Date) {
+  return db`a.assignee_id = ${userId} and a.done_at is null and a.remind_at is not null and a.remind_at <= ${now}
+    and ${visibleActivity(db, userId)}`;
 }
 
 // The user's own notifications whose record they can see now. Needs `m` (note_mentions), `e`, `p`, `d`, `o` joined.
@@ -63,7 +76,25 @@ async function listAssignments(userId: number, limit: number): Promise<Assignmen
   }));
 }
 
-export async function listNotifications(userId: number, limit = 50): Promise<{ items: NotificationView[]; more: boolean }> {
+async function listReminders(userId: number, limit: number, now: Date): Promise<ReminderView[]> {
+  const rows = await sql<
+    { id: number; type: ActivityType; subject: string; due_on: string; due_time: string | null; duration_minutes: number | null;
+      deal_id: number | null; person_id: number | null; organisation_id: number | null; remind_at: Date; read: boolean }[]
+  >`
+    select a.id::int as id, a.type, a.subject, to_char(a.due_on, 'YYYY-MM-DD') as due_on, to_char(a.due_time, 'HH24:MI') as due_time,
+           a.duration_minutes, a.deal_id::int as deal_id, a.person_id::int as person_id, a.organisation_id::int as organisation_id,
+           a.remind_at, a.reminder_read_at is not null as read
+    from activities a
+    where ${myReminders(sql, userId, now)}
+    order by a.remind_at desc, a.id desc
+    limit ${limit}`;
+  return rows.map((r) => ({
+    kind: "reminder" as const, id: r.id, type: r.type, subject: r.subject, dueOn: r.due_on, dueTime: r.due_time,
+    durationMinutes: r.duration_minutes, href: href(r), createdAt: r.remind_at, read: r.read,
+  }));
+}
+
+export async function listNotifications(userId: number, limit = 50, now: Date = new Date()): Promise<{ items: NotificationView[]; more: boolean }> {
   const rows = await sql<
     { event_id: number; by_name: string; record_name: string; deal_id: number | null; person_id: number | null; organisation_id: number | null;
       body: string; created_at: Date; read: boolean }[]
@@ -97,23 +128,27 @@ export async function listNotifications(userId: number, limit = 50): Promise<{ i
     createdAt: r.created_at,
     read: r.read,
   }));
-  // Mentions and assignments together, newest first: the top `limit + 1` of each hold the page.
-  const all = [...mentions, ...(await listAssignments(userId, limit + 1))].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  // Mentions, assignments and reminders together, newest first (a stable sort keeps each kind's own order on a tie):
+  // the top `limit + 1` of each hold the page.
+  const [assignments, reminders] = await Promise.all([listAssignments(userId, limit + 1), listReminders(userId, limit + 1, now)]);
+  const all = [...mentions, ...assignments, ...reminders].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   return { more: all.length > limit, items: all.slice(0, limit) };
 }
 
-export async function unreadCount(userId: number): Promise<number> {
+export async function unreadCount(userId: number, now: Date = new Date()): Promise<number> {
   const [row] = await sql<{ n: number }[]>`
     select (select count(*) from ${FROM(sql)} where m.read_at is null and ${mine(sql, userId)})::int
-         + (select count(*) from activities a where a.assignment_read_at is null and ${myAssignments(sql, userId)})::int as n`;
+         + (select count(*) from activities a where a.assignment_read_at is null and ${myAssignments(sql, userId)})::int
+         + (select count(*) from activities a where a.reminder_read_at is null and ${myReminders(sql, userId, now)})::int as n`;
   return row.n;
 }
 
 // Marks the user's own notification read (only while its record is visible) and answers where it leads; else null.
-// `ref`: { kind, id } (a bare number is a mention's event id, as before SF-109).
-export async function openNotification(userId: number, ref: number | NotificationRef): Promise<{ href: string } | null> {
+// `ref`: { kind, id } (a bare number is a mention's event id, as before SF-109). A reminder's id is its activity's.
+export async function openNotification(userId: number, ref: number | NotificationRef, now: Date = new Date()): Promise<{ href: string } | null> {
   const { kind, id: eventId } = typeof ref === "number" ? { kind: "mention", id: ref } : ref;
   if (kind === "assignment") return openAssignment(userId, eventId);
+  if (kind === "reminder") return openReminder(userId, eventId, now);
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
     const [row] = await db<{ deal_id: number | null; person_id: number | null; organisation_id: number | null }[]>`
@@ -133,11 +168,22 @@ async function openAssignment(userId: number, id: number): Promise<{ href: strin
   return row ? { href: href(row) } : null;
 }
 
-// Every unread row of the user, visible or not (harmless: hidden ones are neither shown nor counted).
-export async function markAllRead(userId: number): Promise<void> {
+// Only the reminder, never the assignment line of the same activity.
+async function openReminder(userId: number, id: number, now: Date): Promise<{ href: string } | null> {
+  const [row] = await sql<{ deal_id: number | null; person_id: number | null; organisation_id: number | null }[]>`
+    update activities a set reminder_read_at = coalesce(a.reminder_read_at, ${now})
+    where a.id = ${id} and ${myReminders(sql, userId, now)}
+    returning a.deal_id::int as deal_id, a.person_id::int as person_id, a.organisation_id::int as organisation_id`;
+  return row ? { href: href(row) } : null;
+}
+
+// Every unread row of the user, visible or not (harmless: hidden ones are neither shown nor counted); reminders only
+// when shown now (SF-123 FR-004: those still to come stay unread), through myReminders().
+export async function markAllRead(userId: number, now: Date = new Date()): Promise<void> {
   await sql.begin(async (tx) => {
     await tx`update note_mentions set read_at = now() where user_id = ${userId} and read_at is null`;
     await tx`update activities set assignment_read_at = now()
              where assignee_id = ${userId} and assigned_by <> ${userId} and assignment_read_at is null`;
+    await tx`update activities a set reminder_read_at = ${now} where a.reminder_read_at is null and ${myReminders(tx as unknown as Sql, userId, now)}`;
   });
 }
