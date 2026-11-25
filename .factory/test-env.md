@@ -646,6 +646,7 @@
     node .factory/run/scenarios-sf123.js` runs all 27 SF-123 scenarios (~4 min; US4 scenario 1 reseeds first and reads
     :3000; Edge case 3 replays migration 0017 on a pg_dump copy `sf123_mig`). Counts are compared at the minute before and
     at the reminder minute: seeded activities have reminders at round times too (e.g. 27 Nov 09:45). All pass.
+    Second AI review (after the origin/main merge): start-app.sh, start-faketime-app.sh, reset-db.sh, then the script: 27/27 pass (~4 min).
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
