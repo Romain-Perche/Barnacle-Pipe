@@ -141,8 +141,8 @@ next check retries), then `runAfterResponse(syncCalendar)`.
   assignee (`visibleActivity`); it has no row yet; and when first synced it is planned with `due_on >= ukToday(now)`.
   Once linked it stays synced (done, moved into the past) until deleted, reassigned, hidden or ended.
 - **Event body**: research.md §4–§5. Title `"<Type> · <subject>"` (done: `"✓ "` first). Description = note, blank line,
-  `templates.calendar_description` link. Reminders email + popup at 15 minutes, or 0 minutes for all-day; none when
-  done. `visibility: private`; all-day `transparent`. `sendUpdates=none`; no attendees.
+  `templates.calendar_description` link. Reminders email + popup at 15 minutes with a time; none (`useDefault: false`,
+  no overrides) for all-day or done. `visibility: private`; all-day `transparent`. `sendUpdates=none`; no attendees.
 - **From Google**: date/time/duration (rounded down to 5 minutes, 5…1440) and subject only, through the three-way merge.
 - **Coming in**: research.md §10.
 

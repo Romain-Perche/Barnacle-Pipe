@@ -33,4 +33,4 @@
 
 - Google Calendar, Settings and the SF-118 connection are named because they are the product's own features, not implementation choices.
 - Factory guesses to confirm at review: 30-minute default event length, "✓ " title and no reminders on done, events left in place on disconnect, only events after connecting come in.
-- To verify in the plan: whether Google allows a 9:00-on-the-day reminder on an all-day event (Assumptions).
+- Settled at plan review (2026-11-25): Google cannot remind at 9:00 on an all-day event, so activities with no time get no Google reminder.

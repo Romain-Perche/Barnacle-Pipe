@@ -30,7 +30,7 @@ description: "Task list for SF-124 Google Calendar: two-way sync"
   blueprint tasks and no "Departs from blueprint" line.
 - The factory choices of spec.md § Clarifications › Plan 2026-11-25 are built as written there:
   - scope `calendar.events.owned`;
-  - an all-day reminder at 0 minutes;
+  - no Google reminder on an all-day event (decided by the person, 2026-11-25);
   - CRM events private, and all-day events free;
   - a meeting from Google is never deleted by the CRM, and only its title and times are sent;
   - a hidden activity's event is removed;
@@ -147,7 +147,7 @@ description: "Task list for SF-124 Google Calendar: two-way sync"
 - [ ] T012 [P] Create `src/server/calendar/rules.ts`, part 1 (pure, imports nothing server-only), per
   contracts/routes.md § Domain functions:
   - the types `SyncValues`, `ActivityForEvent`, `GoogleEvent`, `EventBody`;
-  - `REMINDER_MINUTES_TIMED = 15`, `REMINDER_MINUTES_ALL_DAY = 0`, `DEFAULT_EVENT_MINUTES = 30`;
+  - `REMINDER_MINUTES_TIMED = 15`, `DEFAULT_EVENT_MINUTES = 30` (no all-day reminder constant);
   - `newEventId()`: `"crm"` + 32 characters of `0123456789abcdefghijklmnopqrstuv` from `randomBytes(20)`;
   - `classifyCalendarError(status, body, op)` exactly as research.md §13.
 
@@ -372,7 +372,8 @@ fake calendar. Then edit, reschedule, tick, untick, reassign to Bob and delete, 
     - `extendedProperties.private.barnacleCrmActivity === "7"`;
     - no `attendees` key;
   - no duration → 30 minutes;
-  - a task with no time on 3 Dec → `start.date "2026-12-03"`, `end.date "2026-12-04"`, reminders at 0 minutes,
+  - a task with no time on 3 Dec → `start.date "2026-12-03"`, `end.date "2026-12-04"`, reminders
+    `{ useDefault: false, overrides: [] }`,
     `transparency: "transparent"`;
   - done → summary starts `"✓ "`, `overrides: []`;
   - 29 Mar 2026 00:30 for 120 min → start `2026-03-29T00:30:00.000Z`, end `2026-03-29T02:30:00.000Z` (03:30 BST);
@@ -655,8 +656,8 @@ Deliver the notices: there is exactly one Meeting, linked to Ana Fake and Fake L
   - the `CALENDAR_SYNC` setting;
   - the seeder;
   - the Calendar checks in `tests/fakes/gmail.ts` against `calendar-api.json`.
-- [ ] T056 [P] Append to the end of `docs/DECISIONS.md` the six lines of plan.md § Build steps 11 (scope, all-day
-  reminder at midnight, private/free events, meetings from Google, deleted or declined in Google ends sync, the
+- [ ] T056 [P] Append to the end of `docs/DECISIONS.md` the six lines of plan.md § Build steps 11 (scope, no Google
+  reminder for all-day activities, private/free events, meetings from Google, deleted or declined in Google ends sync, the
   15-minute job and after-response pushes), each ending "(SF-124)". There is no "Departs from blueprint" line (no
   blueprint).
 - [ ] T057 Run `npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`.

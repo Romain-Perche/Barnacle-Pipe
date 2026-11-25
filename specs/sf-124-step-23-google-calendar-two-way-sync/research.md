@@ -62,7 +62,7 @@ Each section: Decision, Rationale, Alternatives considered. References to Google
     (`templates.calendar_description`);
   - `start`/`end`: §5;
   - `reminders`: `{ useDefault: false, overrides: [{ method: "email", minutes: M }, { method: "popup", minutes: M }] }`.
-    M = 15 with a time, 0 without (§19). Done: `{ useDefault: false, overrides: [] }`;
+    M = 15 with a time. With no time, or done: `{ useDefault: false, overrides: [] }` (§19);
   - `visibility: "private"`;
   - `transparency`: `"transparent"` for all-day, `"opaque"` with a time;
   - `extendedProperties.private`: `{ barnacleCrmActivity: "<id>" }`;
@@ -379,12 +379,14 @@ Each section: Decision, Rationale, Alternatives considered. References to Google
 
 ## §19 Reminder of an activity with no time
 
-- **Decision**: overrides `email` and `popup` at **0 minutes** (the start of the all-day event: midnight in the user's
-  Google Calendar time zone). Recorded in spec § Clarifications and `docs/DECISIONS.md`.
+- **Decision**: **no reminder**: `{ useDefault: false, overrides: [] }`, as for a done activity, so Google's default
+  reminders of the calendar do not apply either. The CRM's in-app reminder at 9:00 (SF-123) covers these activities.
+  Decided by the person at plan review (spec § Clarifications, 2026-11-25) and recorded in `docs/DECISIONS.md`.
 - **Rationale**: `EventReminder.minutes` is "minutes before the start", 0 to 40,320 (discovery). An all-day event
-  starts at midnight, so 9:00 on the day would be −540 and Google refuses it. 0 is the allowed value closest to 9:00
-  on the day. The alternative, 900 (9:00 the day before), is 24 hours off.
-- **Alternatives**: making the event timed at 9:00 (the spec asks for an all-day event); no reminder.
+  starts at midnight, so 9:00 on the day would be −540 and Google refuses it. Midnight (0) and 9:00 the day before
+  (900) were offered and refused by the person.
+- **Alternatives**: 0 minutes (midnight on the day); 900 minutes (9:00 the day before); making the event timed at
+  9:00 (the spec asks for an all-day event).
 
 ## §20 Dependencies
 

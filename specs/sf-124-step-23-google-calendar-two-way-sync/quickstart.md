@@ -18,7 +18,7 @@ Tests to write (Build). Each names what it covers (`// covers FR-…, US… scen
 
 | File | Covers |
 |---|---|
-| `tests/unit/calendar-rules.test.ts` | `eventBody` (title, "✓ ", description and link, reminders 15 / 0 / none, private, transparent, no attendees), `eventTimes` across 29 Mar 2026 and 25 Oct 2026, `fromEvent` (New York offset, all-day ranges, 7 min → 5, 30 h → 1440, 45 kept), `subjectFromTitle` (prefix of own type only, empty → null, 250 → 200), `merge` (each side alone, both → later wins, 30 = null duration), `decideIncoming` (recurring, declined, `eventType`, CRM marker, before `since`, over, no guests, resource guests), `classifyCalendarError`, `newEventId` shape |
+| `tests/unit/calendar-rules.test.ts` | `eventBody` (title, "✓ ", description and link, reminders 15 / none for all-day / none for done, private, transparent, no attendees), `eventTimes` across 29 Mar 2026 and 25 Oct 2026, `fromEvent` (New York offset, all-day ranges, 7 min → 5, 30 h → 1440, 45 kept), `subjectFromTitle` (prefix of own type only, empty → null, 250 → 200), `merge` (each side alone, both → later wins, 30 = null duration), `decideIncoming` (recurring, declined, `eventType`, CRM marker, before `since`, over, no guests, resource guests), `classifyCalendarError`, `newEventId` shape |
 | `tests/unit/gmail-rules.test.ts` (extend) | `askedScopes` with Calendar on/off, `hasAllScopes` refusing a missing Calendar scope |
 | `tests/unit/calendar-fake.test.ts` | the fake against `calendar-api.json`: 409, 410 on tokens, cancelled listing, non-organiser 403, scope 403, unreachable |
 | `tests/integration/migrate.test.ts` (extend) | `0019`: columns, checks, RLS on `calendar_events` |
@@ -37,7 +37,8 @@ Tests to write (Build). Each names what it covers (`// covers FR-…, US… scen
 2. Open **`/dev/fake-calendar`**: Ada's seeded activities and the "Fake intro meeting" are there, and the meeting is
    on the Activities list.
 3. Schedule a Call tomorrow at 10:00 for 30 minutes, with a note. Reload the fake calendar page: "Call · …" 10:00–10:30,
-   the note and the link in the description, email and pop-up 15 minutes before, private, no guests.
+   the note and the link in the description, email and pop-up 15 minutes before, private, no guests. A Task with no
+   time shows as an all-day event, free, with no reminder.
 4. On the fake page, move it to 11:00–12:00 with "deliver the notice": the activity shows 11:00 with a duration of
    1 hour.
 5. Move it again without delivering, then press `[ RUN THE 15-MINUTE CHECK ]`: the CRM follows.

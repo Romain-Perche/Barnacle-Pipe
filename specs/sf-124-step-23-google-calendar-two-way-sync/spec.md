@@ -15,11 +15,11 @@
 - Q: Does this issue also build the in-app reminder, or only Google's email and pop-up reminders? → A: Only Google's reminders: the in-app reminder is built by SF-123 (Step 17 - Activity reminders in the app); the Google reminders here fire at the same times as SF-123's (B).
 - Q: When a synced event is deleted in Google Calendar, what happens to the activity in the CRM? → A: The activity stays in the CRM unchanged and stops syncing: it is no longer in any calendar and is never put back (B).
 - Q: Which design? → A: Design: A, one Gmail card on Settings with one added "Calendar" line and the Calendar reconnect message in it; nothing changes on activity screens (see `design-options.html`).
+- Q: Google cannot send a reminder at 9:00 on the day of an all-day event. When does it remind you about an activity with no time? → A: No Google reminder at all for activities with no time: no email and no pop-up at midnight (the event is sent with no reminders, and not Google's default ones). The CRM's in-app reminder at 9:00 (SF-123) covers them. Activities with a time keep the email and pop-up 15 minutes before. (alexis@barnacle.ai)
 
 ### Plan 2026-11-25
 
 - Q: Which Calendar permission does the CRM ask Google for? → A: `calendar.events.owned` ("See, create, change, and delete events on Google calendars you own"), the narrowest permission that lets the CRM read and change events of the user's primary calendar; not `calendar.events` (every calendar the user can reach) nor `calendar` (sharing and calendar settings) (decided by the factory, to confirm)
-- Q: Google allows a reminder only 0 to 40,320 minutes before an event starts, and an all-day event starts at midnight: "9:00 UK time on the day" cannot be set on an all-day event. What does the event of an activity with no time get? → A: an email reminder and a pop-up at the start of its day (0 minutes before: midnight in the user's Google Calendar time zone), the closest time Google allows; the CRM's in-app reminder stays at 9:00 (SF-123) (decided by the factory, to confirm)
 - Q: Who else sees the events the CRM puts in a user's calendar (teammates who can see that calendar, people it is shared with)? → A: every event the CRM makes is marked private in Google: people who can see the calendar see only "busy" at that time, never the subject or the note (activities on private people stay private); a task with no time is marked "free", so it never blocks the day (decided by the factory, to confirm)
 - Q: When a meeting that came in from Google is deleted in the CRM, is the Google event deleted too (which, when the user organised it, cancels it for its guests, the CRM contact included, without telling them)? → A: no: deleting the activity ends its sync and leaves the Google event as it is; this replaces "deleted" in US4 scenario 3. The same goes when such a meeting is reassigned to a teammate or hidden from the user: its event stays in the user's calendar, unsynced, and no copy is made in anyone else's (decided by the factory, to confirm)
 - Q: What does the CRM change on a meeting that came in from Google, whose title and guests are shared with the people invited? → A: only its title (the subject, with no "Meeting · " and no "✓ ") and its start and end, never its description, guests, reminders or privacy; ticking or unticking it changes nothing in Google. When Google refuses a change because the user did not organise the event, the CRM keeps its own value and the event keeps Google's until the next change in Google comes back (decided by the factory, to confirm)
@@ -49,7 +49,7 @@ A team member opens Settings. The Google card (the SF-118 Gmail card) now asks f
 
 ### User Story 2 - My activities appear in my Google Calendar (Priority: P1)
 
-Every planned activity assigned to a connected user appears in their primary Google Calendar: at its date and time for its duration, or as an all-day event when it has no time, titled with its type and subject, with its note and a link back to it in the CRM, and with an email reminder and a pop-up from Google at the same times as the in-app reminder of SF-123. Whatever is done to the activity in the CRM is reflected in the event.
+Every planned activity assigned to a connected user appears in their primary Google Calendar: at its date and time for its duration, or as an all-day event when it has no time, titled with its type and subject, with its note and a link back to it in the CRM, and, when it has a time, with an email reminder and a pop-up from Google 15 minutes before, as the in-app reminder of SF-123 (an activity with no time gets no Google reminder: the in-app reminder at 9:00 covers it). Whatever is done to the activity in the CRM is reflected in the event.
 
 **Why this priority**: This is the main promise ("activities sync both ways with each user's Google Calendar", PRODUCT §5) and the only way users get an email reminder (DECISIONS 2026-11-24).
 
@@ -59,7 +59,7 @@ Every planned activity assigned to a connected user appears in their primary Goo
 
 1. **Given** Ada is connected, **When** she schedules "Call Ada about the proposal", a Call due 2 Dec 2026 at 10:00 for 30 minutes, assigned to herself, with the note "Bring the price list", **Then** her primary calendar has one event "Call · Call Ada about the proposal" on 2 Dec 2026 from 10:00 to 10:30 UK time, whose description holds the note and a link that opens the activity in the CRM, with no guests, an email reminder and a pop-up 15 minutes before, and no invitation sent to anyone.
 2. **Given** an activity with a time but no duration, **When** it is synced, **Then** the event lasts 30 minutes [decided by the factory, to confirm].
-3. **Given** a task "Send contract" due 3 Dec 2026 with no time, **When** it is synced, **Then** the event is an all-day event on 3 Dec 2026 titled "Task · Send contract", with an email reminder and a pop-up at 9:00 UK time on 3 Dec.
+3. **Given** a task "Send contract" due 3 Dec 2026 with no time, **When** it is synced, **Then** the event is an all-day event on 3 Dec 2026 titled "Task · Send contract", with no reminder at all (no email, no pop-up, not Google's default ones) (clarified 2026-11-25).
 4. **Given** a synced activity, **When** someone who can see it changes its subject, type, note, date, time or duration in the CRM, **Then** the same event is changed to match (title, description, times, all-day or not, reminders); no second event is made.
 5. **Given** a synced activity, **When** it is ticked done, **Then** the event stays in the calendar with its title starting "✓ " and no reminders; when it is unticked, the title and reminders are back [decided by the factory, to confirm].
 6. **Given** a synced activity assigned to Ada, **When** it is reassigned to Bob, **Then** the event is removed from Ada's calendar and one appears in Bob's if Bob is connected; if Bob is not, no calendar has it.
@@ -140,7 +140,7 @@ In these cases the tester reads the result on the fake calendar page (FR-015), t
 **From the CRM to Google**
 
 - **FR-004**: Every planned activity, due today or later at the time it is first synced, assigned to a user with a working Calendar connection MUST have exactly one event in that user's primary calendar, created at most 15 minutes after the activity is saved (immediately when Google answers).
-- **FR-005**: The event MUST have: the activity's date and UK time and its duration (30 minutes when it has a time but no duration), or be an all-day event on its date when it has no time; the title "<Type> · <subject>" (except meetings that came from Google, which keep the event's title); a description holding the note and a link that opens the activity in the CRM; no guests; one email reminder and one pop-up, 15 minutes before for an activity with a time and at 9:00 UK time on the day for one without. The CRM MUST never send an invitation or any email itself.
+- **FR-005**: The event MUST have: the activity's date and UK time and its duration (30 minutes when it has a time but no duration), or be an all-day event on its date when it has no time; the title "<Type> · <subject>" (except meetings that came from Google, which keep the event's title); a description holding the note and a link that opens the activity in the CRM; no guests; for an activity with a time, one email reminder and one pop-up 15 minutes before; for one without a time, no reminder at all (not Google's default ones either: the in-app reminder at 9:00 of SF-123 covers it) (clarified 2026-11-25). The CRM MUST never send an invitation or any email itself.
 - **FR-006**: Editing, rescheduling, ticking, unticking or deleting an activity, and deleting a record that deletes it, MUST update or remove its event (done: "✓ " title start, no reminders); reassigning MUST remove the event from the old assignee's calendar and create it in the new assignee's calendar when they are connected.
 - **FR-007**: Saving an activity MUST never fail or wait because Google is slow or unreachable; any change not yet in Google MUST be sent by the next 15-minute check.
 
@@ -153,7 +153,7 @@ In these cases the tester reads the result on the fake calendar page (FR-015), t
 
 **Reminders**
 
-- **FR-012**: The only reminders added here are the email and pop-up reminders on the Google event (FR-005), at the same times as the in-app reminder of SF-123; this issue adds no in-app reminder and sends no email (clarified 2026-11-25).
+- **FR-012**: The only reminders added here are the email and pop-up reminders on the Google event of an activity with a time (FR-005), 15 minutes before, as the in-app reminder of SF-123; an activity with no time gets no Google reminder; this issue adds no in-app reminder and sends no email (clarified 2026-11-25).
 
 **Access, messages, settings, fakes**
 
@@ -189,7 +189,7 @@ In these cases the tester reads the result on the fake calendar page (FR-015), t
 - The in-app reminder before an activity is due is SF-123 (Step 17); this issue only matches its times on the Google event.
 - "Primary calendar" is the user's own default Google calendar; other calendars are out of scope (user request), as is inviting contacts from the CRM.
 - The link in the event opens the activity's box in the CRM (the Activities list with the activity open); it works only for users who can see the activity.
-- Google may not allow a reminder after the start of an all-day event ("9:00 on the day"); if its published description confirms this in the plan, the closest allowed setting is used and the choice recorded in `docs/DECISIONS.md` [to verify in the plan].
+- Google does not allow a reminder after the start of an all-day event ("9:00 on the day"), so activities with no time get no Google reminder; the choice is recorded in `docs/DECISIONS.md` (clarified 2026-11-25).
 - The 15-minute check is the existing Gmail scheduled job (SF-118), extended; no new scheduled job.
 - Values marked "[decided by the factory, to confirm]" are informed guesses to be confirmed at review.
 - Technical choices already in `docs/DECISIONS.md` and `AGENTS.md` apply and are not repeated here.

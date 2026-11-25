@@ -74,6 +74,7 @@ desktop browsers.
 on the Settings card, 1 machine route (`/calendar/push`), 1 dev-only page (`/dev/fake-calendar`), the extended cron.
 
 No NEEDS CLARIFICATION is left. The factory's choices are in spec.md § Clarifications › Plan 2026-11-25 ("to confirm").
+The all-day reminder was decided at plan review (2026-11-25): no Google reminder on events of activities with no time.
 
 ## Constitution Check
 
@@ -220,8 +221,9 @@ vitest.config.ts                                   # env CALENDAR_SYNC=on
       `calendar_events`), `/calendar/push`, `/dev/fake-calendar`, the seeder;
     - at the end of `docs/DECISIONS.md`, after the person confirms the factory choices at plan review, one line each:
       - "Google Calendar sync asks for calendar.events.owned and only uses the user's primary calendar (SF-124)";
-      - "An activity with no time gets Google's email and pop-up reminders at the start of its day (midnight), the
-        closest Google allows to 9:00; the in-app reminder stays at 9:00 (SF-124)";
+      - "An activity with no time gets no Google reminder (Google cannot remind at 9:00 on an all-day event); the
+        in-app reminder at 9:00 covers it; activities with a time get Google's email and pop-up 15 minutes before
+        (SF-124)";
       - "Events the CRM puts in Google Calendar are private; tasks with no time are free time (SF-124)";
       - "Deleting in the CRM a meeting that came from Google leaves the Google event; the CRM changes only its title
         and times, never its guests, description or reminders (SF-124)";

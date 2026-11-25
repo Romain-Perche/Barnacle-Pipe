@@ -118,7 +118,7 @@ After a successful result, and only then, each of these calls `runAfterResponse(
 - `classifyCalendarError(status: number, body: unknown, op: "list" | "insert" | "write"): "key_refused" |
   "no_calendar_access" | "unavailable" | "sync_token_gone" | "event_gone" | "exists" | "event_refused"`;
 - `newEventId(): string` (`"crm"` + 32 base32hex characters);
-- `REMINDER_MINUTES_TIMED = 15`, `REMINDER_MINUTES_ALL_DAY = 0`, `DEFAULT_EVENT_MINUTES = 30`.
+- `REMINDER_MINUTES_TIMED = 15`, `DEFAULT_EVENT_MINUTES = 30` (an all-day event has no reminder).
 
 ### `src/server/activities/rules.ts`
 
