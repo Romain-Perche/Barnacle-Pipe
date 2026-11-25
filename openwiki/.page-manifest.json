@@ -37,11 +37,11 @@
       "completedRunId": "2a5b843d-b0bd-4313-87e9-e279a41ed369"
     },
     "/openwiki/features/activities.md": {
-      "gitHead": "775e0b2da798779019ffedd020b25df781d23862",
-      "sourceFingerprint": "sha256:10e811c2b3187e58467280b22d132655bf1f404436d79fe8b99bae375906371b",
-      "pageVersion": "sha256:fbf968af73036f74ee05dd3ad2d81a6e364110c46de262a879a85fa583d933bd",
+      "pageVersion": "sha256:3ffef343c92b11892f0ee9203f85b6216c008b366b0d65b27b40152806601696",
       "completedBy": "claude-code",
-      "completedRunId": "8000e55d-6c83-4c8e-9a41-b2659483f9c6"
+      "completedRunId": "d2bd0906-830f-4c61-99ce-5d94943759a5",
+      "gitHead": "826746811f2b3dc339283522a11a764ec458b065",
+      "sourceFingerprint": "sha256:aa0f1c216219cbe8c068ad7c116dfe8fdc486a0127620c6cbc527aab0a5ed26e"
     },
     "/openwiki/features/campaigns.md": {
       "gitHead": "ef8b0b14333581636a4bdf4429a47d48191412df",
@@ -65,11 +65,11 @@
       "completedRunId": "bb1fde7c-fa51-4d40-afd4-2546263effa9"
     },
     "/openwiki/features/gmail.md": {
+      "gitHead": "47f0fbfa9bb0990b0e68177cfdb478bc21143a10",
+      "sourceFingerprint": "sha256:3845560e424ac5715ae7e925e547c238f4509e988dad86d91bbf85c05be16094",
       "pageVersion": "sha256:df059bd394a31ba3ffe5924397f422067b759de468775c59ea06f330b59678f6",
       "completedBy": "claude-code",
-      "completedRunId": "b2eaf7f0-80d0-4901-aab0-b4d8469debd1",
-      "gitHead": "47f0fbfa9bb0990b0e68177cfdb478bc21143a10",
-      "sourceFingerprint": "sha256:3845560e424ac5715ae7e925e547c238f4509e988dad86d91bbf85c05be16094"
+      "completedRunId": "b2eaf7f0-80d0-4901-aab0-b4d8469debd1"
     },
     "/openwiki/features/people-and-organisations.md": {
       "gitHead": "c5ea965bf4f3588e8d84adb5ea412b1774d93b80",

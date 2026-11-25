@@ -16,10 +16,14 @@ sources:
     resource: repo://src/app/(app)/activities/actions.ts
   - id: sf109-src-migration
     resource: repo://migrations/0008_activities.sql
+  - id: openwiki-source-5511f800eea987de057af6d1
+    resource: repo://migrations/0017_activity_reminders.sql
+  - id: openwiki-source-9ebb64fab176b6e210f7c3a3
+    resource: repo://src/server/notifications.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T16:50:25.265Z
-generated: { by: "claude-code", at: "2026-11-23T16:50:25.265Z" }
+    at: 2026-11-25T11:28:35.072Z
+generated: { by: "claude-code", at: "2026-11-25T11:28:35.072Z" }
 ---
 
 # Activities (calls, meetings and tasks)
@@ -55,5 +59,13 @@ assignee and an optional note. It can link to a deal, a person and an organisati
 - **Notifications.** An activity assigned to someone other than the assigner is a notification on the
   Notifications page and in the unread count, tracked by columns on the activity row (`assignment_read_at`).
   See [People and organisations](people-and-organisations.md) for mentions, which share that page.
+- **Reminders (SF-123).** Each planned activity has one in-app reminder for its assignee (themselves included), kept on
+  the activity row in `remind_at` and `reminder_read_at` (migration `0017_activity_reminders.sql`, which also gives
+  future planned activities theirs). `reminderAt` in `rules.ts` is 15 minutes before a timed activity and 09:00 UK on
+  the day for an untimed one; `dueMoment` is the time after which there is none; `reminderFor(due, now)` returns the
+  reminder or null. Schedule, edit (new due or assignee: a new unread one) and untick set it. In
+  `src/server/notifications.ts` reminders are the third notification kind (`r-<id>`), read through `myReminders()`
+  (which uses `visibleActivity()`) from `remind_at` while the activity is planned; the functions take `now` last.
+  In the app only, no email.
 - **Board.** The deals board shows each deal's next activity or a warning on its card.
 - **Seed.** `src/seed/activities.ts` adds fake activities (see [Migrations and seeding](../operations/migrations-and-seeding.md)).

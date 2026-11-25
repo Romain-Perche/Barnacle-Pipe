@@ -2635,6 +2635,30 @@
       "sources": [
         "migrations/0016_gmail.sql"
       ]
+    },
+    {
+      "from": "activities-table",
+      "to": "notifications",
+      "data": "reminders due for the assignee",
+      "sources": [
+        "src/server/notifications.ts"
+      ]
+    },
+    {
+      "from": "notifications",
+      "to": "activities-table",
+      "data": "reminder read marks",
+      "sources": [
+        "src/server/notifications.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "activities-table",
+      "data": "reminder columns",
+      "sources": [
+        "migrations/0017_activity_reminders.sql"
+      ]
     }
   ]
 }

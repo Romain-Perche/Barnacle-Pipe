@@ -43,9 +43,9 @@ flowchart LR
     subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
         n23["Supabase Storage"]
     end
-    n8 -->|"17 flows"| n2
+    n8 -->|"18 flows"| n2
     n8 -->|"7 flows"| n20
-    n2 -->|"12 flows"| n8
+    n2 -->|"13 flows"| n8
     n2 -->|"next activity per deal"| n4
     n15 -->|"2 flows"| n8
     n15 -->|"pipeline and stage changes"| n4
@@ -81,7 +81,7 @@ flowchart LR
     n12 -->|"auth code, PKCE verifier, client id and secret"| n21
     n12 -->|"2 flows"| n20
     n21 -->|"access token, then email, domain and name"| n12
-    n3 -->|"13 flows"| n2
+    n3 -->|"14 flows"| n2
     n3 -->|"table definition"| n1
     n3 -->|"fake deals / table definitions"| n5
     n3 -->|"schema"| n7
@@ -177,9 +177,9 @@ flowchart LR
     subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
         n15["Supabase Storage"]
     end
-    n1 -->|"51 flows"| n4
+    n1 -->|"52 flows"| n4
     n1 -->|"14 flows"| n12
-    n4 -->|"35 flows"| n1
+    n4 -->|"36 flows"| n1
     n5 -->|"4 flows"| n1
     n2 -->|"3 flows"| n1
     n6 -->|"push notice and 15-minute check"| n1
@@ -193,7 +193,7 @@ flowchart LR
     n1 -->|"OAuth and Gmail requests"| n10
     n1 -->|"auth code, PKCE verifier, client id and secret"| n13
     n13 -->|"access token, then email, domain and name"| n1
-    n3 -->|"15 flows"| n4
+    n3 -->|"16 flows"| n4
     n3 -->|"schema / table definition"| n1
     n11 -->|"SQL migration text"| n3
     n14 -->|"people, organisations, deals, fields"| n1
@@ -289,9 +289,9 @@ flowchart LR
     n20[["Sign-in and sessions"]]
     n21[["Unsubscribe"]]
     n22[["Signed-in app and user admin"]]
-    n18 -->|"2 flows"| n1
+    n18 -->|"3 flows"| n1
     n18 -->|"4 flows"| n7
-    n1 -->|"activity rows / assignments by others"| n18
+    n1 -->|"3 flows"| n18
     n1 -->|"next activity per deal"| n15
     n1 -->|"done activities read into timelines"| n10
     n18 -->|"lead source and label changes"| n2
@@ -312,7 +312,7 @@ flowchart LR
     n16 -->|"file rows, upload and cleanup records"| n5
     n16 -->|"file added and deleted events"| n10
     n5 -->|"file rows visible to the user"| n16
-    n14 -->|"fake activities / schema"| n1
+    n14 -->|"fake activities / reminder columns / schema"| n1
     n14 -->|"2 flows"| n3
     n14 -->|"table definitions"| n4
     n14 -->|"fake files / table definitions"| n5
@@ -381,7 +381,7 @@ flowchart LR
     n1 -->|"seed command"| n4
     n12 -->|"DATABASE_URL"| n3
     n12 -->|"APP_ENV, VERCEL_ENV, DATABASE_URL"| n4
-    n3 -->|"5 flows"| n6
+    n3 -->|"6 flows"| n6
     n3 -->|"table definition"| n5
     n3 -->|"table definitions"| n7
     n3 -->|"schema"| n8
@@ -633,7 +633,7 @@ flowchart LR
     n3 -->|"2 flows"| n15
     n3 -->|"activities list and next activities"| n2
     n15 -->|"activity rows"| n3
-    n15 -->|"assignments by others"| n10
+    n15 -->|"2 flows"| n10
     n1 -->|"new, renamed and removed lead sources and labels"| n5
     n1 -->|"field and choice changes"| n7
     n4 -->|"ambassadors, referred people and deals, latest updates"| n2
@@ -661,7 +661,7 @@ flowchart LR
     n9 -->|"note deleted notice"| n13
     n9 -->|"timeline notes"| n2
     n9 -->|"note events"| n15
-    n10 -->|"assignment read marks"| n15
+    n10 -->|"assignment read marks / reminder read marks"| n15
     n10 -->|"current unread count"| n21
     n10 -->|"read marks"| n8
     n10 -->|"notifications list"| n2
@@ -1064,6 +1064,7 @@ flowchart LR
 | Postgres activities | Activities (calls, meetings, tasks) | activity rows | `src/server/activities/list.ts` |
 | Postgres activities | Deals board and deal pages | next activity per deal | `src/server/deals/deals.ts` |
 | Postgres activities | Notifications page | assignments by others | `src/server/notifications.ts` |
+| Postgres activities | Notifications page | reminders due for the assignee | `src/server/notifications.ts` |
 | Postgres activities | timeline_events table | done activities read into timelines | `src/server/records/timeline.ts` |
 | Barnacle admin | Lead sources and labels admin | new, renamed and removed lead sources and labels | `src/app/(app)/admin/lead-sources-and-labels/actions.ts` |
 | Barnacle admin | Custom fields | field and choice changes | `src/app/(app)/admin/custom-fields/actions.ts` |
@@ -1154,6 +1155,7 @@ flowchart LR
 | Google sign-in routes | Google OAuth and userinfo API | auth code, PKCE verifier, client id and secret | `src/server/auth/google.ts` |
 | Google sign-in routes | Barnacle staff user | redirect to Google account chooser | `src/app/auth/google/start/route.ts`, `src/server/auth/google.ts` |
 | Google OAuth and userinfo API | Google sign-in routes | access token, then email, domain and name | `src/server/auth/google.ts` |
+| db:migrate command | Postgres activities | reminder columns | `migrations/0017_activity_reminders.sql` |
 | db:migrate command | Postgres activities | schema | `migrations/0008_activities.sql` |
 | db:migrate command | Postgres campaigns | table definition | `scripts/migrate.ts` |
 | db:migrate command | Custom fields and choices | table definitions | `migrations/0010_custom_fields.sql` |
@@ -1183,6 +1185,7 @@ flowchart LR
 | Notes and @mentions | Barnacle staff user | timeline notes | `src/app/(app)/records/RecordTimeline.tsx` |
 | Notes and @mentions | timeline_events table | note events | `src/server/records/notes.ts` |
 | Notifications page | Postgres activities | assignment read marks | `src/server/notifications.ts` |
+| Notifications page | Postgres activities | reminder read marks | `src/server/notifications.ts` |
 | Notifications page | Signed-in layout and sidebar | current unread count | `src/app/(app)/layout.tsx`, `src/app/(app)/notifications/actions.ts` |
 | Notifications page | Postgres note mentions | read marks | `src/server/notifications.ts` |
 | Notifications page | Barnacle staff user | notifications list | `src/app/(app)/notifications/page.tsx` |
