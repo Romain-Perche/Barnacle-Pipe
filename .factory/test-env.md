@@ -700,6 +700,8 @@
     Round 1: 41 of 41 scenarios pass; "Extra reassign while refused" fails (stale event, code review finding).
     Round 2 (after fix round 1): 42 of 42 pass (edge 10 through check-sf124-edge9.js: the b script's own edit-refusal probe
     reports FAIL because no [ EDIT ] is offered on the archived person's page, which is the SF-109 behaviour).
+    Round 3 (after merging origin/main with SF-123 reminders): same order on fresh data, 42 of 42 pass (edge 10 again through
+    check-sf124-edge9.js; the b script's probe FAIL is the same known false negative).
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
