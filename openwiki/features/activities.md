@@ -16,10 +16,14 @@ sources:
     resource: repo://src/app/(app)/activities/actions.ts
   - id: sf109-src-migration
     resource: repo://migrations/0008_activities.sql
+  - id: openwiki-source-5511f800eea987de057af6d1
+    resource: repo://migrations/0017_activity_reminders.sql
+  - id: openwiki-source-9ebb64fab176b6e210f7c3a3
+    resource: repo://src/server/notifications.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T16:50:25.265Z
-generated: { by: "claude-code", at: "2026-11-23T16:50:25.265Z" }
+    at: 2026-11-25T11:47:45.053Z
+generated: { by: "claude-code", at: "2026-11-25T11:47:45.053Z" }
 ---
 
 # Activities (calls, meetings and tasks)
@@ -55,5 +59,10 @@ assignee and an optional note. It can link to a deal, a person and an organisati
 - **Notifications.** An activity assigned to someone other than the assigner is a notification on the
   Notifications page and in the unread count, tracked by columns on the activity row (`assignment_read_at`).
   See [People and organisations](people-and-organisations.md) for mentions, which share that page.
+- **Reminders (SF-123).** A planned activity has one in-app reminder for its assignee (themselves included), kept in
+  `remind_at` / `reminder_read_at` on the activity row: 15 minutes before the due time, or 09:00 UK for an untimed
+  activity (`reminderAt` / `reminderFor` in `src/server/activities/rules.ts`). Schedule, edit (new due time or assignee:
+  a new unread reminder) and untick set it; none is set once the due moment has passed. It is the third kind on the
+  Notifications page (`r-<id>`, read through `myReminders` with `visibleActivity()`). No email is sent.
 - **Board.** The deals board shows each deal's next activity or a warning on its card.
 - **Seed.** `src/seed/activities.ts` adds fake activities (see [Migrations and seeding](../operations/migrations-and-seeding.md)).
