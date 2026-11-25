@@ -156,7 +156,7 @@ Reply (2026-11-25, alexis@barnacle.ai): option A, without the Calendar sentence.
 before timed activities, and SF-124 (Google Calendar two-way sync) records its own line for its email reminders; the
 line says nothing about the Calendar issue's timing, and the spec's Assumptions no longer ask for it.
 
-One line, not a second one: the reminders rule stays in one place. No code change, no spec change (the user gets the
+One line, not a second one: the reminders rule stays in one place. No code change; in the spec only the Assumptions line about the lead time (the user gets the
 same app).
 
 **Files**: `tests/unit/decisions.test.ts` (new `describe` for SF-123), `docs/DECISIONS.md`.
