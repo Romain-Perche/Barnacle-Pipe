@@ -234,6 +234,53 @@ vitest.config.ts                                   # env CALENDAR_SYNC=on
     - `.factory/test-env.md` is written by Build and the AI review, not here.
     - No blueprint exception, so no "Departs from blueprint" line.
 
+## Fix round 1
+
+**Problem (AI review).** (1) Ada's Google key is refused ("needs reconnecting"). Her synced call is reassigned to Linus.
+Linus's next sync runs push step 3 in `src/server/calendar/sync.ts`, which deletes every CRM link of the activity held by
+another connection that is not `working` or lacks the Calendar scope. Ada's link is deleted, but her Google event is not.
+When Ada reconnects, no link points at that event, so step 1 (gone, reassigned or hidden) never removes it: the old event
+stays in her calendar for good. This breaks FR-006 ("reassigning MUST remove the event from the old assignee's
+calendar"). The same happens when Ada's connection is `working` but has lost the Calendar scope, and when she is
+disconnected and later connects again. (2) `applyLinkedChange` reads the activity inside its merge transaction
+(`select … from activities a where a.id = … for update`) with no assignee or `visibleActivity()` check (AGENTS.md: every
+`activities` read uses it). If the activity is reassigned or hidden between `mine()` and the transaction, a Google change
+is written to an activity that is no longer the user's. Minor: making a person or deal private, and the deactivation
+hand-over, do not call `calendarAfterChange`, so a hidden event stays up to 15 minutes; a reconnect after a disconnect
+starts a new sync token, so Google changes made while disconnected are not read (no DECISIONS line says so).
+
+**Cause.** Step 3 frees the activity for the new assignee by deleting the old link, the only record of the old event.
+Step 1 removes a CRM event only through its link. The merge transaction re-reads the activity by id alone.
+
+**Fix.**
+1. Step 3 detaches instead of deleting: for a CRM link (`origin = 'crm'`, `state <> 'ended'`) of an activity now
+   assigned to this user, held by another connection that is not syncing (`state <> 'working'` or no Calendar scope),
+   `update calendar_events set activity_id = null, updated_at = now()`. The activity has no link any more (the
+   `unique (activity_id)` slot is free), so the new assignee's event is created in the same run. The detached link
+   keeps its `google_event_id` and `connection_id`. It is the same row a deleted activity leaves (`on delete set null`):
+   step 1 of the old connection already deletes its Google event (404/410 accepted) and the link, the next time that
+   connection syncs with Calendar access (reconnect from "needs reconnecting", Calendar scope given again, or connect
+   after a disconnect). While the old connection is not syncing, its event stays unchanged, as the spec says for a
+   disconnected user. No migration: `activity_id` is already nullable and a CRM link with no activity is allowed.
+2. The merge transaction's activity read becomes
+   `… where a.id = ${a.id} and a.assignee_id = ${conn.userId} and ${visibleActivity(db, conn.userId)} for update`;
+   no row → no change, nothing written (the next push step 1 handles the link).
+3. `updatePerson` (`src/app/(app)/people/actions.ts`), `updateDeal` (`src/app/(app)/deals/actions.ts`) and `handOver`
+   (`src/app/(app)/admin/users/actions.ts`) call `runAfterResponse(() => calendarAfterChange([]))` after a successful
+   save, as the delete actions already do, so events of activities that became hidden or changed hands leave Google
+   right away.
+4. One `docs/DECISIONS.md` line: "After a disconnect, Calendar sync starts again from the new connection: changes made
+   in Google while disconnected are not read; the CRM's values are sent again (SF-124)". AGENTS.md's `calendar/` line
+   gains "a reassigned activity's link on a connection that is not syncing is detached (activity_id null), never
+   deleted, so its event is removed when that connection syncs again".
+
+**Files.** `src/server/calendar/sync.ts`, `src/app/(app)/people/actions.ts`, `src/app/(app)/deals/actions.ts`,
+`src/app/(app)/admin/users/actions.ts`, `docs/DECISIONS.md`, `AGENTS.md`, tests in
+`tests/integration/calendar-lifecycle.test.ts` and `tests/integration/calendar-pull.test.ts`.
+
+**Check.** T059 and T060 fail on the current code and pass once the fix is built. The spec gains the edge case
+"Reassigned while needs reconnecting", which the AI review performs on the fake calendar page.
+
 ## Outside services
 
 - Google Calendar API v3, scope `calendar.events.owned` (events.insert/patch/delete/list/watch, channels.stop): schema https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/calendar/v3/calendar-api.json
