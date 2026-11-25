@@ -4,7 +4,8 @@
 // can steer it: POST /__control with JSON {op, args} calls the fake's own switches (slowDownEvery, failNext, hangNext,
 // refuseToken, addPerson, addOrganization, addField, addUser, addCompany, deletePerson, deleteOrganization,
 // noMarketingApp), {op:"reset"} rebuilds it, {op:"down", args:[true|false]} answers every call with a network error
-// (socket destroyed), {op:"requests"} returns the recorded requests (never the token).
+// (socket destroyed), {op:"requests"} returns the recorded requests (never the token). SF-122: an addFile byte argument
+// is sent as {"__b64": "<base64>"} or {"__fill": [length, byte]}.
 // Run: npx tsx .factory/run/pipedrive-server.ts   (see .factory/test-env.md).
 import http from "node:http";
 import { buildDevFake, type FakePipedrive } from "../../src/server/pipedrive/fake-pipedrive";
@@ -19,7 +20,12 @@ http
     for await (const c of req) chunks.push(c as Buffer);
     const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
     if (url.pathname === "/__control" && req.method === "POST") {
-      const { op, args = [] } = JSON.parse(Buffer.concat(chunks).toString() || "{}");
+      const { op, args: raw = [] } = JSON.parse(Buffer.concat(chunks).toString() || "{}");
+      // SF-122: bytes for addFile: {"__b64": "..."} or {"__fill": [length, byte]}
+      const args = (raw as unknown[]).map((a) =>
+        a && typeof a === "object" && "__b64" in (a as object) ? new Uint8Array(Buffer.from((a as { __b64: string }).__b64, "base64"))
+        : a && typeof a === "object" && "__fill" in (a as object) ? new Uint8Array((a as { __fill: number[] }).__fill[0]).fill((a as { __fill: number[] }).__fill[1])
+        : a);
       let out: unknown = null;
       try {
         if (op === "reset") fake = buildDevFake();

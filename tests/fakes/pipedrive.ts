@@ -8,17 +8,27 @@
 // - /v1/* against pipedrive_v1_openapi.yml: the path and method exist, every query parameter is declared (the app never
 //   sends `api_token` in the address: research.md §9), every property of the 200 answer's `data` is declared, and the
 //   `x-api-token` header is there.
+// SF-122: a /v1/* request is checked against pipedrive_v1_openapi.yml when it declares the path and method, else
+// against pipedrive_v1_full_openapi.yml (the error names the file used). A 200 answer that is not JSON (a download) is
+// checked only for a content type its operation declares, never parsed. A request to the fake file host
+// (FILE_HOST, where downloads redirect) is not schema-checked, but throws if it carries x-api-token.
 // A request or answer the schema does not allow throws, and the test fails. Uninstalled after each test.
 import { afterEach } from "vitest";
 import { usePipedriveFetchForTests } from "@/server/pipedrive/api";
-import { FakePipedrive } from "@/server/pipedrive/fake-pipedrive";
-import { answerProperties, findOperation, loadPipedriveV1, loadPipedriveV2, queryParameters, type OpenApi, type Schema } from "./pipedrive-schema";
+import { FakePipedrive, FILE_HOST } from "@/server/pipedrive/fake-pipedrive";
+import {
+  answerProperties, answerContentTypes, findOperation, hasOperation, loadPipedriveV1, loadPipedriveV1Full, loadPipedriveV2, queryParameters,
+  type OpenApi, type Schema,
+} from "./pipedrive-schema";
 
 // A fixed test key (32 bytes, base64) for sealing tokens; tests never use a real Pipedrive token.
 export const TEST_PIPEDRIVE_KEY = Buffer.alloc(32, 9).toString("base64");
 
 let v1: OpenApi | null = null;
+let v1Full: OpenApi | null = null;
 let v2: OpenApi | null = null;
+// Requests that reached the file host, and whether one carried the token (tests assert none did).
+export const fileHostRequests: { path: string; token: boolean }[] = [];
 
 function typeOk(value: unknown, s: Schema): boolean {
   // Pipedrive's files leave many nullable values undeclared: null is accepted for any property.
@@ -53,12 +63,28 @@ function checkProps(where: string, value: unknown, props: Record<string, Schema>
 
 async function check(req: Request, fake: FakePipedrive): Promise<Response> {
   const url = new URL(req.url);
+  if (url.hostname === FILE_HOST) {
+    const token = req.headers.has("x-api-token");
+    fileHostRequests.push({ path: url.pathname, token });
+    if (token) throw new Error(`GET ${url.hostname}${url.pathname}: the Pipedrive token must never go to the file host`);
+    return fake.fetch(req);
+  }
   const isV2 = url.pathname.startsWith("/api/v2/");
   const isV1 = url.pathname.startsWith("/v1/");
   if (!isV1 && !isV2) throw new Error(`not a Pipedrive address: ${url.pathname}`);
-  const api = isV2 ? (v2 ??= loadPipedriveV2()) : (v1 ??= loadPipedriveV1());
-  const file = isV2 ? "pipedrive_v2_openapi.json" : "pipedrive_v1_openapi.yml";
   const route = url.pathname.slice(isV2 ? "/api/v2".length : "/v1".length);
+  let api: OpenApi;
+  let file: string;
+  if (isV2) {
+    api = v2 ??= loadPipedriveV2();
+    file = "pipedrive_v2_openapi.json";
+  } else if (hasOperation((v1 ??= loadPipedriveV1()), req.method, route)) {
+    api = v1;
+    file = "pipedrive_v1_openapi.yml";
+  } else {
+    api = v1Full ??= loadPipedriveV1Full();
+    file = "pipedrive_v1_full_openapi.yml";
+  }
   if (!req.headers.get("x-api-token")) throw new Error(`${req.method} ${url.pathname}: no x-api-token header`);
   if (url.searchParams.has("api_token")) throw new Error(`${req.method} ${url.pathname}: the token must never be in the address`);
   const op = findOperation(api, req.method, route);
@@ -75,6 +101,12 @@ async function check(req: Request, fake: FakePipedrive): Promise<Response> {
   }
   const res = await fake.fetch(req);
   if (res.status !== 200) return res;
+  const type = (res.headers.get("content-type") ?? "").split(";")[0].trim();
+  if (type !== "application/json") {
+    const declared = answerContentTypes(api, op);
+    if (!declared.includes(type)) throw new Error(`${req.method} ${url.pathname} answer: content type ${type} is not in ${file} (${declared.join(", ")})`);
+    return res;
+  }
   const body = (await res.clone().json()) as { data?: unknown; additional_data?: unknown };
   const shape = answerProperties(api, op);
   const where = `${req.method} ${url.pathname} answer`;
@@ -105,7 +137,14 @@ export function checkedFetch(pathAndQuery: string, headers: Record<string, strin
   return installed(`https://fake.pipedrive.invalid${pathAndQuery}`, { method: "GET", headers });
 }
 
+// A request of the test's own making to the fake file host, through the installed, checking fetch.
+export function checkedFileHost(path: string, headers: Record<string, string> = {}): Promise<Response> {
+  if (!installed) throw new Error("installFakePipedrive() first");
+  return installed(`https://${FILE_HOST}${path}`, { method: "GET", headers });
+}
+
 afterEach(() => {
+  fileHostRequests.length = 0;
   if (installed) usePipedriveFetchForTests(null);
   installed = null;
 });

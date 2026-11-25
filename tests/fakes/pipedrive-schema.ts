@@ -1,4 +1,5 @@
-// The two pinned Pipedrive OpenAPI files the test fake is checked against (SF-117 T011): v2 (JSON) and v1 (YAML),
+// The pinned Pipedrive OpenAPI files the test fake is checked against (SF-117 T011): v2 (JSON) and v1 (YAML), plus
+// (SF-122) the full v1 copy,
 // downloaded by `npm run test:schemas` into .factory/schemas/. A missing or empty file throws (never a skip).
 // Helpers: the operation of a method and path (server prefix stripped, `{id}` templates matched), its declared query
 // parameters (with `enum` and `maximum`), and the declared properties of the `data` of its 200 answer (array items or
@@ -25,6 +26,8 @@ export type OpenApi = { paths: Record<string, Record<string, Operation>>; compon
 
 export const PIPEDRIVE_V2_PATH = path.join(process.cwd(), ".factory/schemas/pipedrive_v2_openapi.json");
 export const PIPEDRIVE_V1_PATH = path.join(process.cwd(), ".factory/schemas/pipedrive_v1_openapi.yml");
+// SF-122: the fuller v1 copy (konfig-sdks/openapi-examples), for the v1 paths the Zenika copy lacks.
+export const PIPEDRIVE_V1_FULL_PATH = path.join(process.cwd(), ".factory/schemas/pipedrive_v1_full_openapi.yml");
 
 function readSchemaFile(file: string): string {
   if (!existsSync(file)) throw new Error(`${file} is missing: run "npm run test:schemas" to download it.`);
@@ -38,6 +41,10 @@ export function loadPipedriveV2(file = PIPEDRIVE_V2_PATH): OpenApi {
 }
 
 export function loadPipedriveV1(file = PIPEDRIVE_V1_PATH): OpenApi {
+  return parse(readSchemaFile(file)) as OpenApi;
+}
+
+export function loadPipedriveV1Full(file = PIPEDRIVE_V1_FULL_PATH): OpenApi {
   return parse(readSchemaFile(file)) as OpenApi;
 }
 
@@ -58,6 +65,20 @@ export function propertiesOf(api: OpenApi, s: Schema | undefined): Record<string
   for (const part of [...(r.allOf ?? []), ...(r.oneOf ?? []), ...(r.anyOf ?? [])]) Object.assign(out, propertiesOf(api, part));
   for (const [k, v] of Object.entries(r.properties ?? {})) out[k] = resolve(api, v) ?? v;
   return out;
+}
+
+export function hasOperation(api: OpenApi, method: string, route: string): boolean {
+  try {
+    findOperation(api, method, route);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// The content types the 200 answer of an operation declares.
+export function answerContentTypes(_api: OpenApi, op: Operation): string[] {
+  return Object.keys(op.responses["200"]?.content ?? {});
 }
 
 export function findOperation(api: OpenApi, method: string, route: string): Operation {

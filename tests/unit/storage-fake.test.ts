@@ -2,7 +2,7 @@
 // field, an unknown query parameter fail) and behaves like Storage (one-path tokens, 60 s read addresses, no overwrite,
 // attachment on download, 25 MB limit), through the app's storage module.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createSignedUploadUrl, newStoragePath, objectInfo, readHead, removeObjects, signedUrl } from "@/server/files/storage";
+import { createSignedUploadUrl, newStoragePath, objectInfo, putSigned, readHead, removeObjects, signedUrl } from "@/server/files/storage";
 import { StorageFake } from "../fakes/storage";
 
 const fake = new StorageFake();
@@ -100,5 +100,23 @@ describe("the happy path and Storage's rules", () => {
     fake.down();
     await expect(objectInfo("files/x")).rejects.toThrow("Storage can't be reached");
     fake.down(false);
+  });
+});
+
+// covers SF-122 T052: the Storage calls of the Pipedrive import's file copy pass the schema; a wrong one fails
+describe("SF-122: the Pipedrive import's Storage calls", () => {
+  it("refuses an undeclared sign-upload body property and an undeclared info path", async () => {
+    await expect(
+      fake.fetch(url("/object/upload/sign/crm-files/files/a"), { method: "POST", headers: { ...auth, "content-type": "application/json" }, body: JSON.stringify({ upsert_mode: true }) }),
+    ).rejects.toThrow(/takes no body in the schema/);
+    await expect(fake.fetch(url("/objects/info/crm-files/files/a"), { headers: auth })).rejects.toThrow(/no GET/);
+  });
+  it("passes sign-upload, the PUT with a 20-second time-out, info and the bulk delete", async () => {
+    const path = newStoragePath();
+    const { url: put } = await createSignedUploadUrl(path);
+    expect(await putSigned(put, new Uint8Array([1, 2, 3]), "application/octet-stream", { timeoutMs: 20_000 })).toBe(true);
+    expect(await objectInfo(path)).toMatchObject({ size: 3 });
+    await removeObjects([path]);
+    expect(await objectInfo(path)).toBeNull();
   });
 });

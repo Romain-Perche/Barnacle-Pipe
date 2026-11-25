@@ -13,11 +13,12 @@ import { ChooseStep } from "./ChooseStep";
 import { ProgressStep } from "./ProgressStep";
 import { ReportStep } from "./ReportStep";
 
-// A part (and its server action) must finish within one request: at most two 10-second Pipedrive calls and one page.
+// A part (and its server action) must finish within one request: a few 10-second Pipedrive calls and one page, or
+// (SF-122) file copies started within 15 seconds, each with a 20-second download and a 20-second upload.
 export const maxDuration = 60;
 
 const STEPS = ["1 CHOOSE", "2 IMPORTING", "3 REPORT"];
-const ERRORS = ["pipedrive_tick_something", "pipedrive_consent_required"] as const;
+const ERRORS = ["pipedrive_tick_something", "pipedrive_consent_required", "files_unreachable"] as const;
 type Search = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
 
