@@ -30,18 +30,18 @@
       "completedRunId": "a8c4062f-b1c1-42b9-95be-3db046a6ad9b"
     },
     "/openwiki/data/database-schema.md": {
+      "gitHead": "5c1710540f1ea767d949a6ae584dd198fcb09b46",
+      "sourceFingerprint": "sha256:982a4e7912706b24a9560a388498fc2ec140378658681f8a6bb3bae441f22c2b",
       "pageVersion": "sha256:65390b7ca4f5bc3e3bee38034b40427b77bb5d47b66ac7f6567ac231eb286677",
       "completedBy": "claude-code",
-      "completedRunId": "dd1e066c-66eb-4e38-9b8d-f3886222e6e3",
-      "gitHead": "5c1710540f1ea767d949a6ae584dd198fcb09b46",
-      "sourceFingerprint": "sha256:982a4e7912706b24a9560a388498fc2ec140378658681f8a6bb3bae441f22c2b"
+      "completedRunId": "dd1e066c-66eb-4e38-9b8d-f3886222e6e3"
     },
     "/openwiki/features/activities.md": {
+      "gitHead": "5c1710540f1ea767d949a6ae584dd198fcb09b46",
+      "sourceFingerprint": "sha256:982a4e7912706b24a9560a388498fc2ec140378658681f8a6bb3bae441f22c2b",
       "pageVersion": "sha256:60ef9393ed1797f1da9050378a8cace7f5472db68d86194434040e84044e505d",
       "completedBy": "claude-code",
-      "completedRunId": "dd1e066c-66eb-4e38-9b8d-f3886222e6e3",
-      "gitHead": "5c1710540f1ea767d949a6ae584dd198fcb09b46",
-      "sourceFingerprint": "sha256:982a4e7912706b24a9560a388498fc2ec140378658681f8a6bb3bae441f22c2b"
+      "completedRunId": "dd1e066c-66eb-4e38-9b8d-f3886222e6e3"
     },
     "/openwiki/features/campaigns.md": {
       "gitHead": "ef8b0b14333581636a4bdf4429a47d48191412df",
@@ -65,11 +65,11 @@
       "completedRunId": "bb1fde7c-fa51-4d40-afd4-2546263effa9"
     },
     "/openwiki/features/gmail.md": {
-      "gitHead": "47f0fbfa9bb0990b0e68177cfdb478bc21143a10",
-      "sourceFingerprint": "sha256:3845560e424ac5715ae7e925e547c238f4509e988dad86d91bbf85c05be16094",
-      "pageVersion": "sha256:df059bd394a31ba3ffe5924397f422067b759de468775c59ea06f330b59678f6",
+      "pageVersion": "sha256:0dbf51542a25cb895874cd3a7306582a9f9493d082bf76d97907b13ab8b37f38",
       "completedBy": "claude-code",
-      "completedRunId": "b2eaf7f0-80d0-4901-aab0-b4d8469debd1"
+      "completedRunId": "5331c616-9623-46b2-af7e-c3ce6436fb8e",
+      "gitHead": "5f27b1c7b59a606eb4c8e9fc6ef5af125a48b45e",
+      "sourceFingerprint": "sha256:a27b0e9e6cb0afa6aa8cef7b83f9826aae23d46c9bd0ccf5e69b1c6f8dde3aac"
     },
     "/openwiki/features/people-and-organisations.md": {
       "gitHead": "c5ea965bf4f3588e8d84adb5ea412b1774d93b80",

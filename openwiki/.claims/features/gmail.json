@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:df059bd394a31ba3ffe5924397f422067b759de468775c59ea06f330b59678f6",
+  "pageVersion": "sha256:0dbf51542a25cb895874cd3a7306582a9f9493d082bf76d97907b13ab8b37f38",
   "claims": [
     {
       "id": "claim_26dddd940894480690668615756bf371",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:08f5c1c9f4491ad1425801b0ed983ab05fef829bbf66afbfd3f790f2c700776e"
+          "version": "repo-file-v1:sha256:bcbd8703c66ea3a5ae24371c12850b6f3007c491a08ade8b6eb58d23b07715f7"
         }
       ]
     },
@@ -36,13 +36,27 @@
         },
         {
           "resource": "repo://src/server/gmail/connections.ts",
-          "version": "repo-file-v1:sha256:99bf2d614b7f0611eac19a6355715fa6a0264d46be027038123a7b972624048c"
+          "version": "repo-file-v1:sha256:78426fffcfed8b7cc48984a52a477cd0d2bb58ed76bf0f188f355d0aef6fb7b6"
+        }
+      ]
+    },
+    {
+      "id": "claim_78bebb917bdd4250bb4c39798374062f",
+      "statement": "syncCalendar takes its own lease, pulls Google's changes by sync token and pushes a reconcile of activities against calendar_events, with at most 200 Google writes per run and no Google call inside a transaction.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0019_calendar.sql",
+          "version": "repo-file-v1:sha256:5bcaa92332aed2178845aacf5587c8ec1c39c0c600a05f6a1b5523c3423652f0"
+        },
+        {
+          "resource": "repo://src/server/calendar/sync.ts",
+          "version": "repo-file-v1:sha256:a92428c479fb151a6c38e9778cf777726016cfb22407af1d2b49a09b1d5adeab"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T20:17:37.578Z"
+    "at": "2026-11-25T13:24:53.309Z"
   }
 }

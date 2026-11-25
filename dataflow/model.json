@@ -141,6 +141,10 @@
     {
       "id": "cloud-scheduler",
       "label": "Vercel cron and Google Pub/Sub"
+    },
+    {
+      "id": "calendar-api",
+      "label": "Google Calendar API"
     }
   ],
   "processes": [
@@ -470,6 +474,27 @@
       "sources": [
         "src/server/gmail/google-api.ts"
       ]
+    },
+    {
+      "id": "calendar-sync",
+      "label": "Calendar sync and push receiver",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/calendar/sync.ts",
+        "src/server/calendar/push.ts",
+        "src/app/calendar/push/route.ts",
+        "src/server/calendar/soon.ts"
+      ]
+    },
+    {
+      "id": "calendar-client",
+      "label": "Google Calendar client",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/calendar/calendar-api.ts"
+      ]
     }
   ],
   "stores": [
@@ -732,6 +757,15 @@
       "group": "gmail",
       "sources": [
         "migrations/0016_gmail.sql"
+      ]
+    },
+    {
+      "id": "calendar-events-table",
+      "label": "Calendar event links",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "migrations/0019_calendar.sql"
       ]
     }
   ],
@@ -2708,6 +2742,79 @@
       "sources": [
         "src/server/files/storage.ts",
         "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "gmail-sync",
+      "to": "calendar-sync",
+      "data": "15-minute calendar check",
+      "sources": [
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "cloud-scheduler",
+      "to": "calendar-sync",
+      "data": "Calendar push notice",
+      "sources": [
+        "src/app/calendar/push/route.ts"
+      ]
+    },
+    {
+      "from": "calendar-sync",
+      "to": "calendar-client",
+      "data": "event pull, push, watch calls",
+      "sources": [
+        "src/server/calendar/sync.ts"
+      ]
+    },
+    {
+      "from": "calendar-client",
+      "to": "calendar-api",
+      "data": "event and channel requests",
+      "sources": [
+        "src/server/calendar/calendar-api.ts"
+      ]
+    },
+    {
+      "from": "calendar-api",
+      "to": "calendar-client",
+      "data": "events, sync tokens",
+      "sources": [
+        "src/server/calendar/calendar-api.ts"
+      ]
+    },
+    {
+      "from": "calendar-sync",
+      "to": "calendar-events-table",
+      "data": "event links and agreed bodies",
+      "sources": [
+        "src/server/calendar/sync.ts"
+      ]
+    },
+    {
+      "from": "calendar-events-table",
+      "to": "calendar-sync",
+      "data": "event links",
+      "sources": [
+        "src/server/calendar/sync.ts"
+      ]
+    },
+    {
+      "from": "calendar-sync",
+      "to": "activities-table",
+      "data": "meetings and moves from Google",
+      "sources": [
+        "src/server/calendar/sync.ts"
+      ]
+    },
+    {
+      "from": "activities",
+      "to": "calendar-sync",
+      "data": "activity changes to mirror",
+      "sources": [
+        "src/server/activities/activities.ts",
+        "src/server/calendar/soon.ts"
       ]
     }
   ]
