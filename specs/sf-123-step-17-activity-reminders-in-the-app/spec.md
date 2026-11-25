@@ -132,7 +132,7 @@ A developer or reviewer loads the fake data and sees reminders without waiting f
 
 ## Assumptions
 
-- Reminder lead times: 15 minutes before a timed activity, 09:00 UK time on the due date for an activity with no time (clarified). The Calendar issue should give the synced event's email reminder the same lead time.
+- Reminder lead times: 15 minutes before a timed activity, 09:00 UK time on the due date for an activity with no time (clarified). Recorded in the reminders line of `docs/DECISIONS.md`; the Calendar issue (SF-124) records its own timing for Google Calendar's email reminders.
 - Reminders are in-app only here (user request; `docs/DECISIONS.md`): the Notifications page and the sidebar count, like assignments. The CRM sends no reminder email itself.
 - A reminder appears when the user next loads or navigates a page after its reminder time; no live push to an open page, and no setting to turn reminders off or change the lead time in this issue.
 - One reminder per activity; there is no snooze, and no second notice when an activity becomes overdue (the Activities list already shows Overdue in red).

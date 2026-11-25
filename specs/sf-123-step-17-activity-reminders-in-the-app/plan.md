@@ -137,8 +137,8 @@ notifications module rather than adding a module (research.md §1, §5).
 ## Fix round 1
 
 **Problem** (AI review): the lead time people chose in the spec's clarification (15 minutes before a timed activity,
-09:00 UK time on the due date for an activity with no time) is not in `docs/DECISIONS.md`. The spec (Assumptions) says
-the Calendar issue must give the synced event's email reminder the same lead time, so that issue needs to find it there.
+09:00 UK time on the due date for an activity with no time) is not in `docs/DECISIONS.md`, the team's record of
+choices.
 
 **Cause**: the plan's Constitution Check only checked the existing reminders line (2026-11-24) and no task updated
 `docs/DECISIONS.md`. The code is right; only the record of the choice is missing.
@@ -150,8 +150,11 @@ and end it with `(SF-123)` instead of the date. Text to use:
 `- Activity reminders are in the app (the Notifications page and the sidebar count, like assignments) and by email,
 which Google Calendar sends from the email reminder the CRM puts on the synced event; the CRM sends no reminder email
 itself. A reminder comes 15 minutes before a timed activity and at 09:00 UK time on the due date of an activity with
-no time (at once when it is scheduled later that day); the Calendar issue gives the synced event's email reminder the
-same lead time (SF-123)`
+no time (at once when it is scheduled later that day) (SF-123)`
+
+Reply (2026-11-25, alexis@barnacle.ai): option A, without the Calendar sentence. Google Calendar reminds only 15 minutes
+before timed activities, and SF-124 (Google Calendar two-way sync) records its own line for its email reminders; the
+line says nothing about the Calendar issue's timing, and the spec's Assumptions no longer ask for it.
 
 One line, not a second one: the reminders rule stays in one place. No code change, no spec change (the user gets the
 same app).

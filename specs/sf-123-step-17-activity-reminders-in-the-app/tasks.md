@@ -145,5 +145,5 @@ Each test names what it covers (`// covers FR-003, US1 scenario 1`). Integration
 
 ## Fix round 1 (plan.md § Fix round 1)
 
-- [ ] T024 Test first in `tests/unit/decisions.test.ts` (`// covers SF-123 spec.md § Clarifications and Assumptions: the lead time is recorded`), shaped like the SF-109 block: read `docs/DECISIONS.md`, keep the lines that start with `- ` and end with `(SF-123)`; expect exactly one, which includes "Activity reminders are in the app", "15 minutes before", "09:00 UK time" and "same lead time". It fails now (no line ends with `(SF-123)`).
+- [ ] T024 Test first in `tests/unit/decisions.test.ts` (`// covers SF-123 spec.md § Clarifications and Assumptions: the lead time is recorded`), shaped like the SF-109 block: read `docs/DECISIONS.md`, keep the lines that start with `- ` and end with `(SF-123)`; expect exactly one, which includes "Activity reminders are in the app", "15 minutes before", "09:00 UK time" and "later that day", and does not include "Calendar issue". It fails now (no line ends with `(SF-123)`).
 - [ ] T025 In `docs/DECISIONS.md`, replace the reminders line dated 2026-11-24 by the text in plan.md § Fix round 1 (the same line, extended, ending `(SF-123)`); then run `npx vitest run tests/unit/decisions.test.ts` and `npm test && npm run typecheck`.
