@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:aa0ccdc8547def8b616d4907f522eac89a184f41bd67196f1e7de828f14dbaba",
+  "pageVersion": "sha256:65390b7ca4f5bc3e3bee38034b40427b77bb5d47b66ac7f6567ac231eb286677",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -201,10 +201,20 @@
           "version": "repo-file-v1:sha256:b9501f21293c65e117eaf1d73d2ca573a6021a5e1753bd37e91aa9f6e5bdc430"
         }
       ]
+    },
+    {
+      "id": "claim_822063c26e1d45fd82ed283c0e3e5fcc",
+      "statement": "Migration 0017 adds remind_at and reminder_read_at to activities and a partial index activities_reminder_idx.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0017_activity_reminders.sql",
+          "version": "repo-file-v1:sha256:aac63def2296271356766f5f0c1578bf00fb6f7ee921472ca3fba8d4569b3684"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T18:25:19.853Z"
+    "at": "2026-11-25T11:47:45.053Z"
   }
 }

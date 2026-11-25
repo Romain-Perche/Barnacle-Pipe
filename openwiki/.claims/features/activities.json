@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:829f0db0f58c6b6c10e8e437a149af70d902609d8173aca62ed6905310b348cf",
+  "pageVersion": "sha256:60ef9393ed1797f1da9050378a8cace7f5472db68d86194434040e84044e505d",
   "claims": [
     {
       "id": "claim_3cf5e6c6f4ad4554aaf0d8bdeb2bc247",
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/activities/activities.ts",
-          "version": "repo-file-v1:sha256:e6b84cebf6f08f0a571b50327dda046091139326843bab9522b49254afa5643e"
+          "version": "repo-file-v1:sha256:29c6da1fd572864b31ab22d9b822abfa2cb9c5bf82f70f819d8916775c2391bc"
         }
       ]
     },
@@ -33,22 +33,26 @@
       ]
     },
     {
-      "id": "claim_4fde04cfec104f4382e92a13978b17b1",
-      "statement": "Activity edits, ticks and unticks set activities.updated_at, and activity actions run the Google Calendar sync after the response via runAfterResponse.",
+      "id": "claim_53486bbf8ce346699cbfa65ccef3c667",
+      "statement": "A planned activity has one in-app reminder for its assignee, 15 minutes before the due time or 09:00 UK when untimed, stored in remind_at/reminder_read_at and listed as the third notification kind.",
       "evidence": [
         {
-          "resource": "repo://src/server/activities/activities.ts",
-          "version": "repo-file-v1:sha256:e6b84cebf6f08f0a571b50327dda046091139326843bab9522b49254afa5643e"
+          "resource": "repo://migrations/0017_activity_reminders.sql",
+          "version": "repo-file-v1:sha256:aac63def2296271356766f5f0c1578bf00fb6f7ee921472ca3fba8d4569b3684"
         },
         {
-          "resource": "repo://src/server/calendar/soon.ts",
-          "version": "repo-file-v1:sha256:64882740acb012dbd4040eb8eee34866846252be0e96d3b1ca028ba32477ba16"
+          "resource": "repo://src/server/activities/rules.ts",
+          "version": "repo-file-v1:sha256:a208d9eb61f8d0dc51aee883a1c180c36864b60fb118aad8d5db53e0d6477438"
+        },
+        {
+          "resource": "repo://src/server/notifications.ts",
+          "version": "repo-file-v1:sha256:17ca7fa6f536c0b20a89a81130f2e2aea56b2d315057289f24375399afed1c72"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-25T12:55:36.197Z"
+    "at": "2026-11-25T11:47:45.053Z"
   }
 }

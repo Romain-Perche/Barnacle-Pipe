@@ -4,8 +4,10 @@
 // rows and the newly picked ones (through visiblePerson / visibleDeal); any archived one refuses the change.
 // Anyone who can see an activity can change it. A done call or meeting raises its person's "Last contacted".
 // SF-124: edits, ticks and unticks set updated_at (the later change wins against Google Calendar).
+// SF-123 (research.md §3–§4): its in-app reminder is `remind_at` / `reminder_read_at` on the row, set from `reminderFor`
+// when it is scheduled, moved or reassigned; `now` is a parameter so the tests pass the clock.
 import { sql, type Sql } from "@/server/db";
-import { ukInstant, validateActivity, type ActivityForm, type ActivityType, type ActivityValue } from "@/server/activities/rules";
+import { dueMoment, reminderFor, ukInstant, validateActivity, type ActivityForm, type ActivityType, type ActivityValue } from "@/server/activities/rules";
 import { ownerName, type Fragment, type Option, type UserRef } from "@/server/records/common";
 import type { FieldErrors } from "@/server/records/rules";
 import type { Target } from "@/server/records/timeline";
@@ -252,7 +254,7 @@ async function run(change: (db: Sql) => Promise<SaveResult>): Promise<SaveResult
   }
 }
 
-export async function scheduleActivity(actorId: number, form: ActivityForm): Promise<SaveResult> {
+export async function scheduleActivity(actorId: number, form: ActivityForm, now: Date = new Date()): Promise<SaveResult> {
   const v = validateActivity(form);
   if (!v.ok) return { status: "invalid", errors: v.errors };
   const value = v.value;
@@ -264,21 +266,25 @@ export async function scheduleActivity(actorId: number, form: ActivityForm): Pro
     await checkAssignee(db, assignee, links, true);
     const [row] = await db<{ id: number }[]>`
       insert into activities (type, subject, due_on, due_time, duration_minutes, note, deal_id, person_id, organisation_id,
-                              assignee_id, created_by, assigned_by)
+                              assignee_id, created_by, assigned_by, remind_at)
       values (${value.type}, ${value.subject}, ${value.dueOn}, ${value.dueTime}, ${value.durationMinutes}, ${value.note},
-              ${value.dealId}, ${value.personId}, ${value.organisationId}, ${assignee}, ${actorId}, ${actorId})
+              ${value.dealId}, ${value.personId}, ${value.organisationId}, ${assignee}, ${actorId}, ${actorId}, ${reminderFor(value, now)})
       returning id::int as id`;
     return { status: "ok", id: row.id };
   });
 }
 
-type Locked = { deal_id: number | null; person_id: number | null; organisation_id: number | null; assignee_id: number; version: number };
+type Locked = {
+  deal_id: number | null; person_id: number | null; organisation_id: number | null; assignee_id: number; version: number;
+  due_on: string; due_time: string | null;
+};
 
 // The activity, locked, when the actor can see it; else whether it still exists (not_found) or not (gone).
 async function lockActivity(db: Sql, actorId: number, id: number): Promise<Locked | "not_found" | "gone"> {
   const [row] = await db<Locked[]>`
     select a.deal_id::int as deal_id, a.person_id::int as person_id, a.organisation_id::int as organisation_id,
-           a.assignee_id::int as assignee_id, a.version
+           a.assignee_id::int as assignee_id, a.version, to_char(a.due_on, 'YYYY-MM-DD') as due_on,
+           to_char(a.due_time, 'HH24:MI') as due_time
     from activities a where a.id = ${id} and ${visibleActivity(db, actorId)} for update`;
   if (row) return row;
   const [other] = await db`select 1 from activities where id = ${id}`;
@@ -288,7 +294,9 @@ async function lockActivity(db: Sql, actorId: number, id: number): Promise<Locke
 const currentLinks = (a: Locked): Links => ({ dealId: a.deal_id, personId: a.person_id, organisationId: a.organisation_id });
 const NONE_FRESH = { deal: false, person: false, organisation: false };
 
-export async function editActivity(actorId: number, id: number, version: number, form: ActivityForm): Promise<SaveResult> {
+// A new due date or time, or a new assignee, gives a new unread reminder (none once the due moment has passed); any
+// other change keeps the reminder's time and read state (SF-123 FR-005, FR-006).
+export async function editActivity(actorId: number, id: number, version: number, form: ActivityForm, now: Date = new Date()): Promise<SaveResult> {
   const v = validateActivity(form);
   return run(async (db) => {
     const cur = await lockActivity(db, actorId, id);
@@ -306,17 +314,19 @@ export async function editActivity(actorId: number, id: number, version: number,
     const assignee = value.assigneeId ?? cur.assignee_id;
     const reassigned = assignee !== cur.assignee_id;
     if (reassigned || fresh.deal || fresh.person) await checkAssignee(db, assignee, links, reassigned);
+    const remind = reassigned || value.dueOn !== cur.due_on || value.dueTime !== cur.due_time;
     await db`
       update activities set type = ${value.type}, subject = ${value.subject}, due_on = ${value.dueOn}, due_time = ${value.dueTime},
              duration_minutes = ${value.durationMinutes}, note = ${value.note}, deal_id = ${value.dealId}, person_id = ${value.personId},
              organisation_id = ${value.organisationId}, assignee_id = ${assignee}, version = version + 1, updated_at = now()
              ${reassigned ? db`, assigned_by = ${actorId}, assigned_at = now(), assignment_read_at = null` : db``}
+             ${remind ? db`, remind_at = ${reminderFor(value, now)}, reminder_read_at = null` : db``}
       where id = ${id}`;
     return { status: "ok", id };
   });
 }
 
-// Its assignment notification goes with the row.
+// Its assignment notification and its reminder go with the row.
 export async function deleteActivity(actorId: number, id: number, version: number): Promise<DeleteResult> {
   return sql.begin(async (tx): Promise<DeleteResult> => {
     const db = tx as unknown as Sql;
@@ -331,17 +341,18 @@ export async function deleteActivity(actorId: number, id: number, version: numbe
   });
 }
 
-async function lockForTick(db: Sql, actorId: number, id: number): Promise<TickResult> {
+async function lockForTick(db: Sql, actorId: number, id: number): Promise<{ status: "ok"; cur: Locked } | { status: "archived" | "not_found" }> {
   const cur = await lockActivity(db, actorId, id);
   if (cur === "gone" || cur === "not_found") return { status: "not_found" };
   const links = await lockLinks(db, actorId, currentLinks(cur), NONE_FRESH);
   if (links.status === "archived") return { status: "archived" };
-  return links.status === "ok" ? { status: "ok" } : { status: "not_found" };
+  return links.status === "ok" ? { status: "ok", cur } : { status: "not_found" };
 }
 
 // Marks it done (who and when). Already done: nothing changes, so two ticks at once give one "done", by the first.
 // A call or meeting raises its person's "Last contacted" to its due moment, or to now when that is earlier
 // (never a future date, never lower than it was); no version bump and no event on the person (research.md §8).
+// Its reminder is kept, hidden while done (`done_at`), for an untick (SF-123).
 export async function tickActivity(actorId: number, id: number): Promise<TickResult> {
   return sql.begin(async (tx): Promise<TickResult> => {
     const db = tx as unknown as Sql;
@@ -362,13 +373,17 @@ export async function tickActivity(actorId: number, id: number): Promise<TickRes
   });
 }
 
-// Planned again, with its due date; "Last contacted" is left as it is.
-export async function untickActivity(actorId: number, id: number): Promise<TickResult> {
+// Planned again, with its due date; "Last contacted" is left as it is. Its reminder comes back as it was, unless the
+// due moment has passed: then it has none (SF-123 FR-006).
+export async function untickActivity(actorId: number, id: number, now: Date = new Date()): Promise<TickResult> {
   return sql.begin(async (tx): Promise<TickResult> => {
     const db = tx as unknown as Sql;
     const locked = await lockForTick(db, actorId, id);
     if (locked.status !== "ok") return locked;
-    await db`update activities set done_at = null, done_by = null, version = version + 1, updated_at = now() where id = ${id} and done_at is not null`;
+    const past = dueMoment({ dueOn: locked.cur.due_on, dueTime: locked.cur.due_time }).getTime() <= now.getTime();
+    await db`update activities set done_at = null, done_by = null, version = version + 1, updated_at = now()
+             ${past ? db`, remind_at = null, reminder_read_at = null` : db``}
+             where id = ${id} and done_at is not null`;
     return { status: "ok" };
   });
 }

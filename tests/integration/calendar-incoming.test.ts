@@ -82,6 +82,16 @@ describe("US4 scenario 1: an event with a CRM person as guest", () => {
   });
 });
 
+describe("SF-123 FR-001 with SF-124 US4 scenario 1: a meeting from Google gets its in-app reminder", () => {
+  it("remind_at is 15 minutes before the meeting, unread", async () => {
+    await fake.addEvent(ADA, meeting({ attendees: ["ana@example.test"] }), { deliver: true });
+    const [m] = await meetings();
+    const [r] = await sql<{ remind_at: Date | null; reminder_read_at: Date | null }[]>`select remind_at, reminder_read_at from activities where id = ${m.id}`;
+    expect(r.remind_at?.toISOString()).toBe(new Date(ukInstant(c.day(13), "15:00").getTime() - 15 * 60_000).toISOString());
+    expect(r.reminder_read_at).toBeNull();
+  });
+});
+
 describe("US4 scenarios 2, 5, 6 and edge cases: what never comes in", () => {
   it.each<[string, () => Promise<unknown>]>([
     ["teammates only", () => fake.addEvent(ADA, meeting({ attendees: ["bob@barnacle.ai"] }), { deliver: true })],

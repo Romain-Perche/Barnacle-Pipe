@@ -139,3 +139,17 @@ describe("docs/DECISIONS.md (SF-119)", () => {
     expect(sf119.some((l) => /Departs from blueprint/.test(l))).toBe(false);
   });
 });
+
+// covers SF-123 spec.md § Clarifications and Assumptions: the lead time is recorded
+describe("docs/DECISIONS.md (SF-123)", () => {
+  const sf123 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-123)"));
+  it("records the reminder lead time in the one reminders line, without the Calendar issue's timing", () => {
+    expect(sf123).toHaveLength(1);
+    const [line] = sf123;
+    expect(line).toContain("Activity reminders are in the app");
+    expect(line).toContain("15 minutes before");
+    expect(line).toContain("09:00 UK time");
+    expect(line).toContain("later that day");
+    expect(line).not.toContain("Calendar issue");
+  });
+});

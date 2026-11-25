@@ -16,16 +16,12 @@ sources:
     resource: repo://src/server/env.ts
   - id: sf118-src-vercel
     resource: repo://vercel.json
-  - id: openwiki-source-5e8222fa4f836ecb84cdb72d
-    resource: repo://migrations/0019_calendar.sql
-  - id: openwiki-source-5f48a9b55cca47c928e3fea2
-    resource: repo://src/server/calendar/sync.ts
   - id: openwiki-source-142c3db3613355a16ad2c16c
     resource: repo://src/server/crypto/seal.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-25T12:55:36.197Z
-generated: { by: "claude-code", at: "2026-11-25T12:55:36.197Z" }
+    at: 2026-11-24T20:17:37.578Z
+generated: { by: "claude-code", at: "2026-11-24T20:17:37.578Z" }
 ---
 
 # Gmail connect and sync
@@ -73,22 +69,3 @@ off (Settings says Gmail can't be connected; cron and push do nothing). The fake
 `/dev/fake-google/gmail` and the fake mailbox is `/dev/fake-gmail`; `src/server/gmail/fake-gmail.ts` keeps its state in
 memory in tests and in `.fake-gmail/state.json` in development. `src/seed/gmail.ts` seeds Ada Fake's connection and
 three conversations.
-
-## Google Calendar sync (SF-124)
-
-Two-way sync of activities with the user's Google Calendar, on the same connection, token key and Google helpers. It is
-on when `CALENDAR_SYNC=on` and Gmail is set up (`calendarConfig()` in `env.ts`); a connection's Calendar state
-(`syncing` / `missing`) comes from its `scopes`, and `settingsWarning()` drives the sidebar "!".
-
-- `src/server/calendar/sync.ts`: `syncCalendar` takes a calendar lease, pulls changes (sync token; a 410 means a full
-  listing), pushes activity changes, and reconciles `calendar_events` against activities. There is no outbox.
-  `rules.ts` is pure (`merge` is three-way, the later change wins; `decideIncoming`). `runCalendarCheck` runs from
-  `runGmailCheck`; `calendarAfterChange` and `calendarAfterVisibilityChange` run after activity, person and deal saves.
-- `calendar-api.ts` makes the Calendar calls by plain `fetch` with `sendUpdates=none` and never sends attendees.
-- Google's change notices arrive at the public `src/app/calendar/push/route.ts` (`push.ts` checks channel id, token hash
-  and resource id).
-- Table `calendar_events` (`migrations/0019_calendar.sql`): one link per activity, origin `crm` / `google`, state
-  `creating` / `synced` / `ended`. A reassigned activity's link on a non-syncing connection is detached, not deleted.
-- Fakes: `fake-calendar.ts` and the page `/dev/fake-calendar`; `src/seed/calendar.ts` seeds one meeting from Google.
-
-Data movement: see [dataflow/DATAFLOW.md](../../dataflow/DATAFLOW.md).

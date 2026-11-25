@@ -219,3 +219,24 @@ export function addParam(path: string, key: string, value: string | number): str
 export function afterTickPath(back: string, id: number, followup: boolean): string {
   return followup ? addParam(back, "followup", id) : back;
 }
+
+// SF-123 (research.md §2): one in-app reminder per planned activity, for its assignee.
+export const REMINDER_LEAD_MINUTES = 15;
+export const UNTIMED_REMINDER_TIME = "09:00";
+type DueAt = { dueOn: string; dueTime: string | null };
+
+// 15 real minutes before a timed activity; 09:00 UK time on the due date of an untimed one.
+export function reminderAt(due: DueAt): Date {
+  if (due.dueTime === null) return ukInstant(due.dueOn, UNTIMED_REMINDER_TIME);
+  return new Date(ukInstant(due.dueOn, due.dueTime).getTime() - REMINDER_LEAD_MINUTES * 60_000);
+}
+
+// After this, no reminder: a timed activity's start (its duration does not extend it); untimed: the end of its UK day.
+export function dueMoment(due: DueAt): Date {
+  return due.dueTime === null ? ukInstant(addDays(due.dueOn, 1), null) : ukInstant(due.dueOn, due.dueTime);
+}
+
+// The reminder time of an activity saved at `now`; null once its due moment has come (FR-007).
+export function reminderFor(due: DueAt, now: Date): Date | null {
+  return dueMoment(due).getTime() > now.getTime() ? reminderAt(due) : null;
+}

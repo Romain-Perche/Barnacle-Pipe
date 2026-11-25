@@ -3,7 +3,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  activityState, afterTickPath, cardLine, durationOptions, existsInUk, formatCardDue, formatDue, ukInstant, ukWallClock, validateActivity, weekBounds,
+  activityState, afterTickPath, cardLine, dueMoment, durationOptions, existsInUk, formatCardDue, formatDue, REMINDER_LEAD_MINUTES, reminderAt,
+  reminderFor, ukInstant, UNTIMED_REMINDER_TIME, ukWallClock, validateActivity, weekBounds,
   type ActivityForm,
 } from "@/server/activities/rules";
 import { countLabel } from "@/server/format";
@@ -204,5 +205,42 @@ describe("plain text only", () => {
     ];
     expect(files.length).toBeGreaterThan(3);
     for (const f of files) expect(readFileSync(f, "utf8"), f).not.toMatch(/dangerouslySetInnerHTML/);
+  });
+});
+
+// covers SF-123 FR-001, FR-007, SC-001, spec Edge Cases (UK time, clocks changing)
+describe("activity reminders", () => {
+  const at = (iso: string) => new Date(iso);
+  it("reminds 15 minutes before a timed activity and at 09:00 UK on the due date of an untimed one", () => {
+    expect(REMINDER_LEAD_MINUTES).toBe(15);
+    expect(UNTIMED_REMINDER_TIME).toBe("09:00");
+    expect(reminderAt({ dueOn: "2026-11-25", dueTime: "10:00" }).toISOString()).toBe("2026-11-25T09:45:00.000Z");
+    expect(reminderAt({ dueOn: "2026-01-15", dueTime: null }).toISOString()).toBe("2026-01-15T09:00:00.000Z");
+    expect(reminderAt({ dueOn: "2026-07-15", dueTime: null }).toISOString()).toBe("2026-07-15T08:00:00.000Z");
+    expect(reminderAt({ dueOn: "2026-11-26", dueTime: "00:10" }).toISOString()).toBe("2026-11-25T23:55:00.000Z");
+  });
+
+  it("counts 15 real minutes across the clocks changing", () => {
+    expect(reminderAt({ dueOn: "2026-03-29", dueTime: "02:10" }).toISOString()).toBe("2026-03-29T00:55:00.000Z");
+    // 01:30 on 25 Oct 2026 happens twice: the BST reading (00:30Z) is taken.
+    expect(reminderAt({ dueOn: "2026-10-25", dueTime: "01:30" }).toISOString()).toBe("2026-10-25T00:15:00.000Z");
+  });
+
+  it("is due at the start time (duration ignored), or at the end of the UK day without a time", () => {
+    expect(dueMoment({ dueOn: "2026-11-25", dueTime: "10:00" }).toISOString()).toBe("2026-11-25T10:00:00.000Z");
+    expect(dueMoment({ dueOn: "2026-11-25", dueTime: null }).toISOString()).toBe("2026-11-26T00:00:00.000Z");
+    expect(dueMoment({ dueOn: "2026-07-15", dueTime: null }).toISOString()).toBe("2026-07-15T23:00:00.000Z");
+  });
+
+  it("gives a reminder only while the due moment is ahead, even when the reminder time has passed", () => {
+    const call = { dueOn: "2026-11-25", dueTime: "10:00" };
+    expect(reminderFor(call, at("2026-11-25T09:00:00Z"))?.toISOString()).toBe("2026-11-25T09:45:00.000Z");
+    expect(reminderFor(call, at("2026-11-25T09:50:00Z"))?.toISOString()).toBe("2026-11-25T09:45:00.000Z");
+    expect(reminderFor(call, at("2026-11-25T10:00:00Z"))).toBeNull();
+    expect(reminderFor(call, at("2026-11-25T11:00:00Z"))).toBeNull();
+    const task = { dueOn: "2026-11-25", dueTime: null };
+    expect(reminderFor(task, at("2026-11-25T09:30:00Z"))?.toISOString()).toBe("2026-11-25T09:00:00.000Z");
+    expect(reminderFor(task, at("2026-11-25T23:59:00Z"))?.toISOString()).toBe("2026-11-25T09:00:00.000Z");
+    expect(reminderFor(task, at("2026-11-26T00:00:00Z"))).toBeNull();
   });
 });

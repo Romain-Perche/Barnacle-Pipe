@@ -263,6 +263,11 @@
   html, html with no kind, `[]` or 51 blocks, 500,001 characters of HTML, `merge_links` `{}`, a 256-character subject)
   and that the pure files (`merge.ts`, `content.ts`, `rules.ts`) import nothing server-only. No new outside service:
   images or styles named in pasted HTML are fetched by the user's browser inside the sandboxed preview, never by the app.
+  SF-123 (activity reminders in the app) adds no outside service, schema, fake or setting: `migrations/0017_activity_reminders.sql`
+  adds `remind_at` / `reminder_read_at` to `activities` (plus a backfill `update` and a partial index), and the reminder
+  tests (`tests/unit/activities-rules.test.ts`, `tests/integration/activity-reminders.test.ts`) pass an explicit `now` to
+  `scheduleActivity` / `editActivity` / `untickActivity` and `listNotifications` / `unreadCount` / `openNotification` /
+  `markAllRead` (no clock tricks, no sleeps); the action and page tests set `remind_at` in the past by SQL. No email is sent.
 
 ## Schemas
 - oauth2-api.json: https://github.com/googleapis/google-api-go-client/blob/fb095823b5150e5301d201e7f19a5119edbbbdfd/oauth2/v2/oauth2-api.json
@@ -666,6 +671,14 @@
     part of US5 1: a second `npx next start -p 3002` with `APP_ENV=` (production) and `APP_URL=https://crm.example.com`
     (`node .factory/run/check-sf121-edge10.js`: 404 "Page not found."), and one on :3003 with `APP_ENV=test` and the same
     APP_URL to see https links on /dev/unsubscribe-links. ~1 min.
+  - SF-123 reminders: `bash .factory/run/start-faketime-app.sh` starts a second app on :3001 (same build and crm_dev)
+    whose JS clock comes from libfaketime (`sudo apt-get install -y faketime`, installed by the script) and the file
+    `/tmp/ft-time` (`echo "@2026-03-29 00:50:00" > /tmp/ft-time`, UTC; the clock runs on from there, rewrite to jump;
+    Postgres `now()` stays real). Then `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules:$PWD/node_modules
+    node .factory/run/scenarios-sf123.js` runs all 27 SF-123 scenarios (~4 min; US4 scenario 1 reseeds first and reads
+    :3000; Edge case 3 replays migration 0017 on a pg_dump copy `sf123_mig`). Counts are compared at the minute before and
+    at the reminder minute: seeded activities have reminders at round times too (e.g. 27 Nov 09:45). All pass.
+    Second AI review (after the origin/main merge): start-app.sh, start-faketime-app.sh, reset-db.sh, then the script: 27/27 pass (~4 min).
   - SF-124 AI review (Google Calendar sync, all 42 scenarios, ~14 min; edge numbers as in the fix-round spec, with edge 3 "Reassigned while needs reconnecting"). App on :3000 from `start-app.sh` (fake
     Gmail, `CALENDAR_SYNC=on`). Fresh data: `rm -rf .fake-gmail /tmp/sf124-results.json && bash .factory/run/reset-db.sh`
     (reset-db.sh now passes `GMAIL_TOKEN_KEY` from /tmp/gmail-token-key and `CALENDAR_SYNC=on` to the seed, so Ada Fake is

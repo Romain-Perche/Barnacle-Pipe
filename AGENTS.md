@@ -33,6 +33,11 @@ OAuth code flow and database sessions.
   the person's Last contacted), `list.ts` (the Activities list, `now` as a parameter). `visibleActivity()` in
   `records/visibility.ts`: every `activities` read uses it. Done activities are read into `readTimeline` (never copied);
   `notifications.ts` also lists activities assigned by someone else (columns on the activity row).
+  SF-123 reminders: `rules.ts` `reminderAt` (15 min before; 09:00 UK untimed) / `dueMoment` / `reminderFor(due, now)`; columns
+  `remind_at` / `reminder_read_at` on the activity row, set by schedule, edit (new due or assignee: new unread one) and untick
+  (none after the due moment); `scheduleActivity` / `editActivity` / `untickActivity` take `now` last. `notifications.ts`:
+  reminders are the third kind (`r-<id>`), for the assignee (themselves included) from `remind_at` while planned, through
+  `myReminders` (`visibleActivity()`); its functions take `now` last. In the app only, no email.
   SF-114 ambassadors: `records/ambassadors.ts` (the Ambassadors page `listAmbassadors`, the ambassador page
   `getAmbassadorPage` and its updates `readAmbassadorUpdates`, the "Referred by" options `ambassadorOptions` /
   `referrerOptions`, the check `isOfferedAmbassador`, `referrerOf`; counts through one shared summary fragment) and
@@ -138,7 +143,8 @@ OAuth code flow and database sessions.
   `lock table organisations, person_emails, pipedrive_links in share row exclusive mode`), `report.ts` (`mergeReport`,
   `reportLines`, `namesForReport` through `visiblePerson()`). `pipedrive_links` (company + kind + Pipedrive id) is the
   "never twice" key; `pipedrive_imports` holds one run per user (one open at a time), `pipedrive_connections` one sealed
-  token per user. Timeline kinds `pipedrive_imported` / `pipedrive_unsubscribed`.
+  token per user. Timeline kinds `pipedrive_imported` / `pipedrive_unsubscribed`. Imported planned activities get `remind_at` (SF-123)
+  only while their reminder time is still to come: an import shows no reminder at once.
   SF-122 deals, notes, activities and files: `html.ts` (pure `htmlToText`: note HTML → plain text), `deal-rules.ts` (pure:
   `dealFromPipedrive`, `activityFromPipedrive`, `noteFromPipedrive`, `fileCheck`, `targetOf` deal > person > organisation,
   `ukFromUtc`, `durationMinutes`, `formatMb`, `notePreview`), `records-page.ts` (pure: `planPipelines`, `planDealPage`,
@@ -191,7 +197,7 @@ OAuth code flow and database sessions.
   reconcile of `calendar_events` against the activities: no outbox; `renewCalendarChannel`, `runCalendarCheck` called by
   `runGmailCheck`, `calendarAfterChange`, `calendarAfterVisibilityChange` after person / deal saves and hand-overs; a
   reassigned activity's link on a connection that is not syncing is detached (activity_id null), never deleted, so its
-  event is removed when that connection syncs again; `beforeMergeForTests` tests only), `push.ts` (`receiveCalendarPush`: channel id + token sha256 + resource id),
+  event is removed when that connection syncs again; `beforeMergeForTests` tests only; a move from Google and a meeting from Google set SF-123's `remind_at` through `reminderFor`, as CRM edits do), `push.ts` (`receiveCalendarPush`: channel id + token sha256 + resource id),
   `soon.ts` (`runAfterResponse`: `after()` from `next/server`; activity actions and record deletes use it, so saving never
   waits on Google). No Google call inside `sql.begin()`. Table `calendar_events` (one link per activity: origin `crm` /
   `google`, state `creating` / `synced` / `ended`, the agreed `base`); calendar columns on `gmail_connections`;

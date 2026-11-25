@@ -17,7 +17,7 @@
 // the user is active and still holds the token (lockRow), so nothing is saved once either is gone.
 import { sql, type Sql } from "@/server/db";
 import { listFields as listCrmFields } from "@/server/custom-fields/fields";
-import { ukInstant } from "@/server/activities/rules";
+import { reminderFor, ukInstant } from "@/server/activities/rules";
 import { storageConfig } from "@/server/env";
 import { insertFile, sweepFileCleanup } from "@/server/files/files";
 import { fileKind, MAX_FILE_BYTES, uploadContentType } from "@/server/files/rules";
@@ -832,20 +832,27 @@ async function saveActivities(db: Sql, ctx: Ctx, items: PdActivity[], report: Re
   const types = Object.fromEntries((ctx.snapshot.activityTypes ?? []).map((t) => [t.key, { name: t.name, custom: !["call", "meeting", "task", "deadline", "email", "lunch"].includes(t.key) }]));
   const plan = planActivityPage(items, { ...base, types });
   const ids = await newIds(db, "activities", plan.adds.length);
-  const rows = plan.adds.map((a, i) => ({ ...a, id: ids[i] }));
+  // SF-123: a planned activity gets the reminder of any planned activity, kept only while its reminder time is still to
+  // come, so an import shows no reminder at once (SF-122 US3-6: an import notifies nobody).
+  const remindOf = (v: (typeof plan.adds)[number]["value"]) => {
+    if (v.doneAt !== null) return null;
+    const at = reminderFor({ dueOn: v.dueOn, dueTime: v.dueTime }, base.now);
+    return at !== null && at.getTime() > base.now.getTime() ? at : null;
+  };
+  const rows = plan.adds.map((a, i) => ({ ...a, id: ids[i], remindAt: remindOf(a.value) }));
   // assigned_by = the assignee: the assignment notification (assignee_id <> assigned_by) never fires (FR-013).
   await inChunks(rows, (c) => db`
     insert into activities (id, type, subject, due_on, due_time, duration_minutes, note, deal_id, person_id, organisation_id, assignee_id,
-                            done_at, done_by, created_by, created_at, assigned_by, assigned_at)
+                            done_at, done_by, created_by, created_at, assigned_by, assigned_at, remind_at)
     overriding system value
     select id, type, subject, due_on, due_time, duration_minutes, note, deal_id, person_id, organisation_id, assignee_id,
-           done_at, case when done_at is null then null else assignee_id end, ${ctx.userId}, created_at, assignee_id, created_at
+           done_at, case when done_at is null then null else assignee_id end, ${ctx.userId}, created_at, assignee_id, created_at, remind_at
     from unnest(${col(c, (a) => a.id)}::bigint[], ${col(c, (a) => a.value.type)}::text[], ${col(c, (a) => a.value.subject)}::text[],
                 ${col(c, (a) => a.value.dueOn)}::date[], ${col(c, (a) => a.value.dueTime)}::time[], ${col(c, (a) => a.value.durationMinutes)}::int[],
                 ${col(c, (a) => a.value.note)}::text[], ${col(c, (a) => a.target.dealId)}::bigint[], ${col(c, (a) => a.target.personId)}::bigint[],
                 ${col(c, (a) => a.target.organisationId)}::bigint[], ${col(c, (a) => a.value.assigneeId)}::bigint[], ${col(c, (a) => a.value.doneAt)}::timestamptz[],
-                ${col(c, (a) => a.value.createdAt)}::timestamptz[])
-         as t(id, type, subject, due_on, due_time, duration_minutes, note, deal_id, person_id, organisation_id, assignee_id, done_at, created_at)`);
+                ${col(c, (a) => a.value.createdAt)}::timestamptz[], ${col(c, (a) => a.remindAt)}::timestamptz[])
+         as t(id, type, subject, due_on, due_time, duration_minutes, note, deal_id, person_id, organisation_id, assignee_id, done_at, created_at, remind_at)`);
   await insertRecordLinks(db, ctx, rows.map((a) => ({ kind: "activity" as const, pipedriveId: a.pipedriveId, id: a.id })));
   // SF-109's Last contacted: a done call or meeting with a person raises it to the earlier of its due time and when it
   // was done, never lowering it.

@@ -11,7 +11,7 @@
 // No Google call is ever made inside sql.begin(); every link write is conditional on the row's state and activity, so a
 // row changed meanwhile is left for the next run.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { ukToday, type ActivityType } from "@/server/activities/rules";
+import { reminderFor, ukToday, type ActivityType } from "@/server/activities/rules";
 import { CalendarRefused, deleteEvent, insertEvent, listEvents, patchEvent, stopChannel, watchEvents } from "@/server/calendar/calendar-api";
 import {
   bodyHash,
@@ -212,9 +212,12 @@ async function applyLinkedChange(conn: Conn, link: LinkRow, item: GoogleEvent): 
     let version = cur.version;
     if (m.fromGoogle) {
       const v = m.values;
+      // SF-123: a new due date or time gives a new unread reminder, as an edit in the CRM does.
+      const moved = v.dueOn !== cur.due_on || v.dueTime !== cur.due_time;
       const [row] = await db<{ version: number }[]>`
         update activities set subject = ${v.subject}, due_on = ${v.dueOn}, due_time = ${v.dueTime}, duration_minutes = ${v.durationMinutes},
                version = version + 1, updated_at = now()
+               ${moved ? db`, remind_at = ${reminderFor(v, new Date())}, reminder_read_at = null` : db``}
         where id = ${a.id} returning version`;
       version = row.version;
     }
@@ -249,9 +252,9 @@ async function importEvent(conn: Conn, item: GoogleEvent, now: Date): Promise<bo
     await sql.begin(async (tx) => {
       const db = tx as unknown as Sql;
       const [act] = await db<{ id: string; version: number }[]>`
-        insert into activities (type, subject, due_on, due_time, duration_minutes, note, person_id, organisation_id, assignee_id, created_by, assigned_by)
+        insert into activities (type, subject, due_on, due_time, duration_minutes, note, person_id, organisation_id, assignee_id, created_by, assigned_by, remind_at)
         values ('meeting', ${values.subject}, ${values.dueOn}, ${values.dueTime}, ${values.durationMinutes}, null, ${p.person_id},
-                ${p.organisation_id}, ${conn.userId}, ${conn.userId}, ${conn.userId})
+                ${p.organisation_id}, ${conn.userId}, ${conn.userId}, ${conn.userId}, ${reminderFor(values, now)})
         returning id::text as id, version`;
       const [link] = await db`
         insert into calendar_events (activity_id, connection_id, google_event_id, origin, state, base, synced_version, sent_hash, google_updated_at)

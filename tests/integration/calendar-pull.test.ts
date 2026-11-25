@@ -103,6 +103,23 @@ describe("US3 scenarios 1-3: moved or renamed in Google", () => {
   });
 });
 
+describe("SF-123 FR-005 with SF-124 US3 scenario 1: a move in Google moves the in-app reminder", () => {
+  it("moved to 11:00: a new unread reminder at 10:45; a rename only keeps the reminder and its read state", async () => {
+    const { id, eventId } = await synced();
+    await sql`update activities set reminder_read_at = now() where id = ${id}`;
+    await fake.changeEvent(ADA, eventId, { start: at(9, "11:00"), end: at(9, "12:00") }, { deliver: true });
+    const rem = async () => (await sql<{ remind_at: Date | null; reminder_read_at: Date | null }[]>`select remind_at, reminder_read_at from activities where id = ${id}`)[0];
+    const r = await rem();
+    expect(r.remind_at?.toISOString()).toBe(new Date(ukInstant(c.day(9), "11:00").getTime() - 15 * 60_000).toISOString());
+    expect(r.reminder_read_at).toBeNull();
+    await sql`update activities set reminder_read_at = now() where id = ${id}`;
+    await fake.changeEvent(ADA, eventId, { summary: "Call · Renamed" }, { deliver: true });
+    const r2 = await rem();
+    expect(r2.remind_at?.toISOString()).toBe(r.remind_at?.toISOString());
+    expect(r2.reminder_read_at).not.toBeNull();
+  });
+});
+
 describe("US3 scenarios 4-5: once, and only what Google may change", () => {
   it("a lost notice is caught by the 15-minute check; the same notice again changes nothing", async () => {
     const { id, eventId } = await synced();

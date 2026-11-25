@@ -442,6 +442,34 @@ describe("fake activities (SF-109)", () => {
   });
 });
 
+// covers SF-123 FR-010, US4 scenario 1 (T017): read and unread reminders (timed and untimed) for Ada Fake, one still
+// to come, none for the overdue activities; a second run duplicates nothing
+describe("fake reminders (SF-123)", () => {
+  beforeEach(resetDb);
+
+  it("gives Ada unread timed and untimed reminders, a read one and one still to come, once", async () => {
+    await runSeeders(sql);
+    await runSeeders(sql);
+    const now = new Date();
+    const [ada] = await sql<{ id: number }[]>`select id::int as id from users where name = 'Ada Fake'`;
+    const reminders = (await listNotifications(ada.id, 50, now)).items.filter((i) => i.kind === "reminder");
+    const by = (subject: string) => reminders.filter((r) => r.subject === subject);
+    expect(by("Fake call: reminder test call")).toMatchObject([{ read: false }]);
+    expect(by("Fake call: reminder test call")[0].dueTime).not.toBeNull();
+    expect(by("Fake task: reminder test task")).toMatchObject([{ read: false, dueTime: null }]);
+    expect(by("Fake meeting: reminder already seen")).toMatchObject([{ read: true }]);
+    expect(new Set(reminders.map((r) => r.subject)).size).toBe(reminders.length);
+    const [{ n }] = await sql<{ n: number }[]>`
+      select count(*)::int as n from activities where assignee_id = ${ada.id} and done_at is null and remind_at > ${now}`;
+    expect(n).toBeGreaterThanOrEqual(1);
+    const [overdue] = await sql<{ remind_at: Date | null }[]>`select remind_at from activities where subject = 'Fake call: chase the signed proposal'`;
+    expect(overdue.remind_at).toBeNull();
+    const [{ dupes }] = await sql<{ dupes: number }[]>`
+      select count(*)::int as dupes from (select subject from activities group by subject having count(*) > 1) x`;
+    expect(dupes).toBe(0);
+  });
+});
+
 // covers SF-116 FR-016, T040: fake files of several kinds on deals, people and organisations, on a private deal, a
 // private person and an archived record, with their FILE entries (one deleted); hidden from Grace where private; once
 describe("fake files (SF-116)", () => {
