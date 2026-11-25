@@ -30,18 +30,18 @@
       "completedRunId": "a8c4062f-b1c1-42b9-95be-3db046a6ad9b"
     },
     "/openwiki/data/database-schema.md": {
-      "gitHead": "ef8b0b14333581636a4bdf4429a47d48191412df",
-      "sourceFingerprint": "sha256:85b1c4ce9b7cdbff88a9f2960ba808bca0da1e714fdc2f442a110f786fe903b8",
-      "pageVersion": "sha256:aa0ccdc8547def8b616d4907f522eac89a184f41bd67196f1e7de828f14dbaba",
+      "pageVersion": "sha256:65390b7ca4f5bc3e3bee38034b40427b77bb5d47b66ac7f6567ac231eb286677",
       "completedBy": "claude-code",
-      "completedRunId": "2a5b843d-b0bd-4313-87e9-e279a41ed369"
+      "completedRunId": "dd1e066c-66eb-4e38-9b8d-f3886222e6e3",
+      "gitHead": "5c1710540f1ea767d949a6ae584dd198fcb09b46",
+      "sourceFingerprint": "sha256:982a4e7912706b24a9560a388498fc2ec140378658681f8a6bb3bae441f22c2b"
     },
     "/openwiki/features/activities.md": {
-      "gitHead": "775e0b2da798779019ffedd020b25df781d23862",
-      "sourceFingerprint": "sha256:10e811c2b3187e58467280b22d132655bf1f404436d79fe8b99bae375906371b",
-      "pageVersion": "sha256:fbf968af73036f74ee05dd3ad2d81a6e364110c46de262a879a85fa583d933bd",
+      "pageVersion": "sha256:60ef9393ed1797f1da9050378a8cace7f5472db68d86194434040e84044e505d",
       "completedBy": "claude-code",
-      "completedRunId": "8000e55d-6c83-4c8e-9a41-b2659483f9c6"
+      "completedRunId": "dd1e066c-66eb-4e38-9b8d-f3886222e6e3",
+      "gitHead": "5c1710540f1ea767d949a6ae584dd198fcb09b46",
+      "sourceFingerprint": "sha256:982a4e7912706b24a9560a388498fc2ec140378658681f8a6bb3bae441f22c2b"
     },
     "/openwiki/features/campaigns.md": {
       "gitHead": "ef8b0b14333581636a4bdf4429a47d48191412df",
@@ -79,11 +79,11 @@
       "completedRunId": "64eee75c-9c13-49bd-92ff-6597ba6ecdbe"
     },
     "/openwiki/features/pipedrive-import.md": {
+      "gitHead": "2af63060dc9d3cf007ea004de476ad2a22b7d927",
+      "sourceFingerprint": "sha256:0718ce2eec2ebeb9529e49d677682a98a056710af0d7f4e9dce19e0500c0e76e",
       "pageVersion": "sha256:2ffcfe7104ce0a7380f67d7cdbe0c2ef93a4161f7deff6aa9896431883b7e488",
       "completedBy": "claude-code",
-      "completedRunId": "53f21ccb-4c5b-4502-944c-0f11f5e39819",
-      "gitHead": "2af63060dc9d3cf007ea004de476ad2a22b7d927",
-      "sourceFingerprint": "sha256:0718ce2eec2ebeb9529e49d677682a98a056710af0d7f4e9dce19e0500c0e76e"
+      "completedRunId": "53f21ccb-4c5b-4502-944c-0f11f5e39819"
     },
     "/openwiki/features/pipelines-and-deals.md": {
       "gitHead": "2953de028f7257b7b259a07b307df0c923ff66bf",

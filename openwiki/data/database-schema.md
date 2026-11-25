@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-24T18:25:19.853Z
+    at: 2026-11-25T11:47:45.053Z
 sources:
   - id: sf120-src-migration
     resource: repo://migrations/0014_segments.sql
@@ -37,13 +37,15 @@ sources:
     resource: repo://migrations/0013_unsubscribe.sql
   - id: openwiki-source-e456f59e22568cd1a9f5ca48
     resource: repo://migrations/0015_campaigns.sql
+  - id: openwiki-source-5511f800eea987de057af6d1
+    resource: repo://migrations/0017_activity_reminders.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-24T18:25:19.853Z" }
+generated: { by: "claude-code", at: "2026-11-25T11:47:45.053Z" }
 ---
 
 # Database schema and access
@@ -158,6 +160,11 @@ organisation (`on delete set null`), `assignee_id`, `created_by`, an optimistic 
 it is live while the assignee differs from the assigner. Partial indexes serve the assignee's open and done lists,
 a deal's next activity and the unread assignment count. No other table changes: done activities are read into the
 timeline, never copied.
+
+Migration `0017_activity_reminders.sql` (SF-123) adds `remind_at` and `reminder_read_at` (both nullable timestamps) to
+`activities`: the one in-app reminder of a planned activity (null `remind_at`: none; null `reminder_read_at`: unread).
+It sets `remind_at` for planned activities whose due moment is still ahead, and adds the partial index
+`activities_reminder_idx` on `(assignee_id, remind_at desc)` for planned activities that have a reminder.
 
 ### Ambassadors and referrals (migration 0009)
 

@@ -4,8 +4,12 @@
 // on a private deal and one on a private person; each assignee can see every record its activity is linked to (FR-012);
 // one assignment notification is unread (Ada → Grace), one read
 // (Grace → Ada). Most open deals keep no planned activity ("⚠ No next activity" on their card).
+// SF-123 (research.md §8): every planned one gets its reminder as when scheduled now (later ones: still to come; overdue
+// ones: none), and three more for Ada Fake stand for activities scheduled earlier, their reminder already shown: a
+// timed call due in a few minutes (unread), an untimed task due today, or yesterday before 09:00 (unread), and
+// yesterday's meeting (read).
 // Idempotent: an activity is found by its exact subject; nothing is added when it is there.
-import { ukInstant, ukToday, type ActivityType } from "@/server/activities/rules";
+import { reminderAt, reminderFor, ukInstant, ukToday, type ActivityType } from "@/server/activities/rules";
 import type { Sql } from "@/server/db";
 
 type Seed = {
@@ -23,6 +27,10 @@ type Seed = {
   doneDaysAgo?: number;
   read?: boolean;
   note?: string;
+  // SF-123: "soon": due at the next 5-minute mark at least 5 minutes from now (`days` / `time` unused); "untimedShown":
+  // no time, due today from 09:00 UK, else yesterday. `reminder`: the reminder already shown, unread or read.
+  dueAt?: "soon" | "untimedShown";
+  reminder?: "unread" | "read";
 };
 
 const SEEDS: Seed[] = [
@@ -44,7 +52,34 @@ const SEEDS: Seed[] = [
   { subject: "Fake meeting: demo", type: "meeting", days: -2, time: "10:00", minutes: 45, assignee: "Margaret Fake", organisation: "Fakeco Ltd", doneDaysAgo: 1 },
   { subject: "Fake call: secret project check-in", type: "call", days: 1, time: "09:30", assignee: "Ada Fake", deal: "Fake secret project" },
   { subject: "Fake task: private follow-up with Gus", type: "task", days: 3, assignee: "Ada Fake", person: ["Gus", "Lorem"] },
+  {
+    subject: "Fake call: reminder test call", type: "call", days: 0, dueAt: "soon", assignee: "Ada Fake", deal: "Sample Gyms CRM",
+    linksFromDeal: true, reminder: "unread",
+  },
+  { subject: "Fake task: reminder test task", type: "task", days: 0, dueAt: "untimedShown", assignee: "Ada Fake", reminder: "unread" },
+  {
+    subject: "Fake meeting: reminder already seen", type: "meeting", days: -1, time: "14:00", minutes: 30, assignee: "Ada Fake",
+    organisation: "Fakeco Ltd", reminder: "read",
+  },
 ];
+
+const FIVE_MINUTES = 5 * 60 * 1000;
+
+// The UK day and time of a seed's due moment.
+function dueOf(s: Seed, now: Date, today: string): { dueOn: string; dueTime: string | null } {
+  if (s.dueAt === "soon") {
+    const at = new Date(Math.ceil((now.getTime() + FIVE_MINUTES) / FIVE_MINUTES) * FIVE_MINUTES);
+    const p = Object.fromEntries(
+      new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+        .formatToParts(at).map((x) => [x.type, x.value]),
+    );
+    return { dueOn: ukToday(at), dueTime: `${p.hour}:${p.minute}` };
+  }
+  if (s.dueAt === "untimedShown") {
+    return { dueOn: now.getTime() >= reminderAt({ dueOn: today, dueTime: null }).getTime() ? today : dayFrom(today, -1), dueTime: null };
+  }
+  return { dueOn: dayFrom(today, s.days), dueTime: s.time ?? null };
+}
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -86,19 +121,22 @@ export async function seedActivities(sql: Sql): Promise<string[]> {
       }
       const assignee = users.get(s.assignee)!;
       const by = users.get(s.by ?? s.assignee)!;
-      const dueOn = dayFrom(today, s.days);
+      const due = dueOf(s, now, today);
+      const dueOn = due.dueOn;
       const doneAt = s.doneDaysAgo === undefined ? null : new Date(now.getTime() - s.doneDaysAgo * DAY);
       const assignedAt = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      const remindAt = doneAt ? null : s.reminder ? reminderAt(due) : reminderFor(due, now);
+      const reminderReadAt = remindAt && s.reminder === "read" ? new Date(remindAt.getTime() + 60 * 60 * 1000) : null;
       await db`
         insert into activities (type, subject, due_on, due_time, duration_minutes, note, deal_id, person_id, organisation_id, assignee_id,
-                                done_at, done_by, created_by, created_at, assigned_by, assigned_at, assignment_read_at)
-        values (${s.type}, ${s.subject}, ${dueOn}, ${s.time ?? null}, ${s.minutes ?? null}, ${s.note ?? null}, ${dealId}, ${personId},
+                                done_at, done_by, created_by, created_at, assigned_by, assigned_at, assignment_read_at, remind_at, reminder_read_at)
+        values (${s.type}, ${s.subject}, ${dueOn}, ${due.dueTime}, ${s.minutes ?? null}, ${s.note ?? null}, ${dealId}, ${personId},
                 ${organisationId}, ${assignee}, ${doneAt}, ${doneAt ? assignee : null}, ${by}, ${assignedAt}, ${by}, ${assignedAt},
-                ${s.read ? new Date(assignedAt.getTime() + 60 * 60 * 1000) : null})`;
+                ${s.read ? new Date(assignedAt.getTime() + 60 * 60 * 1000) : null}, ${remindAt}, ${reminderReadAt})`;
       // A done call or meeting raises its person's "Last contacted", as ticking it would (research.md §8).
       if (doneAt && s.type !== "task" && personId !== null) {
-        const due = ukInstant(dueOn, s.time ?? null);
-        const at = due.getTime() < doneAt.getTime() ? due : doneAt;
+        const dueInstant = ukInstant(dueOn, due.dueTime);
+        const at = dueInstant.getTime() < doneAt.getTime() ? dueInstant : doneAt;
         await db`update persons set last_contacted_at = greatest(coalesce(last_contacted_at, '-infinity'::timestamptz), ${at}::timestamptz) where id = ${personId}`;
       }
       return true;

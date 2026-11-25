@@ -8,10 +8,11 @@ import { gmailNeedsReconnect } from "@/server/gmail/connections";
 import * as notifications from "@/server/notifications";
 import { idFrom } from "@/server/records/form-data";
 
-// Posts `kind` (mention when absent; SF-109: assignment) and `id` (`eventId` before SF-109).
+// Posts `kind` (mention when absent or unknown; SF-109: assignment; SF-123: reminder) and `id` (`eventId` before SF-109).
 export async function openNotification(form: FormData): Promise<void> {
   const user = await requireUser();
-  const kind = form.get("kind") === "assignment" ? "assignment" : "mention";
+  const posted = form.get("kind");
+  const kind = posted === "assignment" || posted === "reminder" ? posted : "mention";
   const id = idFrom(form, "id") ?? idFrom(form, "eventId");
   const opened = id === null ? null : await notifications.openNotification(user.id, { kind, id });
   // The sidebar count lives in the shared layout: refresh it.

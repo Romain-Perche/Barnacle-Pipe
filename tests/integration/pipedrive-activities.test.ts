@@ -154,3 +154,25 @@ describe("done and planned (US3-3, US3-4, FR-013)", () => {
     expect(cardLine(card.next, NOW).kind).toBe("next");
   });
 });
+
+describe("reminders of imported activities (SF-123 FR-001, FR-007; SF-122 US3-6)", () => {
+  // covers SF-123 FR-001, FR-007 with SF-122 US3-6: a planned imported activity gets the reminder of any planned activity
+  // when its reminder time is still to come; none for done or past ones, and none shown at once (an import notifies nobody)
+  it("sets remind_at on planned imported activities whose reminder time is still to come", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: NOW });
+    try {
+      await importActivities();
+    } finally {
+      vi.useRealTimers();
+    }
+    const remind = async (pd: number) =>
+      (await sql<{ remind_at: Date | null }[]>`select remind_at from activities where id = ${await actOf(pd)}`)[0].remind_at;
+    expect(await remind(set.act.taskPlanned)).toEqual(new Date("2026-12-10T09:00:00Z"));
+    expect(await remind(set.act.tooLong)).toEqual(new Date("2026-12-07T08:45:00Z"));
+    expect(await remind(set.act.taskOverdue)).toBeNull();
+    expect(await remind(set.act.meetingDone)).toBeNull();
+    // Today, untimed: its 09:00 reminder time has passed at noon: no reminder shown at once.
+    expect(await remind(set.act.taskToday)).toBeNull();
+    expect([await unreadCount(linus.id, NOW), await unreadCount(margaret.id, NOW)]).toEqual([0, 0]);
+  });
+});
