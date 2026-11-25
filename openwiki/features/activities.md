@@ -16,10 +16,12 @@ sources:
     resource: repo://src/app/(app)/activities/actions.ts
   - id: sf109-src-migration
     resource: repo://migrations/0008_activities.sql
+  - id: openwiki-source-93c2209470d603cca7fa48a0
+    resource: repo://src/server/calendar/soon.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-23T16:50:25.265Z
-generated: { by: "claude-code", at: "2026-11-23T16:50:25.265Z" }
+    at: 2026-11-25T12:55:36.197Z
+generated: { by: "claude-code", at: "2026-11-25T12:55:36.197Z" }
 ---
 
 # Activities (calls, meetings and tasks)
@@ -57,3 +59,6 @@ assignee and an optional note. It can link to a deal, a person and an organisati
   See [People and organisations](people-and-organisations.md) for mentions, which share that page.
 - **Board.** The deals board shows each deal's next activity or a warning on its card.
 - **Seed.** `src/seed/activities.ts` adds fake activities (see [Migrations and seeding](../operations/migrations-and-seeding.md)).
+- **Google Calendar.** Edits, ticks and unticks set `activities.updated_at`, so the later change wins against Google
+  Calendar. Activity actions hand the sync to `runAfterResponse` (`src/server/calendar/soon.ts`), so saving never waits
+  on Google. See [Gmail](gmail.md) for the Calendar sync.

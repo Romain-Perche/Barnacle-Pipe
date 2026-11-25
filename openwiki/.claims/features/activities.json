@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fbf968af73036f74ee05dd3ad2d81a6e364110c46de262a879a85fa583d933bd",
+  "pageVersion": "sha256:829f0db0f58c6b6c10e8e437a149af70d902609d8173aca62ed6905310b348cf",
   "claims": [
     {
       "id": "claim_3cf5e6c6f4ad4554aaf0d8bdeb2bc247",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/records/visibility.ts",
-          "version": "repo-file-v1:sha256:37aee39da7fd15d38d48090d825ee2ecbd25468030d90ee30747ebc42a015536"
+          "version": "repo-file-v1:sha256:f656402c0553e50305d2fb21e612df5f83bb5b9d74221226774cfeb5298f3273"
         }
       ]
     },
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/activities/activities.ts",
-          "version": "repo-file-v1:sha256:e2cf436a52c75647fcd97e8c0975cb88abe435b2aa28df8f1df24b6b9fb41ddf"
+          "version": "repo-file-v1:sha256:e6b84cebf6f08f0a571b50327dda046091139326843bab9522b49254afa5643e"
         }
       ]
     },
@@ -31,10 +31,24 @@
           "version": "repo-file-v1:sha256:23d0153a535793f9c93ec54318686224c3d38ffefbc4a56513387fbd9f3dc322"
         }
       ]
+    },
+    {
+      "id": "claim_4fde04cfec104f4382e92a13978b17b1",
+      "statement": "Activity edits, ticks and unticks set activities.updated_at, and activity actions run the Google Calendar sync after the response via runAfterResponse.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/activities/activities.ts",
+          "version": "repo-file-v1:sha256:e6b84cebf6f08f0a571b50327dda046091139326843bab9522b49254afa5643e"
+        },
+        {
+          "resource": "repo://src/server/calendar/soon.ts",
+          "version": "repo-file-v1:sha256:64882740acb012dbd4040eb8eee34866846252be0e96d3b1ca028ba32477ba16"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-23T16:50:25.265Z"
+    "at": "2026-11-25T12:55:36.197Z"
   }
 }

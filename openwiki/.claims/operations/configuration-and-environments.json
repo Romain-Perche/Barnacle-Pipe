@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:05f122407a78aab0ecd5fa32af627baf90ebbd5cb322b29ff7cac0cf76a4b8a1",
+  "pageVersion": "sha256:44f2a5d2fc8cd1e2c10723dd3b34915806fcb9c01ca12a9712ff287230e0ec57",
   "claims": [
     {
       "id": "claim_13428ba51be747709f2744c129d2c44d",
@@ -58,13 +58,27 @@
       "evidence": [
         {
           "resource": "repo://.env.example",
-          "version": "repo-file-v1:sha256:8a1c694dce0f85b30f562f6e1b7fe127eb3fb4bfcff208b1a7dab790fbc23969"
+          "version": "repo-file-v1:sha256:60c80dfd341022a2f2395bdbdb46dab9c9e534cf97ce8f276157390c604c678c"
+        }
+      ]
+    },
+    {
+      "id": "claim_6e82fc1b042b4d7daef52904a638c069",
+      "statement": "CALENDAR_SYNC=on enables Google Calendar sync via calendarConfig(), only when Gmail mode is not off.",
+      "evidence": [
+        {
+          "resource": "repo://.env.example",
+          "version": "repo-file-v1:sha256:60c80dfd341022a2f2395bdbdb46dab9c9e534cf97ce8f276157390c604c678c"
+        },
+        {
+          "resource": "repo://src/server/env.ts",
+          "version": "repo-file-v1:sha256:7b995d20a2accc24bc4e861720c7d78a9d273288acee32443e91c87e886f0382"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-24T14:34:59.724Z"
+    "at": "2026-11-25T12:55:36.197Z"
   }
 }

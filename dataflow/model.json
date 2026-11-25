@@ -470,6 +470,36 @@
       "sources": [
         "src/server/gmail/google-api.ts"
       ]
+    },
+    {
+      "id": "calendar-sync",
+      "label": "Calendar sync (pull and push)",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/calendar/sync.ts",
+        "src/server/calendar/rules.ts",
+        "src/server/calendar/soon.ts"
+      ]
+    },
+    {
+      "id": "calendar-push",
+      "label": "Calendar push receiver",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/app/calendar/push/route.ts",
+        "src/server/calendar/push.ts"
+      ]
+    },
+    {
+      "id": "calendar-client",
+      "label": "Google Calendar client",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/calendar/calendar-api.ts"
+      ]
     }
   ],
   "stores": [
@@ -732,6 +762,15 @@
       "group": "gmail",
       "sources": [
         "migrations/0016_gmail.sql"
+      ]
+    },
+    {
+      "id": "calendar-events-table",
+      "label": "Calendar event links",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "migrations/0019_calendar.sql"
       ]
     }
   ],
@@ -2708,6 +2747,79 @@
       "sources": [
         "src/server/files/storage.ts",
         "src/server/pipedrive/imports.ts"
+      ]
+    },
+    {
+      "from": "activities",
+      "to": "calendar-sync",
+      "data": "activity changes to sync",
+      "sources": [
+        "src/server/calendar/soon.ts",
+        "src/server/activities/activities.ts"
+      ]
+    },
+    {
+      "from": "cloud-scheduler",
+      "to": "calendar-push",
+      "data": "Calendar change notice",
+      "sources": [
+        "src/app/calendar/push/route.ts"
+      ]
+    },
+    {
+      "from": "calendar-push",
+      "to": "calendar-sync",
+      "data": "channel notice starts a pull",
+      "sources": [
+        "src/server/calendar/push.ts"
+      ]
+    },
+    {
+      "from": "calendar-sync",
+      "to": "calendar-client",
+      "data": "event reads and writes",
+      "sources": [
+        "src/server/calendar/sync.ts"
+      ]
+    },
+    {
+      "from": "calendar-client",
+      "to": "gmail-api",
+      "data": "Calendar events, watch channels",
+      "sources": [
+        "src/server/calendar/calendar-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-api",
+      "to": "calendar-client",
+      "data": "changed events, sync token",
+      "sources": [
+        "src/server/calendar/calendar-api.ts"
+      ]
+    },
+    {
+      "from": "calendar-sync",
+      "to": "calendar-events-table",
+      "data": "activity-event links, base",
+      "sources": [
+        "src/server/calendar/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-tables",
+      "to": "calendar-sync",
+      "data": "sealed token, calendar sync state",
+      "sources": [
+        "src/server/calendar/sync.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "calendar-events-table",
+      "data": "schema",
+      "sources": [
+        "migrations/0019_calendar.sql"
       ]
     }
   ]
