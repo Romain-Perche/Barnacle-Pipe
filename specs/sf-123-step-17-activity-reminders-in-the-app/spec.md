@@ -13,6 +13,7 @@
 ### Session 2026-11-25
 
 - Q: When should an activity's reminder arrive? → A: 15 minutes before a timed activity; 09:00 UK time on the due date when it has no time
+- Q: When is an activity's "due moment", after which it gets no reminder (FR-005, FR-007, untick)? → A: a timed activity's start time (its duration does not extend it); an activity with no time: the end of its due date in UK time, when the Activities list starts showing it as Overdue (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
