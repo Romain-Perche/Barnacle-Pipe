@@ -4,7 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
-import { gmailNeedsReconnect } from "@/server/gmail/connections";
+import { settingsWarning, settingsWarnLabel } from "@/server/gmail/connections";
 import * as notifications from "@/server/notifications";
 import { idFrom } from "@/server/records/form-data";
 
@@ -26,13 +26,15 @@ export async function markAllNotificationsRead(): Promise<void> {
   redirect("/notifications");
 }
 
-export type SidebarState = { unread: number; gmailWarn: boolean };
+// gmailWarn: the Settings "!" shows; warnLabel: its label (SF-124: Gmail needs reconnecting, or Calendar access missing).
+export type SidebarState = { unread: number; gmailWarn: boolean; warnLabel: string | null };
 
 // SF-108: the sidebar count right now, asked by UnreadLink after every navigation (the shared layout is not rendered
 // again on client navigation); SF-118: with the Settings "!" (Gmail needs reconnecting). Read only: opening a page
 // never marks anything read (FR-004).
 export async function currentSidebar(): Promise<SidebarState> {
   const user = await requireUser();
-  const [unread, gmailWarn] = await Promise.all([notifications.unreadCount(user.id), gmailNeedsReconnect(user.id)]);
-  return { unread, gmailWarn };
+  const [unread, warning] = await Promise.all([notifications.unreadCount(user.id), settingsWarning(user.id)]);
+  const warnLabel = settingsWarnLabel(warning);
+  return { unread, gmailWarn: warnLabel !== null, warnLabel };
 }

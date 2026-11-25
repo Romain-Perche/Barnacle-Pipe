@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { NextResponse, type NextRequest } from "next/server";
 import { appBaseUrl, gmailConfig, isFakeAllowed } from "@/server/env";
 import { fakeGmail } from "@/server/gmail/fake-gmail";
-import { GMAIL_SCOPES } from "@/server/gmail/rules";
+import { askedScopes } from "@/server/gmail/rules";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   else {
     const code = fakeGmail().consent({
       email: str("email"),
-      scopes: GMAIL_SCOPES.filter((s) => form.get(`scope:${s}`) === "on"),
+      scopes: askedScopes().filter((s) => form.get(`scope:${s}`) === "on"),
       codeChallenge: str("code_challenge"),
       redirectUri,
       clientId: str("client_id"),

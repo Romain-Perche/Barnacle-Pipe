@@ -10,6 +10,8 @@ import { idFrom, organisationFormFromData } from "@/server/records/form-data";
 import * as organisations from "@/server/records/organisations";
 import type { OrganisationForm } from "@/server/records/rules";
 import type { FormState } from "../records/form-state";
+import { calendarAfterChange } from "@/server/calendar/sync";
+import { runAfterResponse } from "@/server/calendar/soon";
 
 function answer(result: SaveResult, values: OrganisationForm, prev: FormState<OrganisationForm>, id: number | null): FormState<OrganisationForm> {
   if (result.status === "saved") {
@@ -60,6 +62,8 @@ export async function deleteOrganisation(formData: FormData) {
   const result = await organisations.deleteOrganisation(user.id, id);
   if (result.status === "forbidden") redirect("/admin/users");
   if (result.status === "not_found") redirect(`/organisations/${id}`);
+  // SF-124: once the answer is sent, the events of the activities deleted with it leave Google Calendar.
+  runAfterResponse(() => calendarAfterChange([]));
   await setFlash({ code: "organisation_deleted", name: result.name });
   revalidatePath("/organisations");
   revalidatePath("/people");

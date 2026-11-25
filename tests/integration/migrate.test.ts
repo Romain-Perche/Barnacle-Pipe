@@ -589,6 +589,63 @@ describe("npm run db:migrate", () => {
     expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
   });
 
+  // covers SF-124 data-model.md § Migration: 0019_calendar.sql adds the Calendar columns of gmail_connections, the
+  // activities' updated_at and calendar_events (RLS on), with Postgres's own refusals
+  it("applies 0019_calendar.sql: calendar columns, updated_at, calendar_events and its checks", async () => {
+    const db = await scratchDb();
+    const run = await runMigrate(db);
+    expect(run.code, run.out).toBe(0);
+    expect(run.out.indexOf("Applied 0019_calendar.sql")).toBeGreaterThan(run.out.indexOf("Applied 0018_pipedrive_fetched.sql"));
+    const c = postgres(urlFor(db), { max: 1, onnotice: () => {} });
+    try {
+      const code = (p: Promise<unknown>) => p.then(() => "ok", (err: { code?: string }) => err.code);
+      const cols = await c<{ table_name: string; column_name: string; data_type: string }[]>`
+        select table_name, column_name, data_type from information_schema.columns
+        where (table_name = 'gmail_connections' and column_name like 'calendar%') or (table_name = 'activities' and column_name = 'updated_at')`;
+      const types = Object.fromEntries(cols.map((r) => [`${r.table_name}.${r.column_name}`, r.data_type]));
+      expect(types).toMatchObject({
+        "gmail_connections.calendar_connected_at": "timestamp with time zone",
+        "gmail_connections.calendar_sync_token": "text",
+        "gmail_connections.calendar_channel_token_hash": "bytea",
+        "gmail_connections.calendar_sync_again": "boolean",
+        "activities.updated_at": "timestamp with time zone",
+      });
+      const [rls] = await c`select relrowsecurity from pg_class where relname = 'calendar_events'`;
+      expect(rls.relrowsecurity).toBe(true);
+      const [u] = await c`insert into users (email, name) values ('ada@barnacle.ai', 'Ada') returning id`;
+      const cipher = Buffer.alloc(40, 1);
+      const hash = Buffer.alloc(32, 2);
+      expect(await code(c`insert into gmail_connections (user_id, email, state, connected_at, calendar_channel_id, calendar_channel_resource_id, calendar_channel_token_hash)
+        values (${u.id}, 'ada@barnacle.ai', 'disconnected', now(), 'ch', 'res', ${hash})`)).toBe("23514");
+      expect(await code(c`insert into gmail_connections (user_id, email, state, token_cipher, connected_at, calendar_channel_id, calendar_channel_resource_id)
+        values (${u.id}, 'ada@barnacle.ai', 'working', ${cipher}, now(), 'ch', 'res')`)).toBe("23514");
+      const [g] = await c`insert into gmail_connections (user_id, email, state, token_cipher, connected_at) values (${u.id}, 'ada@barnacle.ai', 'working', ${cipher}, now()) returning id`;
+      const [a] = await c`insert into activities (type, subject, due_on, assignee_id, created_by, assigned_by) values ('call', 'Fake call', '2026-12-02', ${u.id}, ${u.id}, ${u.id}) returning id, updated_at`;
+      expect(a.updated_at).toBeInstanceOf(Date);
+      const link = (v: { event?: string; origin?: string; state?: string; hash?: string | null; activity?: unknown }) =>
+        c`insert into calendar_events (activity_id, connection_id, google_event_id, origin, state, sent_hash)
+          values (${(v.activity === undefined ? a.id : v.activity) as never}, ${g.id}, ${v.event ?? "crmabcdef"}, ${v.origin ?? "crm"}, ${v.state ?? "synced"}, ${v.hash ?? null})`;
+      expect(await code(link({ event: "abcd" }))).toBe("23514");
+      expect(await code(link({ origin: "other" }))).toBe("23514");
+      expect(await code(link({ origin: "google", state: "creating" }))).toBe("23514");
+      expect(await code(link({ hash: "a".repeat(63) }))).toBe("23514");
+      expect(await code(link({ hash: "a".repeat(64) }))).toBe("ok");
+      expect(await code(link({ event: "crmother" }))).toBe("23505");
+      // Deleting an activity keeps its links, with no activity, whatever their origin (a meeting from Google included).
+      const [b] = await c`insert into activities (type, subject, due_on, assignee_id, created_by, assigned_by) values ('meeting', 'Fake meeting', '2026-12-08', ${u.id}, ${u.id}, ${u.id}) returning id`;
+      expect(await code(link({ event: "googleevent1", origin: "google", activity: b.id }))).toBe("ok");
+      await c`delete from activities where id in (${a.id}, ${b.id})`;
+      const rows = await c`select activity_id, origin from calendar_events order by id`;
+      expect(rows.map((r) => [r.activity_id, r.origin])).toEqual([[null, "crm"], [null, "google"]]);
+    } finally {
+      await c.end();
+    }
+    const migration = readFileSync("migrations/0019_calendar.sql", "utf8");
+    expect(migration).not.toMatch(/\b(begin|commit|concurrently|vacuum)\b/i);
+    expect(migration.match(/create table/gi)?.length).toBe(1);
+    expect(migration.match(/enable row level security/gi)?.length).toBe(1);
+  });
+
   // covers SF-117 T013: the Pipedrive code keeps to the pooler's limits (no session state); the migration is transaction-safe
   it("keeps the Pipedrive code and 0012_pipedrive.sql free of session state", () => {
     const dir = "src/server/pipedrive";

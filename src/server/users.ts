@@ -4,7 +4,7 @@
 import { isBarnacleEmail, normalizeEmail } from "@/server/auth/rules";
 import { revokeAllSessions } from "@/server/auth/session";
 import { sql, type Sql } from "@/server/db";
-import { afterGmailForgotten, forgetGmailInTx } from "@/server/gmail/connections";
+import { afterGmailForgotten, forgetGmailInTx, type Forgotten } from "@/server/gmail/connections";
 import { deleteConnection } from "@/server/pipedrive/connection";
 
 export type UserRow = {
@@ -97,18 +97,19 @@ export function removeAdmin(actorId: number, userId: number): Promise<ChangeResu
 }
 
 export async function deactivate(actorId: number, userId: number): Promise<ChangeResult> {
-  let gmailKey: string | null = null;
+  let gmailKey: Forgotten | null = null;
   const result = await asAdmin(actorId, async (db) => {
     if (userId === actorId) throw new Refused("self_deactivate");
     await update(db, userId, { status: "deactivated" });
     await revokeAllSessions(userId, db);
     // SF-117 FR-003: users are never deleted, so their Pipedrive token is (nobody else may use it).
     await deleteConnection(db, userId);
-    // SF-118 edge case "Deactivated user": their Gmail key is forgotten as on disconnect; copied emails stay.
+    // SF-118 edge case "Deactivated user": their Gmail key is forgotten as on disconnect; copied emails stay. SF-124: their
+    // calendar sync stops too; the events already in their calendar stay.
     gmailKey = await forgetGmailInTx(db, userId);
     await record(db, userId, actorId, "deactivated");
   });
-  // After commit, best effort: stop Gmail's notices and cancel the key at Google (never inside the transaction).
+  // After commit, best effort: stop Calendar's and Gmail's notices and cancel the key at Google (never inside the transaction).
   if (result.ok) await afterGmailForgotten(gmailKey);
   return result;
 }

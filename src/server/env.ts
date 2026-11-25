@@ -143,3 +143,14 @@ export function gmailConfig(): GmailConfig {
     cronSecret,
   };
 }
+
+// SF-124 (research.md §16, contracts/google.md § Settings): Google Calendar sync is on when CALENDAR_SYNC is exactly "on"
+// and Gmail is set up (real or fake); it then uses Gmail's connection, key and mode. Google posts change notices to
+// `${appUrl}/calendar/push` (in fake mode the fake delivers them in process).
+export type CalendarConfig = { mode: "off" } | { mode: "real" | "fake"; pushAddress: string };
+
+export function calendarConfig(): CalendarConfig {
+  const g = gmailConfig();
+  if ((process.env.CALENDAR_SYNC ?? "").trim() !== "on" || g.mode === "off") return { mode: "off" };
+  return { mode: g.mode, pushAddress: `${g.appUrl}/calendar/push` };
+}

@@ -2,7 +2,8 @@
 // syncConnection: one run at a time per connection through a lease column (no lock across network calls, no session
 // state), Gmail's history since history_id (or, when Gmail no longer has it, a listing since the last sync), the pure
 // decideCopy, then one transaction per stored message. Unique indexes keep every message once per account.
-// runGmailCheck: the 15-minute job (/cron/gmail): every working connection, then the daily watch renewal.
+// runGmailCheck: the 15-minute job (/cron/gmail): every working connection, then the daily watch renewal; SF-124: then
+// its calendar sync and the daily renewal of its Calendar notice channel (runCalendarCheck).
 import { sql, type Sql } from "@/server/db";
 import { gmailConfig } from "@/server/env";
 import { loadKey, markNeedsReconnect } from "@/server/gmail/connections";
@@ -18,6 +19,7 @@ import {
   watch,
 } from "@/server/gmail/google-api";
 import { decideCopy, readMessage, type ReadMessage } from "@/server/gmail/rules";
+import { runCalendarCheck } from "@/server/calendar/sync";
 
 const LEASE_MS = 2 * 60 * 1000;
 export const MAX_GETS_PER_RUN = 300;
@@ -244,6 +246,7 @@ export async function runGmailCheck(now = new Date()): Promise<void> {
         select (watch_renewed_at is null or watch_renewed_at < ${new Date(now.getTime() - RENEW_AFTER_MS)}) as due
         from gmail_connections where id = ${connectionId} and state = 'working'`;
       if (row?.due) await renewWatch(connectionId, now);
+      await runCalendarCheck(connectionId, now);
     } catch {
       // One connection's failure never stops the others; the next check tries again.
     }

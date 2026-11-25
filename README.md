@@ -116,7 +116,7 @@ Cloud Pub/Sub's discovery files the fake Gmail is checked against
 | `npm run db:migrate` | Apply the pending `migrations/*.sql`. Prints each one applied, or "Database is up to date.". Safe to run twice, or twice at once. |
 | `npm run db:seed` | Load fake data. Only when `APP_ENV` is exactly `development` or `test` and `VERCEL_ENV` is not `production`/`preview`; otherwise prints "Fake data can only be loaded when APP_ENV is development or test." and exits 1. Safe to run again. |
 | `npm test` | Unit and integration tests (runs `test:schemas` first). |
-| `npm run test:schemas` | Download the pinned Google, Gmail, Pub/Sub, Supabase Storage and Pipedrive (v2, v1 and the full v1 copy) schemas into `.factory/schemas/` when missing; does nothing otherwise. |
+| `npm run test:schemas` | Download the pinned Google, Gmail, Pub/Sub, Google Calendar, Supabase Storage and Pipedrive (v2, v1 and the full v1 copy) schemas into `.factory/schemas/` when missing; does nothing otherwise. |
 | `npm run typecheck` | `tsc --noEmit`. |
 
 ## Settings

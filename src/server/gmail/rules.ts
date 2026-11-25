@@ -5,14 +5,28 @@
 // - what is copied (decideCopy) and what a Google error means (classifyGoogleError);
 // - the RFC 5322 text of a sent email (buildMime), refusing CR/LF in any header value.
 import { randomBytes } from "node:crypto";
+import { calendarConfig } from "@/server/env";
 import { messages } from "@/server/messages";
 
 export const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"] as const;
+// SF-124 (research.md §2): events of the calendars the user owns, the primary one included; nothing else.
+export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events.owned";
 
-// Both scopes must be in Google's space-separated `scope` answer (the user may untick a box: granular consent).
-export function hasAllScopes(scope: string): boolean {
-  const granted = new Set((scope ?? "").split(/\s+/).filter(Boolean));
-  return GMAIL_SCOPES.every((s) => granted.has(s));
+const scopeSet = (scope: string) => new Set((scope ?? "").split(/\s+/).filter(Boolean));
+
+// What [ CONNECT GMAIL ] asks Google for: the two Gmail scopes, plus Calendar when Calendar sync is on (SF-124).
+export function askedScopes(): string[] {
+  return calendarConfig().mode === "off" ? [...GMAIL_SCOPES] : [...GMAIL_SCOPES, CALENDAR_SCOPE];
+}
+
+// Every asked scope must be in Google's space-separated `scope` answer (the user may untick a box: granular consent).
+export function hasAllScopes(scope: string, asked: readonly string[] = askedScopes()): boolean {
+  const granted = scopeSet(scope);
+  return asked.every((s) => granted.has(s));
+}
+
+export function hasCalendarScope(scopes: string): boolean {
+  return scopeSet(scopes).has(CALENDAR_SCOPE);
 }
 
 export type Address = { email: string; name: string | null };

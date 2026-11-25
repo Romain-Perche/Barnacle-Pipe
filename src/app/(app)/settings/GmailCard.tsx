@@ -1,5 +1,7 @@
 // The Gmail card on Settings (SF-118 contracts/routes.md § Gmail card, design B): a heading with a green or red dot and
 // the buttons on the right, then label/value lines. Only the user's own connection; never the key. Times in UK time.
+// SF-124 (design A): one more line, "Calendar: …", and while Calendar access is missing the reconnect message and
+// [ RECONNECT GMAIL ] beside [ SEND ME A TEST EMAIL ].
 import Link from "next/link";
 import { formatDateTime } from "@/server/format";
 import type { GmailSettings } from "@/server/gmail/connections";
@@ -53,7 +55,7 @@ export function GmailCard({ gmail, notice, error, confirmDisconnect }: Props) {
                   </button>
                 </form>
               )}
-              {gmail.state === "needs_reconnect" && (
+              {(gmail.state === "needs_reconnect" || gmail.calendar === "missing") && (
                 <form action={startGmailConnect}>
                   <button className="btn solid" type="submit">
                     [ RECONNECT GMAIL ]
@@ -80,11 +82,15 @@ export function GmailCard({ gmail, notice, error, confirmDisconnect }: Props) {
         ) : (
           <>
             {gmail.state === "needs_reconnect" && <p className="err">{templates.gmail_needs_reconnect(gmail.email ?? "")}</p>}
+            {gmail.calendar === "missing" && <p className="err">{messages.calendar_reconnect}</p>}
             <ul className="gm-lines">
               {gmail.state === "working" && <li>{templates.gmail_connected_as(gmail.email ?? "")}</li>}
               <li>{templates.gmail_last_sync(gmail.lastSyncedAt ? formatDateTime(gmail.lastSyncedAt) : messages.gmail_not_synced)}</li>
               <li>{templates.gmail_conversations(gmail.conversations)}</li>
               {gmail.connectedAt && <li>{templates.gmail_copying_since(formatDateTime(gmail.connectedAt))}</li>}
+              {gmail.calendar !== "off" && (
+                <li>{templates.calendar_line(gmail.calendar === "syncing" ? messages.calendar_syncing : messages.calendar_missing)}</li>
+              )}
             </ul>
           </>
         )}

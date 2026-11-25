@@ -28,6 +28,7 @@ describe("npm run test:schemas in a copy of the repo without .factory/schemas/",
   const pipedriveV1Full = path.join(dir, ".factory/schemas/pipedrive_v1_full_openapi.yml");
   const gmail = path.join(dir, ".factory/schemas/gmail-api.json");
   const pubsub = path.join(dir, ".factory/schemas/pubsub-api.json");
+  const calendar = path.join(dir, ".factory/schemas/calendar-api.json");
 
   it("downloads the pinned oauth2-api.json and storage_v0_openapi.json", () => {
     expect(existsSync(file)).toBe(false);
@@ -51,11 +52,13 @@ describe("npm run test:schemas in a copy of the repo without .factory/schemas/",
     }
     expect(JSON.parse(readFileSync(gmail, "utf8")).schemas.Profile.properties.emailAddress.type).toBe("string");
     expect(Object.keys(JSON.parse(readFileSync(pubsub, "utf8")).schemas.PubsubMessage.properties)).toContain("data");
+    // SF-124: Google Calendar's discovery file (the fake Calendar's checks).
+    expect(JSON.parse(readFileSync(calendar, "utf8")).resources.events.methods.watch.path).toBe("calendars/{calendarId}/events/watch");
   }, 60_000);
 
   it("does nothing on a second run (no download)", () => {
     const before = [statSync(file).mtimeMs, statSync(storage).mtimeMs];
-    expect(run().match(/already there/g)).toHaveLength(7);
+    expect(run().match(/already there/g)).toHaveLength(8);
     expect([statSync(file).mtimeMs, statSync(storage).mtimeMs]).toEqual(before);
   });
 

@@ -6,10 +6,13 @@ import { GET as callback } from "@/app/(app)/settings/gmail/callback/route";
 import * as actions from "@/app/(app)/settings/actions";
 import { createSession, SESSION_COOKIE } from "@/server/auth/session";
 import { sql } from "@/server/db";
+import { askedScopes } from "@/server/gmail/rules";
+import { afterResponseSettled } from "@/server/calendar/soon";
 import type { GmailFake } from "../fakes/gmail";
 
 export const MODIFY = "https://www.googleapis.com/auth/gmail.modify";
 export const SEND = "https://www.googleapis.com/auth/gmail.send";
+export const CALENDAR = "https://www.googleapis.com/auth/calendar.events.owned";
 
 export async function redirectOf(p: Promise<unknown>): Promise<string> {
   try {
@@ -45,7 +48,8 @@ export async function consentAndReturn(
   else {
     const code = fake.consent({
       email: o.email ?? p.get("login_hint")!,
-      scopes: o.scopes ?? [MODIFY, SEND],
+      // Every box the consent screen shows stays ticked (SF-124: Calendar's too when Calendar sync is on).
+      scopes: o.scopes ?? askedScopes(),
       codeChallenge: p.get("code_challenge")!,
       redirectUri: p.get("redirect_uri")!,
       clientId: p.get("client_id")!,
@@ -54,6 +58,8 @@ export async function consentAndReturn(
     back.searchParams.set("code", code);
   }
   const res = await callback(new NextRequest(back));
+  // SF-124: the first calendar sync the callback starts after its answer has ended.
+  await afterResponseSettled();
   if (res.status !== 303) throw new Error(`callback answered ${res.status}`);
   const to = new URL(res.headers.get("location")!);
   return `${to.pathname}${to.search}`;

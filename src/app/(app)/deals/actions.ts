@@ -12,6 +12,8 @@ import { setFlash } from "@/server/records/flash";
 import { dealFormFromData, idFrom } from "@/server/records/form-data";
 import { toId } from "@/server/records/rules";
 import type { FormState } from "../records/form-state";
+import { calendarAfterChange } from "@/server/calendar/sync";
+import { runAfterResponse } from "@/server/calendar/soon";
 
 const LIST = "/deals/list";
 const page = (id: number, extra = "") => `/deals/${id}${extra}`;
@@ -128,6 +130,8 @@ export async function deleteDeal(formData: FormData) {
   const result = await deals.deleteDeal(user.id, id);
   if (result.status === "forbidden") redirect("/admin/users");
   if (result.status === "not_found") redirect(back ? LIST : "/deals");
+  // SF-124: once the answer is sent, the events of the activities deleted with it leave Google Calendar.
+  runAfterResponse(() => calendarAfterChange([]));
   await setFlash({ code: "deal_deleted", name: result.name });
   refresh(id);
   redirect(back ? LIST : boardHref(result.pipelineId));

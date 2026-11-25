@@ -10,6 +10,23 @@
 import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, randomBytes, sign } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import {
+  activeChannel,
+  addFakeEvent,
+  CALENDAR_ROOT,
+  calendarApi,
+  calendarOf,
+  changeFakeEvent,
+  declineFakeEvent,
+  deleteFakeEvent,
+  ensureCalendarState,
+  expireTokens,
+  noticeHeaders,
+  type CalendarState,
+  type FakeEvent,
+  type FakeEventChange,
+  type NewFakeEvent,
+} from "@/server/calendar/fake-calendar";
 import { gmailConfig, isFakeAllowed } from "@/server/env";
 import type { GmailPart } from "@/server/gmail/rules";
 
@@ -39,7 +56,7 @@ export type FakeState = {
   failWatch: boolean;
   offsetMs: number;
   key: { kid: string; privatePem: string };
-};
+} & CalendarState; // SF-124: the fake Google Calendar (src/server/calendar/fake-calendar.ts)
 
 export interface StateStore {
   load(): FakeState | null;
@@ -145,6 +162,10 @@ function parseMime(raw: string): { headers: { name: string; value: string }[]; p
 export class FakeGoogleMail {
   readonly requests: FakeRequest[] = [];
   private isDown = false;
+  // SF-124 test switches: the next Calendar write is applied but its answer is lost (a network error); writes to these
+  // event ids answer 400.
+  private loseAnswer = false;
+  private readonly refused = new Set<string>();
 
   constructor(readonly options: FakeGmailOptions) {
     this.fetch = this.fetch.bind(this);
@@ -165,10 +186,14 @@ export class FakeGoogleMail {
         access: {},
         failWatch: false,
         offsetMs: 0,
+        calendars: {},
+        channels: [],
+        unreachable: false,
         key: { kid: `fake-${randomBytes(8).toString("hex")}`, privatePem: privateKey.export({ type: "pkcs8", format: "pem" }).toString() },
       };
       this.options.store.save(s);
     }
+    ensureCalendarState(s);
     return s;
   }
   private change<T>(fn: (s: FakeState) => T): T {
@@ -247,6 +272,83 @@ export class FakeGoogleMail {
   keyStatusOf(email: string): TokenStatus {
     const mine = Object.values(this.state().refresh).filter((t) => t.email === email.trim().toLowerCase());
     return mine.length ? mine[mine.length - 1].status : "unknown";
+  }
+
+  // ---- calendar (SF-124) ------------------------------------------------------------------------------------------
+  // Every Google call (token endpoint included) fails as a network error / works again; kept in the state so every
+  // route of a dev server sees it.
+  setUnreachable(on: boolean) {
+    this.change((s) => void (s.unreachable = on));
+  }
+  isUnreachable(): boolean {
+    return this.state().unreachable;
+  }
+  calendarEvents(email: string): FakeEvent[] {
+    return structuredClone(this.state().calendars[email.trim().toLowerCase()]?.events ?? []);
+  }
+  calendarEmails(): string[] {
+    return Object.keys(this.state().calendars).sort();
+  }
+  calendarChannel(email: string) {
+    return structuredClone(activeChannel(this.state(), email, this.now()));
+  }
+  // The headers of Google's notice for this calendar now (and counts it as sent), or null with no active channel.
+  calendarNotice(email: string, state: "sync" | "exists" = "exists"): Headers | null {
+    return this.change((s) => noticeHeaders(s, email, this.now(), state));
+  }
+  // Google posts the notice to the app's push route (in process). Null when no channel is active.
+  async deliverCalendar(email: string): Promise<number | null> {
+    const headers = this.calendarNotice(email);
+    if (!headers) return null;
+    const { receiveCalendarPush } = await import("@/server/calendar/push");
+    return (await receiveCalendarPush(headers)).status;
+  }
+  // The notice is sent with no delivery (a lost notice).
+  dropCalendarNotice(email: string): void {
+    this.calendarNotice(email);
+  }
+  private async after(email: string, deliver: boolean | undefined) {
+    if (deliver) await this.deliverCalendar(email);
+  }
+  async addEvent(email: string, input: NewFakeEvent, o: { deliver?: boolean } = {}): Promise<string> {
+    const e = this.change((s) => addFakeEvent(s, this.now(), email, input));
+    await this.after(email, o.deliver);
+    return e.id;
+  }
+  async changeEvent(email: string, id: string, change: FakeEventChange, o: { deliver?: boolean } = {}): Promise<void> {
+    this.change((s) => changeFakeEvent(s, this.now(), email, id, change));
+    await this.after(email, o.deliver);
+  }
+  async declineEvent(email: string, id: string, o: { deliver?: boolean } = {}): Promise<void> {
+    this.change((s) => declineFakeEvent(s, this.now(), email, id));
+    await this.after(email, o.deliver);
+  }
+  async deleteEvent(email: string, id: string, o: { deliver?: boolean } = {}): Promise<void> {
+    this.change((s) => deleteFakeEvent(s, this.now(), email, id));
+    await this.after(email, o.deliver);
+  }
+  expireCalendarTokens(email?: string): void {
+    this.change((s) => expireTokens(s, email));
+  }
+  // The user takes one permission back in their Google Account: their keys and access tokens lose that scope.
+  removeScope(email: string, scope: string) {
+    const who = email.trim().toLowerCase();
+    this.change((s) => {
+      for (const t of [...Object.values(s.refresh), ...Object.values(s.access)]) if (t.email === who) t.scopes = t.scopes.filter((x) => x !== scope);
+    });
+  }
+  // The next Calendar write is done but its answer never arrives.
+  loseNextCalendarAnswer() {
+    this.loseAnswer = true;
+  }
+  // Writes to this event id answer 400 (Google refuses that one event).
+  refuseEventWrites(id: string, on = true) {
+    if (on) this.refused.add(id);
+    else this.refused.delete(id);
+  }
+  // Makes sure a user's calendar exists (empty), so the fake page lists them.
+  touchCalendar(email: string): void {
+    this.change((s) => void calendarOf(s, email));
   }
 
   // ---- consent screen ----------------------------------------------------------------------------------------------
@@ -366,8 +468,25 @@ export class FakeGoogleMail {
     }
     const logged: unknown = url.origin === "https://oauth2.googleapis.com" ? "(form)" : body;
     this.requests.push({ method: req.method, url: `${url.origin}${url.pathname}`, path: url.pathname, query: Object.fromEntries(url.searchParams), body: logged });
-    if (this.isDown) throw new TypeError("fetch failed");
+    if (this.isDown || this.state().unreachable) throw new TypeError("fetch failed");
     const base = `${url.origin}${url.pathname}`;
+    if (base.startsWith(CALENDAR_ROOT)) {
+      const auth = /^Bearer (.+)$/.exec(req.headers.get("authorization") ?? "")?.[1] ?? "";
+      const target = req.method === "POST" ? (body as { id?: unknown } | null)?.id : decodeURIComponent(url.pathname.split("/").pop() ?? "");
+      if ((req.method === "POST" || req.method === "PATCH") && typeof target === "string" && this.refused.has(target)) {
+        return json(400, { error: { errors: [{ domain: "global", reason: "invalid", message: "Invalid value" }], code: 400, message: "Invalid value" } });
+      }
+      const res = this.change((s) => {
+        const a = s.access[auth];
+        const token = a && !a.dead && a.expires >= this.now() ? { email: a.email, scopes: a.scopes } : null;
+        return calendarApi(s, this.now(), { method: req.method, url, body }, token);
+      });
+      if (this.loseAnswer && req.method !== "GET") {
+        this.loseAnswer = false;
+        throw new TypeError("fetch failed");
+      }
+      return res;
+    }
     if (base === TOKEN_URL) return this.token(req, text);
     if (base === REVOKE_URL) return this.revoke(req, text);
     if (base === CERTS_URL) return this.certs();

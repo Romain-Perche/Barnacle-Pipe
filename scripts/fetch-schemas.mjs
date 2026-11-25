@@ -2,8 +2,8 @@
 // checked against, each pinned to one commit and checked by sha256: Google's userinfo (tests/fakes/google.ts) and
 // Supabase Storage's OpenAPI file (SF-116, tests/fakes/storage.ts) and Pipedrive's v2 (JSON) and v1 (YAML) OpenAPI
 // files (SF-117, tests/fakes/pipedrive.ts), a fuller v1 copy (SF-122) that tests/fakes/pipedrive.ts uses for the v1
-// paths the Zenika file lacks (deal participants, file downloads), and Gmail's and Cloud Pub/Sub's discovery files (SF-118,
-// tests/fakes/gmail.ts). A file already there is skipped. The files stay
+// paths the Zenika file lacks (deal participants, file downloads), Gmail's and Cloud Pub/Sub's discovery files (SF-118,
+// tests/fakes/gmail.ts) and Google Calendar's discovery file (SF-124, tests/fakes/gmail.ts). A file already there is skipped. The files stay
 // out of git (.factory/schemas/ is ignored).
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -44,6 +44,11 @@ const SCHEMAS = [
     file: "pubsub-api.json",
     url: "https://raw.githubusercontent.com/googleapis/google-api-go-client/3f740bc15212818d4d0eb041b02c951457ff63fa/pubsub/v1/pubsub-api.json",
     sha256: "df690a6912844276487a3dae9db3346e65b19aa5434ab0ae024fc89dcffffc17",
+  },
+  {
+    file: "calendar-api.json",
+    url: "https://raw.githubusercontent.com/googleapis/google-api-go-client/3f740bc15212818d4d0eb041b02c951457ff63fa/calendar/v3/calendar-api.json",
+    sha256: "eee07d697ad19b3d19c667ce6033a769c8f5bb37e33f5abf394bac47363395ec",
   },
 ];
 

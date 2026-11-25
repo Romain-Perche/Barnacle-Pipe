@@ -55,6 +55,11 @@ function parts(date: Date) {
   return { day: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
+// SF-124 (research.md §5): the UK day and time ("2026-12-04", "15:00") of an instant, seconds dropped.
+export function ukWallClock(instant: Date): { day: string; time: string } {
+  return parts(instant);
+}
+
 // The UK day of an instant: "2026-11-23".
 export function ukToday(now: Date): string {
   return parts(now).day;

@@ -10,6 +10,8 @@ import * as people from "@/server/records/people";
 import type { SaveResult } from "@/server/records/common";
 import type { PersonForm } from "@/server/records/rules";
 import type { FormState } from "../records/form-state";
+import { calendarAfterChange } from "@/server/calendar/sync";
+import { runAfterResponse } from "@/server/calendar/soon";
 
 async function answer(result: SaveResult, values: PersonForm, prev: FormState<PersonForm>, id: number | null): Promise<FormState<PersonForm>> {
   if (result.status === "saved") {
@@ -67,6 +69,8 @@ export async function deletePerson(formData: FormData) {
   const result = await people.deletePerson(user.id, id);
   if (result.status === "forbidden") redirect("/admin/users");
   if (result.status === "not_found") redirect(`/people/${id}`);
+  // SF-124: once the answer is sent, the events of the activities deleted with it leave Google Calendar.
+  runAfterResponse(() => calendarAfterChange([]));
   await setFlash({ code: "person_deleted", name: result.name });
   revalidatePath("/people");
   redirect("/people");

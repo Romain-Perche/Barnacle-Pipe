@@ -41,6 +41,7 @@ const { GET: callback } = await import("@/app/(app)/settings/gmail/callback/rout
 const { TEST_GMAIL_KEY } = await import("../fakes/gmail");
 const { makePerson, makeUser, resetDb } = await import("./db-helpers");
 const h = await import("./gmail-helpers");
+const { askedScopes } = await import("@/server/gmail/rules");
 
 let linus: { id: number };
 beforeEach(async () => {
@@ -104,7 +105,7 @@ async function follow(res: Response): Promise<string> {
 const allowForm = (url: URL, o: { email?: string; scopes?: string[] } = {}) => ({
   ...params(url),
   email: o.email ?? "linus@barnacle.ai",
-  ...Object.fromEntries((o.scopes ?? [MODIFY, SEND]).map((s) => [`scope:${s}`, "on"])),
+  ...Object.fromEntries((o.scopes ?? askedScopes()).map((s) => [`scope:${s}`, "on"])),
   decision: "allow",
 });
 
