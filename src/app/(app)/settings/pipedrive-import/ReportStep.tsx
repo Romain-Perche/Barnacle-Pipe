@@ -1,18 +1,21 @@
 // Step 3 REPORT (SF-117 US2 scenario 16, FR-025, design B): the counts, "Already imported: n", "Stopped by you before
 // the end." when stopped, "// NOT IMPORTED" (Pipedrive record, reason), the report's lines, the warnings on single
 // records, links to People and Organisations, and [ NEW IMPORT ]. Pipedrive names are text nodes only; CRM people are
-// named only when the viewer can see them (names come from namesForReport).
+// named only when the viewer can see them (names come from namesForReport). SF-122: "// PIPELINES" (pipelines and
+// stages added, merged, not created), deals, notes, activities and files in "// NOT IMPORTED", links to the Deals board
+// and the Activities list.
 import Link from "next/link";
 import { messages, templates } from "@/server/messages";
 import type { ImportView } from "@/server/pipedrive/imports";
-import { itemText, reportLines, warningLines, type Names } from "@/server/pipedrive/report";
+import { itemLabel, itemText, pipelineLines, reportLines, warningLines, type Names } from "@/server/pipedrive/report";
 import { Counts } from "./Counts";
 import { KindCounts } from "./KindCounts";
 
-const KIND_WORD = { person: "Person", organisation: "Organisation" } as const;
+const KIND_WORD = { person: "Person", organisation: "Organisation", deal: "Deal", note: "Note", activity: "Activity", file: "File" } as const;
 
 export function ReportStep({ view, names }: { view: ImportView; names: Names }) {
   const lines = reportLines(view.report, names);
+  const pipelines = pipelineLines(view.report);
   const warnings = warningLines(view.report, names);
   return (
     <>
@@ -23,6 +26,18 @@ export function ReportStep({ view, names }: { view: ImportView; names: Names }) 
         <p className="notice" role="status">
           {messages.pipedrive_stopped_by_you}
         </p>
+      )}
+      {pipelines.length > 0 && (
+        <section aria-label="Pipelines">
+          <div className="label sect">
+            <span className="c">//</span> PIPELINES
+          </div>
+          <ul className="import-warnings">
+            {pipelines.map((l, i) => (
+              <li key={i}>{l.text}</li>
+            ))}
+          </ul>
+        </section>
       )}
       {view.report.notImported.length > 0 && (
         <section aria-label="Not imported">
@@ -40,7 +55,7 @@ export function ReportStep({ view, names }: { view: ImportView; names: Names }) 
               {view.report.notImported.map((r) => (
                 <tr key={`${r.kind}:${r.pipedriveId}`}>
                   <td>
-                    {KIND_WORD[r.kind]} · {r.label}
+                    {KIND_WORD[r.kind]} · {itemLabel(r)}
                   </td>
                   <td>{itemText(r, names)}</td>
                 </tr>
@@ -92,6 +107,16 @@ export function ReportStep({ view, names }: { view: ImportView; names: Names }) 
         <Link className="btn" href="/organisations">
           Go to organisations
         </Link>
+        {(view.wants.deals || view.counts.deals.imported > 0) && (
+          <Link className="btn" href="/deals">
+            Go to deals
+          </Link>
+        )}
+        {(view.wants.activities || view.counts.activities.imported > 0) && (
+          <Link className="btn" href="/activities">
+            Go to activities
+          </Link>
+        )}
         <Link className="btn" href="/settings/pipedrive-import?new=1">
           [ NEW IMPORT ]
         </Link>

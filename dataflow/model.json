@@ -2288,7 +2288,7 @@
     {
       "from": "pipedrive-api",
       "to": "pipedrive-import",
-      "data": "people, organisations, deals, fields",
+      "data": "people, organisations, deals, notes, activities, files",
       "sources": [
         "src/server/pipedrive/api.ts"
       ]
@@ -2637,27 +2637,77 @@
       ]
     },
     {
-      "from": "activities-table",
-      "to": "notifications",
-      "data": "reminders due for the assignee",
+      "from": "pipedrive-import",
+      "to": "pipelines-table",
+      "data": "matched or created pipelines",
       "sources": [
-        "src/server/notifications.ts"
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
       ]
     },
     {
-      "from": "notifications",
-      "to": "activities-table",
-      "data": "reminder read marks",
+      "from": "pipedrive-import",
+      "to": "stages-table",
+      "data": "matched or created stages",
       "sources": [
-        "src/server/notifications.ts"
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
       ]
     },
     {
-      "from": "migrate",
-      "to": "activities-table",
-      "data": "reminder columns",
+      "from": "pipedrive-import",
+      "to": "deals-table",
+      "data": "imported deals",
       "sources": [
-        "migrations/0017_activity_reminders.sql"
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts",
+        "src/server/pipedrive/deal-rules.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "deal-people-table",
+      "data": "deal participants",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "deal-followers-table",
+      "data": "deal followers",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "activities-table",
+      "data": "imported activities",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts",
+        "src/server/pipedrive/deal-rules.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "files-tables",
+      "data": "imported file rows, cleanup paths",
+      "sources": [
+        "src/server/pipedrive/imports.ts",
+        "src/server/pipedrive/records-page.ts"
+      ]
+    },
+    {
+      "from": "pipedrive-import",
+      "to": "supabase-storage",
+      "data": "copied file contents",
+      "sources": [
+        "src/server/files/storage.ts",
+        "src/server/pipedrive/imports.ts"
       ]
     }
   ]

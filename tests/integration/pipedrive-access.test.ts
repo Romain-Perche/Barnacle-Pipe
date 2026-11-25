@@ -137,3 +137,19 @@ describe("the import page and start action", () => {
     expect(await sql`select 1 from pipedrive_imports`).toHaveLength(1);
   });
 });
+
+// covers SF-122 spec edge case "not signed in or deactivated": a deactivated user's part imports no deal, note, activity
+// or file; the four new kinds still need a connection
+describe("SF-122: the new kinds", () => {
+  it("a deactivated user's runPart stops and imports nothing; starting needs a connection", async () => {
+    const { startImport } = await import("@/server/pipedrive/imports");
+    expect(await startImport(margaret.id, { people: false, organisations: false, deals: true, notes: true, activities: true, files: true, consent: "subscribed" })).toEqual({ error: "pipedrive_not_connected" });
+    const id = await start(linus.id, { deals: true, notes: true, activities: true });
+    await sql`update users set status = 'deactivated' where id = ${linus.id}`;
+    expect(await runPart(linus.id, id)).toEqual({ next: "stop" });
+    expect((await importRow(id)).step).toBe("prepare");
+    const [counts] = await sql`select (select count(*)::int from deals) as deals, (select count(*)::int from activities) as activities,
+      (select count(*)::int from timeline_events where kind = 'note') as notes, (select count(*)::int from files) as files`;
+    expect(counts).toEqual({ deals: 0, activities: 0, notes: 0, files: 0 });
+  });
+});

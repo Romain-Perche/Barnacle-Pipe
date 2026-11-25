@@ -96,23 +96,26 @@ export function customCompatibility(pd: PdField, crm: CustomField | undefined): 
   return { ok: false, code: "pipedrive_field_type_mismatch", args: { name: pd.name.trim(), pd: pd.type, crm: crm.type } };
 }
 
-export type FieldNotImported = { kind: "person" | "organisation"; name: string; code: string; args: Record<string, string> };
+export type FieldNotImported = { kind: "person" | "organisation" | "deal"; name: string; code: string; args: Record<string, string> };
 export type FieldsPlan = {
   builtIn: Partial<Record<BuiltIn, PdField>>;
   mapped: { pd: PdField; crm: CustomField }[];
   notImported: FieldNotImported[];
-  // Person label names (field `label_ids` / `label`) and organisation industries (field `industry`), by option id.
+  // Person label names (field `label_ids` / `label`), deal label names (field `label`, SF-122) and organisation
+  // industries (field `industry`), by option id.
   labelOptions: Map<number, string>;
   industryOptions: Map<number, string>;
 };
 
 // Which Pipedrive fields fill what, for one kind: built-in names first (people only), then custom fields matched to
 // the kind's CRM custom fields by name (ignoring case and surrounding spaces); every other custom field once, with why.
-export function planFields(kind: "person" | "organisation", pdFields: PdField[], crmFields: CustomField[]): FieldsPlan {
+// SF-122: kind "deal" has no built-in names; its `label` field gives the deal label names.
+export function planFields(kind: "person" | "organisation" | "deal", pdFields: PdField[], crmFields: CustomField[]): FieldsPlan {
   const plan: FieldsPlan = { builtIn: {}, mapped: [], notImported: [], labelOptions: new Map(), industryOptions: new Map() };
   const seen = new Set<string>();
   for (const pd of pdFields) {
     if (kind === "person" && (pd.code === "label_ids" || pd.code === "label")) for (const o of pd.options) plan.labelOptions.set(o.id, o.label);
+    if (kind === "deal" && (pd.code === "label" || pd.code === "label_ids")) for (const o of pd.options) plan.labelOptions.set(o.id, o.label);
     if (kind === "organisation" && pd.code === "industry") for (const o of pd.options) plan.industryOptions.set(o.id, o.label);
     const builtIn = kind === "person" ? builtInOf(pd.name) : null;
     if (builtIn) {
@@ -200,9 +203,9 @@ export function readCustomValue(pd: PdField, crm: CustomField, raw: unknown): Cu
   }
 }
 
-type CustomOut = { custom: { fieldId: number; value: CustomValue }[]; missingChoices: { field: string; value: string }[]; warnings: Problem[] };
+export type CustomOut = { custom: { fieldId: number; value: CustomValue }[]; missingChoices: { field: string; value: string }[]; warnings: Problem[] };
 
-function customValues(plan: FieldsPlan, values: Record<string, unknown>): CustomOut {
+export function customValues(plan: FieldsPlan, values: Record<string, unknown>): CustomOut {
   const out: CustomOut = { custom: [], missingChoices: [], warnings: [] };
   for (const { pd, crm } of plan.mapped) {
     const r = readCustomValue(pd, crm, values[pd.code]);

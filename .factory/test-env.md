@@ -19,6 +19,9 @@
   and `apikey`. Switches: `down()` (network error), `failDeletes()` (500 on delete), `advance(ms)` (token clock),
   `objects()`, `requests`. In the running app (APP_ENV development/test and `SUPABASE_URL` empty) the same fake is
   reached by the browser at `/dev/fake-storage/...` (contents in `.fake-storage/`, git-ignored).
+  SF-122: the Pipedrive import's file copy uses the same fake and checks (sign-upload, the server's PUT with a 20 s
+  time-out, info for the start check `files/pipedrive-import-check`, bulk delete through the sweep);
+  `tests/unit/storage-fake.test.ts` shows a sign-upload body and an undeclared info path refused.
   AI review only: `.factory/run/storage-proxy.js`, a stand-in Storage on :54321 (`/storage/v1/*` forwarded to the app's
   `/dev/fake-storage`, CORS like Storage, `MODE=fail-deletes` answers 500 to every DELETE) for a second app run with
   `SUPABASE_URL=http://localhost:54321 SUPABASE_SECRET_KEY=fake-storage-key`.
@@ -44,6 +47,23 @@
   characters; "Budget" (double), "Favourite colour" (varchar), "Job title", "Lead source" (Referral / Webinar / Event),
   "LinkedIn", org "Region" (address), labels Hot / Cold / Investor) and `fake-pipedrive-other` ("Otherco Pipedrive"
   1002). It needs `PIPEDRIVE_TOKEN_KEY` set (`start-app.sh` makes one into /tmp/pipedrive-token-key; tests set their own).
+- Pipedrive API, SF-122 additions (v2 `GET /deals`, `/deals/archived`, `/deals/{id}/followers`, `/dealFields`, `/pipelines`,
+  `/stages`, `/activities`; v1 `GET /notes`, `/files`, `/activityTypes`, `/deals/{id}/participants`,
+  `/files/{id}/download`): the same fake and wrapper. v2 calls against `pipedrive_v2_openapi.json` as above; a v1 call
+  against `pipedrive_v1_openapi.yml` when that file declares the path and method, else against
+  `pipedrive_v1_full_openapi.yml` (the error names the file); a 200 answer that is not JSON (the download,
+  `application/octet-stream`) is checked only for a content type its operation declares. The fake answers v1 lists by
+  `start` / `limit` (≤ 500, `sort=id ASC`) with `additional_data.pagination` (participants: `start`, `limit`,
+  `more_items_in_collection` as that schema has them), `include_fields=followers_count,participants_count` on deals,
+  and serves downloads (404 for a removed file or lost bytes); with `redirectDownloads(true)` a download answers 302
+  to `https://files.fake-pipedrive.invalid/<company>/<id>`, which the fake serves only to a request WITHOUT
+  `x-api-token` (400 otherwise) and the wrapper throws on a token there (`fileHostRequests` records each request).
+  Seeding: `addPipeline`, `addStage`, `addDeal` (followers, participants), `addActivity`, `addActivityType`, `addNote`,
+  `addFile(meta, bytes)`, `deleteDeal` / `deleteActivity` / `deleteNote` / `deleteFile`, `loseFileBytes`,
+  `updatePerson`; `slowDownEvery`, `failNext` and the 401 rule apply to every new address. The development instance
+  adds 2 pipelines, 30 deals, 40 notes, 30 activities and 6 files (PDF, PNG, 26 MB, empty, Drive link, email
+  attachment). Engine hook `onSaveForTests` (APP_ENV=test only) runs inside every import transaction: tests use it to
+  prove no Pipedrive call happens while one is open, to force a failure, or to move the cursor (a stale part).
 - Gmail API (SF-118; users.getProfile, watch, stop, history.list, messages.list/get/send, threads.get): fake
   `src/server/gmail/fake-gmail.ts` (`FakeGoogleMail`), wrapped for the tests by `tests/fakes/gmail.ts` (`GmailFake`,
   `installGmailFake()`, installed with `useGmailFetchForTests`), which checks every Gmail request and answer against the
@@ -175,6 +195,13 @@
   check), applied on a fresh database by `migrate.test.ts`, which also checks Postgres's own 23514/23505 refusals (a
   second open import, paused without a reason, People without consent, nothing ticked, a person link with an
   organisation id, `how = 'copied'`, a 256-character company name).
+  SF-122 (`migrations/0017_pipedrive_deals.sql`: no new table; `want_*`, `*_total`, `*_done` columns, the records, step
+  and pause-reason checks, link kinds deal / note / activity / file with their id columns) applied on a fresh database
+  by `migrate.test.ts` (23514 for Deals without People, an unknown step, a note link with a deal id, a linked deal). The
+  new steps keep the same rules: every Pipedrive call (followers, participants, the pipelines and stages lists, file
+  downloads) and every Storage call (sign-upload, PUT) happens before `sql.begin()`; the `pipelines` step holds
+  `lock table pipelines, stages in share row exclusive mode`; a file part queues its Storage path in `file_cleanup` before
+  the upload and lists the file in the transaction that deletes that row.
   The Gmail code (SF-118: `src/server/gmail/*.ts`, `src/server/crypto/seal.ts`, `deactivate()` in `users.ts`) keeps to the
   same pooler limits: no fake, the real local PostgreSQL 17, no public schema on GitHub, follows
   https://supabase.com/docs/guides/database/connecting-to-postgres; no session state (`set`/`listen`/session advisory
@@ -216,6 +243,7 @@
 - storage_v0_openapi.json: https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json
 - pipedrive_v2_openapi.json: https://github.com/soenneker/soenneker.pipedrive.openapiclient/blob/77695f9076c899e2ba1e7e8eb029aabb28abed27/openapi.json
 - pipedrive_v1_openapi.yml: https://github.com/Zenika/zenpipe/blob/1cb3fb1bab5a5b1b735fccd95b54713c0493b9d4/pipedrive-api/src/main/resources/openapi.yml
+- pipedrive_v1_full_openapi.yml: https://github.com/konfig-sdks/openapi-examples/blob/161ab49c45e45825ca3832945c59a3ba904321ba/pipedrive/openapi.yaml
 - gmail-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json
 - pubsub-api.json: https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/pubsub/v1/pubsub-api.json
 
@@ -235,7 +263,8 @@
   and `psql -h localhost -U postgres -c "create database crm_test" -c "create database crm_dev"`.
 - Schemas: `.factory/schemas/oauth2-api.json`, `.factory/schemas/storage_v0_openapi.json`,
   `.factory/schemas/pipedrive_v2_openapi.json`, `.factory/schemas/pipedrive_v1_openapi.yml`,
-  `.factory/schemas/gmail-api.json` and `.factory/schemas/pubsub-api.json`, downloaded by
+  `.factory/schemas/pipedrive_v1_full_openapi.yml`, `.factory/schemas/gmail-api.json` and
+  `.factory/schemas/pubsub-api.json`, downloaded by
   `npm run test:schemas` (run by `npm test` as `pretest`; commits above, sha256 checked).
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
@@ -336,6 +365,40 @@
     added the "// COUNTS" table per kind on 3 REPORT, `section[aria-label="Counts per kind"]`). `check-sf117-kindcounts.js`
     (app on :3000, `BASE=http://localhost:3000`, fresh data) prints that table next to the `pipedrive_links` counts per kind
     (round 2: People 298/0/0/2, Organisations 58/1/0/1, equal to the links).
+  - SF-122 AI review (deals, notes, activities, files). Needs :3000 built, the stand-in Pipedrive on :9400 and :3001 as for
+    SF-117, plus `UPSTREAM=http://localhost:3001/dev/fake-storage setsid nohup node .factory/run/storage-proxy.js &` (:54321;
+    SF-122 adds `POST /__mode {"mode":"pass"|"down"|"fail-deletes","delay":ms}`: "down" answers 503 to everything, `delay` holds
+    each PUT upload), `PORT=3002 SKIP_BUILD=1 SKIP_SEED=1 PIPEDRIVE_URL=http://localhost:9400 SUPABASE_URL=http://localhost:54321
+    SUPABASE_SECRET_KEY=fake-storage-key bash .factory/run/start-app.sh` and the same with `PORT=3003 ... SUPABASE_URL=http://localhost:54399`
+    (nothing listens: "Files can't be reached"). `psql` must be on PATH (`sudo ln -sf /usr/lib/postgresql/17/bin/psql /usr/local/bin/psql`).
+    `pipedrive-server.ts` takes addFile bytes as `{"__b64": …}` or `{"__fill": [length, byte]}`. `sf122-lib.js` `setupData()` resets
+    the DB and the stand-in and adds the scenario data (ids in $TMPDIR/sf122-ids.json): Pipedrive pipelines "sales " (stages "lead
+    in", "Qualified", "qualified ", "Demo Fake", "Proposal"), "SALES", "Fake Empty Pipeline", a 101-character pipeline and stage,
+    a CRM deal field "Budget" (number), PD user 4 = grace@barnacle.ai, a "Site visit" type, people linked to Bob Placeholder and to
+    the private Dora Privatefake, a private person of Margaret, ~20 "SF122 …" deals (USD, lost reason 501 chars, empty / 201-char
+    title, bad values, xss title, participants incl. the nameless person 159), notes, activities and files covering every edge case.
+    Scripts, in order on one data set (NODE_PATH=/opt/playwright/node_modules): `scenarios-sf122-a.js` (setup + one import of all six
+    kinds as Ada, ~20 s; report in $TMPDIR/sf122-report.txt), `-b.js` (UI pages after a → $TMPDIR/sf122-ui.json), `-c.js` (Linus
+    edits/deletes imported notes, CRM changes, new PD records, the nameless person named, Edge 1 UI and the server rule, Pipedrive down
+    mid-run → paused/continue, second import → $TMPDIR/sf122-c.json); then `-d.js` (fresh setup; Linus non-admin imports; a
+    Margaret-only USD deal; deletion mid-import), `-e.js` (fresh setup; store unreachable at start on :3003 and :3002, store down in
+    the files step, Edge 15 stop / token removed / deactivated during a held upload; `ONLY=deact` reruns the last case), `-f.js`
+    (page closed → paused message, done activity on the timeline, download name, signed-out / deactivated requests).
+    Round 1 results: all pass except US1-8 (Linus's report warning names Margaret's private deal "SF122 Margaret secret USD") and
+    Edge 15 (a file is still listed after the token is removed (1) or the user deactivated (2) during the copy). With
+    `slowDownEvery(4, 1)` the deals step never advanced in 10 min (a part with follower/participant calls restarts whole on 429);
+    `slowDownEvery(25, 1)` finishes.
+    Round 2 (after fix 1): all 50 pass. New `scenarios-sf122-g.js` (fresh setup each run, app :3001): Edge 10 (a Margaret-only USD deal,
+    a 100,001-character note, a 201-character subject and a 27.4 MB file on her private deal, a Margaret-only person whose
+    organisation was not imported) and Edge 18 (8 deals with followers + participants, `slowDownEvery(SLOW, 1)` for the whole run).
+    `SLOW=3 WHO=ada` / `SLOW=4 WHO=ada`: no secret name in Ada's report ("a private deal/person/note/activity/file"), every E18 deal
+    once with 2 followers and 2 other people (~50 s); `SLOW=1000 WHO=margaret`: Margaret's own report names them. Output
+    $TMPDIR/sf122-g-<WHO>-<SLOW>.json. Mind: 25 MB = 26,214,400 bytes (a 26.2 MB decimal file is under the limit). Round 2 re-ran a–f:
+    Edge 15/16 now leave no file listed after stop, token removal or deactivation during a held upload (row paused token_refused).
+    Round 3 (after the merge of main: migrations renumbered 0017/0018): smoke checks 1-5 pass; a-g all re-run, all 50 pass.
+    Start order used: `start-app.sh` (:3000), `setsid nohup npx tsx .factory/run/pipedrive-server.ts &`, :3001, the storage
+    proxy, :3002, :3003 as above. `check-sf122-boardcard.js` (after any sf122 import) prints imported deals' board cards
+    (US3-4: "Next: 10 Dec · Call" instead of "⚠ No next activity").
   - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
     1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
@@ -584,7 +647,7 @@
     :3000; Edge case 3 replays migration 0017 on a pg_dump copy `sf123_mig`). Counts are compared at the minute before and
     at the reminder minute: seeded activities have reminders at round times too (e.g. 27 Nov 09:45). All pass.
 ## Smoke checks
-1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml
+1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
 3. curl -fs -o /dev/null http://localhost:3000/sign-in
 4. test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json

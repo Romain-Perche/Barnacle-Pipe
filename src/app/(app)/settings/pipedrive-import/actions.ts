@@ -13,6 +13,10 @@ export async function startPipedriveImportAction(form: FormData): Promise<void> 
   const result = await startImport(user.id, {
     people: form.get("people") === "on",
     organisations: form.get("organisations") === "on",
+    deals: form.get("deals") === "on",
+    notes: form.get("notes") === "on",
+    activities: form.get("activities") === "on",
+    files: form.get("files") === "on",
     consent: typeof consent === "string" ? consent : null,
   });
   if ("error" in result) redirect(result.error === "pipedrive_not_connected" ? "/settings" : `${PAGE}?error=${result.error}`);

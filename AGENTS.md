@@ -143,7 +143,24 @@ OAuth code flow and database sessions.
   `lock table organisations, person_emails, pipedrive_links in share row exclusive mode`), `report.ts` (`mergeReport`,
   `reportLines`, `namesForReport` through `visiblePerson()`). `pipedrive_links` (company + kind + Pipedrive id) is the
   "never twice" key; `pipedrive_imports` holds one run per user (one open at a time), `pipedrive_connections` one sealed
-  token per user. Timeline kinds `pipedrive_imported` / `pipedrive_unsubscribed`.
+  token per user. Timeline kinds `pipedrive_imported` / `pipedrive_unsubscribed`. Imported planned activities get `remind_at` (SF-123)
+  only while their reminder time is still to come: an import shows no reminder at once.
+  SF-122 deals, notes, activities and files: `html.ts` (pure `htmlToText`: note HTML → plain text), `deal-rules.ts` (pure:
+  `dealFromPipedrive`, `activityFromPipedrive`, `noteFromPipedrive`, `fileCheck`, `targetOf` deal > person > organisation,
+  `ukFromUtc`, `durationMinutes`, `formatMb`, `notePreview`), `records-page.ts` (pure: `planPipelines`, `planDealPage`,
+  `planNotePage`, `planActivityPage`, `planFileItem`). Steps after `people`: `pipelines` (read, then matched or created in
+  one transaction holding `pipelines, stages`; inserts only, by any user), `deals` / `archived_deals` (20 a part;
+  followers and participants read one after the other before the transaction), `notes`, `activities` (200 a part), `files`
+  (one copy at a time, cursor `"<start>:<index>"`, no new copy after 15 s or 25 MB). The file copy rule: download → the path
+  queued in `file_cleanup` (committed) → Storage upload → one transaction lists the file and deletes its `file_cleanup`
+  row; a stale or duplicate copy leaves its path due now. A download redirect (Pipedrive's file host) is followed once
+  WITHOUT the token. `pipedrive_links` also covers kinds deal, note, activity and file (always `how = 'imported'`, ids
+  `deal_id` / `note_id` / `activity_id` / `file_id`); a record skipped for a missing target gets no link. An import notifies
+  nobody (no `note_mentions`; an activity's `assigned_by` is its assignee). `onSaveForTests` (tests only) hooks every import
+  transaction. A part keeps the Pipedrive answers it already got across a slow-down (`pipedrive_imports.fetched`, with its
+  step and cursor; cleared when they move), and every save re-checks under lock that the user is active and still holds
+  the token (`lockRow`; else paused, nothing saved). A record private to another owner, or put on a record the importer
+  cannot see, is never named in the report (`privateItem`: empty label, `args.privateKind`, shown "a private …").
 - `src/server/gmail/` — Gmail connect and sync (SF-118); settings from `gmailConfig()` in `env.ts` (real / fake / off).
   `rules.ts` (pure: `GMAIL_SCOPES` = `gmail.modify` + `gmail.send`, `hasAllScopes`, `parseAddressList`, `decodeHeader`,
   `readMessage`, `decideCopy`, `classifyGoogleError`, `buildMime` (`BadHeader` on CR/LF), `testEmail`), `google-api.ts`
@@ -164,7 +181,8 @@ OAuth code flow and database sessions.
   `SettingsLink` in `UnreadLink.tsx` shows the orange "!" while Gmail needs reconnecting; `currentSidebar()` in
   `notifications/actions.ts` refreshes it with the unread count); `settings/pipedrive-import/` — the import
   page (`page.tsx`, `maxDuration = 60`; `ChooseStep.tsx`, `ProgressStep.tsx`, `ReportStep.tsx`, `Counts.tsx`,
-  `StopConfirm.tsx`, `actions.ts`) and `ImportRunner.tsx` (client: one part, `router.refresh()`, the next part a second
+  `StopConfirm.tsx`, `actions.ts`, SF-122 `KindChoice.tsx`: client, the six checkboxes, Deals / Notes / Activities / Files
+  tick and lock People and Organisations) and `ImportRunner.tsx` (client: one part, `router.refresh()`, the next part a second
   later or after Pipedrive's wait). `records/import/StepBar.tsx` takes a `steps` prop.
 - `src/app/gmail/push/route.ts` (Pub/Sub push, Google's token) and `src/app/cron/gmail/route.ts` (the 15-minute check,
   `CRON_SECRET`), scheduled by `vercel.json` (SF-118); `src/app/dev/fake-google/gmail` (the fake consent screen; its buttons post a plain form to `answer/route.ts`, a 303 to the callback) and
@@ -174,7 +192,7 @@ OAuth code flow and database sessions.
   campaigns: `campaigns.ts`, segments: `segments.ts`). The fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage, Pipedrive
-  v2 / v1, Gmail and Pub/Sub schemas).
+  v2 / v1 (plus the full Pipedrive v1 copy `pipedrive_v1_full_openapi.yml`), Gmail and Pub/Sub schemas).
 - `tests/unit`, `tests/integration` (Vitest, real Postgres), `tests/fakes` (outside services only), `tests/fixtures/csv` (fake CSV files),
   `tests/support/reset.ts` (empties every app table; lead sources back to the six starting ones).
 
@@ -202,7 +220,8 @@ Each test names what it covers (`// covers FR-003, US1 scenario 2`). Fakes only 
 (Google Sign-In: `tests/fakes/google.ts`; Supabase Storage: `tests/fakes/storage.ts`, checked against
 `storage_v0_openapi.json`; Gmail and Pub/Sub: `tests/fakes/gmail.ts`, checked against `gmail-api.json` and
 `pubsub-api.json`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
-`pipedrive_v2_openapi.json` and `pipedrive_v1_openapi.yml` by `tests/fakes/pipedrive-schema.ts`; each checked against
+`pipedrive_v2_openapi.json` and `pipedrive_v1_openapi.yml` (a v1 path that file lacks: `pipedrive_v1_full_openapi.yml`;
+downloads checked for their content type only; the fake file host refuses the token) by `tests/fakes/pipedrive-schema.ts`; each checked against
 its schema; see `.factory/test-env.md`).
 
 <!-- OPENWIKI:START -->

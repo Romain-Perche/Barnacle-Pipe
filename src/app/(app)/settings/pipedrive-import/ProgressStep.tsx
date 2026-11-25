@@ -1,6 +1,7 @@
 // Step 2 IMPORTING (SF-117 US3, FR-024, FR-029, design B): the counts, "// PROGRESS" with a bar and "<Kind> · <done> of
 // <total>" per ticked kind and the state, the slow-down countdown, the pause message with [ CONTINUE ], the keep-open
-// note and [ STOP IMPORT ]. The runner (client) is there only while the import runs and is not paused.
+// note and [ STOP IMPORT ]. SF-122: up to six kinds, in the order Organisations, People, Deals, Notes, Activities,
+// Files; a file store failure pauses with the SF-116 message. The runner (client) is there only while the import runs and is not paused.
 import Link from "next/link";
 import { messages, templates } from "@/server/messages";
 import type { ImportView } from "@/server/pipedrive/imports";
@@ -19,6 +20,8 @@ function pauseText(view: ImportView): string {
       return messages.pipedrive_token_no_longer;
     case "other_company":
       return messages.pipedrive_other_company;
+    case "files_unreachable":
+      return messages.files_unreachable;
     default:
       return view.pausedText;
   }
