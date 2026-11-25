@@ -390,6 +390,10 @@
     once with 2 followers and 2 other people (~50 s); `SLOW=1000 WHO=margaret`: Margaret's own report names them. Output
     $TMPDIR/sf122-g-<WHO>-<SLOW>.json. Mind: 25 MB = 26,214,400 bytes (a 26.2 MB decimal file is under the limit). Round 2 re-ran a–f:
     Edge 15/16 now leave no file listed after stop, token removal or deactivation during a held upload (row paused token_refused).
+    Round 3 (after the merge of main: migrations renumbered 0017/0018): smoke checks 1-5 pass; a-g all re-run, all 50 pass.
+    Start order used: `start-app.sh` (:3000), `setsid nohup npx tsx .factory/run/pipedrive-server.ts &`, :3001, the storage
+    proxy, :3002, :3003 as above. `check-sf122-boardcard.js` (after any sf122 import) prints imported deals' board cards
+    (US3-4: "Next: 10 Dec · Call" instead of "⚠ No next activity").
   - SF-114 AI-review scenario script `scenarios-sf114.js` (all 38: US1 1–5, US2 1–7, US3 1–7, US4 1–4, US5 1–2, edge cases
     1–13, ~4 min, :3000/crm_dev on fresh fake data; makes its own "SF114 …" people/deals by SQL, runs every action in the UI):
     `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf114.js`
