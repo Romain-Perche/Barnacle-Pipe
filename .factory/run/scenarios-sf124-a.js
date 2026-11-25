@@ -1,4 +1,4 @@
-// SF-124 AI review, part a: US1 1-5, US2 1-8, US4 6 (event before connect, Linus), Edge case 4 (Margaret).
+// SF-124 AI review, part a: US1 1-5, US2 1-8, US4 6 (event before connect, Linus), Edge case 5 (Margaret).
 // Fresh data first: rm -rf .fake-gmail && bash .factory/run/reset-db.sh (Ada Fake connected with Calendar by the seed).
 // Run: NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf124-a.js
 const H = require("./sf124-lib");
@@ -159,7 +159,7 @@ const GMAIL2 = "https://www.googleapis.com/auth/gmail.modify https://www.googlea
     const gone2 = !H.live(A).some((e) => e.id === (e2 && e2.id)) && actCount(`id=${id2}`) === 0;
     await ap.goto(BASE + "/activities?when=planned&assignee=all"); const listHas = (await ap.locator("tr", { hasText: "SF124 on Delia" }).count());
     R("US2 scenario 7", !!e0 && gone1 && !!e2 && linked === p && gone2, `deleted by user: event ${e0 && e0.id} gone ${gone1}; activity on person #${p} (linked ${linked}) event ${e2 && e2.id}, person deleted → activity and event gone ${gone2}`);
-    R("Edge case 11", !!e2 && gone2 && listHas === 0, `the only linked record (person #${p}) deleted: activity on the Activities list ${listHas}x, event ${e2 && e2.id} in the fake calendar: ${!gone2 ? "still there" : "gone"}`);
+    R("Edge case 12", !!e2 && gone2 && listHas === 0, `the only linked record (person #${p}) deleted: activity on the Activities list ${listHas}x, event ${e2 && e2.id} in the fake calendar: ${!gone2 ? "still there" : "gone"}`);
   }
   {
     await fakeBtn(ap, A, "[ MAKE GOOGLE UNREACHABLE ]");
@@ -173,14 +173,14 @@ const GMAIL2 = "https://www.googleapis.com/auth/gmail.modify https://www.googlea
       `saved #${id} while Google unreachable, errors on page: ${JSON.stringify(err)}, events then ${before}; after reachable + check: "${e.summary}" ${e.start && e.start.dateTime}–${e.end && e.end.dateTime}`);
   }
 
-  // ---- Edge case 4: Margaret connects with a planned activity due yesterday, a done one due tomorrow, a planned one tomorrow ----
+  // ---- Edge case 5: Margaret connects with a planned activity due yesterday, a done one due tomorrow, a planned one tomorrow ----
   {
     const mid = uid(M);
     const ins = (s, d, done) => q(`insert into activities (type,subject,due_on,due_time,duration_minutes,assignee_id,created_by,assigned_by,done_at,done_by) values ('call','${s}','${d}','10:00',30,${mid},${mid},${mid},${done ? "now()" : "null"},${done ? mid : "null"}) returning id`).split("\n")[0];
     const y = ins("SF124 M yesterday", yesterday, false), d = ins("SF124 M done tomorrow", tomorrow, true), t = ins("SF124 M tomorrow", tomorrow, false);
     await connect(mp); await sleep(2500);
     const titles = H.live(M).map((e) => e.summary);
-    R("Edge case 4", evOf(M, t).length === 1 && evOf(M, y).length === 0 && evOf(M, d).length === 0, `Margaret's calendar after connecting: ${JSON.stringify(titles)}`);
+    R("Edge case 5", evOf(M, t).length === 1 && evOf(M, y).length === 0 && evOf(M, d).length === 0, `Margaret's calendar after connecting: ${JSON.stringify(titles)}`);
   }
   console.log(JSON.stringify({ callId }));
   await browser.close();

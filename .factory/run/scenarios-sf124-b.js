@@ -153,7 +153,7 @@ const same = (a, b, keys) => keys.every((k) => a[k] === b[k]);
     R("US4 scenario 7", c7 === 1 && actCount(`subject='SF124 crm made'`) === 1 && evOf(A, id7).length === 1, `after the notice and a check: list ${c7}x, activities ${actCount(`subject='SF124 crm made'`)}, events ${evOf(A, id7).length}`);
   }
 
-  if (want("Edge case 3")) {
+  if (want("Edge case 4")) {
     const id = await fresh("SF124 both sides", { path: "/activities", dueOn: "2026-12-15", dueTime: "09:00" });
     const ev = eventId(id);
     await fakeBtn(ap, A, "[ MAKE GOOGLE UNREACHABLE ]");
@@ -163,21 +163,21 @@ const same = (a, b, keys) => keys.every((k) => a[k] === b[k]);
     await fakeBtn(ap, A, "[ MAKE GOOGLE REACHABLE ]");
     await runCheck(ap, A);
     const a = act(id); const e = H.events(A).find((x) => x.id === ev);
-    R("Edge case 3", a.dueTime === "14:00" && e.start.dateTime === "2026-12-15T14:00:00.000Z", `CRM 11:00 (Google unreachable, so not sent), then Google 14:00 with no notice; after check: activity ${a.dueTime}, event ${e.start.dateTime}–${e.end.dateTime}`);
+    R("Edge case 4", a.dueTime === "14:00" && e.start.dateTime === "2026-12-15T14:00:00.000Z", `CRM 11:00 (Google unreachable, so not sent), then Google 14:00 with no notice; after check: activity ${a.dueTime}, event ${e.start.dateTime}–${e.end.dateTime}`);
   }
 
-  if (want("Edge case 5")) {
+  if (want("Edge case 6")) {
     const id = await fresh("SF124 clock change", { path: "/activities", dueOn: "2026-12-16", dueTime: "10:00" });
     await edit(ap, id, { dueOn: "2026-03-29", dueTime: "00:30", duration: 120 });
     const e = H.events(A).find((x) => x.id === eventId(id));
     const id2 = await fresh("SF124 new york", { path: "/activities", dueOn: "2026-12-04", dueTime: "09:00" });
     ctl("change", A, eventId(id2), { start: "2026-12-04T10:00:00-05:00", end: "2026-12-04T11:00:00-05:00" }); await push(ctl("notice", A)); await sleep(800);
     const a2 = act(id2);
-    R("Edge case 5", e.start.dateTime === "2026-03-29T00:30:00.000Z" && e.end.dateTime === "2026-03-29T02:30:00.000Z" && a2.dueTime === "15:00" && a2.dueOn === "2026-12-04",
+    R("Edge case 6", e.start.dateTime === "2026-03-29T00:30:00.000Z" && e.end.dateTime === "2026-03-29T02:30:00.000Z" && a2.dueTime === "15:00" && a2.dueOn === "2026-12-04",
       `29 Mar 00:30 for 2 h (synced first while due in Dec, then moved: an activity due in the past is never first synced): event ${e.start.dateTime}–${e.end.dateTime} (UTC; 00:30 GMT → 02:30 BST); 10:00 New York on 4 Dec → ${a2.dueOn} ${a2.dueTime}`);
   }
 
-  if (want("Edge case 6")) {
+  if (want("Edge case 7")) {
     const id = await fresh("SF124 odd times", { path: "/activities", dueOn: "2026-12-17", dueTime: "10:00" });
     const ev = eventId(id);
     const res = [];
@@ -189,10 +189,10 @@ const same = (a, b, keys) => keys.every((k) => a[k] === b[k]);
     await changeEvent(ap, A, ev, { date: "2026-12-04", allDay: true });
     ctl("change", A, ev, { start: "2026-12-04", end: "2026-12-07", allDay: true }); await push(ctl("notice", A)); await sleep(800);
     { const a = act(id); const e = H.events(A).find((x) => x.id === ev); res.push({ a: `${a.dueOn} ${a.dueTime} ${a.duration}`, e: JSON.stringify([e.start, e.end]), ok: a.dueOn === "2026-12-04" && a.dueTime === "" && e.end.date === "2026-12-07" }); }
-    R("Edge case 6", res.every((r) => r.ok), JSON.stringify(res));
+    R("Edge case 7", res.every((r) => r.ok), JSON.stringify(res));
   }
 
-  if (want("Edge case 7")) {
+  if (want("Edge case 8")) {
     const id = await fresh("SF124 title limits", { path: "/activities", dueOn: "2026-12-18" });
     const ev = eventId(id);
     await changeEvent(ap, A, ev, { title: "" });
@@ -200,18 +200,18 @@ const same = (a, b, keys) => keys.every((k) => a[k] === b[k]);
     const long = "X".repeat(250);
     await changeEvent(ap, A, ev, { title: long });
     const a2 = act(id);
-    R("Edge case 7", a1.subject === "SF124 title limits" && a2.subject === "X".repeat(200), `empty title → "${a1.subject}"; 250 chars → ${a2.subject.length} chars`);
+    R("Edge case 8", a1.subject === "SF124 title limits" && a2.subject === "X".repeat(200), `empty title → "${a1.subject}"; 250 chars → ${a2.subject.length} chars`);
   }
 
-  if (want("Edge case 8")) {
+  if (want("Edge case 9")) {
     const n = actCount();
     await addEvent(ap, A, { title: "SF124 weekly", date: "2026-12-18", start: "09:00", end: "09:30", guests: "ana@example.test", recurring: true });
     await runCheck(ap, A);
     await ap.goto(BASE + "/activities?when=planned&assignee=all"); const t = await ap.locator("body").innerText();
-    R("Edge case 8", actCount() === n && !t.includes("SF124 weekly"), `activities ${n} → ${actCount()}`);
+    R("Edge case 9", actCount() === n && !t.includes("SF124 weekly"), `activities ${n} → ${actCount()}`);
   }
 
-  if (want("Edge case 9")) {
+  if (want("Edge case 10")) {
     const p = person("Archie", "SFlater", ["archie.sf124@example.test"]);
     const id = await fresh("SF124 archived person", { path: `/people/${p}`, dueOn: "2026-12-02" });
     q(`update persons set archived_at=now() where id=${p}`);
@@ -223,19 +223,19 @@ const same = (a, b, keys) => keys.every((k) => a[k] === b[k]);
     await ap.goto(BASE + `/people/${p}?activity=${id}`); await ap.waitForLoadState("networkidle");
     let msg = norm(await ap.locator("body").innerText());
     const refused = msg.includes("Restore this record before changing its activities.");
-    R("Edge case 9", a.dueOn === "2026-12-04" && a.person === p && /4 Dec/.test(nx) && refused, `activity ${a.dueOn} ${a.dueTime}; person's next activities "${nx.slice(0, 160)}"; edit refused with the SF-109 message: ${refused}`);
+    R("Edge case 10", a.dueOn === "2026-12-04" && a.person === p && /4 Dec/.test(nx) && refused, `activity ${a.dueOn} ${a.dueTime}; person's next activities "${nx.slice(0, 160)}"; edit refused with the SF-109 message: ${refused}`);
   }
 
-  if (want("Edge case 10")) {
+  if (want("Edge case 11")) {
     const p = person("Pria", "SFprivate", ["pria.sf124@example.test"], { priv: true, owner: 1 });
     const id = await fresh("SF124 private subject", { path: `/people/${p}`, dueOn: "2026-12-19", note: "private note" });
     const inAda = evOf(A, id);
     const others = [L, "margaret@barnacle.ai", G].map((u) => evOf(u, id).length);
-    R("Edge case 10", inAda.length === 1 && inAda[0].summary === "Call · SF124 private subject" && inAda[0].description.includes("private note") && others.every((n) => n === 0) && inAda[0].visibility === "private",
+    R("Edge case 11", inAda.length === 1 && inAda[0].summary === "Call · SF124 private subject" && inAda[0].description.includes("private note") && others.every((n) => n === 0) && inAda[0].visibility === "private",
       `owner Ada's calendar: "${inAda[0] && inAda[0].summary}" desc ${JSON.stringify(inAda[0] && inAda[0].description)} visibility ${inAda[0] && inAda[0].visibility}; Linus/Margaret/Grace ${others.join("/")}`);
   }
 
-  if (want("Edge case 12")) {
+  if (want("Edge case 13")) {
     const n = actCount();
     const e = await addEvent(ap, A, { title: "SF124 declined invite", date: "2026-12-20", start: "10:00", end: "11:00", guests: "ana@example.test", organizer: "boss@elsewhere.test", deliver: false });
     await eventBtn(ap, A, e.id, 1);
@@ -249,11 +249,11 @@ const same = (a, b, keys) => keys.every((k) => a[k] === b[k]);
     const st = m && q(`select state from calendar_events where activity_id=${m}`);
     await edit(ap, m, { dueTime: "12:00" });
     const ev2 = H.events(A).find((x) => x.id === e2.id);
-    R("Edge case 12", n1 === n && !!m && JSON.stringify(before) === JSON.stringify(after) && st === "ended" && ev2.start.dateTime === "2026-12-21T10:00:00.000Z",
+    R("Edge case 13", n1 === n && !!m && JSON.stringify(before) === JSON.stringify(after) && st === "ended" && ev2.start.dateTime === "2026-12-21T10:00:00.000Z",
       `declined new invite: activities ${n} → ${n1}; meeting #${m} declined after coming in: unchanged ${JSON.stringify(before) === JSON.stringify(after)}, link ${st}; CRM edit to 12:00 → event still ${ev2.start.dateTime}`);
   }
 
-  if (want("Edge case 13")) {
+  if (want("Edge case 14")) {
     const id = await fresh("SF124 notice check", { path: "/activities", dueOn: "2026-12-22" });
     const ev = eventId(id);
     ctl("change", A, ev, { start: "2026-12-23T10:00:00Z", end: "2026-12-23T10:30:00Z" });
@@ -269,7 +269,7 @@ const same = (a, b, keys) => keys.every((k) => a[k] === b[k]);
     const r4 = lnotice ? await push(lnotice) : { status: "no channel", body: "" };
     const a = act(id);
     const e = H.events(A).find((x) => x.id === ev);
-    R("Edge case 13", r1.status === 403 && r2.status === 403 && r3.status === 403 && r4.status === 403 && a.dueOn === "2026-12-22" && e.start.dateTime === "2026-12-23T10:00:00.000Z" && [r1, r2, r3, r4].every((r) => !r.body),
+    R("Edge case 14", r1.status === 403 && r2.status === 403 && r3.status === 403 && r4.status === 403 && a.dueOn === "2026-12-22" && e.start.dateTime === "2026-12-23T10:00:00.000Z" && [r1, r2, r3, r4].every((r) => !r.body),
       `wrong token ${r1.status}, wrong resource ${r2.status}, no headers ${r3.status}, disconnected Linus's channel ${r4.status}; bodies empty; activity still ${a.dueOn}; fake event ${e.start.dateTime}`);
   }
   await browser.close();

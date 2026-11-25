@@ -68,21 +68,33 @@ const { A, L, M, q, live, evOf, eventId, act, uid, R, norm, sleep, pageAs, card,
       `card while refused "${c}"; errors after edit "${err1}", after schedule "${err2}"; moved in Google meanwhile → CRM still ${mid}; after reconnect ("${r.card.slice(0, 40)}…") + check: edited event ${e1.start.dateTime}, new activity events ${e3.length}, moved activity due ${a2.dueTime}`);
   }
 
-  // ---- extra (code review finding): reassign while the old assignee's connection needs reconnecting ----
+  // ---- Edge case 3: reassigned while Ada's connection is not syncing (key refused / no Calendar scope / disconnected) ----
   {
     await connect(lp); await sleep(2000);
-    const id = await fresh("SF124 reassign while refused", "2026-12-30");
-    const ev = eventId(id);
-    await ap.goto(BASE + "/dev/fake-gmail?user=" + A);
-    await Promise.all([ap.waitForURL(/done=/), ap.locator("button", { hasText: "[ REFUSE THE KEY ]" }).first().click()]);
-    await runCheck(ap, A);
-    const st = q(`select state from gmail_connections where user_id=1`);
-    await edit(ap, id, { assignee: uid(L) });
-    await runCheck(ap, A);
-    const inL = evOf(L, id).length;
-    await connect(ap); await sleep(2500); await runCheck(ap, A);
-    const stale = live(A).filter((e) => e.id === ev).length;
-    R("Extra reassign while refused", stale === 0, `Ada ${st}, call reassigned to Linus (events in Linus's ${inL}); after Ada reconnects and a check, her old event ${ev} still live: ${stale}`);
+    const variant = async (label, i, breakIt) => {
+      const id = await fresh("SF124 E3 " + label, "2026-12-30", `0${i + 7}:00`);
+      const ev = eventId(id);
+      const before = live(A).filter((e) => e.id === ev).length;
+      await breakIt();
+      const st = q(`select state || ' ' || scopes from gmail_connections where user_id=1`);
+      await edit(ap, id, { assignee: uid(L) });
+      await runCheck(ap, A); await runCheck(lp, L);
+      const inL = evOf(L, id).length, adaMid = live(A).filter((e) => e.id === ev).length;
+      await connect(ap); await sleep(2500); await runCheck(ap, A); await runCheck(lp, L);
+      const adaAfter = live(A).filter((e) => e.id === ev).length, inL2 = evOf(L, id).length;
+      return { ok: before === 1 && inL === 1 && adaMid === 1 && adaAfter === 0 && inL2 === 1,
+        text: `${label} (${st}): Ada had ${before}; after reassign + check Linus ${inL}, Ada still ${adaMid}; after Ada reconnects + check Ada ${adaAfter}, Linus ${inL2}` };
+    };
+    const r1 = await variant("refused", 0, async () => {
+      await ap.goto(BASE + "/dev/fake-gmail?user=" + A);
+      await Promise.all([ap.waitForURL(/done=/), ap.locator("button", { hasText: "[ REFUSE THE KEY ]" }).first().click()]);
+      await runCheck(ap, A);
+    });
+    const r2 = await variant("nocal", 1, async () => { q(`update gmail_connections set scopes='https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send' where user_id=1`); });
+    const r3 = await variant("disconnected", 2, async () => {
+      await ap.goto(BASE + "/settings?disconnect=1"); await ap.getByRole("alertdialog").getByRole("button", { name: "[ DISCONNECT ]" }).click(); await ap.waitForLoadState("networkidle");
+    });
+    R("Edge case 3", r1.ok && r2.ok && r3.ok, [r1.text, r2.text, r3.text].join("; "));
   }
   await browser.close();
 })().catch((e) => { console.error(e); process.exit(1); });

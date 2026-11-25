@@ -666,15 +666,15 @@
     part of US5 1: a second `npx next start -p 3002` with `APP_ENV=` (production) and `APP_URL=https://crm.example.com`
     (`node .factory/run/check-sf121-edge10.js`: 404 "Page not found."), and one on :3003 with `APP_ENV=test` and the same
     APP_URL to see https links on /dev/unsubscribe-links. ~1 min.
-  - SF-124 AI review (Google Calendar sync, all 41 scenarios + 1 extra, ~12 min). App on :3000 from `start-app.sh` (fake
+  - SF-124 AI review (Google Calendar sync, all 42 scenarios, ~14 min; edge numbers as in the fix-round spec, with edge 3 "Reassigned while needs reconnecting"). App on :3000 from `start-app.sh` (fake
     Gmail, `CALENDAR_SYNC=on`). Fresh data: `rm -rf .fake-gmail /tmp/sf124-results.json && bash .factory/run/reset-db.sh`
     (reset-db.sh now passes `GMAIL_TOKEN_KEY` from /tmp/gmail-token-key and `CALENDAR_SYNC=on` to the seed, so Ada Fake is
     connected with Calendar; without them the gmail and calendar seeders skip). Then, in order, on the same data
-    (`NODE_PATH=/opt/playwright/node_modules`): `node .factory/run/scenarios-sf124-a.js` (US1 1-5, US2 1-8, US4 6, edges 4, 11),
-    `node .factory/run/scenarios-sf124-b.js [prefix…]` (US3, US4 1-5/7/8, edges 3, 5-10, 12, 13), `node
-    .factory/run/check-sf124-edge9.js` (edge 9: the edit posted anyway is refused), `node .factory/run/scenarios-sf124-c.js`
-    (edges 1, 2 and "Extra reassign while refused"), then `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 CALENDAR_SYNC= bash
-    .factory/run/start-app.sh` and `node .factory/run/check-sf124-edge14.js` (Calendar off). Results in /tmp/sf124-results.json.
+    (`NODE_PATH=/opt/playwright/node_modules`): `node .factory/run/scenarios-sf124-a.js` (US1 1-5, US2 1-8, US4 6, edges 5, 12),
+    `node .factory/run/scenarios-sf124-b.js [prefix…]` (US3, US4 1-5/7/8, edges 4, 6-11, 13, 14), `node
+    .factory/run/check-sf124-edge9.js` (edge 10: the edit posted anyway is refused), `node .factory/run/scenarios-sf124-c.js`
+    (edges 1, 2 and 3: reassigned while Ada's key is refused / her scopes lack Calendar / she is disconnected, then she reconnects), then `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 CALENDAR_SYNC= bash
+    .factory/run/start-app.sh` and `node .factory/run/check-sf124-edge14.js` (edge 15, Calendar off). Results in /tmp/sf124-results.json.
     Helpers `sf124-lib.js` (fake-calendar page forms, activity box, `evOf(email, activityId)` live events of an activity
     found by `extendedProperties.private.barnacleCrmActivity` or `calendar_events.google_event_id`) and
     `calendar-ctl.ts` (`npx tsx`, env in its head comment: events, a change with no notice — description, location,
@@ -685,6 +685,8 @@
     shown 00:30–03:30 UK); US4 3 follows spec Clarifications › Plan 2026-11-25 (ticking a meeting from Google changes nothing
     in Google, deleting it leaves the event); Margaret is deactivated in part c (reset before running a or b again).
     Round 1: 41 of 41 scenarios pass; "Extra reassign while refused" fails (stale event, code review finding).
+    Round 2 (after fix round 1): 42 of 42 pass (edge 10 through check-sf124-edge9.js: the b script's own edit-refusal probe
+    reports FAIL because no [ EDIT ] is offered on the archived person's page, which is the SF-109 behaviour).
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432

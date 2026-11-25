@@ -1,6 +1,6 @@
-// SF-124 Edge case 9 (archived person): the activity's [ EDIT ] is not offered on the archived person's page, and an
+// SF-124 Edge case 10 (archived person): the activity's [ EDIT ] is not offered on the archived person's page, and an
 // edit posted for it anyway (another activity's edit box pointed at it, as SF-109's review did) is refused with the
-// SF-109 message. Run after scenarios-sf124-b.js "Edge case 9".
+// SF-109 message. Run after scenarios-sf124-b.js "Edge case 10".
 const H = require("./sf124-lib");
 (async () => {
   const b = await H.lib.chromium.launch(); const p = await H.pageAs(b, H.A);
