@@ -15,6 +15,10 @@
 - Q: Which design? → A: Design: B, `[ WRITE EMAIL ]` in the // TIMELINE heading next to the note box; the email box is a tall panel on the right side of the screen, over the dimmed page, as in Pipedrive; a short EMAIL entry on the timeline with `[ SHOW ALL ]` (see `design-options.html`; the person's answer: "Put it on the side of the screen, just like in pipedrive").
 - Q: Does an email sent from the CRM update the Last contacted date of the CRM people it goes to? → A: Yes: it is set to the send time, never lowered, like a done call or meeting (A).
 - Q: Is a file attached from the computer also saved in the record's // FILES? → A: No: the file goes only in the email; the timeline entry shows its name and size (A).
+- Q: How long does the CRM keep a file chosen from the computer? → A: Only for sending: it is held in the CRM's file storage from the moment it is chosen, deleted right after the email is sent, and deleted at the latest 24 hours after it was chosen when the email is never sent; it is never listed anywhere (decided by the factory, to confirm)
+- Q: What sender name do recipients see? → A: The user's name in the CRM with their Gmail address, for example "Ada Fake <ada@barnacle.ai>" (decided by the factory, to confirm)
+- Q: Whose "Last contacted" does sending raise when the email was written from a person's page but that person was removed from To? → A: Only the CRM people the email actually went to (To, Cc or Bcc), not the person it was written from (decided by the factory, to confirm)
+- Q: How long is the "Email sent to …" notice when the email went to many addresses? → A: It names the first 5 addresses (To, then Cc, then Bcc) and then "and <n> more" (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
