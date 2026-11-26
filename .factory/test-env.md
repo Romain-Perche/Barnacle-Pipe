@@ -715,6 +715,16 @@
     lines (the fake serves `size` bytes of a fake pattern for [ DOWNLOAD ]), an optional Message-ID (put the same one in Ada's
     and Bob's mailboxes for one email copied twice), [ RUN THE 15-MINUTE CHECK ] for the check. A second mailbox: sign in as
     another fake user and [ CONNECT GMAIL ]. Attachment failures: [ REFUSE THE KEY ] on the fake page, or disconnect in Settings.
+    AI review run (all 55 SF-127 scenarios, ~15 min): fresh data `rm -rf .fake-gmail && bash .factory/run/reset-db.sh &&
+    psql -h localhost -U postgres -d crm_dev -f .factory/run/sf127-setup.sql` (organisations Example Ltd / Other Co / Pia Org /
+    Mover Org / Gone Org, people Ana and Ben Example, Pia Private (Ada's), Cat Twodeals, Dan Closed, Eve Linked, Fay Pdeal, Gus
+    Mover, Hal Archived, Ivy Later, Jo Gone, Kim Twoaddr and their deals; Ada's `connected_at` set to 1 Nov so older emails are
+    copied: SF-118 copies only email after connecting, and a new thread only when a CRM person is in it). Then
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf127-a.js` (US1, US2 1-3/5, US3, US6, edges 6-11, 13)
+    and then `… scenarios-sf127-b.js` on the same data (US4, US5, US7, US2 4, edges 1-5, 12, 14-16; it breaks Ada's, Linus's and
+    Grace's mailboxes at the end). Helpers in `sf127-lib.js`; Linus Fake plays the spec's "Bob". `gmail-ctl.ts` ops `delete <email>
+    <subject>` (Gmail no longer has the message) and `unreachable on|off` (every Google call fails). Link pickers: type, click the
+    option (the open list covers [ LINK ]), then [ LINK ].
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
