@@ -3,11 +3,12 @@
 // tests install their own fetch (useGmailFetchForTests). Errors carry only the HTTP status and Google's error code,
 // never a token or a body:
 // - GoogleKeyRefused: Google no longer accepts the key (invalid_grant, a Gmail 401, a 403 for missing permissions);
-// - GoogleUnavailable: anything else (network, time-out, 429, 5xx, other 4xx, Gmail off);
+// - GoogleUnavailable: anything else (network, time-out, 5xx, other 4xx, Gmail off); SF-128: its GmailSlowDown for a
+//   429 or a rate-limit 403;
 // - HistoryGone: history.list answered 404 (the start id is older than the history Gmail keeps).
 import { gmailConfig } from "@/server/env";
 import { CERTS_URL, fakeGmail, REVOKE_URL, TOKEN_URL } from "@/server/gmail/fake-gmail";
-import { askedScopes, classifyGoogleError, type GmailMessage } from "@/server/gmail/rules";
+import { askedScopes, classifyGoogleError, slowDownSeconds, type GmailMessage } from "@/server/gmail/rules";
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GMAIL = "https://gmail.googleapis.com/gmail/v1/users/me";
@@ -23,6 +24,24 @@ export class GoogleUnavailable extends Error {
   constructor(status: number | string, code = "") {
     super(`Google can't be used right now (${status}${code ? ` ${code}` : ""})`);
     this.name = "GoogleUnavailable";
+  }
+}
+// SF-128 (contracts/google.md § Errors): Gmail asks to slow down (429, or 403 rateLimitExceeded /
+// userRateLimitExceeded) for `seconds`. A GoogleUnavailable, so every SF-118 / SF-124 caller behaves as before.
+export class GmailSlowDown extends GoogleUnavailable {
+  constructor(
+    status: number,
+    readonly seconds: number,
+  ) {
+    super(status, "slow_down");
+    this.name = "GmailSlowDown";
+  }
+}
+// SF-128: threads.list refused the page token it gave (the fetch restarts its slice).
+export class PageTokenRefused extends Error {
+  constructor() {
+    super("Gmail refused the page token (400)");
+    this.name = "PageTokenRefused";
   }
 }
 export class HistoryGone extends Error {
@@ -94,10 +113,20 @@ export async function readJson(res: Response): Promise<unknown> {
   }
 }
 
-async function failWith(res: Response): Promise<never> {
+function isSlowDown(status: number, body: unknown): boolean {
+  if (status === 429) return true;
+  if (status !== 403) return false;
+  const e = (body as { error?: { errors?: { reason?: unknown }[] } } | null)?.error;
+  const reasons = typeof e === "object" && e !== null && Array.isArray(e.errors) ? e.errors.map((x) => x?.reason) : [];
+  return reasons.some((r) => r === "rateLimitExceeded" || r === "userRateLimitExceeded");
+}
+
+// Exported for the tests of the error classification (SF-128 T019).
+export async function failWith(res: Response): Promise<never> {
   const body = await readJson(res);
   const b = (body ?? {}) as { error?: unknown };
   const code = typeof b.error === "string" ? b.error : typeof (b.error as { status?: unknown })?.status === "string" ? String((b.error as { status: string }).status) : "";
+  if (isSlowDown(res.status, body)) throw new GmailSlowDown(res.status, slowDownSeconds(res.headers.get("retry-after")));
   if (classifyGoogleError(res.status, body) === "key_refused") throw new GoogleKeyRefused(res.status, code);
   throw new GoogleUnavailable(res.status, code);
 }
@@ -215,6 +244,33 @@ export async function getAttachment(accessToken: string, messageId: string, atta
   const body = (await readJson(res)) as { data?: unknown } | null;
   if (typeof body?.data !== "string") throw new GoogleUnavailable(200, "bad_attachment");
   return new Uint8Array(Buffer.from(body.data, "base64url"));
+}
+
+// SF-128 (contracts/google.md § New calls): one page of the user's threads for `q`, spam and bin left out. A 400 while
+// a page token was sent: the token is no longer good (PageTokenRefused).
+export async function listThreads(accessToken: string, q: string, pageToken?: string | null): Promise<{ ids: string[]; nextPageToken: string | null }> {
+  const query: [string, string][] = [["q", q], ["maxResults", "100"], ["includeSpamTrash", "false"]];
+  if (pageToken) query.push(["pageToken", pageToken]);
+  const res = await gmail(accessToken, "GET", "threads", { query });
+  if (res.status === 400 && pageToken) throw new PageTokenRefused();
+  if (!res.ok) return failWith(res);
+  const body = (await readJson(res)) as { threads?: { id?: unknown }[]; nextPageToken?: unknown } | null;
+  return {
+    ids: (body?.threads ?? []).map((t) => t.id).filter((x): x is string => typeof x === "string"),
+    nextPageToken: typeof body?.nextPageToken === "string" ? body.nextPageToken : null,
+  };
+}
+
+// SF-128: every message of a thread with its labels, Gmail's date and the four address headers (no bodies); null when
+// the thread is gone.
+export async function getThreadMessages(accessToken: string, threadId: string): Promise<GmailMessage[] | null> {
+  const res = await gmail(accessToken, "GET", `threads/${encodeURIComponent(threadId)}`, {
+    query: [["format", "metadata"], ["metadataHeaders", "From"], ["metadataHeaders", "To"], ["metadataHeaders", "Cc"], ["metadataHeaders", "Bcc"]],
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) return failWith(res);
+  const body = (await readJson(res)) as { messages?: GmailMessage[] } | null;
+  return (body?.messages ?? []).filter((m) => typeof m?.id === "string" && typeof m.threadId === "string");
 }
 
 // The Message-ID, References and Subject headers of each message of a thread (to reply in it).

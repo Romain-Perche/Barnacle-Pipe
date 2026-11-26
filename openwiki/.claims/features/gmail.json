@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c2a170eb62f8f544894278ec40da002a2b6f93799b398ae41bebe54779d073f2",
+  "pageVersion": "sha256:b31dc2240fb7246574d424672678ec4bb073dcd7f8b2aec72637ee94871bcb25",
   "claims": [
     {
       "id": "claim_26dddd940894480690668615756bf371",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:47c63e4d1251e7b05cd16f028493beeec8f3a6a55ecfb4ea1a6818e0554342fa"
+          "version": "repo-file-v1:sha256:9d3119e84206053d59c49b302720bcfbd31f73ed323079090fb1e5d2aa2a683b"
         }
       ]
     },
@@ -36,7 +36,7 @@
         },
         {
           "resource": "repo://src/server/gmail/connections.ts",
-          "version": "repo-file-v1:sha256:78426fffcfed8b7cc48984a52a477cd0d2bb58ed76bf0f188f355d0aef6fb7b6"
+          "version": "repo-file-v1:sha256:e50bacd4fd021182550d08af50223e597d167cdfc740e48bbfe5a2f88adf3ba7"
         }
       ]
     },
@@ -55,22 +55,22 @@
       ]
     },
     {
-      "id": "claim_250b90b1eebb4463b23465519b01cc9c",
-      "statement": "processMessage runs inside storeMessage's transaction, groups emails into conversations by Message-ID and autoLinks people, organisations and one open deal with insert-only links.",
+      "id": "claim_ff9f28f4a991402982e3dccf8a596b9a",
+      "statement": "Past email fetch walks a 12-month window backwards in 7-day slices under a lease, storing messages through sync.ts storeMessage, and is run both from Settings and from runGmailCheck via runPastFetches.",
       "evidence": [
         {
-          "resource": "repo://src/server/emails/process.ts",
-          "version": "repo-file-v1:sha256:d60c3ef3ae0ca111ea444e976f6ff1f706f661e8da27b7a7b49eafd896feeafa"
+          "resource": "repo://src/server/gmail/past.ts",
+          "version": "repo-file-v1:sha256:0de31a58add7dda439b75755b1a0175ffffb523aa6af7f126114495fc5457335"
         },
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:47c63e4d1251e7b05cd16f028493beeec8f3a6a55ecfb4ea1a6818e0554342fa"
+          "version": "repo-file-v1:sha256:9d3119e84206053d59c49b302720bcfbd31f73ed323079090fb1e5d2aa2a683b"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-26T17:44:10.845Z"
+    "at": "2026-11-26T16:45:42.910Z"
   }
 }

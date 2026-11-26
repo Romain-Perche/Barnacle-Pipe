@@ -10,6 +10,9 @@ import { readFlash } from "@/server/records/flash";
 import { GmailCard } from "./GmailCard";
 import { PipedriveSection } from "./PipedriveSection";
 
+// SF-128: a past-email part from this page lasts at most 20 s of work plus one 10 s Google call.
+export const maxDuration = 60;
+
 type Search = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
 const ERRORS = ["pipedrive_not_set_up", "pipedrive_token_required", "pipedrive_token_refused", "pipedrive_unreachable"] as const;

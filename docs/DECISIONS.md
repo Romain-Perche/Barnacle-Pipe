@@ -141,3 +141,7 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - People and organisations show only the conversations linked to them; a deal's conversations do not also appear on the timelines of the deal's other people or its organisation unless linked to them (SF-127)
 - Linking or unlinking a conversation by hand makes no timeline CHANGE entry and no notification (SF-127)
 - Automatic links stay when their reason changes (a person changes organisation, a deal closes, an address is removed from a person) (SF-127)
+- Single click on a card or row opens the drawer; double-click opens the record's own page (SF-126)
+- With exactly one conversation, the fetch lines say "1 conversation copied", the plural rule of the Gmail card's total (SF-128)
+- "The last 12 months" of a past-email fetch are 12 calendar months back from the moment of the press, by the date Gmail received or sent each message (SF-128)
+- While Gmail needs reconnecting and no fetch is running, "// PAST EMAILS" shows the explanation (or the last end message) with no button; the button comes back once Gmail is reconnected (SF-128)

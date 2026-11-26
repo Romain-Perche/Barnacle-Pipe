@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d995bf5bdb86126c163573e92a74937b5a5d76b0512c446360f606ca87e41cf2",
+  "pageVersion": "sha256:7e4119ed4c852c205d84ba6e2cce9975e9d779630948044ac111c2b7dff28d20",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -213,18 +213,18 @@
       ]
     },
     {
-      "id": "claim_e8b74d8c85224c44b1fc7c6232813f6e",
-      "statement": "Migration 0020 adds email_conversations, email_conversation_addresses and email_links, plus email_threads.conversation_id and email_messages.linked_at/dedupe_key.",
+      "id": "claim_546fac61c6fb4173ac581b6fb0da702c",
+      "statement": "past_email_fetches has one row per Gmail connection (unique connection_id, cascade delete) with state running or ended.",
       "evidence": [
         {
-          "resource": "repo://migrations/0020_email_timeline.sql",
-          "version": "repo-file-v1:sha256:57b03359711f948408eda43e2e3a00b808f18888ed7699e52d67e189e213cbc8"
+          "resource": "repo://migrations/0020_past_email_fetches.sql",
+          "version": "repo-file-v1:sha256:7a8ecbc5d8c1068335290a128fa3b810086947fbb0d553b9e9c72a3e0b941974"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-26T17:44:10.845Z"
+    "at": "2026-11-26T16:45:42.910Z"
   }
 }

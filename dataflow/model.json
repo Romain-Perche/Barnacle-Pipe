@@ -497,16 +497,13 @@
       ]
     },
     {
-      "id": "email-timeline",
-      "label": "Email on the timeline",
+      "id": "gmail-past",
+      "label": "Fetch past emails",
       "zone": "app",
       "group": "gmail",
       "sources": [
-        "src/server/emails/process.ts",
-        "src/server/emails/timeline.ts",
-        "src/server/emails/conversations.ts",
-        "src/server/emails/attachments.ts",
-        "src/app/(app)/emails"
+        "src/server/gmail/past.ts",
+        "src/app/(app)/settings/PastFetchRunner.tsx"
       ]
     }
   ],
@@ -769,7 +766,8 @@
       "zone": "app",
       "group": "gmail",
       "sources": [
-        "migrations/0016_gmail.sql"
+        "migrations/0016_gmail.sql",
+        "migrations/0020_past_email_fetches.sql"
       ]
     },
     {
@@ -779,15 +777,6 @@
       "group": "gmail",
       "sources": [
         "migrations/0019_calendar.sql"
-      ]
-    },
-    {
-      "id": "email-tables",
-      "label": "Email conversations and links",
-      "zone": "app",
-      "group": "gmail",
-      "sources": [
-        "migrations/0020_email_timeline.sql"
       ]
     }
   ],
@@ -2840,46 +2829,37 @@
       ]
     },
     {
-      "from": "gmail-sync",
-      "to": "email-timeline",
-      "data": "stored email to process",
+      "from": "gmail-tables",
+      "to": "gmail-past",
+      "data": "sealed token, fetch cursor",
       "sources": [
-        "src/server/gmail/sync.ts",
-        "src/server/emails/process.ts"
+        "src/server/gmail/past.ts"
       ]
     },
     {
-      "from": "email-timeline",
-      "to": "email-tables",
-      "data": "conversations, addresses, links",
-      "sources": [
-        "src/server/emails/process.ts",
-        "src/server/emails/conversations.ts"
-      ]
-    },
-    {
-      "from": "email-tables",
-      "to": "email-timeline",
-      "data": "conversations and links for timelines",
-      "sources": [
-        "src/server/emails/timeline.ts",
-        "src/server/records/visibility.ts"
-      ]
-    },
-    {
-      "from": "staff",
-      "to": "email-timeline",
-      "data": "link or unlink a record",
-      "sources": [
-        "src/app/(app)/emails/actions.ts"
-      ]
-    },
-    {
-      "from": "email-timeline",
+      "from": "gmail-past",
       "to": "gmail-client",
-      "data": "attachment fetch request",
+      "data": "thread list and metadata reads",
       "sources": [
-        "src/server/emails/attachments.ts"
+        "src/server/gmail/past.ts",
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-past",
+      "to": "gmail-tables",
+      "data": "past conversations, fetch progress",
+      "sources": [
+        "src/server/gmail/past.ts",
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-sync",
+      "to": "gmail-past",
+      "data": "15-minute past-fetch part",
+      "sources": [
+        "src/server/gmail/past.ts"
       ]
     }
   ]

@@ -60,6 +60,7 @@ OAuth code flow and database sessions.
   Timeline kinds `unsubscribed_link`, `unsubscribed_mail_app` (no actor) and `consent_changed` (a teammate's Consent edit;
   the person form sends `consentShown` and a save changes Consent only when the field was changed on that form).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
+  SF-126: `records/OpenOnDoubleClick.tsx` (client, renders nothing: one `dblclick` listener; cards and rows carry `data-page`) and `src/server/records/double-click.ts` (pure `pageToOpen`).
   `records/import/`: the CSV import screens shared by `/people/import` and `/organisations/import` (`ImportPages.tsx`:
   the four steps; `FileStep.tsx`: the only client part, sends the file in 512 KiB parts; `actions.ts`; `example.ts`).
   SF-102: `RecordTimeline.tsx` (the // TIMELINE of every record page and the deal drawer, design B), `NoteBox.tsx`
@@ -211,6 +212,14 @@ OAuth code flow and database sessions.
   or a 303 back with `?notice=attachment-unavailable`). `records/EmailEntry.tsx`: the EMAIL entry of `RecordTimeline`;
   `records/TimelineNoteBox.tsx`: the note box, first in the right column. The person, organisation and deal pages have two
   columns (`.recordcols`: details left; note box, // NEXT ACTIVITIES, // FILES, // TIMELINE right); the deal drawer has one.
+- SF-128 fetch past emails: `src/server/gmail/past.ts` (`startPastFetch`: one transaction holding the connection row and a
+  conditional upsert, never two at once; `runPastFetchPart`: a lease column, the 12-month window walked backwards in 7-day
+  slices with `threads.list`, each thread read as metadata and decided by the pure `planPastThread` in `rules.ts`, each new
+  message stored by `sync.ts` `storeMessage(…, { fetchId })`, which adds 1 to the fetch's `copied` in the same transaction
+  when it creates the conversation; the cursor saved after every thread; `runPastFetchPartFor` the Settings page's part
+  (`PastFetchRunner.tsx`), `runPastFetches` the 15-minute check's, after its connections; `GmailSlowDown` → `wait_until`),
+  `fake-past-mailbox.ts` (`putPastMailbox`: the 100 conversations of the tests and `/dev/fake-gmail`). Table
+  `past_email_fetches` (one per connection: running or ended; deleted by `forgetGmailInTx`). No Google call inside `sql.begin()`.
 - `src/server/calendar/` — Google Calendar two-way sync (SF-124), on SF-118's connection, key and Google helpers (`call`,
   `readJson`, `settings`, `refreshAccessToken`, `loadKey`); settings from `calendarConfig()` in `env.ts` (`CALENDAR_SYNC=on`
   and Gmail set up). `rules.ts` (pure: `eventBody` / `googleEventBody`, `bodyHash`, `eventTimes`, `fromEvent`, `subjectFromTitle`,
