@@ -157,8 +157,9 @@ const att = (name) => q(`select a.id from email_attachments a where a.name='${na
     const lp = (await go(lin, `/emails/${c}`)).status(), onAna = countSubj(await emailEntries(lin, `/people/${ana}`), "SecretLink2");
     const fay = (await go(lin, `/emails/${conv("FayConv")}`)).status();
     const orgPrivate = q(`select count(*) from information_schema.columns where table_name='organisations' and column_name='private'`);
-    const viaOrg = (await go(lin, `/emails/${conv("CatConv")}`)).status(); // linked to Mover Org by hand (US4 3)
     q(`update persons set private = false where id = ${pid("Kim")}`);
+    // CatConv is linked by hand to Mover Org and to Kim (US4 3): checked once Kim is shared again.
+    const viaOrg = (await go(lin, `/emails/${conv("CatConv")}`)).status();
     R("Edge case 14", n === "linked" && lp === 404 && onAna === 0 && fay === 404 && orgPrivate === "0" && viaOrg === 200, `linked to private Kim ${n}: Linus page ${lp}, on Ana ${onAna}; FayConv (private deal) ${fay}; organisations have no private column (${orgPrivate}); conversation linked to an organisation ${viaOrg}`);
   });
 

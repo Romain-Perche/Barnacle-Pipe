@@ -716,7 +716,7 @@
     and Bob's mailboxes for one email copied twice), [ RUN THE 15-MINUTE CHECK ] for the check. A second mailbox: sign in as
     another fake user and [ CONNECT GMAIL ]. Attachment failures: [ REFUSE THE KEY ] on the fake page, or disconnect in Settings.
     AI review run (all 55 SF-127 scenarios, ~15 min): fresh data `rm -rf .fake-gmail && bash .factory/run/reset-db.sh &&
-    psql -h localhost -U postgres -d crm_dev -f .factory/run/sf127-setup.sql` (organisations Example Ltd / Other Co / Pia Org /
+    /usr/lib/postgresql/17/bin/psql -h localhost -U postgres -d crm_dev -f .factory/run/sf127-setup.sql` (psql is not on PATH; organisations Example Ltd / Other Co / Pia Org /
     Mover Org / Gone Org, people Ana and Ben Example, Pia Private (Ada's), Cat Twodeals, Dan Closed, Eve Linked, Fay Pdeal, Gus
     Mover, Hal Archived, Ivy Later, Jo Gone, Kim Twoaddr and their deals; Ada's `connected_at` set to 1 Nov so older emails are
     copied: SF-118 copies only email after connecting, and a new thread only when a CRM person is in it). Then
@@ -725,6 +725,12 @@
     Grace's mailboxes at the end). Helpers in `sf127-lib.js`; Linus Fake plays the spec's "Bob". `gmail-ctl.ts` ops `delete <email>
     <subject>` (Gmail no longer has the message) and `unreachable on|off` (every Google call fails). Link pickers: type, click the
     option (the open list covers [ LINK ]), then [ LINK ].
+    Fix round 1: then `… scenarios-sf127-c.js` on the same data (after part b: it connects Ada's and Linus's mailboxes again):
+    edges 17 (attachment unavailable opened from Ana's timeline keeps "← ANA EXAMPLE"), 18 (two same-name attachments, from
+    the own copy and from Linus's copy after `gmail-ctl.ts delete`) and 14 again (part b's edge 14 used to fail on its own
+    data: CatConv is linked by hand to Kim in US4 3, so making Kim private hid it; check reordered) and US6 scenario 4 (private
+    Pia's Last contacted; no part ran it before). `ONLY="Edge case 18,US6 scenario 4"` runs some; mailboxes reconnected only if not working.
+    Round 2 (after fix round 1): a 30/30, b 24 of 25 (edge 14 failed on the old order, passes in c), c 4/4: all 57 scenarios pass.
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
