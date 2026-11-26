@@ -175,6 +175,10 @@ describe("a tester's run through the fake pages", () => {
     expect(page).toContain("Key: active");
     expect(page).toContain("Watch: active");
     expect(page).toContain("Delivered");
+    // SF-127: an optional Message-ID (the same email put in two mailboxes is one email).
+    expect(page).toContain('name="messageId"');
+    await h.redirectOf(mailbox.putFakeMessage(formOf({ user: "linus@barnacle.ai", direction: "received", from: "ana@example.test", subject: "Shared", text: "x", label: "INBOX", messageId: "<shared-1@example.test>", deliver: "on" })));
+    expect((await h.storedMessages(linus.id)).find((m) => m.subject === "Shared")?.rfc_message_id).toBe("<shared-1@example.test>");
 
     await h.redirectOf(mailbox.refuseFakeKey(formOf({ user: "linus@barnacle.ai" })));
     await h.redirectOf(mailbox.runFakeCheck(formOf({ user: "linus@barnacle.ai" })));

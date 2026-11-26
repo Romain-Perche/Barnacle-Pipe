@@ -15,6 +15,7 @@
 // Fix round 1: when Pipedrive asks to slow down, the answers the part already got are kept in pipedrive_imports.fetched
 // (with its step and cursor), so the next part asks only what is missing; and every save re-checks, under lock, that
 // the user is active and still holds the token (lockRow), so nothing is saved once either is gone.
+import { linkForPeople } from "@/server/emails/process";
 import { sql, type Sql } from "@/server/db";
 import { listFields as listCrmFields } from "@/server/custom-fields/fields";
 import { reminderFor, ukInstant } from "@/server/activities/rules";
@@ -602,6 +603,8 @@ async function savePersons(db: Sql, ctx: Ctx, items: PdPerson[], orgsNotImported
     ...people.flatMap((p) => (p.organisationId === null ? [] : [{ personId: null, organisationId: p.organisationId, kind: "person_linked" as const, relatedPersonId: p.id }])),
     ...unsubscribed.map((u) => ({ personId: u.id, organisationId: null, kind: "pipedrive_unsubscribed" as const, relatedPersonId: null })),
   ]);
+  // SF-127 FR-009: emails already copied with the added people's addresses are linked to them.
+  await linkForPeople(db, people.map((p) => p.id));
   return {
     plan,
     page: {

@@ -596,3 +596,39 @@ table.campaigns-list .acts form + a { margin-left: 14px; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 8px; vertical-align: middle; }
 .dot.bad { background: var(--danger); }
 .side nav a .warn { background: var(--orange); color: #fff; padding: 0 5px; margin-left: 6px; font-weight: 700; }
+
+/* ---- SF-127: email on the timeline (design B) ---- */
+/* Record pages: details on the left, note box, next activities, files and timeline on the right; stacked under 1000 px. */
+.recordcols { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 32px; align-items: start; }
+.recordleft, .recordright { min-width: 0; }
+.recordcols .details { grid-template-columns: 1fr; }
+.recordcols .strip { flex-wrap: wrap; }
+.recordcols .strip > div { flex-basis: 40%; }
+.recordcols .timeline { max-width: none; }
+.notecol { margin-top: 8px; }
+@media (max-width: 1000px) {
+  .recordcols { grid-template-columns: 1fr; }
+}
+/* The EMAIL entry: solid blue tag (as NOTE is orange), a box with a blue left edge. */
+.kd.email { background: var(--blue); color: #fff; border-color: var(--blue); }
+.emailhead { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.emailbody { border-left: 3px solid var(--blue); background: var(--wash); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 4px 0; overflow-wrap: anywhere; line-height: 1.45; }
+.emailbody .subj { display: block; font-weight: 600; color: var(--ink); text-decoration: none; }
+.emailbody .subj:hover { color: var(--blue); text-decoration: underline; }
+.emailbody .snip { color: var(--muted); }
+.emailatts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.att { font-family: var(--mono); font-size: 11px; border: 0.5px solid var(--line-soft); padding: 1px 6px; display: inline-flex; gap: 8px; align-items: center; background: var(--panel); overflow-wrap: anywhere; }
+/* The conversation page: // LINKED TO on the left, // EMAILS · OLDEST FIRST on the right. */
+.conv-links { list-style: none; margin: 0; padding: 0; }
+.conv-links li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 0.5px solid var(--line-list); font-size: 14px; overflow-wrap: anywhere; }
+.conv-links li form { margin: 0; }
+.conv-links .kind { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; color: var(--muted); margin-right: 8px; }
+.conv-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.conv-linkform { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.conv-linkform .row { display: flex; gap: 8px; }
+.msg { border-bottom: 0.5px solid var(--line-list); padding: 12px 0; scroll-margin-top: 16px; }
+.msg .who { display: flex; justify-content: space-between; gap: 12px; overflow-wrap: anywhere; }
+.msg .who .when { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.msg .hd { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.msg .emailtext { font-family: var(--sans); white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; font-size: 14px; line-height: 1.5; }
+.msg .emailatts .att a { font-weight: 700; letter-spacing: 0.1em; color: var(--blue); text-decoration: none; }

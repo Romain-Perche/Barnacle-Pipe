@@ -153,3 +153,18 @@ describe("docs/DECISIONS.md (SF-123)", () => {
     expect(line).not.toContain("Calendar issue");
   });
 });
+
+// covers SF-127 spec.md § Clarifications (Session 2026-11-26 and Plan 2026-11-26): the choices are recorded
+describe("docs/DECISIONS.md (SF-127)", () => {
+  const sf127 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-127)"));
+  it("records design B, one entry per email and automatic links to private deals", () => {
+    expect(sf127.some((l) => l.includes("design B") && l.includes("blue left edge") && l.includes("// LINKED TO"))).toBe(true);
+    expect(sf127.some((l) => l.includes("one EMAIL entry per email"))).toBe(true);
+    expect(sf127.some((l) => l.includes("linked automatically to a private deal"))).toBe(true);
+  });
+  it("records the factory's choices of the plan", () => {
+    for (const words of ["the sender's copy is shown", "a choice made by hand beats an automatic link", "the first time the 15-minute Gmail check runs", "no longer brings a deal", "Won and Lost deals included", "always downloaded"]) {
+      expect(sf127.some((l) => l.includes(words)), words).toBe(true);
+    }
+  });
+});

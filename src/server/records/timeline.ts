@@ -4,6 +4,8 @@
 import { sql, type Fragment, type Sql } from "@/server/db";
 import type { FileKind } from "@/server/files/rules";
 import { noteSegments, type NoteSegment } from "@/server/records/notes-rules";
+import type { EmailAddress } from "@/server/emails/rules";
+import { timelineEmails } from "@/server/emails/timeline";
 import { hasAmbassadorPage, visibleActivity, visibleDeal, visiblePerson } from "@/server/records/visibility";
 
 export type EventKind =
@@ -26,7 +28,9 @@ export type EventKind =
   | "pipedrive_imported" | "pipedrive_unsubscribed"
   // SF-121: unsubscribed through the link's page or the mail app's one-click (no actor); a teammate's Consent change
   // (old_value / new_value: the consent labels of the time)
-  | "unsubscribed_link" | "unsubscribed_mail_app" | "consent_changed";
+  | "unsubscribed_link" | "unsubscribed_mail_app" | "consent_changed"
+  // SF-127: a copied email, read from the email tables (never a timeline_events row)
+  | "email";
 // Why an admin's change moved a deal (the history line ends "(stage deleted)" / "(pipeline deleted)"); SF-114:
 // "person_deleted" on a referrer_cleared written when the referrer was deleted.
 export type MoveCause = "stage_deleted" | "pipeline_deleted" | "person_deleted";
@@ -112,6 +116,19 @@ export type TimelineEntry = TimelineEvent & {
   activity: TimelineActivity | null;
   // SF-116: on file_added / file_deleted: the file's name and size as they were; `id` and `kind` while the file exists.
   file: TimelineFile | null;
+  // SF-127: a copied email (kind "email"); `id` is then the shown copy's email_messages id, `createdAt` Gmail's time.
+  email: TimelineEmail | null;
+};
+export type TimelineEmail = {
+  messageId: number;
+  conversationId: number;
+  from: EmailAddress | null;
+  to: EmailAddress[];
+  cc: EmailAddress[];
+  bcc: EmailAddress[];
+  subject: string;
+  preview: string | null;
+  attachments: { id: number; name: string; size: number }[];
 };
 export type TimelineFile = { id: number | null; name: string; size: number | null; kind: FileKind | null };
 export type TimelineActivity = {
@@ -175,7 +192,7 @@ async function doneActivities(viewerId: number, target: Target, limit: number): 
     limit ${limit}`;
   return rows.map((r) => ({
     id: r.id, kind: "activity" as const, actorName: r.done_by_name, fields: null, relatedPerson: null, fromPerson: null, relatedUserName: null, fromStage: null,
-    toStage: null, cause: null, reason: null, fieldName: null, oldValue: null, newValue: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, person: null, note: null, file: null,
+    toStage: null, cause: null, reason: null, fieldName: null, oldValue: null, newValue: null, createdAt: r.done_at, authorActive: r.done_by_active, deal: null, person: null, note: null, file: null, email: null,
     activity: {
       id: r.id, type: r.type, subject: r.subject, note: r.note, doneByName: r.done_by_name, doneByActive: r.done_by_active,
       dueOn: r.due_on, dueTime: r.due_time, durationMinutes: r.duration_minutes, archived: r.archived,
@@ -196,7 +213,7 @@ export async function readTimeline(viewerId: number, target: Target, limit = 50)
 // The shared read of timeline entries (SF-114 research.md §10): `where` picks the events (it must hold the visibility
 // of their records); `show.deals` names the deal of a deal's entry; `show.personOtherThan` names the person of a person's
 // entry unless it is that person (the ambassador's own entries); `show.activitiesOf` merges in the done activities of
-// that record (SF-109; the ambassador's latest updates hold notes and changes only). Each event has one target, so none
+// that record (SF-109; the ambassador's latest updates hold notes and changes only) and, SF-127, its emails. Each event has one target, so none
 // is read twice.
 export async function selectEntries(
   viewerId: number,
@@ -288,7 +305,10 @@ export async function selectEntries(
         (r.kind === "file_added" || r.kind === "file_deleted") && r.file_name !== null
           ? { id: r.file_id, name: r.file_name, size: r.file_size, kind: r.file_kind }
           : null,
+      email: null,
     }));
-  const merged = [...events, ...activities].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  // SF-127: the emails of the conversations linked to the record, read like done activities (limit + 1 of each).
+  const emails = show.activitiesOf ? await timelineEmails(viewerId, show.activitiesOf, limit + 1) : [];
+  const merged = [...events, ...activities, ...emails].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   return { more: merged.length > limit, entries: merged.slice(0, limit) };
 }

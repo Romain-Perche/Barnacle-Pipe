@@ -56,6 +56,8 @@ export type FakeState = {
   failWatch: boolean;
   offsetMs: number;
   key: { kid: string; privatePem: string };
+  // SF-127: attachment bytes (base64url) by "<message id>/<attachment id>", served by messages.attachments.get.
+  attachmentData?: Record<string, string>;
 } & CalendarState; // SF-124: the fake Google Calendar (src/server/calendar/fake-calendar.ts)
 
 export interface StateStore {
@@ -105,7 +107,9 @@ export type NewMessage = {
   subject?: string;
   text?: string | null;
   html?: string | null;
-  attachments?: { name: string; size: number; type?: string }[];
+  // SF-127: `data` the bytes (default: `size` bytes of a fake pattern); `inline` puts them in the part's body.data with no
+  // attachmentId, as Gmail does for small parts.
+  attachments?: { name: string; size: number; type?: string; data?: string | Uint8Array; inline?: boolean }[];
   labels?: string[];
   internalDate?: Date;
   threadId?: string | null;
@@ -123,6 +127,8 @@ const gmailError = (code: number, status: string, message: string, reason: strin
   json(code, { error: { code, message, errors: [{ message, domain: "global", reason }], status } });
 const b64url = (b: Buffer | string) => Buffer.from(b).toString("base64url");
 const header = (name: string, value: string) => ({ name, value });
+// `size` bytes of a fixed fake pattern (an attachment added without its bytes).
+const fakeBytes = (size: number) => (size > 0 ? Buffer.alloc(size, "FAKE-ATTACHMENT\n") : Buffer.alloc(0));
 
 // A small RFC 5322/MIME reader for messages.send: headers, and a body that is text, or multipart with base64 parts.
 function parseMime(raw: string): { headers: { name: string; value: string }[]; parts: GmailPart[] } {
@@ -388,13 +394,17 @@ export class FakeGoogleMail {
       let n = 0;
       if (m.text != null) parts.push({ partId: String(n++), mimeType: "text/plain", filename: "", headers: [header("Content-Type", 'text/plain; charset="UTF-8"')], body: { size: Buffer.byteLength(m.text), data: b64url(m.text) } });
       if (m.html != null) parts.push({ partId: String(n++), mimeType: "text/html", filename: "", headers: [header("Content-Type", 'text/html; charset="UTF-8"')], body: { size: Buffer.byteLength(m.html), data: b64url(m.html) } });
+      const stored: [string, string][] = [];
       for (const a of m.attachments ?? []) {
+        const bytes = a.data === undefined ? fakeBytes(a.size) : Buffer.from(a.data);
+        const attachmentId = `ANGjdJ${randomBytes(12).toString("hex")}`;
+        if (!a.inline) stored.push([attachmentId, b64url(bytes)]);
         parts.push({
           partId: String(n++),
           mimeType: a.type ?? "application/octet-stream",
           filename: a.name,
           headers: [header("Content-Type", a.type ?? "application/octet-stream"), header("Content-Disposition", `attachment; filename="${a.name}"`)],
-          body: { size: a.size, attachmentId: `ANGjdJ${randomBytes(12).toString("hex")}` },
+          body: a.inline ? { size: a.size, data: b64url(bytes) } : { size: a.size, attachmentId },
         });
       }
       const msg = this.add(s, email, {
@@ -403,7 +413,17 @@ export class FakeGoogleMail {
         internalDate: String(date.getTime()),
         payload: { partId: "", mimeType: "multipart/mixed", filename: "", headers, body: { size: 0 }, parts },
       });
+      s.attachmentData ??= {};
+      for (const [attachmentId, data] of stored) s.attachmentData[`${msg.id}/${attachmentId}`] = data;
       return { id: msg.id, threadId: msg.threadId, historyId: msg.historyId };
+    });
+  }
+
+  // SF-127: the message is deleted for good from the mailbox (messages.get and its attachments answer 404).
+  deleteMessage(email: string, messageId: string) {
+    this.change((s) => {
+      const box = this.box(s, email);
+      box.messages = box.messages.filter((x) => x.id !== messageId);
     });
   }
 
@@ -603,6 +623,14 @@ export class FakeGoogleMail {
           .sort((x, y) => Number(y.internalDate) - Number(x.internalDate));
         const page = all.slice(from, from + max).map((x) => ({ id: x.id, threadId: x.threadId }));
         return json(200, { ...(page.length ? { messages: page } : {}), resultSizeEstimate: all.length, ...(from + max < all.length ? { nextPageToken: String(from + max) } : {}) });
+      }
+      // SF-127: users.messages.attachments.get → MessagePartBody { size, data } (base64url).
+      const att = /^messages\/([^/]+)\/attachments\/([^/]+)$/.exec(route);
+      if (req.method === "GET" && att) {
+        const msg = box.messages.find((x) => x.id === att[1]);
+        const data = msg ? s.attachmentData?.[`${msg.id}/${att[2]}`] : undefined;
+        if (!msg || data === undefined) return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");
+        return json(200, { size: Buffer.from(data, "base64url").length, data });
       }
       const one = /^messages\/([^/]+)$/.exec(route);
       if (req.method === "GET" && one && one[1] !== "send") {

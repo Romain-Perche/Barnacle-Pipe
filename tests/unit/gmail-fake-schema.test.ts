@@ -78,6 +78,59 @@ describe("Gmail requests and answers against gmail-api.json", () => {
   });
 });
 
+describe("SF-127: messages.get and messages.attachments.get against gmail-api.json", () => {
+  // covers SF-127 FR-006, contracts/gmail.md § Fake, T011, T019
+  const addWithFile = (o: { inline?: boolean } = {}) =>
+    fake.addMessage("linus@barnacle.ai", { from: "ana@example.test", to: "linus@barnacle.ai", subject: "F", text: "x", attachments: [{ name: "figures.pdf", size: 5, data: "%PDF!", inline: o.inline }] });
+  const part = async (auth: Record<string, string>, id: string) =>
+    ((await (await fake.checkedFetch(`${G}/messages/${id}?format=full`, { method: "GET", headers: auth })).json()) as { payload: { parts: { filename: string; body: { attachmentId?: string; data?: string } }[] } }).payload.parts.find((p) => p.filename === "figures.pdf")!;
+  it("serves an attachment's bytes as MessagePartBody { size, data } (base64url); an inline part carries them in body.data", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const { id } = addWithFile();
+    const p = await part(auth, id);
+    const res = await fake.checkedFetch(`${G}/messages/${id}/attachments/${p.body.attachmentId}`, { method: "GET", headers: auth });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { size: number; data: string };
+    expect(body.size).toBe(5);
+    expect(Buffer.from(body.data, "base64url").toString()).toBe("%PDF!");
+    const inline = await part(auth, addWithFile({ inline: true }).id);
+    expect(inline.body.attachmentId).toBeUndefined();
+    expect(Buffer.from(inline.body.data!, "base64url").toString()).toBe("%PDF!");
+    expect((await fake.checkedFetch(`${G}/messages/${id}/attachments/nope`, { method: "GET", headers: auth })).status).toBe(404);
+    expect((await fake.checkedFetch(`${G}/messages/${id}/attachments/${p.body.attachmentId}`, { method: "GET", headers: { authorization: "Bearer dead" } })).status).toBe(401);
+    expect(fake.violations).toEqual([]);
+  });
+  it("refuses messages.get with an undeclared query parameter (formatt)", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const { id } = addWithFile();
+    await expect(fake.checkedFetch(`${G}/messages/${id}?formatt=full`, { method: "GET", headers: auth })).rejects.toThrow(/no query parameter "formatt"/);
+    fake.violations.length = 0;
+  });
+  it("refuses a messages.get answer whose part body has an undeclared property", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const { id } = addWithFile();
+    fake.tamper((b) => {
+      const payload = b.payload as { parts: { body: Record<string, unknown> }[] };
+      payload.parts[1].body.attachment = "x";
+      return b;
+    });
+    await expect(fake.checkedFetch(`${G}/messages/${id}?format=full`, { method: "GET", headers: auth })).rejects.toThrow(/no property "attachment" in MessagePartBody/);
+    fake.violations.length = 0;
+  });
+  it("refuses attachments.get with an undeclared query parameter, and an answer with `dataa`", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const { id } = addWithFile();
+    const p = await part(auth, id);
+    const url = `${G}/messages/${id}/attachments/${p.body.attachmentId}`;
+    await expect(fake.checkedFetch(`${url}?format=raw`, { method: "GET", headers: auth })).rejects.toThrow(/users.messages.attachments.get has no query parameter "format"/);
+    fake.tamper(({ data, ...rest }) => ({ ...rest, dataa: data }));
+    await expect(fake.checkedFetch(url, { method: "GET", headers: auth })).rejects.toThrow(/no property "dataa" in MessagePartBody/);
+    fake.tamper((b) => ({ ...b, size: "5" }));
+    await expect(fake.checkedFetch(url, { method: "GET", headers: auth })).rejects.toThrow(/size must be an integer/);
+    fake.violations.length = 0;
+  });
+});
+
 describe("push bodies against pubsub-api.json", () => {
   it("accepts the fake's notice and refuses message.payload instead of message.data", async () => {
     await accessToken();

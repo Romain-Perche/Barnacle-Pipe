@@ -161,7 +161,8 @@ OAuth code flow and database sessions.
   step and cursor; cleared when they move), and every save re-checks under lock that the user is active and still holds
   the token (`lockRow`; else paused, nothing saved). A record private to another owner, or put on a record the importer
   cannot see, is never named in the report (`privateItem`: empty label, `args.privateKind`, shown "a private …").
-- `src/server/gmail/` — Gmail connect and sync (SF-118); settings from `gmailConfig()` in `env.ts` (real / fake / off).
+- `src/server/gmail/` — Gmail connect and sync (SF-118; SF-127: `attachmentParts` / `attachmentName` in `rules.ts`, `getAttachment`
+  in `google-api.ts`, the fake's attachment bytes and `deleteMessage`); settings from `gmailConfig()` in `env.ts` (real / fake / off).
   `rules.ts` (pure: `GMAIL_SCOPES` = `gmail.modify` + `gmail.send`, `hasAllScopes`, `parseAddressList`, `decodeHeader`,
   `readMessage`, `decideCopy`, `classifyGoogleError`, `buildMime` (`BadHeader` on CR/LF), `testEmail`), `google-api.ts`
   (every Google call by plain `fetch`, 10 s: consent address, token, revoke, certs, Gmail; `GoogleKeyRefused` /
@@ -187,6 +188,29 @@ OAuth code flow and database sessions.
 - `src/app/gmail/push/route.ts` (Pub/Sub push, Google's token) and `src/app/cron/gmail/route.ts` (the 15-minute check,
   `CRON_SECRET`), scheduled by `vercel.json` (SF-118); `src/app/dev/fake-google/gmail` (the fake consent screen; its buttons post a plain form to `answer/route.ts`, a 303 to the callback) and
   `src/app/dev/fake-gmail` (the fake mailbox page), 404 unless the Gmail mode is `fake`.
+- `src/server/emails/` — email on the timeline (SF-127), on SF-118's copied emails: `rules.ts` (pure: `emailText` (text part, else
+  the HTML through `pipedrive/html.ts` `htmlToText`), `emailPreview` (200 code points), `recipientsLine`, `addressText`,
+  `subjectOrDefault`, `parseFrom` / `fromParam` (`?from=person-12`), `parseLinkKind`, `mergeLinkChoice`, `contentDisposition`),
+  `process.ts` (`processMessage(db, id)`: inside `storeMessage`'s transaction, `lock table email_conversations`, Last contacted
+  raised (never lowered), the conversation across mailboxes by Message-ID (two found to be one are merged into the smaller id),
+  its addresses, `autoLink`; `autoLink` (people by address, their organisation, their one open deal; only `insert … on
+  conflict do nothing`, so a hand choice is never changed); `linkForPeople` (called by `createPerson`, `updatePerson` for the
+  addresses a save added, CSV `runImport` and the Pipedrive people page); `catchUpEmails` (emails with `linked_at` null, first
+  thing of `runGmailCheck`)), `timeline.ts` (`timelineEmails`: EMAIL entries merged by `selectEntries` like done activities,
+  one per email: the sender's copy, else the first stored, by `dedupe_key`), `conversations.ts` (`getConversation`,
+  `fromRecordName`, `linkChoices`, `linkRecord` / `unlinkRecord`), `attachments.ts` (`attachmentAccess`, `fetchAttachment`:
+  `getMessage` → `attachmentParts(payload)[position]` → `body.data` or `getAttachment`, through a working mailbox holding the
+  email, its own first; no Google call inside `sql.begin()`). `visibleConversation()` in `records/visibility.ts`: every read of
+  the email tables for a viewer uses it (a person in its emails or a linked person or deal the viewer cannot see hides it).
+  Tables `email_conversations`, `email_conversation_addresses`, `email_links` (`how` auto / manual, `removed` = unlinked by
+  hand); columns `email_threads.conversation_id`, `email_messages.linked_at` / `dedupe_key`. No email HTML is ever rendered.
+- `src/app/(app)/emails/` (SF-127) — the conversation page `[id]/page.tsx` (design B: `← <RECORD>`, // LINKED TO
+  `LinkedTo.tsx` with `?link=deal|person|organisation` forms, // EMAILS · OLDEST FIRST `EmailBody.tsx` as plain text,
+  `?notice=` fixed texts, `not-found.tsx`), `actions.ts` (`linkRecord`, `unlinkRecord`) and
+  `attachments/[id]/download/route.ts` (the bytes from Gmail as `application/octet-stream` + `Content-Disposition: attachment`,
+  or a 303 back with `?notice=attachment-unavailable`). `records/EmailEntry.tsx`: the EMAIL entry of `RecordTimeline`;
+  `records/TimelineNoteBox.tsx`: the note box, first in the right column. The person, organisation and deal pages have two
+  columns (`.recordcols`: details left; note box, // NEXT ACTIVITIES, // FILES, // TIMELINE right); the deal drawer has one.
 - `src/server/calendar/` — Google Calendar two-way sync (SF-124), on SF-118's connection, key and Google helpers (`call`,
   `readJson`, `settings`, `refreshAccessToken`, `loadKey`); settings from `calendarConfig()` in `env.ts` (`CALENDAR_SYNC=on`
   and Gmail set up). `rules.ts` (pure: `eventBody` / `googleEventBody`, `bodyHash`, `eventTimes`, `fromEvent`, `subjectFromTitle`,
