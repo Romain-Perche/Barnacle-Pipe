@@ -1,6 +1,7 @@
 // The deals board, design A (contracts/routes.md § Pages): "// DEALS", the pipeline name, a "Pipeline: <name>"
 // picker and [ ADD DEAL ] above one column per stage; the deal drawer on the right (?open=<id>). The pipeline and
 // the open deal are in the address as numbers; nothing typed in the address is ever shown.
+import OpenOnDoubleClick from "../records/OpenOnDoubleClick";
 import Link from "next/link";
 import { requireUser } from "@/server/auth/session";
 import { getBoard, getDeal, stageChoices } from "@/server/deals/deals";
@@ -60,6 +61,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
+      <OpenOnDoubleClick />
       <Head title={board.pipeline.name}>
         <ViewSwitch current="board" />
         <form id="pipeline-picker" className="picker-form" action="/deals" method="get">
