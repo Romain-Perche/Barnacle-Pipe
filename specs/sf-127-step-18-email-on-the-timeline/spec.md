@@ -16,6 +16,15 @@
 - Q: What does the timeline show for a conversation of several emails? → A: One EMAIL entry per email, each at its own time; opening any entry shows the whole conversation (A).
 - Q: Can a conversation be linked automatically to a private deal? → A: Yes: the private deal hides the conversation from teammates who cannot see the deal (A).
 
+### Plan 2026-11-26
+
+- Q: When the same email is copied into two mailboxes and the copies differ (the sender's copy lists Bcc, a recipient's does not), which copy is shown to the team? → A: The sender's copy (the one Gmail marks as sent), so Bcc shows as the sender sees it, as FR-002 says; otherwise the copy stored first (decided by the factory, to confirm)
+- Q: Two copies of one conversation are found to be the same conversation only later (a shared email arrives after each copy was already linked and edited by hand): whose links win? → A: Both conversations' links are kept; for the same record, a choice made by hand beats an automatic link, and between two choices made by hand the later one wins (decided by the factory, to confirm)
+- Q: Do emails copied before this issue ships also raise Last contacted? → A: Yes: they are linked and raise Last contacted (never lower it) the first time the 15-minute Gmail check runs after the release (decided by the factory, to confirm)
+- Q: Is a person whose link was removed by hand still used to link a deal automatically? → A: No: only people currently linked to the conversation through their address bring a deal; their privacy still hides the conversation while they are in its emails (decided by the factory, to confirm)
+- Q: Which deals can be linked by hand? → A: Any deal the user can see that is not archived, Won and Lost included; people and organisations likewise not archived (decided by the factory, to confirm)
+- Q: What does a downloaded attachment arrive as? → A: Always as a download (Content-Disposition: attachment, type application/octet-stream, never shown in the browser), under its name with characters a file system refuses replaced, as SF-116 files are (decided by the factory, to confirm)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - See a contact's emails on their timeline (Priority: P1)
