@@ -751,6 +751,8 @@
     data: CatConv is linked by hand to Kim in US4 3, so making Kim private hid it; check reordered) and US6 scenario 4 (private
     Pia's Last contacted; no part ran it before). `ONLY="Edge case 18,US6 scenario 4"` runs some; mailboxes reconnected only if not working.
     Round 2 (after fix round 1): a 30/30, b 24 of 25 (edge 14 failed on the old order, passes in c), c 4/4: all 57 scenarios pass.
+    Round 3 (after merging origin/main: SF-126 double-click, SF-128 fetch past emails): same order on fresh data, a 30/30,
+    b 25/25 (edge 14 passes there too now), c 4/4: all 57 pass; five smoke checks pass.
   - SF-128 AI review (fetch past emails, all 28 scenarios, ~4 min): `rm -rf .fake-gmail && bash .factory/run/reset-db.sh`
     (run start-app.sh first on a fresh VM: it installs PostgreSQL), the app on :3000 (`start-app.sh`, fake Gmail) and
     `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh` (edge 9, Gmail not set up). Then
