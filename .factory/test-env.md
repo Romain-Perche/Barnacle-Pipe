@@ -718,6 +718,18 @@
     reports FAIL because no [ EDIT ] is offered on the archived person's page, which is the SF-109 behaviour).
     Round 3 (after merging origin/main with SF-123 reminders): same order on fresh data, 42 of 42 pass (edge 10 again through
     check-sf124-edge9.js; the b script's probe FAIL is the same known false negative).
+  - SF-128 AI review (fetch past emails, all 28 scenarios, ~4 min): `rm -rf .fake-gmail && bash .factory/run/reset-db.sh`
+    (run start-app.sh first on a fresh VM: it installs PostgreSQL), the app on :3000 (`start-app.sh`, fake Gmail) and
+    `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh` (edge 9, Gmail not set up). Then
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf128.js` (results in /tmp/sf128-results.json;
+    argument `margaret` runs only Margaret's part: US1 3/5, US3 3-5, edges 1-9). It adds the CRM people of the
+    100-conversation mailbox by SQL (Ana Fake with two addresses, Ben, private Pia (Ada's), archived Arlo); Linus gets
+    the 100 conversations from `[ PUT 100 PAST CONVERSATIONS ]`, plus 60 newsletter pads so a fetch takes more than one
+    part of 100 threads. Margaret's mailbox is emptied between edge cases. Progress is read from a JavaScript-free page
+    (no PastFetchRunner there), so a fetch started from it only moves on through the 15-minute check. The "not connected"
+    user is Grace (Alan is deactivated in the seed). `.factory/run/sf128-ctl.ts` (`npx tsx`, env in its head comment) adds
+    conversations with days ago or an exact date (`add`), newsletter pads (`pad`), empties a fake mailbox (`clear`) and
+    lists it (`box`). US2 1 and edge 8 see parts of 100 threads (10 only in the automated tests).
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
