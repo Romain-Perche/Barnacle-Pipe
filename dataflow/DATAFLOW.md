@@ -144,7 +144,7 @@ flowchart LR
 | Deals | Pipelines, stages and the deal board, with deals kept private by their person. | Deals board and deal pages, Pipelines admin |
 | Deals database | The Postgres tables for pipelines, stages, deals, their stage time, labels, linked people and followers. | Postgres deal followers, Postgres deal labels and label links, Postgres deal people, Postgres deal stage periods, Postgres deals, Postgres pipelines, Postgres stages |
 | Files | Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage. | Files on records |
-| Gmail | Connects a user's Gmail, copies mail into the CRM through push and a 15-minute check, and sends mail. | Google Calendar client, Calendar event links, Calendar sync and push receiver, Google API client, Gmail connect and disconnect, Gmail send, Gmail sync and push receiver, Gmail connections, threads, messages |
+| Gmail | Connects a user's Gmail, copies mail into the CRM through push and a 15-minute check, and sends mail. | Google Calendar client, Calendar event links, Calendar sync and push receiver, Google API client, Gmail connect and disconnect, Fetch past emails, Gmail send, Gmail sync and push receiver, Gmail connections, threads, messages |
 | People and organisations | Staff list, search, create, edit, archive and delete people and organisations, with a timeline and shared lead sources and labels. | Activities (calls, meetings, tasks), Ambassadors and referrals, Lead sources and labels admin, CSV import, Postgres csv_imports, Custom fields, Postgres note mentions, Notes and @mentions, Notifications page, Organisation pages and actions, People pages and actions, One-shot delete notice |
 | Pipedrive import | Connects a Pipedrive token and imports people, organisations and deals page by page, never twice. | Sealed Pipedrive tokens, Pipedrive import, Pipedrive imports and links |
 | Segments | Saved, team-shared people segments and the count of people each one reaches. | Saved segments and reach count, Postgres segments |
@@ -587,35 +587,40 @@ flowchart LR
         n7("Calendar sync and push receiver")
         n8("Google API client")
         n9("Gmail connect and disconnect")
-        n10("Gmail send")
-        n11("Gmail sync and push receiver")
-        n12[("Gmail connections, threads, messages")]
+        n10("Fetch past emails")
+        n11("Gmail send")
+        n12("Gmail sync and push receiver")
+        n13[("Gmail connections, threads, messages")]
     end
-    n13[["Database"]]
-    n14[["Database commands"]]
-    n15[["People and organisations"]]
-    n16[["Settings"]]
-    n15 -->|"activity changes to mirror"| n7
+    n14[["Database"]]
+    n15[["Database commands"]]
+    n16[["People and organisations"]]
+    n17[["Settings"]]
+    n16 -->|"activity changes to mirror"| n7
     n1 -->|"events, sync tokens"| n5
     n5 -->|"event and channel requests"| n1
     n6 -->|"event links"| n7
-    n7 -->|"meetings and moves from Google"| n13
+    n7 -->|"meetings and moves from Google"| n14
     n7 -->|"event pull, push, watch calls"| n5
     n7 -->|"event links and agreed bodies"| n6
     n2 -->|"Calendar push notice"| n7
-    n2 -->|"push notice and 15-minute check"| n11
-    n16 -->|"GMAIL_TOKEN_KEY, Google settings"| n9
+    n2 -->|"push notice and 15-minute check"| n12
+    n17 -->|"GMAIL_TOKEN_KEY, Google settings"| n9
     n3 -->|"tokens, profile, messages"| n8
     n8 -->|"OAuth and Gmail requests"| n3
     n9 -->|"consent, token, revoke calls"| n8
-    n9 -->|"refresh token sealed with AES-256-GCM"| n12
-    n10 -->|"outgoing MIME message"| n8
-    n11 -->|"15-minute calendar check"| n7
-    n11 -->|"history and message reads"| n8
-    n11 -->|"copied threads and messages"| n12
-    n12 -->|"sealed token"| n10
-    n12 -->|"sealed token, history id"| n11
-    n14 -->|"schema"| n12
+    n9 -->|"refresh token sealed with AES-256-GCM"| n13
+    n10 -->|"thread list and metadata reads"| n8
+    n10 -->|"past conversations, fetch progress"| n13
+    n11 -->|"outgoing MIME message"| n8
+    n12 -->|"15-minute calendar check"| n7
+    n12 -->|"history and message reads"| n8
+    n12 -->|"15-minute past-fetch part"| n10
+    n12 -->|"copied threads and messages"| n13
+    n13 -->|"sealed token, fetch cursor"| n10
+    n13 -->|"sealed token"| n11
+    n13 -->|"sealed token, history id"| n12
+    n15 -->|"schema"| n13
     n4 -->|"connect or disconnect Gmail"| n9
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
@@ -624,9 +629,9 @@ flowchart LR
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
     class n1,n2,n3,n4 actor
-    class n5,n7,n8,n9,n10,n11 process
-    class n6,n12 store
-    class n13,n14,n15,n16 stub
+    class n5,n7,n8,n9,n10,n11,n12 process
+    class n6,n13 store
+    class n14,n15,n16,n17 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
 ```
 
@@ -1064,9 +1069,10 @@ flowchart LR
 | Google OAuth and Gmail API | actor |  |  |  |
 | Google API client | process | Gmail | Next.js app server (Vercel or local) | `src/server/gmail/google-api.ts` |
 | Gmail connect and disconnect | process | Gmail | Next.js app server (Vercel or local) | `src/app/(app)/settings/actions.ts`, `src/app/(app)/settings/gmail/callback/route.ts`, `src/server/gmail/connections.ts` |
+| Fetch past emails | process | Gmail | Next.js app server (Vercel or local) | `src/app/(app)/settings/PastFetchRunner.tsx`, `src/server/gmail/past.ts` |
 | Gmail send | process | Gmail | Next.js app server (Vercel or local) | `src/server/gmail/send.ts` |
 | Gmail sync and push receiver | process | Gmail | Next.js app server (Vercel or local) | `src/app/cron/gmail/route.ts`, `src/app/gmail/push/route.ts`, `src/server/gmail/push.ts`, `src/server/gmail/sync.ts` |
-| Gmail connections, threads, messages | store | Gmail | Next.js app server (Vercel or local) | `migrations/0016_gmail.sql` |
+| Gmail connections, threads, messages | store | Gmail | Next.js app server (Vercel or local) | `migrations/0016_gmail.sql`, `migrations/0020_past_email_fetches.sql` |
 | Google sign-in routes | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/auth/google`, `src/server/auth/google.ts` |
 | Google OAuth and userinfo API | actor |  | Google (third party) |  |
 | db:migrate command | process | Database commands | Command line (developer machine or Vercel build) | `scripts/migrate.ts` |
@@ -1200,10 +1206,14 @@ flowchart LR
 | Google API client | Google OAuth and Gmail API | OAuth and Gmail requests | `src/server/gmail/google-api.ts` |
 | Gmail connect and disconnect | Google API client | consent, token, revoke calls | `src/server/gmail/connections.ts` |
 | Gmail connect and disconnect | Gmail connections, threads, messages | refresh token sealed with AES-256-GCM | `src/server/crypto/seal.ts`, `src/server/gmail/connections.ts` |
+| Fetch past emails | Google API client | thread list and metadata reads | `src/server/gmail/google-api.ts`, `src/server/gmail/past.ts` |
+| Fetch past emails | Gmail connections, threads, messages | past conversations, fetch progress | `src/server/gmail/past.ts`, `src/server/gmail/sync.ts` |
 | Gmail send | Google API client | outgoing MIME message | `src/server/gmail/send.ts` |
 | Gmail sync and push receiver | Calendar sync and push receiver | 15-minute calendar check | `src/server/gmail/sync.ts` |
 | Gmail sync and push receiver | Google API client | history and message reads | `src/server/gmail/sync.ts` |
+| Gmail sync and push receiver | Fetch past emails | 15-minute past-fetch part | `src/server/gmail/past.ts` |
 | Gmail sync and push receiver | Gmail connections, threads, messages | copied threads and messages | `src/server/gmail/sync.ts` |
+| Gmail connections, threads, messages | Fetch past emails | sealed token, fetch cursor | `src/server/gmail/past.ts` |
 | Gmail connections, threads, messages | Gmail send | sealed token | `src/server/gmail/send.ts` |
 | Gmail connections, threads, messages | Gmail sync and push receiver | sealed token, history id | `src/server/gmail/sync.ts` |
 | Google sign-in routes | Browser cookies (crm_session, crm_oauth) | OAuth state, PKCE verifier, session token | `src/app/auth/google/callback/route.ts`, `src/app/auth/google/start/route.ts` |

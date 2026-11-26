@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0dbf51542a25cb895874cd3a7306582a9f9493d082bf76d97907b13ab8b37f38",
+  "pageVersion": "sha256:b31dc2240fb7246574d424672678ec4bb073dcd7f8b2aec72637ee94871bcb25",
   "claims": [
     {
       "id": "claim_26dddd940894480690668615756bf371",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:bcbd8703c66ea3a5ae24371c12850b6f3007c491a08ade8b6eb58d23b07715f7"
+          "version": "repo-file-v1:sha256:9d3119e84206053d59c49b302720bcfbd31f73ed323079090fb1e5d2aa2a683b"
         }
       ]
     },
@@ -36,7 +36,7 @@
         },
         {
           "resource": "repo://src/server/gmail/connections.ts",
-          "version": "repo-file-v1:sha256:78426fffcfed8b7cc48984a52a477cd0d2bb58ed76bf0f188f355d0aef6fb7b6"
+          "version": "repo-file-v1:sha256:e50bacd4fd021182550d08af50223e597d167cdfc740e48bbfe5a2f88adf3ba7"
         }
       ]
     },
@@ -53,10 +53,24 @@
           "version": "repo-file-v1:sha256:a92428c479fb151a6c38e9778cf777726016cfb22407af1d2b49a09b1d5adeab"
         }
       ]
+    },
+    {
+      "id": "claim_ff9f28f4a991402982e3dccf8a596b9a",
+      "statement": "Past email fetch walks a 12-month window backwards in 7-day slices under a lease, storing messages through sync.ts storeMessage, and is run both from Settings and from runGmailCheck via runPastFetches.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/gmail/past.ts",
+          "version": "repo-file-v1:sha256:0de31a58add7dda439b75755b1a0175ffffb523aa6af7f126114495fc5457335"
+        },
+        {
+          "resource": "repo://src/server/gmail/sync.ts",
+          "version": "repo-file-v1:sha256:9d3119e84206053d59c49b302720bcfbd31f73ed323079090fb1e5d2aa2a683b"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-25T13:24:53.309Z"
+    "at": "2026-11-26T16:45:42.910Z"
   }
 }
