@@ -92,6 +92,7 @@ export function Board({ pipelineId, columns, openId, now }: { pipelineId: number
               {col.cards.map((card) => (
                 <Link
                   key={card.id}
+                  data-page={`/deals/${card.id}`}
                   href={boardHref(pipelineId, { open: card.id })}
                   scroll={false}
                   className={openId === card.id ? "card sel" : "card"}

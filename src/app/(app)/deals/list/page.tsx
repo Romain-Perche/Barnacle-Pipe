@@ -1,6 +1,7 @@
 // The deal list (SF-95 contracts/routes.md § Pages, design C as the People list): head with the Board/List switch and
 // "<n> deals · £<total>", a filter row, a sortable table, a pager and the deal drawer (?open=<id>). Everything is in
 // the page address; values that are unknown or invalid are ignored and never shown.
+import OpenOnDoubleClick from "../../records/OpenOnDoubleClick";
 import Link from "next/link";
 import { requireUser } from "@/server/auth/session";
 import { getDeal, stageChoices } from "@/server/deals/deals";
@@ -54,6 +55,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
+      <OpenOnDoubleClick />
       <div className="page-head">
         <div>
           <div className="label">
@@ -154,7 +156,7 @@ export default async function DealListPage({ searchParams }: { searchParams: Pro
               </thead>
               <tbody>
                 {list.rows.map((r) => (
-                  <tr key={r.id} className={found?.id === r.id ? "sel" : undefined} aria-selected={found?.id === r.id ? true : undefined}>
+                  <tr key={r.id} data-page={`/deals/${r.id}`} className={found?.id === r.id ? "sel" : undefined} aria-selected={found?.id === r.id ? true : undefined}>
                     <Cell href={preview(r.id)}>
                       <Link className="nm" href={`/deals/${r.id}`}>
                         {r.title}
