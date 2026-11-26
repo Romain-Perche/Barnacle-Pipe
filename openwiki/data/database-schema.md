@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-25T11:47:45.053Z
+    at: 2026-11-26T17:44:10.845Z
 sources:
   - id: sf120-src-migration
     resource: repo://migrations/0014_segments.sql
@@ -39,13 +39,15 @@ sources:
     resource: repo://migrations/0015_campaigns.sql
   - id: openwiki-source-5511f800eea987de057af6d1
     resource: repo://migrations/0017_activity_reminders.sql
+  - id: openwiki-source-757d6c698f2071aedd0ca945
+    resource: repo://migrations/0020_email_timeline.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-25T11:47:45.053Z" }
+generated: { by: "claude-code", at: "2026-11-26T17:44:10.845Z" }
 ---
 
 # Database schema and access
@@ -225,6 +227,13 @@ See [Segments](../features/segments.md).
 `html` (at most 500000 characters) with a check that only the chosen one is set, `merge_links` (jsonb, custom field tags
 with no foreign key so a deleted field reads as unknown), `status` (only `draft` for now), `created_by`/`updated_by`
 and `version`. Row level security is enabled. See [Campaigns](../features/campaigns.md).
+
+### Email on the timeline (migration 0020)
+
+`email_conversations` (one conversation across mailboxes), `email_conversation_addresses` (addresses met in its emails),
+and `email_links` (links to a person, organisation or deal; `how` auto or manual, `removed` remembers a hand unlink).
+`email_threads.conversation_id` points at the conversation; `email_messages` gains `linked_at` (null until processed)
+and the generated `dedupe_key`. Every new table has row level security enabled.
 
 ## Row level security
 

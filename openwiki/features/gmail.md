@@ -22,10 +22,12 @@ sources:
     resource: repo://src/server/calendar/sync.ts
   - id: openwiki-source-142c3db3613355a16ad2c16c
     resource: repo://src/server/crypto/seal.ts
+  - id: openwiki-source-88f5ce2aae6df34b0e7bc3f8
+    resource: repo://src/server/emails/process.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-25T13:24:53.309Z
-generated: { by: "claude-code", at: "2026-11-25T13:24:53.309Z" }
+    at: 2026-11-26T17:44:10.845Z
+generated: { by: "claude-code", at: "2026-11-26T17:44:10.845Z" }
 ---
 
 # Gmail connect and sync
@@ -91,3 +93,17 @@ off (Settings says Gmail can't be connected; cron and push do nothing). The fake
 `/dev/fake-google/gmail` and the fake mailbox is `/dev/fake-gmail`; `src/server/gmail/fake-gmail.ts` keeps its state in
 memory in tests and in `.fake-gmail/state.json` in development. `src/seed/gmail.ts` seeds Ada Fake's connection and
 three conversations.
+
+## Email on the timeline (SF-127)
+
+`src/server/emails/` turns the copied emails into timeline entries. Inside `storeMessage`'s transaction, `processMessage`
+(`process.ts`) groups emails into one conversation across mailboxes (by Message-ID), raises the person's Last contacted
+(never lowers it), records the addresses met, and `autoLink` links people by address, their organisation and their one open
+deal (insert-only, so a hand choice is never changed). `catchUpEmails` processes older emails with `linked_at` null at the
+start of `runGmailCheck`. `timeline.ts` supplies the EMAIL entries merged into record timelines; `visibleConversation()`
+in `records/visibility.ts` hides a conversation when a person in it or a linked record is not visible to the viewer.
+
+The conversation page `src/app/(app)/emails/[id]` shows plain text only (no email HTML is rendered) and lets a teammate link
+or unlink a person, organisation or deal (`actions.ts`; an unlink is remembered). Attachments are fetched from Gmail on
+demand by `attachments.ts` and served as `application/octet-stream` downloads. Tables are in
+`migrations/0020_email_timeline.sql`. See [dataflow/DATAFLOW.md](../../dataflow/DATAFLOW.md) for how data moves.

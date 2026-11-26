@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0dbf51542a25cb895874cd3a7306582a9f9493d082bf76d97907b13ab8b37f38",
+  "pageVersion": "sha256:c2a170eb62f8f544894278ec40da002a2b6f93799b398ae41bebe54779d073f2",
   "claims": [
     {
       "id": "claim_26dddd940894480690668615756bf371",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:bcbd8703c66ea3a5ae24371c12850b6f3007c491a08ade8b6eb58d23b07715f7"
+          "version": "repo-file-v1:sha256:47c63e4d1251e7b05cd16f028493beeec8f3a6a55ecfb4ea1a6818e0554342fa"
         }
       ]
     },
@@ -53,10 +53,24 @@
           "version": "repo-file-v1:sha256:a92428c479fb151a6c38e9778cf777726016cfb22407af1d2b49a09b1d5adeab"
         }
       ]
+    },
+    {
+      "id": "claim_250b90b1eebb4463b23465519b01cc9c",
+      "statement": "processMessage runs inside storeMessage's transaction, groups emails into conversations by Message-ID and autoLinks people, organisations and one open deal with insert-only links.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/emails/process.ts",
+          "version": "repo-file-v1:sha256:d60c3ef3ae0ca111ea444e976f6ff1f706f661e8da27b7a7b49eafd896feeafa"
+        },
+        {
+          "resource": "repo://src/server/gmail/sync.ts",
+          "version": "repo-file-v1:sha256:47c63e4d1251e7b05cd16f028493beeec8f3a6a55ecfb4ea1a6818e0554342fa"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-25T13:24:53.309Z"
+    "at": "2026-11-26T17:44:10.845Z"
   }
 }

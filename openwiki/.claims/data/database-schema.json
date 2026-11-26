@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:65390b7ca4f5bc3e3bee38034b40427b77bb5d47b66ac7f6567ac231eb286677",
+  "pageVersion": "sha256:d995bf5bdb86126c163573e92a74937b5a5d76b0512c446360f606ca87e41cf2",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -211,10 +211,20 @@
           "version": "repo-file-v1:sha256:aac63def2296271356766f5f0c1578bf00fb6f7ee921472ca3fba8d4569b3684"
         }
       ]
+    },
+    {
+      "id": "claim_e8b74d8c85224c44b1fc7c6232813f6e",
+      "statement": "Migration 0020 adds email_conversations, email_conversation_addresses and email_links, plus email_threads.conversation_id and email_messages.linked_at/dedupe_key.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0020_email_timeline.sql",
+          "version": "repo-file-v1:sha256:57b03359711f948408eda43e2e3a00b808f18888ed7699e52d67e189e213cbc8"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-25T11:47:45.053Z"
+    "at": "2026-11-26T17:44:10.845Z"
   }
 }
