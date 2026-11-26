@@ -5,7 +5,7 @@ description: The Postgres tables (users, sessions, user_changes, schema_migratio
 tags: [database, postgres, schema, rls, supabase]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-25T11:47:45.053Z
+    at: 2026-11-26T16:45:42.910Z
 sources:
   - id: sf120-src-migration
     resource: repo://migrations/0014_segments.sql
@@ -39,13 +39,15 @@ sources:
     resource: repo://migrations/0015_campaigns.sql
   - id: openwiki-source-5511f800eea987de057af6d1
     resource: repo://migrations/0017_activity_reminders.sql
+  - id: openwiki-source-cd88a1454ad7b5ec916b0652
+    resource: repo://migrations/0020_past_email_fetches.sql
   - id: openwiki-source-c7141a489d89567be64a28f1
     resource: repo://scripts/migrate.ts
   - id: openwiki-source-06c17fd9fbcb90c595072826
     resource: repo://src/server/db.ts
   - id: openwiki-source-b32d9e2f594e42ac5679f049
     resource: repo://tests/integration/rls.test.ts
-generated: { by: "claude-code", at: "2026-11-25T11:47:45.053Z" }
+generated: { by: "claude-code", at: "2026-11-26T16:45:42.910Z" }
 ---
 
 # Database schema and access
@@ -225,6 +227,15 @@ See [Segments](../features/segments.md).
 `html` (at most 500000 characters) with a check that only the chosen one is set, `merge_links` (jsonb, custom field tags
 with no foreign key so a deleted field reads as unknown), `status` (only `draft` for now), `created_by`/`updated_by`
 and `version`. Row level security is enabled. See [Campaigns](../features/campaigns.md).
+
+### Past email fetches (migration 0020)
+
+`past_email_fetches` holds one row per Gmail connection (`connection_id` is unique, cascade delete): `state` is
+`running` or `ended`, with the 12-month window, the 7-day slice cursor (`slice_end`, `page_token`, `page_offset`), the
+`copied` count, `wait_until` / `lease_until`, and a `problem` that can only be `unavailable`. Check constraints tie
+`ended_at` to the ended state and clear the lease and wait when ended. The row is deleted when Gmail is disconnected or
+the user deactivated; copied mail stays. Row level security is enabled. See
+`migrations/0020_past_email_fetches.sql` and [Gmail](../features/gmail.md).
 
 ## Row level security
 

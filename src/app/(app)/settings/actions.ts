@@ -9,6 +9,7 @@ import { requireUser } from "@/server/auth/session";
 import { gmailConfig } from "@/server/env";
 import { disconnect, GMAIL_OAUTH_COOKIE, GMAIL_OAUTH_PATH } from "@/server/gmail/connections";
 import { consentUrl } from "@/server/gmail/google-api";
+import { runPastFetchPartFor, startPastFetch, type PageAnswer } from "@/server/gmail/past";
 import { testEmail } from "@/server/gmail/rules";
 import { GmailNeedsReconnect, sendGmail } from "@/server/gmail/send";
 import { removeToken, saveToken } from "@/server/pipedrive/connection";
@@ -70,4 +71,19 @@ export async function sendTestEmail(): Promise<void> {
     redirect("/settings");
   }
   redirect(outcome === "needs_reconnect" ? "/settings" : "/settings?gmail=test_failed");
+}
+
+// SF-128: [ FETCH PAST EMAILS ]: starts a fetch of the user's own mailbox only on a working connection with none running
+// (otherwise nothing changes), then back to Settings.
+export async function startPastFetchAction(): Promise<void> {
+  const user = await requireUser();
+  await startPastFetch(user.id, new Date());
+  redirect("/settings");
+}
+
+// SF-128: one part of the user's own fetch, called by PastFetchRunner while Settings is open. Answers only what to do
+// next: never email content nor text.
+export async function runPastFetchPartAction(): Promise<PageAnswer> {
+  const user = await requireUser();
+  return runPastFetchPartFor(user.id, { now: new Date() });
 }

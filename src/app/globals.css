@@ -593,6 +593,16 @@ table.campaigns-list .acts form + a { margin-left: 14px; }
 .gm-lines { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line-soft); font-size: 14px; }
 .gm-lines li { padding: 6px 0; border-bottom: 1px solid var(--line-list); }
 .gm-card .err { margin: 0 0 10px; }
+/* SF-128: the "// PAST EMAILS" part of the Gmail card (design B). */
+.gm-sub { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.gm-sub form { margin: 0; }
+.gm-pd { font-size: 14px; margin: 6px 0 0; }
+.gm-pd.hint { color: var(--muted); font-size: 13px; }
+.gm-card .gm-pd.err { margin: 6px 0 0; }
+.gm-run { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue); display: inline-flex; align-items: center; gap: 6px; }
+.spin { display: inline-block; width: 8px; height: 8px; background: var(--blue); animation: gm-spin 1s linear infinite; }
+@keyframes gm-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 8px; vertical-align: middle; }
 .dot.bad { background: var(--danger); }
 .side nav a .warn { background: var(--orange); color: #fff; padding: 0 5px; margin-left: 6px; font-weight: 700; }

@@ -1,12 +1,22 @@
 // The fake Gmail mailbox (SF-118 research.md §14, FR-018), development and tests only: pick a user, put a received or
 // sent message in their fake mailbox (with or without delivering its notice), run the 15-minute check, refuse the key,
-// fail renewals, forget history; see the mailbox's messages with their labels, the key's status and the watch's.
+// fail renewals, forget history; SF-128: put 100 past conversations, put a message days ago, slow down the next call,
+// make Gmail unreachable; see the mailbox's messages with their labels, the key's status and the watch's.
 // 404 unless fakes are allowed and Gmail runs on the fake.
 import { notFound } from "next/navigation";
 import { sql } from "@/server/db";
 import { gmailConfig, isFakeAllowed } from "@/server/env";
 import { fakeGmail } from "@/server/gmail/fake-gmail";
-import { forgetFakeHistory, putFakeMessage, refuseFakeKey, runFakeCheck, toggleFakeRenewals } from "./actions";
+import {
+  forgetFakeHistory,
+  putFakeMessage,
+  putPastConversations,
+  refuseFakeKey,
+  runFakeCheck,
+  slowDownFakeGmail,
+  toggleFakeRenewals,
+  toggleFakeUnreachable,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +31,10 @@ const DONE: Record<string, string> = {
   renewals: "Renewals switched.",
   forgot: "Gmail forgot its history.",
   no_user: "Pick a user first.",
+  past_mailbox: "100 past conversations put in (no notices).",
+  slowed: "The next Gmail call will ask to slow down for 30 seconds.",
+  unreachable_on: "Gmail can't be reached.",
+  unreachable_off: "Gmail can be reached again.",
 };
 
 export default async function FakeGmailPage({ searchParams }: Props) {
@@ -85,6 +99,24 @@ export default async function FakeGmailPage({ searchParams }: Props) {
                 [ FORGET HISTORY ]
               </button>
             </form>
+            <form action={putPastConversations}>
+              {userField}
+              <button className="btn" type="submit">
+                [ PUT 100 PAST CONVERSATIONS ]
+              </button>
+            </form>
+            <form action={slowDownFakeGmail}>
+              {userField}
+              <button className="btn" type="submit">
+                [ SLOW DOWN NEXT CALL ]
+              </button>
+            </form>
+            <form action={toggleFakeUnreachable}>
+              {userField}
+              <button className="btn" type="submit">
+                {fake.isUnreachable() ? "[ GMAIL UNREACHABLE: OFF ]" : "[ GMAIL UNREACHABLE: ON ]"}
+              </button>
+            </form>
           </div>
           <h2>Put in a message</h2>
           <form action={putFakeMessage} className="stack">
@@ -117,6 +149,10 @@ export default async function FakeGmailPage({ searchParams }: Props) {
             <label className="field">
               <span>Date offset in minutes (negative: earlier)</span>
               <input className="input" name="offset" type="number" defaultValue={0} />
+            </label>
+            <label className="field">
+              <span>Days ago</span>
+              <input className="input" name="days" type="number" min={0} defaultValue={0} />
             </label>
             <label className="field">
               <span>Label</span>

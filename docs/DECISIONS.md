@@ -129,3 +129,6 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - Calendar sync runs in the 15-minute Gmail job; changes made in the CRM are sent after the response, never while saving (SF-124)
 - After a disconnect, Calendar sync starts again from the new connection: changes made in Google while disconnected are not read; the CRM's values are sent again (SF-124)
 - Single click on a card or row opens the drawer; double-click opens the record's own page (SF-126)
+- With exactly one conversation, the fetch lines say "1 conversation copied", the plural rule of the Gmail card's total (SF-128)
+- "The last 12 months" of a past-email fetch are 12 calendar months back from the moment of the press, by the date Gmail received or sent each message (SF-128)
+- While Gmail needs reconnecting and no fetch is running, "// PAST EMAILS" shows the explanation (or the last end message) with no button; the button comes back once Gmail is reconnected (SF-128)

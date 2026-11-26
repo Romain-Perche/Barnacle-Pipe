@@ -5,6 +5,7 @@
 import { notFound, redirect } from "next/navigation";
 import { gmailConfig, isFakeAllowed } from "@/server/env";
 import { fakeGmail } from "@/server/gmail/fake-gmail";
+import { putPastMailbox } from "@/server/gmail/fake-past-mailbox";
 import { receiveGmailPush } from "@/server/gmail/push";
 import { runGmailCheck } from "@/server/gmail/sync";
 
@@ -40,6 +41,8 @@ export async function putFakeMessage(form: FormData): Promise<void> {
   const label = ["INBOX", "SPAM", "DRAFT", "TRASH"].includes(str(form, "label")) ? str(form, "label") : "INBOX";
   const labels = label === "DRAFT" ? ["DRAFT"] : sent ? (label === "INBOX" ? ["SENT"] : ["SENT", label]) : label === "INBOX" ? ["INBOX", "UNREAD"] : [label];
   const minutes = Number(str(form, "offset") || "0");
+  // SF-128: "Days ago" puts the message in the past (for the past-email fetch).
+  const days = Number(str(form, "days") || "0");
   const fake = fakeGmail();
   fake.addMessage(user, {
     from: str(form, "from") || (sent ? user : "someone@example.test"),
@@ -51,7 +54,7 @@ export async function putFakeMessage(form: FormData): Promise<void> {
     html: str(form, "html") || null,
     attachments: attachments(str(form, "attachments")),
     labels,
-    internalDate: new Date(fake.now() + (Number.isFinite(minutes) ? minutes : 0) * 60_000),
+    internalDate: new Date(fake.now() + (Number.isFinite(minutes) ? minutes : 0) * 60_000 - (Number.isFinite(days) ? days : 0) * 86_400_000),
     threadId: str(form, "thread") || null,
   });
   if (form.get("deliver") === "on") {
@@ -85,4 +88,29 @@ export async function forgetFakeHistory(form: FormData): Promise<void> {
   const user = guard(form);
   fakeGmail().forgetHistory();
   back(user, "forgot");
+}
+
+// SF-128: the 100 past conversations of data-model.md § Fake mailbox (no notice: they are old mail).
+export async function putPastConversations(form: FormData): Promise<void> {
+  const user = guard(form);
+  if (!user) back(user, "no_user");
+  const fake = fakeGmail();
+  putPastMailbox(fake, user, { now: new Date(fake.now()) });
+  back(user, "past_mailbox");
+}
+
+// SF-128: the next Gmail call answers 429 with Retry-After: 30.
+export async function slowDownFakeGmail(form: FormData): Promise<void> {
+  const user = guard(form);
+  fakeGmail().slowDown(30);
+  back(user, "slowed");
+}
+
+// SF-128: every Google call fails as a network error / works again.
+export async function toggleFakeUnreachable(form: FormData): Promise<void> {
+  const user = guard(form);
+  const fake = fakeGmail();
+  const on = !fake.isUnreachable();
+  fake.setUnreachable(on);
+  back(user, on ? "unreachable_on" : "unreachable_off");
 }

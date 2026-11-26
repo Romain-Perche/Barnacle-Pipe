@@ -64,7 +64,8 @@
   adds 2 pipelines, 30 deals, 40 notes, 30 activities and 6 files (PDF, PNG, 26 MB, empty, Drive link, email
   attachment). Engine hook `onSaveForTests` (APP_ENV=test only) runs inside every import transaction: tests use it to
   prove no Pipedrive call happens while one is open, to force a failure, or to move the cursor (a stale part).
-- Gmail API (SF-118; users.getProfile, watch, stop, history.list, messages.list/get/send, threads.get): fake
+- Gmail API (SF-118; users.getProfile, watch, stop, history.list, messages.list/get/send, threads.get; SF-128:
+  threads.list, threads.get format=minimal/metadata/full): fake
   `src/server/gmail/fake-gmail.ts` (`FakeGoogleMail`), wrapped for the tests by `tests/fakes/gmail.ts` (`GmailFake`,
   `installGmailFake()`, installed with `useGmailFetchForTests`), which checks every Gmail request and answer against the
   schema `gmail-api.json` (path and method among `resources.users` methods, each query parameter declared for that
@@ -83,6 +84,21 @@
   user's mailbox (with or without its notice), runs the 15-minute check, refuses the key, fails renewals, forgets history.
   `start-app.sh` makes a key into /tmp/gmail-token-key (`GMAIL_TOKEN_KEY=` for "Gmail can't be connected right now.") and
   sets `CRON_SECRET=fake-cron-secret-0123456789`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY` for every test.
+  SF-128 (fetch past emails): `threads.list` reads `q` `after:<s>` / `before:<s>` (epoch seconds on `internalDate`; a
+  thread is listed when one of its messages is within), `includeSpamTrash`, `maxResults` (≤ 500), a numeric `pageToken`
+  (an unknown one answers 400 `invalidArgument`), threads ordered by their newest message (`ListThreadsResponse`);
+  `threads.get` honours `format` and `metadataHeaders`; `slowDown(seconds, calls = 1)` makes the next Gmail API calls
+  answer 429 `RESOURCE_EXHAUSTED` / `rateLimitExceeded` with `Retry-After`; `setUnreachable(on)` fails every call as a
+  network error. `src/server/gmail/fake-past-mailbox.ts` `putPastMailbox(fake, email, { now })` puts the 100
+  conversations of the spec (60 copied); `tests/integration/gmail-helpers.ts` `makePastPeople` makes their CRM people.
+  Tests make parts of 10 threads with `setPastFetchPartForTests` (APP_ENV=test only). `/dev/fake-gmail` adds "Days ago",
+  `[ PUT 100 PAST CONVERSATIONS ]`, `[ SLOW DOWN NEXT CALL ]` and `[ GMAIL UNREACHABLE: ON / OFF ]`.
+- Google OAuth 2.0 token endpoint (SF-118, reused by SF-128: one fresh access token per part of a past-email fetch): the
+  same fake, no public schema (RFC 6749 §5.1-§5.2, §6 and Google's "Using OAuth 2.0 for Web Server Applications":
+  `invalid_grant` 400 for a revoked or refused refresh token, access tokens for one hour), checked by
+  `tests/unit/gmail-fake-oauth.test.ts` and, per part, by `tests/integration/gmail-past-fetch.test.ts`.
+- Supabase Postgres (SF-128 table `past_email_fetches`, migration 0020): no fake and no public schema; the tests run on
+  the real local PostgreSQL 17 (`crm_test`, `start-postgres.sh`), migrations applied by `npm run db:migrate`.
 - Cloud Pub/Sub push (SF-118; Gmail's notices to `POST /gmail/push`): the same fake's `notice(email)` (a Google-signed
   OIDC token by the fake's RSA key, served at the certs URL) and `GmailFake.deliver(email)` (to `receiveGmailPush`, the
   route's own handler), every push body checked against `PubsubMessage` in the schema `pubsub-api.json` (`message`
@@ -707,6 +723,18 @@
     reports FAIL because no [ EDIT ] is offered on the archived person's page, which is the SF-109 behaviour).
     Round 3 (after merging origin/main with SF-123 reminders): same order on fresh data, 42 of 42 pass (edge 10 again through
     check-sf124-edge9.js; the b script's probe FAIL is the same known false negative).
+  - SF-128 AI review (fetch past emails, all 28 scenarios, ~4 min): `rm -rf .fake-gmail && bash .factory/run/reset-db.sh`
+    (run start-app.sh first on a fresh VM: it installs PostgreSQL), the app on :3000 (`start-app.sh`, fake Gmail) and
+    `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh` (edge 9, Gmail not set up). Then
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf128.js` (results in /tmp/sf128-results.json;
+    argument `margaret` runs only Margaret's part: US1 3/5, US3 3-5, edges 1-9). It adds the CRM people of the
+    100-conversation mailbox by SQL (Ana Fake with two addresses, Ben, private Pia (Ada's), archived Arlo); Linus gets
+    the 100 conversations from `[ PUT 100 PAST CONVERSATIONS ]`, plus 60 newsletter pads so a fetch takes more than one
+    part of 100 threads. Margaret's mailbox is emptied between edge cases. Progress is read from a JavaScript-free page
+    (no PastFetchRunner there), so a fetch started from it only moves on through the 15-minute check. The "not connected"
+    user is Grace (Alan is deactivated in the seed). `.factory/run/sf128-ctl.ts` (`npx tsx`, env in its head comment) adds
+    conversations with days ago or an exact date (`add`), newsletter pads (`pad`), empties a fake mailbox (`clear`) and
+    lists it (`box`). US2 1 and edge 8 see parts of 100 threads (10 only in the automated tests).
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
