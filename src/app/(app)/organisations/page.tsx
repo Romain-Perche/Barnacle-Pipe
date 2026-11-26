@@ -1,4 +1,5 @@
 // Organisations list, design C: same layout as People with its own columns and filters.
+import OpenOnDoubleClick from "../records/OpenOnDoubleClick";
 import Link from "next/link";
 import { requireUser } from "@/server/auth/session";
 import { countLabel } from "@/server/format";
@@ -44,6 +45,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
 
   return (
     <>
+      <OpenOnDoubleClick />
       <div className="page-head">
         <div>
           <div className="label">
@@ -116,7 +118,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
               </thead>
               <tbody>
                 {list.rows.map((r) => (
-                  <tr key={r.id} className={open?.id === r.id ? "sel" : undefined} aria-selected={open?.id === r.id ? true : undefined}>
+                  <tr key={r.id} data-page={`/organisations/${r.id}`} className={open?.id === r.id ? "sel" : undefined} aria-selected={open?.id === r.id ? true : undefined}>
                     <Cell href={preview(r.id)}>
                       <Link className="nm" href={`/organisations/${r.id}`}>
                         {r.name}

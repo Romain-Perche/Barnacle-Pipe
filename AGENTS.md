@@ -60,6 +60,7 @@ OAuth code flow and database sessions.
   Timeline kinds `unsubscribed_link`, `unsubscribed_mail_app` (no actor) and `consent_changed` (a teammate's Consent edit;
   the person form sends `consentShown` and a save changes Consent only when the field was changed on that form).
 - `src/app/(app)/records/` — UI shared by people, organisations and deals (forms, pickers, drawer, timeline, filter row).
+  SF-126: `records/OpenOnDoubleClick.tsx` (client, renders nothing: one `dblclick` listener; cards and rows carry `data-page`) and `src/server/records/double-click.ts` (pure `pageToOpen`).
   `records/import/`: the CSV import screens shared by `/people/import` and `/organisations/import` (`ImportPages.tsx`:
   the four steps; `FileStep.tsx`: the only client part, sends the file in 512 KiB parts; `actions.ts`; `example.ts`).
   SF-102: `RecordTimeline.tsx` (the // TIMELINE of every record page and the deal drawer, design B), `NoteBox.tsx`
