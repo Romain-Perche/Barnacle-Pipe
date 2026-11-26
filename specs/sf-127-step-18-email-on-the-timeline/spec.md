@@ -176,6 +176,8 @@ The deal, person and organisation pages show the record's details on the left an
 - **Hidden linked record**: a conversation linked to a record the viewer cannot see is hidden (private person or deal); organisations are never private.
 - **Timeline paging**: EMAIL entries are paged with the other entries ([ SHOW MORE ]), in time order.
 - **Mailbox owner deactivated or disconnected**: their copied emails still show (DECISIONS SF-118); only attachments become unavailable unless another working mailbox has a copy.
+- **Attachment unavailable, opened from a record**: after "cannot be fetched from Gmail right now", the conversation page still shows its "← <RECORD>" link back to the record it was opened from (Fix round 1).
+- **Two attachments with the same name in one email**: each download gives its own file, also when it comes from a teammate's copy of the email (Fix round 1).
 
 ## Requirements *(mandatory)*
 

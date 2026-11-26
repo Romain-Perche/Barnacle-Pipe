@@ -172,6 +172,38 @@ folder stays about talking to Gmail and copying), UI in `src/app/(app)/emails/`.
 No blueprint applies (no `blueprints/INDEX.md` in this run): `blueprints.json` stays `[]`, no exception, no
 `docs/DECISIONS.md` blueprint line.
 
+## Fix round 1
+
+**Problem.** The AI review failed: `docs/DECISIONS.md` lacks four choices that spec.md § Assumptions marks "decided by
+the factory, to confirm" (the Plan Review confirmed them: questions 2 and 5 of the plan-review comment, and the
+Assumptions they rest on). Two minor faults, not blocking: (a) when an attachment cannot be fetched, the 303 back to
+the conversation drops `?from=`, so the "← <RECORD>" link disappears; (b) `attachmentAccess` matches a teammate's copy
+of the email by attachment name only, so two same-name attachments in one email can both download the first one from a
+fallback copy.
+
+**Cause.** Build step 7 added a DECISIONS line only for the choices in § Clarifications, not for the ones in
+§ Assumptions. (a) The download link in `EmailBody.tsx` carries no `from`, and the route builds its 303 without it.
+(b) The fallback join is `ca.name = a.name`; copies of one email (same `dedupe_key`) hold the same parts in the same
+order, so the position identifies the part.
+
+**Fix.**
+1. `docs/DECISIONS.md`: four lines, after the SF-127 lines:
+   - Copies of one email in several mailboxes are matched by the email's Message-ID (SF-127)
+   - People and organisations show only the conversations linked to them; a deal's conversations do not also appear on
+     the timelines of the deal's other people or its organisation unless linked to them (SF-127)
+   - Linking or unlinking a conversation by hand makes no timeline CHANGE entry and no notification (SF-127)
+   - Automatic links stay when their reason changes (a person changes organisation, a deal closes, an address is
+     removed from a person) (SF-127)
+2. (a) `EmailBody.tsx` takes the page's `from` (already parsed by `parseFrom`) and adds `?from=<fromParam>` to each
+   download link; the download route reads `from` with `parseFrom` and, only when it parses, puts `fromParam(from)`
+   back in the 303 address (`/emails/<id>?from=…&notice=attachment-unavailable#email-<m>`). No URL text is copied
+   as-is.
+3. (b) `attachmentAccess`: the other copies' join matches `ca.position = a.position and ca.name = a.name`.
+
+**Files.** `docs/DECISIONS.md`, `src/app/(app)/emails/EmailBody.tsx`, `src/app/(app)/emails/[id]/page.tsx` (passes
+`from`), `src/app/(app)/emails/attachments/[id]/download/route.ts`, `src/server/emails/attachments.ts`,
+`tests/integration/emails-attachments.test.ts`, `tests/unit` (a DECISIONS check, beside any existing one).
+
 ## Outside services
 
 - Gmail API (users.messages.get, users.messages.attachments.get): schema https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json
