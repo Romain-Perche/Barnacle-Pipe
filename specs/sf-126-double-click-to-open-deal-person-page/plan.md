@@ -80,3 +80,25 @@ tests/integration/double-click-markup.test.ts      # new (rendered pages carry t
 
 **Structure Decision**: one delegated listener rather than a handler per row, so the server-rendered tables stay
 server components.
+
+## Fix round 1
+
+**Problem**: on the deals board, a double-click on a card stays on the board (`/deals?pipeline=1&open=41`) and never
+opens `/deals/41` (FR-001, US1 scenario 1, edge case 3). The lists work.
+
+**Cause**: a board card is itself the `<a data-page>`. In `pageToOpen`, `target.closest("a")` returns the card, and
+`link.closest("[data-page]")` matches the card itself, so the card is taken for a name link inside a row and the
+function returns null. The unit tests model only links strictly inside a row, never a row that is the link.
+
+**Fix**: a link stops the double-click only when it lies strictly inside the `data-page` element: skip the check when
+`link === row`. In `src/server/records/double-click.ts`:
+
+```ts
+if (link && link !== row && !link.classList.contains("cell-link")) return null;
+```
+
+(`link.closest("[data-page]")` is then redundant: `link` is an ancestor-or-self of the target and `row` is the closest
+`data-page`, so a link other than `row` that is inside the row is the only case left; a link outside any row cannot
+happen because `row` exists.) `Board.tsx` keeps the card as one `<a>`: single click, keyboard and drag stay unchanged.
+
+**Files**: `src/server/records/double-click.ts`, `tests/unit/double-click.test.ts`.

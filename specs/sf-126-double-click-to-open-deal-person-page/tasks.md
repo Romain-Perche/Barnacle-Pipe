@@ -47,3 +47,9 @@
 ## Dependencies
 
 T001 → T002 → T003 → all stories. US1–US4 are independent after T003 (US1 first as MVP); T004/T006/T008/T010 share one test file, so edit it in order. T013, T014 last.
+
+## Fix round 1 (board card double-click)
+
+- [ ] T015 Add a failing unit test to `tests/unit/double-click.test.ts` (covers FR-001, US1 scenario 1): model a board card that is itself the anchor with `data-page="/deals/41"` (one object returned by both `closest("[data-page]")` and `closest("a")`, its `classList` without `cell-link`, its `closest("[data-page]")` returning itself); a target on the card, and a target in a child of the card, both give `/deals/41`. Keep the existing case: a non-`cell-link` anchor strictly inside a row gives null. Run it and see it fail before T016.
+- [ ] T016 In `src/server/records/double-click.ts`, let a link stop the double-click only when it is not the `data-page` element itself (`link !== row`), as in plan.md "Fix round 1", until T015 and all of `tests/unit/double-click.test.ts` pass.
+- [ ] T017 Run `npm test && npm run typecheck`; then in the running app double-click a board card and check `/deals/<id>` opens, a single click still opens the drawer and a drag still moves the deal.
