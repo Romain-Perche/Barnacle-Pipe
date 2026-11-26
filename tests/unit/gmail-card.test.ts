@@ -4,7 +4,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/settings", redirect: () => {}, notFound: () => {} }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/settings", useRouter: () => ({ refresh: () => {} }), redirect: () => {}, notFound: () => {} }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
 const { GmailCard } = await import("@/app/(app)/settings/GmailCard");
@@ -18,6 +18,7 @@ const base: GmailSettings = {
   connectedAt: new Date("2026-11-20T09:00:00Z"),
   conversations: 37,
   calendar: "syncing",
+  pastFetch: { state: "none" },
 };
 const render = (gmail: Partial<GmailSettings>) =>
   renderToStaticMarkup(GmailCard({ gmail: { ...base, ...gmail }, notice: null, error: null, confirmDisconnect: false }));
@@ -52,5 +53,41 @@ describe("the Gmail card with Google Calendar", () => {
     ["not connected", { state: "not_connected", calendar: "off", email: null }],
   ])("%s: no Calendar line", (_name, g) => {
     expect(render(g)).not.toContain("Calendar:");
+  });
+});
+
+// covers SF-128 FR-001, FR-009, FR-010, FR-011, FR-014, US1 scenarios 1, 4, 5, US4 scenario 1, Edge Cases "Connection not
+// working", "Reload after the end" (data-model.md § Card state, design B): the "// PAST EMAILS" part.
+describe("the // PAST EMAILS part", () => {
+  const ended = new Date("2026-11-26T11:20:00Z");
+  const part = (html: string) => {
+    const at = html.indexOf('aria-label="Past emails"');
+    return at < 0 ? null : text(html.slice(at).replace(/<script[\s\S]*?<\/script>/g, "")).split("\n").map((l) => l.trim()).filter(Boolean).slice(1);
+  };
+  const BUTTON = "[ FETCH PAST EMAILS ]";
+  const EXPLAIN = "Copies the last 12 months of your conversations with people in the CRM. Press again after an import: nothing is copied twice.";
+  const LEAVE = "You can leave this page: fetching carries on by itself.";
+  const PAUSED = "Fetching past emails is paused until Gmail is reconnected.";
+  const UNREACHABLE = "Gmail can&#x27;t be reached right now. Fetching will carry on by itself.";
+  const running = { state: "running", copied: 23, paused: false, unreachable: false, waitSeconds: 0 } as const;
+  it.each<[string, Partial<GmailSettings>, string[]]>([
+    ["none, working", {}, ["//", "PAST EMAILS", BUTTON, EXPLAIN]],
+    ["none, needs reconnecting", { state: "needs_reconnect", calendar: "off" }, ["//", "PAST EMAILS", EXPLAIN]],
+    ["running", { pastFetch: running }, ["//", "PAST EMAILS", "FETCHING…", "Fetching past emails: 23 conversations copied", LEAVE]],
+    ["running, unreachable", { pastFetch: { ...running, unreachable: true } }, ["//", "PAST EMAILS", "FETCHING…", "Fetching past emails: 23 conversations copied", UNREACHABLE, LEAVE]],
+    ["running, paused", { state: "needs_reconnect", calendar: "off", pastFetch: { ...running, paused: true } }, ["//", "PAST EMAILS", "FETCHING…", "Fetching past emails: 23 conversations copied", PAUSED]],
+    ["ended, working, 1", { pastFetch: { state: "ended", copied: 1, endedAt: ended } }, ["//", "PAST EMAILS", BUTTON, "Past emails fetched: 1 conversation copied.", "Last fetched 26 Nov 2026, 11:20. Press again after an import to copy conversations with new people."]],
+    ["ended, needs reconnecting", { state: "needs_reconnect", calendar: "off", pastFetch: { state: "ended", copied: 60, endedAt: ended } }, ["//", "PAST EMAILS", "Past emails fetched: 60 conversations copied.", "Last fetched 26 Nov 2026, 11:20. Press again after an import to copy conversations with new people."]],
+  ])("%s", (_name, g, lines) => {
+    expect(part(render(g))).toEqual(lines);
+  });
+  it("after the card's lines; the button posts a form", () => {
+    const html = render({});
+    expect(html.indexOf('aria-label="Past emails"')).toBeGreaterThan(html.indexOf("</ul>"));
+    expect(html).toMatch(/<form[^>]*><button class="btn" type="submit">\[ FETCH PAST EMAILS \]<\/button><\/form>/);
+  });
+  it("no part when not connected or Gmail is off", () => {
+    expect(part(render({ state: "not_connected", calendar: "off", email: null }))).toBeNull();
+    expect(part(render({ mode: "off" }))).toBeNull();
   });
 });

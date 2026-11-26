@@ -55,6 +55,8 @@ export type FakeState = {
   access: Record<string, { email: string; scopes: string[]; refresh: string | null; expires: number; dead: boolean }>;
   failWatch: boolean;
   offsetMs: number;
+  // SF-128: the next `calls` Gmail API calls answer 429 with Retry-After `seconds` (optional: older state files).
+  slowDown?: { seconds: number; calls: number } | null;
   key: { kid: string; privatePem: string };
 } & CalendarState; // SF-124: the fake Google Calendar (src/server/calendar/fake-calendar.ts)
 
@@ -227,6 +229,10 @@ export class FakeGoogleMail {
       for (const t of Object.values(s.refresh)) if (t.email === who && t.status === "active") t.status = "refused";
       for (const t of Object.values(s.access)) if (t.email === who) t.dead = true;
     });
+  }
+  // SF-128: Gmail asks to slow down: the next `calls` Gmail API calls answer 429 rateLimitExceeded with Retry-After.
+  slowDown(seconds: number, calls = 1) {
+    this.change((s) => void (s.slowDown = { seconds, calls }));
   }
   // users.watch answers 500 (a renewal failure that is not about the key).
   failWatch(on = true) {
@@ -561,6 +567,16 @@ export class FakeGoogleMail {
       const isSend = route === "messages/send" && req.method === "POST";
       const allowed = a.scopes.includes(MODIFY) || (isSend && a.scopes.includes(SEND));
       if (!allowed) return gmailError(403, "PERMISSION_DENIED", "Request had insufficient authentication scopes.", "insufficientPermissions");
+      if (s.slowDown && s.slowDown.calls > 0) {
+        const { seconds } = s.slowDown;
+        s.slowDown.calls -= 1;
+        if (s.slowDown.calls <= 0) s.slowDown = null;
+        return json(
+          429,
+          { error: { code: 429, message: "Too many concurrent requests for user.", errors: [{ message: "Too many concurrent requests for user.", domain: "usageLimits", reason: "rateLimitExceeded" }], status: "RESOURCE_EXHAUSTED" } },
+          { "retry-after": String(seconds) },
+        );
+      }
       const box = this.box(s, a.email);
       const q = url.searchParams;
       if (req.method === "GET" && route === "profile") {
@@ -610,10 +626,38 @@ export class FakeGoogleMail {
         if (!msg) return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");
         return json(200, { id: msg.id, threadId: msg.threadId, labelIds: msg.labelIds, snippet: "", historyId: msg.historyId, internalDate: msg.internalDate, payload: msg.payload, sizeEstimate: msg.sizeEstimate });
       }
+      // SF-128: threads.list: `after:` / `before:` (epoch seconds, on internalDate: a thread is listed when one of its
+      // messages is within), spam and bin left out unless includeSpamTrash, the threads by their newest message.
+      if (req.method === "GET" && route === "threads") {
+        const text = q.get("q") ?? "";
+        const after = /(?:^|\s)after:(\d+)/.exec(text)?.[1];
+        const before = /(?:^|\s)before:(\d+)/.exec(text)?.[1];
+        const spamTrash = q.get("includeSpamTrash") === "true";
+        const max = Math.min(Number(q.get("maxResults") ?? 100) || 100, 500);
+        const token = q.get("pageToken");
+        const newest = new Map<string, number>();
+        for (const x of box.messages) {
+          const t = Number(x.internalDate);
+          if (after !== undefined && !(t / 1000 > Number(after))) continue;
+          if (before !== undefined && !(t / 1000 < Number(before))) continue;
+          if (!spamTrash && x.labelIds.some((l) => l === "SPAM" || l === "TRASH")) continue;
+          newest.set(x.threadId, Math.max(newest.get(x.threadId) ?? -Infinity, t));
+        }
+        const all = [...newest.entries()].sort((x, y) => y[1] - x[1]).map(([id]) => id);
+        if (token !== null && (!/^\d+$/.test(token) || Number(token) > all.length)) return gmailError(400, "INVALID_ARGUMENT", "Invalid pageToken", "invalidArgument");
+        const from = Number(token ?? 0);
+        const page = all.slice(from, from + max).map((id) => {
+          const last = box.messages.filter((x) => x.threadId === id).reduce((h, x) => Math.max(h, Number(x.historyId)), 0);
+          return { id, snippet: "", historyId: String(last) };
+        });
+        return json(200, { ...(page.length ? { threads: page } : {}), ...(from + max < all.length ? { nextPageToken: String(from + max) } : {}), resultSizeEstimate: all.length });
+      }
       const thread = /^threads\/([^/]+)$/.exec(route);
       if (req.method === "GET" && thread) {
         const msgs = box.messages.filter((x) => x.threadId === thread[1]);
         if (msgs.length === 0) return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");
+        const format = q.get("format") ?? "full";
+        if (!["minimal", "metadata", "full"].includes(format)) return gmailError(400, "INVALID_ARGUMENT", "Invalid format", "invalidArgument");
         const wanted = q.getAll("metadataHeaders").map((h) => h.toLowerCase());
         return json(200, {
           id: thread[1],
@@ -624,7 +668,12 @@ export class FakeGoogleMail {
             labelIds: x.labelIds,
             historyId: x.historyId,
             internalDate: x.internalDate,
-            payload: { mimeType: x.payload.mimeType, headers: (x.payload.headers ?? []).filter((h) => wanted.length === 0 || wanted.includes(h.name.toLowerCase())) },
+            sizeEstimate: x.sizeEstimate,
+            ...(format === "minimal"
+              ? {}
+              : format === "metadata"
+                ? { payload: { mimeType: x.payload.mimeType, headers: (x.payload.headers ?? []).filter((h) => wanted.length === 0 || wanted.includes(h.name.toLowerCase())) } }
+                : { payload: x.payload }),
           })),
         });
       }

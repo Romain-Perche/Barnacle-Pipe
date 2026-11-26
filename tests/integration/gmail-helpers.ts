@@ -111,3 +111,38 @@ export async function attachmentsOf(userId: number) {
     from email_attachments a join email_messages m on m.id = a.message_id join gmail_connections c on c.id = m.connection_id
     where c.user_id = ${userId} order by a.message_id, a.position`;
 }
+
+// SF-128 (data-model.md § Fake mailbox): the CRM people of the 100-conversation mailbox: Ana Fake with two addresses,
+// Ben Fake, Pia private to another owner, Arlo archived. Nia Later is added by the tests that need her.
+export async function makePastPeople(ownerId: number, otherOwnerId: number) {
+  const { makePerson } = await import("./db-helpers");
+  const { PAST_ADDRESSES: A } = await import("@/server/gmail/fake-past-mailbox");
+  return {
+    ana: await makePerson({ firstName: "Ana", lastName: "Fake", createdBy: ownerId, emails: [A.ana, A.anaHome] }),
+    ben: await makePerson({ firstName: "Ben", lastName: "Fake", createdBy: ownerId, emails: [A.ben] }),
+    pia: await makePerson({ firstName: "Pia", lastName: "Private", createdBy: otherOwnerId, private: true, emails: [A.pia] }),
+    arlo: await makePerson({ firstName: "Arlo", lastName: "Archived", createdBy: ownerId, archived: true, emails: [A.arlo] }),
+  };
+}
+
+export type FetchRow = {
+  id: number;
+  state: string;
+  copied: number;
+  problem: string | null;
+  slice_end: Date;
+  page_token: string | null;
+  page_offset: number;
+  wait_until: Date | null;
+  lease_until: Date | null;
+  started_at: Date;
+  ended_at: Date | null;
+};
+
+export async function pastFetchOf(userId: number): Promise<FetchRow | undefined> {
+  const [row] = await sql<FetchRow[]>`
+    select f.id::int as id, f.state, f.copied, f.problem, f.slice_end, f.page_token, f.page_offset, f.wait_until, f.lease_until,
+           f.started_at, f.ended_at
+    from past_email_fetches f join gmail_connections c on c.id = f.connection_id where c.user_id = ${userId}`;
+  return row;
+}

@@ -322,6 +322,12 @@ export const messages = {
   gmail_test_subject: "Barnacle CRM test email",
   gmail_test_text: "This is a test email from Barnacle CRM. If you can read it, the CRM can send email from your Gmail.",
   gmail_settings_warn: "Gmail needs reconnecting",
+  // SF-128: the "// PAST EMAILS" part of the Gmail card.
+  past_emails_explain: "Copies the last 12 months of your conversations with people in the CRM. Press again after an import: nothing is copied twice.",
+  past_emails_leave: "You can leave this page: fetching carries on by itself.",
+  past_emails_paused: "Fetching past emails is paused until Gmail is reconnected.",
+  past_emails_unreachable: "Gmail can't be reached right now. Fetching will carry on by itself.",
+  past_emails_fetching: "FETCHING…",
   // SF-124: Google Calendar sync (contracts/routes.md § Messages).
   calendar_syncing: "Syncing your activities with your Google Calendar",
   calendar_missing: "Not synced: Calendar access missing",
@@ -370,6 +376,8 @@ const recordsPhrase = (people: number, deals: number) => recordLabels(people, de
 
 // Messages built from a record's name, always read from the database. Kept apart from `messages` so a
 // code taken from a URL can never produce them.
+const conversationsCopied = (n: number) => `${n} ${n === 1 ? "conversation" : "conversations"} copied`;
+
 export const templates = {
   duplicate_email: (name: string) => `${name} already has this email address.`,
   organisation_exists: (name: string) => `${name} already exists.`,
@@ -557,9 +565,13 @@ export const templates = {
   gmail_wrong_account: (email: string) => `Connect the Gmail account you sign in with (${email}).`,
   gmail_needs_reconnect: (email: string) => `Google no longer accepts the CRM's access to ${email}. Reconnect to carry on copying email.`,
   gmail_test_sent: (email: string) => `Test email sent to ${email}. Check your inbox.`,
-  gmail_conversations: (n: number) => `${n} ${n === 1 ? "conversation" : "conversations"} copied`,
+  gmail_conversations: (n: number) => conversationsCopied(n),
   gmail_last_sync: (time: string) => `Last sync: ${time}`,
   gmail_copying_since: (time: string) => `Copying since ${time}`,
+  // SF-128: the plural rule of gmail_conversations ("1 conversation", spec Clarifications).
+  past_emails_progress: (n: number) => `Fetching past emails: ${conversationsCopied(n)}`,
+  past_emails_done: (n: number) => `Past emails fetched: ${conversationsCopied(n)}.`,
+  past_emails_last: (time: string) => `Last fetched ${time}. Press again after an import to copy conversations with new people.`,
   // SF-124: the Calendar line of the Gmail card, and the title and description of the events the CRM writes.
   calendar_line: (state: string) => `Calendar: ${state}`,
   calendar_title: (typeLabel: string, subject: string) => `${typeLabel} · ${subject}`,

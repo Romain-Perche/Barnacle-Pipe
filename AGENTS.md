@@ -187,6 +187,14 @@ OAuth code flow and database sessions.
 - `src/app/gmail/push/route.ts` (Pub/Sub push, Google's token) and `src/app/cron/gmail/route.ts` (the 15-minute check,
   `CRON_SECRET`), scheduled by `vercel.json` (SF-118); `src/app/dev/fake-google/gmail` (the fake consent screen; its buttons post a plain form to `answer/route.ts`, a 303 to the callback) and
   `src/app/dev/fake-gmail` (the fake mailbox page), 404 unless the Gmail mode is `fake`.
+- SF-128 fetch past emails: `src/server/gmail/past.ts` (`startPastFetch`: one transaction holding the connection row and a
+  conditional upsert, never two at once; `runPastFetchPart`: a lease column, the 12-month window walked backwards in 7-day
+  slices with `threads.list`, each thread read as metadata and decided by the pure `planPastThread` in `rules.ts`, each new
+  message stored by `sync.ts` `storeMessage(…, { fetchId })`, which adds 1 to the fetch's `copied` in the same transaction
+  when it creates the conversation; the cursor saved after every thread; `runPastFetchPartFor` the Settings page's part
+  (`PastFetchRunner.tsx`), `runPastFetches` the 15-minute check's, after its connections; `GmailSlowDown` → `wait_until`),
+  `fake-past-mailbox.ts` (`putPastMailbox`: the 100 conversations of the tests and `/dev/fake-gmail`). Table
+  `past_email_fetches` (one per connection: running or ended; deleted by `forgetGmailInTx`). No Google call inside `sql.begin()`.
 - `src/server/calendar/` — Google Calendar two-way sync (SF-124), on SF-118's connection, key and Google helpers (`call`,
   `readJson`, `settings`, `refreshAccessToken`, `loadKey`); settings from `calendarConfig()` in `env.ts` (`CALENDAR_SYNC=on`
   and Gmail set up). `rules.ts` (pure: `eventBody` / `googleEventBody`, `bodyHash`, `eventTimes`, `fromEvent`, `subjectFromTitle`,

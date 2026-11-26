@@ -7,7 +7,7 @@ import { sql, type Sql } from "@/server/db";
 import { openToken, sealToken, TokenUnreadable } from "@/server/crypto/seal";
 import { calendarConfig, gmailConfig } from "@/server/env";
 import { exchangeGmailCode, getProfile, GoogleUnavailable, refreshAccessToken, revokeToken, stopWatch, watch } from "@/server/gmail/google-api";
-import { hasAllScopes, hasCalendarScope } from "@/server/gmail/rules";
+import { hasAllScopes, hasCalendarScope, pastFetchView, type PastFetchView } from "@/server/gmail/rules";
 import { messages } from "@/server/messages";
 
 export type GmailCardState = "not_connected" | "working" | "needs_reconnect";
@@ -20,16 +20,26 @@ export type GmailSettings = {
   conversations: number;
   // SF-124 (research.md §3): the Calendar line; "off" when Calendar sync is off or the connection is not working.
   calendar: "off" | "syncing" | "missing";
+  // SF-128: the "// PAST EMAILS" part (data-model.md § Card state).
+  pastFetch: PastFetchView;
 };
 
 // What Settings shows: never the cipher.
 export async function gmailSettings(userId: number): Promise<GmailSettings> {
   const mode = gmailConfig().mode;
-  const [row] = await sql<{ email: string; state: string; scopes: string; last_synced_at: Date | null; connected_at: Date; conversations: number }[]>`
+  const [row] = await sql<
+    {
+      email: string; state: string; scopes: string; last_synced_at: Date | null; connected_at: Date; conversations: number;
+      f_state: string | null; f_copied: number | null; f_problem: string | null; f_wait_until: Date | null; f_ended_at: Date | null;
+    }[]
+  >`
     select c.email, c.state, c.scopes, c.last_synced_at, c.connected_at,
-           (select count(*)::int from email_threads t where t.connection_id = c.id) as conversations
-    from gmail_connections c where c.user_id = ${userId}`;
-  if (!row || row.state === "disconnected") return { mode, state: "not_connected", email: null, lastSyncedAt: null, connectedAt: null, conversations: 0, calendar: "off" };
+           (select count(*)::int from email_threads t where t.connection_id = c.id) as conversations,
+           f.state as f_state, f.copied as f_copied, f.problem as f_problem, f.wait_until as f_wait_until, f.ended_at as f_ended_at
+    from gmail_connections c left join past_email_fetches f on f.connection_id = c.id where c.user_id = ${userId}`;
+  if (!row || row.state === "disconnected") {
+    return { mode, state: "not_connected", email: null, lastSyncedAt: null, connectedAt: null, conversations: 0, calendar: "off", pastFetch: { state: "none" } };
+  }
   return {
     mode,
     state: row.state as GmailCardState,
@@ -38,6 +48,11 @@ export async function gmailSettings(userId: number): Promise<GmailSettings> {
     connectedAt: row.connected_at,
     conversations: row.conversations,
     calendar: calendarState(row.state, row.scopes),
+    pastFetch: pastFetchView(
+      { state: row.f_state, copied: row.f_copied, problem: row.f_problem, wait_until: row.f_wait_until, ended_at: row.f_ended_at },
+      row.state,
+      new Date(),
+    ),
   };
 }
 
@@ -187,6 +202,8 @@ export async function forgetGmailInTx(db: Sql, userId: number): Promise<Forgotte
       calendar_channel_expires_at = null, calendar_channel_renewed_at = null, calendar_lease_until = null,
       calendar_sync_again = false, updated_at = now()
     where id = ${row.id}`;
+  // SF-128: a running or ended past-email fetch ends for good; what it copied stays.
+  await db`delete from past_email_fetches where connection_id = ${row.id}`;
   return { token, channel: row.channel && row.resource ? { id: row.channel, resourceId: row.resource } : null };
 }
 

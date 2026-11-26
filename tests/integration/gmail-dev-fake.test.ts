@@ -227,3 +227,55 @@ describe("the Calendar box on the fake consent screen (SF-124)", () => {
     expect((await h.connectionOf(linus.id))?.scopes.split(" ")).toContain(CAL);
   });
 });
+
+// covers SF-128 FR-015 (contracts/routes.md § Fake mailbox page): the controls a tester uses to see a past-email fetch:
+// 100 past conversations, a message days ago, a slow-down of the next call, Gmail unreachable; 404 outside fake mode.
+describe("SF-128: the fake mailbox page's past-email controls", () => {
+  const LINUS = "linus@barnacle.ai";
+  it("404 outside fake mode", async () => {
+    vi.stubEnv("GMAIL_TOKEN_KEY", "");
+    for (const action of [mailbox.putPastConversations, mailbox.slowDownFakeGmail, mailbox.toggleFakeUnreachable]) {
+      await expect(action(formOf({ user: LINUS }))).rejects.toMatchObject({ to: "not-found" });
+    }
+  });
+  it("puts 100 past conversations and a message days ago; slows the next call down; switches Gmail unreachable on and off", async () => {
+    const { createHash } = await import("node:crypto");
+    const { fakeGmail, TOKEN_URL } = await import("@/server/gmail/fake-gmail");
+    const fake = fakeGmail();
+    const threads = () => new Set(fake.mailbox(LINUS).map((m) => m.threadId)).size;
+    const before = threads();
+    expect(await h.redirectOf(mailbox.putPastConversations(formOf({ user: LINUS })))).toBe("/dev/fake-gmail?user=linus%40barnacle.ai&done=past_mailbox");
+    expect(threads()).toBe(before + 100);
+    const oldest = Math.min(...fake.mailbox(LINUS).map((m) => Number(m.internalDate)));
+    expect(fake.now() - oldest).toBeGreaterThan(420 * 86_400_000);
+    await h.redirectOf(mailbox.putFakeMessage(formOf({ user: LINUS, from: "ana@example.test", subject: "Old one", days: "200", label: "INBOX" })));
+    const old = fake.mailbox(LINUS).find((m) => m.payload.headers?.some((x) => x.value === "Old one"))!;
+    expect(Math.round((fake.now() - Number(old.internalDate)) / 86_400_000)).toBe(200);
+
+    // A key for the fake's Gmail API, as the consent screen and the token endpoint give it.
+    const verifier = "a-verifier-for-the-sf-128-dev-page-test-000000";
+    const code = fake.consent({ email: LINUS, scopes: askedScopes(), codeChallenge: createHash("sha256").update(verifier).digest("base64url"), redirectUri: "http://x/cb", clientId: fake.options.clientId, offline: true });
+    const tok = await fake.fetch(TOKEN_URL, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: "http://x/cb", client_id: fake.options.clientId, client_secret: fake.options.clientSecret, code_verifier: verifier }).toString(),
+    });
+    const auth = { authorization: `Bearer ${((await tok.json()) as { access_token: string }).access_token}` };
+    const profile = () => fake.fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", { method: "GET", headers: auth });
+    expect(await h.redirectOf(mailbox.slowDownFakeGmail(formOf({ user: LINUS })))).toContain("done=slowed");
+    const slowed = await profile();
+    expect(slowed.status).toBe(429);
+    expect(slowed.headers.get("retry-after")).toBe("30");
+    expect((await profile()).status).toBe(200);
+
+    expect(await h.redirectOf(mailbox.toggleFakeUnreachable(formOf({ user: LINUS })))).toContain("done=unreachable_on");
+    await expect(profile()).rejects.toThrow(TypeError);
+    const html = renderToStaticMarkup(await MailboxPage({ searchParams: Promise.resolve({ user: LINUS, done: "unreachable_on" }) }));
+    expect(html).toContain("[ GMAIL UNREACHABLE: OFF ]");
+    expect(html).toContain("[ PUT 100 PAST CONVERSATIONS ]");
+    expect(html).toContain("[ SLOW DOWN NEXT CALL ]");
+    expect(html).toContain("Gmail can&#x27;t be reached.");
+    expect(await h.redirectOf(mailbox.toggleFakeUnreachable(formOf({ user: LINUS })))).toContain("done=unreachable_off");
+    expect((await profile()).status).toBe(200);
+  });
+});
