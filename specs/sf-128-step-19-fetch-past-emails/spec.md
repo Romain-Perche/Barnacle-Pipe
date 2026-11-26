@@ -15,6 +15,9 @@
 - Q: Which design? → A: Design: B, a "// PAST EMAILS" part inside the Gmail card with its own `[ FETCH PAST EMAILS ]`, a one-line explanation, then the progress ("Fetching past emails: <n> conversations copied", "FETCHING…", "You can leave this page: fetching carries on by itself.") and the result ("Past emails fetched: <n> conversations copied.", "Last fetched <date time>. Press again after an import to copy conversations with new people.") in the same place (see `design-options.html`).
 - Q: A conversation the sync already copied: does the fetch add its earlier messages? → A: Yes: the fetch adds the missing earlier messages from the 12 months and does not count the conversation again (A).
 - Q: For a conversation that started more than 12 months ago, which messages does the fetch copy? → A: Only its messages from the last 12 months (A).
+- Q: With exactly one conversation, do the card's fetch lines say "1 conversations copied" (as written in the edge cases) or "1 conversation copied"? → A: "1 conversation copied", the plural rule the Gmail card already uses for its total ("<n> conversations copied" from 2 up and for 0) (decided by the factory, to confirm)
+- Q: How are "the last 12 months" counted? → A: 12 calendar months back from the moment of the press (26 Nov 2026 10:00 → from 26 Nov 2025 10:00), by the time Gmail received or sent each message (decided by the factory, to confirm)
+- Q: While Gmail needs reconnecting and no fetch is running, what does the "// PAST EMAILS" part show? → A: The explanation line (or the last end message) with no button; the button comes back once Gmail is reconnected (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
