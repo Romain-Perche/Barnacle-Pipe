@@ -313,6 +313,11 @@
     background (log `/tmp/app-$PORT.log`). Env: `PORT` (3000), `APP_ENV` (development; `APP_ENV=` for empty),
     `DATABASE_URL` (crm_dev), `FIRST_ADMIN_EMAIL` (ada@barnacle.ai; `FIRST_ADMIN_EMAIL=` for none), `VERCEL_ENV`,
     `SKIP_BUILD=1` (reuse `.next`), `SKIP_SEED=1`. One build serves every extra server (settings are read at runtime).
+  - SF-126 double-click: `bash .factory/run/reset-db.sh && NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf126.js`
+    (app on :3000 from `start-app.sh`; ~2 min; prints PASS/FAIL per scenario name, all 18 pass). It changes data by SQL
+    (renames the first open Sales deal to "Fake Deal A" and drags it to Closing, makes a deal and a person private to
+    Grace Fake, adds and deletes "Gone Fakeorg"), so reset before a re-run. Use `innerText`, not `textContent` (the RSC
+    payload holds record names); the "Preview <name>" link is `a.cell-link` (sr-only text, no aria-label).
   - SF-120 segments: `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf120.js` (app on :3000 from
     `start-app.sh`). It resets crm_dev itself (`reset-db.sh` + seed) and loads `.factory/run/sf120-setup.sql`: pipelines
     RevPipe (stages RA, RB) and DelPipe (DA), 15 people "Rv …" (A1 on two deals with two addresses, A2 linked person, W1/W2
