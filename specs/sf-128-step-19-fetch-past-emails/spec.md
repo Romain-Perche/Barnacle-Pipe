@@ -8,11 +8,19 @@
 
 **Input**: User description: "Step 19 - Fetch past emails. A \"Fetch past emails\" button on the Gmail card in each user's Settings (`docs/DECISIONS.md`: past email comes in only from this button): it copies the last 12 months of the user's conversations with people in the CRM, by any of their email addresses, exactly as the Gmail sync copies new mail. It runs in parts within the hosting's time limits and Gmail's rate limits, shows its progress on the card (\"<n> conversations copied\"), carries on if the page is closed, and ends with the number copied. Pressing it again (for example after a Pipedrive import) copies only conversations not copied yet; nothing is ever copied twice, and the button cannot run twice at once for the same user. Gmail is faked in tests, with a mailbox of a hundred conversations."
 
+## Clarifications
+
+### Session 2026-11-26
+
+- Q: Which design? → A: Design: B, a "// PAST EMAILS" part inside the Gmail card with its own `[ FETCH PAST EMAILS ]`, a one-line explanation, then the progress ("Fetching past emails: <n> conversations copied", "FETCHING…", "You can leave this page: fetching carries on by itself.") and the result ("Past emails fetched: <n> conversations copied.", "Last fetched <date time>. Press again after an import to copy conversations with new people.") in the same place (see `design-options.html`).
+- Q: A conversation the sync already copied: does the fetch add its earlier messages? → A: Yes: the fetch adds the missing earlier messages from the 12 months and does not count the conversation again (A).
+- Q: For a conversation that started more than 12 months ago, which messages does the fetch copy? → A: Only its messages from the last 12 months (A).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Fetch my last 12 months of conversations with CRM people (Priority: P1)
 
-A team member has connected their Gmail (SF-118), so new mail is copied, but their history with the people already in the CRM is not. On their Settings page, the Gmail card offers `[ FETCH PAST EMAILS ]`. They press it; the card shows that fetching has started and, as it goes, "Fetching past emails: <n> conversations copied". When it ends, the card says "Past emails fetched: <n> conversations copied." and the card's total of conversations copied has gone up by the same number.
+A team member has connected their Gmail (SF-118), so new mail is copied, but their history with the people already in the CRM is not. On their Settings page, the Gmail card has a "// PAST EMAILS" part with `[ FETCH PAST EMAILS ]` and the line "Copies the last 12 months of your conversations with people in the CRM. Press again after an import: nothing is copied twice." They press it; the card shows that fetching has started and, as it goes, "Fetching past emails: <n> conversations copied". When it ends, the card says "Past emails fetched: <n> conversations copied." and the card's total of conversations copied has gone up by the same number.
 
 **Why this priority**: DECISIONS (2026-11-24) says past email comes in only from this button; without it the CRM has no email history for any contact from before the day each user connected, which is what the team most needs when picking up a relationship.
 
@@ -57,7 +65,7 @@ After a Pipedrive or CSV import adds many people to the CRM, the user presses `[
 
 1. **Given** a fetch already ended with 60 conversations copied, **When** the user presses the button again with nothing changed, **Then** it ends with "Past emails fetched: 0 conversations copied." and the total stays 60.
 2. **Given** that state and a person added to the CRM (by hand, a CSV import or a Pipedrive import) whose address is in 5 conversations of the last 12 months, **When** the user presses the button again, **Then** it ends with "Past emails fetched: 5 conversations copied." and the total shows 65.
-3. **Given** a conversation the live sync already copied (a reply that came in after connecting, in a conversation that started 3 months ago), **When** a fetch runs, **Then** that conversation's earlier messages from the last 12 months are added to it, it is not counted in the fetch's number, and no message is stored twice.
+3. **Given** a conversation the live sync already copied (a reply that came in after connecting, in a conversation that started 3 months ago), **When** a fetch runs, **Then**, when that is the only conversation with a CRM person, the card shows "Past emails fetched: 0 conversations copied." and the total is unchanged, and the automated tests find its earlier messages from the last 12 months stored once each beside the reply (clarified 2026-11-26).
 4. **Given** a fetch running, **When** a new message from a CRM person arrives and the live sync copies it at the same time, **Then** the card's total goes up by 1 for that conversation, not 2, and the automated tests find the message stored once.
 5. **Given** a fetch running, **When** the same user presses the button from another tab or posts the request again, **Then** no second fetch starts and the card shows the running fetch's progress.
 
@@ -101,7 +109,7 @@ In these cases the tester puts conversations in the user's fake mailbox (SF-118 
 
 **The button**
 
-- **FR-001**: The Gmail card on Settings (SF-118, design B) MUST show `[ FETCH PAST EMAILS ]` in its heading buttons when, and only when, the user's own connection is working and no fetch of theirs is running or paused. Only the user themselves can start a fetch of their mailbox; admins cannot start or see another user's fetch.
+- **FR-001**: The Gmail card on Settings (SF-118, design B) MUST have a "// PAST EMAILS" part (design B) that shows `[ FETCH PAST EMAILS ]` when, and only when, the user's own connection is working and no fetch of theirs is running or paused. Only the user themselves can start a fetch of their mailbox; admins cannot start or see another user's fetch.
 - **FR-002**: Pressing it MUST start one fetch for that user covering the 12 months before the moment it was pressed. A user MUST never have two fetches running at once: a second press, request or tab while one is running or paused MUST start nothing and show the running fetch.
 
 **What is copied**
@@ -115,15 +123,15 @@ In these cases the tester puts conversations in the user's fake mailbox (SF-118 
 
 - **FR-007**: A fetch MUST run in parts, each finishing within the hosting's time limit for one request, and MUST keep within Gmail's rate limits; when Gmail asks to slow down, it MUST wait as asked and carry on. It MUST keep how far it has got between parts, so a part that fails or is cut short is taken up again without losing or repeating anything.
 - **FR-008**: While Settings is open, the next part MUST start by itself; while nobody has it open, the app's existing 15-minute background check MUST carry the fetch on until it ends.
-- **FR-009**: While a fetch runs, the card MUST show "Fetching past emails: <n> conversations copied" with the number of conversations this fetch has copied so far, updated after each part while the page is open; the total "<n> conversations copied" line of the card MUST stay correct throughout.
-- **FR-010**: When a fetch ends, the card MUST show "Past emails fetched: <n> conversations copied." with the number this fetch copied, until the user starts another fetch or disconnects.
+- **FR-009**: While a fetch runs, the card MUST show "Fetching past emails: <n> conversations copied" with the number of conversations this fetch has copied so far, updated after each part while the page is open, with "FETCHING…" in place of the button and the line "You can leave this page: fetching carries on by itself."; the total "<n> conversations copied" line of the card MUST stay correct throughout.
+- **FR-010**: When a fetch ends, the card MUST show "Past emails fetched: <n> conversations copied." with the number this fetch copied and the line "Last fetched <date time>. Press again after an import to copy conversations with new people.", until the user starts another fetch or disconnects.
 - **FR-011**: Google refusing the key MUST pause the fetch (the connection becomes "needs reconnecting", SF-118 FR-006) and the card MUST say "Fetching past emails is paused until Gmail is reconnected."; reconnecting MUST resume it. Gmail not answering MUST keep the fetch where it is, show "Gmail can't be reached right now. Fetching will carry on by itself." and try again later. Disconnecting or deactivation MUST end the fetch for good, keeping what it copied.
 
 **Access, messages, fakes**
 
 - **FR-012**: Starting and continuing a fetch from the page MUST require the signed-in, active user who owns the connection; the background continuation MUST only run inside the existing scheduled check (its secret). No answer MUST show email content.
 - **FR-013**: Every message shown MUST be one of the app's fixed messages; nothing from Gmail's answers or the page address is shown.
-- **FR-014**: The button, progress and end lines MUST follow the Gmail card of design B (SF-118 `design-options.html`) and `docs/DESIGN.md`: the button among the card heading's buttons, the progress and end lines among the card's label/value lines.
+- **FR-014**: The fetch MUST follow design B of `design-options.html` and `docs/DESIGN.md`: a "// PAST EMAILS" part inside the Gmail card, below the card's lines, with the button (or "FETCHING…" while a fetch runs or is paused) on the right of its label, the explanation line before the first fetch, and the progress, paused, unreachable and result lines in that part. Before any fetch the part shows the explanation line of US1.
 - **FR-015**: The fake Gmail MUST support everything a fetch uses (searching and listing past conversations, reading them, asking to slow down, not answering), checked against Google's published Gmail description like the rest of the fake; the tests MUST use a fake mailbox of 100 conversations covering every case of FR-003 and the Edge Cases. The fake data command MAY leave the fetch not started.
 
 ### Key Entities
@@ -145,8 +153,8 @@ In these cases the tester puts conversations in the user's fake mailbox (SF-118 
 ## Assumptions
 
 - "Last 12 months" is counted back from the moment the button is pressed and fixed for that fetch; it uses the time Gmail received or sent each message, like the live sync (DECISIONS SF-118).
-- A conversation is "copied" (and counted) as in SF-118: once one of its messages is stored for the account. The fetch's number counts only conversations new to the account; adding earlier messages to a conversation the live sync already copied fills it in without counting it (US3 scenario 3), so "never copied twice" holds at the message level and at the count.
-- Only messages dated within the 12 months are copied, even in a conversation that started earlier; messages after the press are the live sync's.
+- A conversation is "copied" (and counted) as in SF-118: once one of its messages is stored for the account. The fetch's number counts only conversations new to the account; adding earlier messages to a conversation the live sync already copied fills it in without counting it (US3 scenario 3, clarified 2026-11-26), so "never copied twice" holds at the message level and at the count.
+- Only messages dated within the 12 months are copied, even in a conversation that started earlier (clarified 2026-11-26); messages after the press are the live sync's.
 - Who a message matches is decided with the CRM's people at the time the fetch examines it, so a person added during a running fetch may or may not be included; pressing again after it ends covers them.
 - The fetch continues in the background through the existing 15-minute scheduled check (SF-118), so no new scheduled job is needed; a closed-page fetch may therefore take several checks to end.
 - There is no `[ STOP ]` button: the user stops a fetch by disconnecting Gmail; one could be added later if asked.

@@ -33,7 +33,7 @@
 
 - Validation passed on the first iteration. References to the hosting's time limit, Gmail's rate limits and the existing
   15-minute check name constraints the user gave and existing product behaviour (SF-118), not implementation choices.
-- Decisions taken as informed defaults (see Assumptions), worth confirming in `/speckit-clarify`: the fetch fills in
-  earlier messages of a conversation the live sync already copied without counting it; only messages within the 12
-  months are copied; no [ STOP ] button; background continuation rides on the existing 15-minute check.
+- Clarified 2026-11-26: design B (a // PAST EMAILS part in the Gmail card); earlier messages of a conversation the sync
+  already copied are added without counting it; only messages from the last 12 months are copied. Still a default:
+  no [ STOP ] button; background continuation rides on the existing 15-minute check.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
