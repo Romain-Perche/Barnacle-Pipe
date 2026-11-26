@@ -31,9 +31,8 @@
 
 ## Notes
 
-- No [NEEDS CLARIFICATION] markers: open choices are recorded in Assumptions as "decided by the factory, to confirm"
-  (one entry per email, Message-ID de-duplication, per-person "exactly one open deal" count including private deals,
-  no propagation of deal emails to the deal's other people, no timeline entry for link changes, download-only attachments).
-  `/speckit-clarify` is the place to confirm or change them.
+- No [NEEDS CLARIFICATION] markers. Clarified 2026-11-26: design B, one EMAIL entry per email, automatic links to
+  private deals. Still "decided by the factory, to confirm" in Assumptions: Message-ID de-duplication, no propagation of
+  deal emails to the deal's other people, no timeline entry for link changes, download-only attachments.
 - "Gmail" and "Message-ID" are named as the outside service and the email's own identifier from the user request, not as
   implementation choices.

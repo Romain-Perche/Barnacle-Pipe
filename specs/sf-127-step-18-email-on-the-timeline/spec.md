@@ -8,6 +8,14 @@
 
 **Input**: User description: "Step 18 - Email on the timeline. The emails copied by the Gmail sync appear in the CRM (`docs/PRODUCT.md` section 3, the email lines in `docs/DECISIONS.md`): an EMAIL entry on the timeline of every person in the conversation, of their organisations, and of the deal it is linked to, beside notes and the other entries, with the sender, the recipients, the subject, the date and time, the start of the text, and the names and sizes of its attachments. Opening it shows the whole conversation, oldest first, as plain text; an email's HTML is never shown as a web page. Opening an attachment fetches it from Gmail through the CRM. Linking: a conversation is linked automatically to every person in the CRM by any of their email addresses, and to that person's organisation; it is linked to a deal automatically when one of those people is the main person or a linked person of exactly one open deal. Anyone who can see the conversation can link it to another deal, person or organisation, or unlink it, and it stays as they set it. Who sees it: everyone on the team sees every user's conversations with contacts, except a conversation that includes a private person or is linked to a private deal the viewer cannot see, which is hidden entirely (`docs/DECISIONS.md`). A sent or received email raises the person's Last contacted, never lowering it. The deal, person and organisation pages show their details on the left and the timeline on the right, as in Pipedrive. Not in this issue: writing, replying and forwarding (later issues). Gmail is faked in tests."
 
+## Clarifications
+
+### Session 2026-11-26
+
+- Q: Which design? → A: Design: B, the email in a box with a blue left edge on the timeline (as notes have an orange one); the conversation on its own page with // LINKED TO on the left and // EMAILS on the right (see `design-options.html`).
+- Q: What does the timeline show for a conversation of several emails? → A: One EMAIL entry per email, each at its own time; opening any entry shows the whole conversation (A).
+- Q: Can a conversation be linked automatically to a private deal? → A: Yes: the private deal hides the conversation from teammates who cannot see the deal (A).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - See a contact's emails on their timeline (Priority: P1)
@@ -20,7 +28,7 @@ A team member opens a person's page and, in the timeline beside notes, activitie
 
 **Acceptance Scenarios**:
 
-1. **Given** Ada is connected and Ana Example ("ana@example.test") works at Example Ltd, **When** a message from Ana to Ada with subject "Proposal", text "Hi Ada, here are the figures we discussed last week…" and the attachment "figures.pdf" (240 KB) is copied, **Then** Ana's timeline shows, in the day group of the message's Gmail time, an entry tagged EMAIL with that time, "From Ana Example <ana@example.test>", "To Ada Fake <ada@barnacle.ai>", the subject "Proposal", the start of the text, and "figures.pdf · 240 KB".
+1. **Given** Ada is connected and Ana Example ("ana@example.test") works at Example Ltd, **When** a message from Ana to Ada with subject "Proposal", text "Hi Ada, here are the figures we discussed last week…" and the attachment "figures.pdf" (240 KB) is copied, **Then** Ana's timeline shows, in the day group of the message's Gmail time, an entry tagged EMAIL with that time and the line "Ana Example → Ada Fake", then, in a box with a blue left edge, the subject "Proposal", the start of the text, and "figures.pdf · 240 KB".
 2. **Given** that message, **When** a teammate opens Example Ltd's page, **Then** the same EMAIL entry is on its timeline.
 3. **Given** Ana is the main person of exactly one open deal "Example Ltd – pilot", **When** the message is copied, **Then** the deal page and the deal drawer show the same EMAIL entry.
 4. **Given** Ada replies to Ana from Gmail and the reply is copied, **When** a teammate opens Ana's page, **Then** a second EMAIL entry shows Ada as the sender and Ana as the recipient, at the reply's time, newest first like other entries.
@@ -40,7 +48,7 @@ From an EMAIL entry, a team member opens the conversation and reads every email 
 
 **Acceptance Scenarios**:
 
-1. **Given** a conversation of three emails, **When** a teammate opens its EMAIL entry, **Then** they see the conversation's subject and its three emails oldest first, each with sender, To, Cc, date and time, the full text as plain text, and its attachments with names and sizes; a link takes them back to the record they came from.
+1. **Given** a conversation of three emails, **When** a teammate opens its EMAIL entry from Ana's page, **Then** the conversation's own page shows "CONVERSATION · 3 EMAILS", the subject as its heading, "← ANA EXAMPLE" back to Ana's page, // LINKED TO on the left and, under // EMAILS · OLDEST FIRST on the right, the three emails oldest first, each with sender, To, Cc, date and time, the full text as plain text, and its attachments with names, sizes and [ DOWNLOAD ].
 2. **Given** an email sent as HTML only, containing a script, an image, styles and links, **When** it is shown, **Then** only its text appears, as plain text: no script runs, no image or outside content is loaded, no styling from the email applies.
 3. **Given** an attachment "figures.pdf", **When** a teammate who can see the conversation opens it, **Then** the CRM fetches it from Gmail through the mailbox it was copied from and the browser downloads it as "figures.pdf"; it is never displayed by the CRM as a web page.
 4. **Given** the mailbox the email was copied from is disconnected, needs reconnecting, belongs to a deactivated user, or Gmail cannot be reached or no longer has the message, **When** someone opens the attachment, **Then** nothing is downloaded and the page says the attachment cannot be fetched from Gmail right now, naming no technical cause; when the same email was also copied into another teammate's working mailbox, that copy is used instead.
@@ -66,6 +74,7 @@ Without anyone doing anything, each copied conversation is linked to every perso
 6. **Given** a conversation with Ana (one open deal A) and Ben (one open deal B), **When** it is copied, **Then** it is linked to both deals.
 7. **Given** a conversation already copied with an address no person has, **When** a teammate adds a person with that address, or adds that address to an existing person, **Then** the conversation is linked to that person and their organisation, and to a deal by the same rule, and shows on their timelines.
 8. **Given** a later email in the same conversation adds a new CRM person in Cc, **When** it is copied, **Then** the conversation is also linked to that person, their organisation and, by the same rule, a deal.
+9. **Given** shared Ana's only open deal is private to Ada, **When** a conversation with Ana is copied, **Then** it is linked to that deal: Ada sees it on Ana's timeline and the deal's, and Bob sees it on neither (clarified 2026-11-26).
 
 ---
 
@@ -79,7 +88,7 @@ From the open conversation, anyone who can see it sees what it is linked to (peo
 
 **Acceptance Scenarios**:
 
-1. **Given** an open conversation, **When** a teammate looks at it, **Then** they see "Linked to" with each linked person, organisation and deal, each a link to its page.
+1. **Given** an open conversation, **When** a teammate looks at it, **Then** // LINKED TO lists each linked person, organisation and deal with its kind (PERSON, ORG, DEAL), its name linking to its page, and [ UNLINK ], then [ LINK DEAL ], [ LINK PERSON ] and [ LINK ORGANISATION ].
 2. **Given** a conversation, **When** a teammate links it to the deal "Other Co – renewal" chosen from deals they can see, **Then** the conversation shows on that deal's timeline at once.
 3. **Given** a conversation, **When** a teammate links it to a person or organisation they can see, **Then** it shows on that record's timeline, even when that person is not in its emails.
 4. **Given** a conversation linked automatically to Ana's deal, **When** a teammate unlinks the deal, **Then** it leaves the deal's timeline, and a later email in the conversation, or a change to Ana's deals, never links that deal again.
@@ -172,7 +181,7 @@ The deal, person and organisation pages show the record's details on the left an
 
 **Conversation**
 
-- **FR-005**: Opening an EMAIL entry MUST show its whole conversation, oldest first, each email with sender, To, Cc, date and time, full plain text and attachments, plus what the conversation is linked to, and a way back to the record it was opened from.
+- **FR-005**: Opening an EMAIL entry MUST show its whole conversation on its own page (design B), oldest first, each email with sender, To, Cc, date and time, full plain text and attachments, with what the conversation is linked to in a left column, and a way back to the record it was opened from.
 - **FR-006**: Opening an attachment MUST fetch it from Gmail through the CRM, from a working mailbox holding that email, and deliver it as a download under its name; when no working mailbox can provide it, the user MUST get a plain message that the attachment cannot be fetched from Gmail right now.
 
 **Linking**
@@ -223,12 +232,11 @@ The deal, person and organisation pages show the record's details on the left an
 
 ## Assumptions
 
-- One EMAIL entry per email (not per conversation); opening any of them shows the whole conversation (decided by the factory, to confirm).
 - Duplicate copies of the same email across mailboxes are matched by the email's own identifier (Message-ID) (decided by the factory, to confirm).
-- "Exactly one open deal" is counted per person, among open (not Won, Lost or archived) deals where they are main or linked person; deal privacy does not change the count, so a conversation can be auto-linked to a private deal and then hidden from those who cannot see it, as the rule in DECISIONS says (decided by the factory, to confirm).
+- "Exactly one open deal" is counted per person, among open (not Won, Lost or archived) deals where they are main or linked person; deal privacy does not change the count, so a conversation can be auto-linked to a private deal and then hidden from those who cannot see it (clarified 2026-11-26).
 - People and organisations show the conversations linked to them directly; a deal's conversations do not also appear on the timelines of the deal's other people or organisation unless linked to them (decided by the factory, to confirm).
 - Linking and unlinking make no timeline CHANGE entry and no notification (decided by the factory, to confirm).
 - Automatic links already made stay when the reason changes (a person changes organisation, a deal closes, an address is removed from a person) (decided by the factory, to confirm).
 - Attachments are always downloaded, never previewed, in this issue (decided by the factory, to confirm).
 - Emails come only from the existing Gmail sync (SF-118); "Fetch past emails", the Inbox, writing, replying and forwarding are later issues. Emails copied before this issue are linked when it ships, so they appear too.
-- The deal drawer keeps its one-column layout; only the three record pages change layout. The exact look follows `docs/DESIGN.md` and the design options of this issue.
+- The deal drawer keeps its one-column layout; only the three record pages change layout. The look follows `docs/DESIGN.md` and design B of `design-options.html`.
