@@ -31,5 +31,5 @@
 
 ## Notes
 
-- Scope limited to the deals board, the deal list and the People list (Organisations list out of scope, see Assumptions).
+- Scope: the deals board, the deal list, the People list and the Organisations list (Organisations added at clarification).
 - Single click keeps opening the drawer; double-click is additive.
