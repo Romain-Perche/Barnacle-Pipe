@@ -4,7 +4,7 @@
 // mailbox → a 303 back to the conversation with the "can't be fetched from Gmail right now" notice.
 import { requireUser } from "@/server/auth/session";
 import { attachmentAccess, fetchAttachment } from "@/server/emails/attachments";
-import { contentDisposition } from "@/server/emails/rules";
+import { contentDisposition, fromParam, parseFrom } from "@/server/emails/rules";
 import { parseId } from "@/server/records/list-query";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export const maxDuration = 60;
 
 const CHUNK = 1024 * 1024;
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   const user = await requireUser();
   const id = parseId((await params).id);
   const access = id === null ? null : await attachmentAccess(user.id, id);
@@ -20,9 +20,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const got = await fetchAttachment(access);
   const { conversationId, messageId } = access.attachment;
   if (got === "unavailable") {
+    // The back link's record, only when ?from= parses to one (never URL text copied as-is).
+    const from = fromParam(parseFrom(new URL(req.url).searchParams.get("from")));
     return new Response(null, {
       status: 303,
-      headers: { location: `/emails/${conversationId}?notice=attachment-unavailable#email-${messageId}`, "cache-control": "no-store" },
+      headers: { location: `/emails/${conversationId}?${from ? `from=${from}&` : ""}notice=attachment-unavailable#email-${messageId}`, "cache-control": "no-store" },
     });
   }
   const bytes = got.bytes;

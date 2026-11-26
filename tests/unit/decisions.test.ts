@@ -168,3 +168,14 @@ describe("docs/DECISIONS.md (SF-127)", () => {
     }
   });
 });
+
+// covers SF-127 Fix round 1: the four choices the factory made (spec.md § Assumptions), confirmed by the Plan Review
+describe("docs/DECISIONS.md (SF-127)", () => {
+  const sf127 = readFileSync("docs/DECISIONS.md", "utf8").split("\n").filter((l) => l.startsWith("- ") && l.endsWith("(SF-127)"));
+  it("records Message-ID matching, direct links only, no CHANGE entry for linking, automatic links kept", () => {
+    expect(sf127.some((l) => l.includes("matched by the email's Message-ID"))).toBe(true);
+    expect(sf127.some((l) => l.includes("show only the conversations linked to them") && l.includes("deal's other people or its organisation"))).toBe(true);
+    expect(sf127.some((l) => l.includes("Linking or unlinking a conversation by hand makes no timeline CHANGE entry and no notification"))).toBe(true);
+    expect(sf127.some((l) => l.includes("Automatic links stay when their reason changes"))).toBe(true);
+  });
+});

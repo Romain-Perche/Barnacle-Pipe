@@ -8,7 +8,9 @@ import { messages } from "@/server/messages";
 
 const list = (xs: ConversationEmail["to"]) => xs.map(addressText).join(", ");
 
-export function EmailBody({ email }: { email: ConversationEmail }) {
+// `from`: the page's back-link record (fromParam of a parsed ?from=, or ""), kept on the download link so a redirect
+// back to the conversation keeps the "← <RECORD>" link.
+export function EmailBody({ email, from = "" }: { email: ConversationEmail; from?: string }) {
   return (
     <article id={`email-${email.id}`} className="msg">
       <div className="who">
@@ -24,7 +26,7 @@ export function EmailBody({ email }: { email: ConversationEmail }) {
           {email.attachments.map((a) => (
             <span key={a.id} className="att">
               {a.name} · {formatFileSize(a.size)}
-              <a href={`/emails/attachments/${a.id}/download`} aria-label={`Download ${a.name}`}>
+              <a href={`/emails/attachments/${a.id}/download${from ? `?from=${from}` : ""}`} aria-label={`Download ${a.name}`}>
                 [ DOWNLOAD ]
               </a>
             </span>

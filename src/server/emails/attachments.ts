@@ -24,14 +24,15 @@ export async function attachmentAccess(viewerId: number, id: number): Promise<At
     join email_conversations c on c.id = t.conversation_id
     where a.id = ${id} and ${visibleConversation(sql, viewerId, "c")}`;
   if (!a) return null;
-  // Every copy of the same email in the conversation with the same attachment, in a working mailbox of an active user.
+  // Every copy of the same email in the conversation with the same attachment (copies hold the same parts in the same
+  // order: matched by position and name), in a working mailbox of an active user.
   const rows = await sql<{ connection_id: number; gmail_message_id: string; position: number; own: boolean }[]>`
     select m.connection_id::int as connection_id, m.gmail_message_id, ca.position, m.id = ${a.message_id} as own
     from email_messages m
     join email_threads t on t.id = m.thread_id
     join gmail_connections g on g.id = m.connection_id
     join users u on u.id = g.user_id
-    join email_attachments ca on ca.message_id = m.id and ca.name = ${a.name}
+    join email_attachments ca on ca.message_id = m.id and ca.position = ${a.position} and ca.name = ${a.name}
     where t.conversation_id = ${a.conversation_id} and m.dedupe_key = ${a.dedupe_key} and g.state = 'working' and u.status = 'active'
       and (m.id <> ${a.message_id} or ca.id = ${a.id})
     order by (m.id = ${a.message_id}) desc, m.id, ca.position`;

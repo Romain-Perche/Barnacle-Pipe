@@ -179,7 +179,7 @@ the links as set.
 
 ## Fix round 1
 
-- [ ] T048 Write the tests first (they fail now): in `tests/integration/emails-attachments.test.ts` (fake Gmail):
+- [x] T048 Write the tests first (they fail now): in `tests/integration/emails-attachments.test.ts` (fake Gmail):
   (1) an email with two attachments of the same name, copied into two mailboxes, the viewer's own mailbox disconnected:
   downloading the second attachment gives the second part's bytes, not the first's; (2) the download with
   `?from=person-<id>` when no working mailbox holds the email: the 303 `location` is
@@ -187,11 +187,11 @@ the links as set.
   a check (unit test, reading `docs/DECISIONS.md`) that it has an SF-127 line on each of: Message-ID matching, deal
   conversations not shown on the deal's people or organisation, no CHANGE entry or notification for linking, automatic
   links staying when their reason changes. Name what each covers (`// covers Fix round 1, FR-006, Edge Cases`)
-- [ ] T049 Add the four lines of plan.md § Fix round 1 step 1 to `docs/DECISIONS.md`
-- [ ] T050 Keep `from` on the attachment download: `EmailBody.tsx` link `?from=`, the page passes it, the route puts
+- [x] T049 Add the four lines of plan.md § Fix round 1 step 1 to `docs/DECISIONS.md`
+- [x] T050 Keep `from` on the attachment download: `EmailBody.tsx` link `?from=`, the page passes it, the route puts
   `fromParam(parseFrom(...))` back in the 303 (plan.md § Fix round 1 step 2)
-- [ ] T051 Match the fallback copy's attachment by position and name in `attachmentAccess` (plan.md § Fix round 1 step 3)
-- [ ] T052 Run `npm test && npm run typecheck` (T048 → T049–T051 → T052)
+- [x] T051 Match the fallback copy's attachment by position and name in `attachmentAccess` (plan.md § Fix round 1 step 3)
+- [x] T052 Run `npm test && npm run typecheck` (T048 → T049–T051 → T052)
 
 ## Dependencies & Execution Order
 

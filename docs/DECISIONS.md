@@ -137,3 +137,7 @@ Only choices people made: how the code works is in the wiki (`openwiki/`), how t
 - A person whose link to a conversation was removed by hand no longer brings a deal to it automatically; their privacy still hides the conversation while they are in its emails (SF-127)
 - A conversation can be linked by hand to any deal, person or organisation the user can see that is not archived (Won and Lost deals included) (SF-127)
 - An email attachment is always downloaded (never shown in the browser), under its name with the characters a file system refuses replaced (SF-127)
+- Copies of one email in several mailboxes are matched by the email's Message-ID (SF-127)
+- People and organisations show only the conversations linked to them; a deal's conversations do not also appear on the timelines of the deal's other people or its organisation unless linked to them (SF-127)
+- Linking or unlinking a conversation by hand makes no timeline CHANGE entry and no notification (SF-127)
+- Automatic links stay when their reason changes (a person changes organisation, a deal closes, an address is removed from a person) (SF-127)

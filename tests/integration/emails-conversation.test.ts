@@ -87,7 +87,8 @@ describe("US2: the whole conversation", () => {
     expect(out).toContain("EMAILS · OLDEST FIRST");
     expect(out.indexOf('id="email-')).toBeLessThan(out.indexOf("One more thing."));
     expect(out).toContain("20 NOV 2026, 09:30");
-    expect(out).toMatch(/figures\.pdf · 240 KB<a href="\/emails\/attachments\/\d+\/download"/);
+    // Fix round 1: the download link keeps the back link's record
+    expect(out).toMatch(new RegExp(`figures\\.pdf · 240 KB<a href="/emails/attachments/\\d+/download\\?from=person-${w.ana}"`));
     expect(out).toContain("[ UNLINK ]");
     expect(out).toContain("[ LINK DEAL ]");
     expect(out).toContain("[ LINK PERSON ]");

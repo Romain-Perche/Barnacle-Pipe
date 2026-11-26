@@ -47,9 +47,9 @@ afterAll(async () => {
   await closeDb();
 });
 
-async function get(userId: number, id: number | string) {
+async function get(userId: number, id: number | string, query = "") {
   await h.signInAs(jar, userId);
-  return download(new Request(`http://localhost/emails/attachments/${id}/download`), { params: Promise.resolve({ id: String(id) }) });
+  return download(new Request(`http://localhost/emails/attachments/${id}/download${query}`), { params: Promise.resolve({ id: String(id) }) });
 }
 const attachment = async (name = "figures.pdf") => {
   const [a] = await sql<{ id: number; message_id: number; conversation_id: number }[]>`
@@ -148,6 +148,41 @@ describe("US2: attachments fetched from Gmail", () => {
     const res = await get(w.ada, (await attachment()).id);
     expect(res.status).toBe(200);
     expect(await bytesOf(res)).toEqual(PDF);
+  });
+});
+
+describe("Fix round 1", () => {
+  // covers Fix round 1, FR-006, Edge Cases: two same-name attachments in one email, served from a teammate's copy
+  it("the second of two same-name attachments downloads the second part's bytes from the other mailbox", async () => {
+    const one = new TextEncoder().encode("first part");
+    const two = new TextEncoder().encode("second part, longer");
+    const messageId = "<twins@example.test>";
+    for (const box of [e.ADA, e.BOB])
+      fake.addMessage(box, {
+        from: `"Ana Example" <ana@example.test>`, to: `${e.ADA}, ${e.BOB}`, subject: "Twins", text: "x", internalDate: AT, messageId,
+        attachments: [{ name: "figures.pdf", size: one.length, data: one }, { name: "figures.pdf", size: two.length, data: two }],
+      });
+    await e.sync(w.adaConn);
+    await e.sync(w.bobConn);
+    await disconnect(w.ada);
+    const [second] = await sql<{ id: number }[]>`
+      select a.id::int as id from email_attachments a join email_messages m on m.id = a.message_id
+      where m.connection_id = ${w.adaConn} and a.name = 'figures.pdf' order by a.position desc limit 1`;
+    const res = await get(w.ada, second.id);
+    expect(res.status).toBe(200);
+    expect(await bytesOf(res)).toEqual(two);
+  });
+
+  // covers Fix round 1, FR-006: the "← <RECORD>" back link survives the 303 when Gmail can't give the attachment
+  it("keeps a valid ?from= in the 303 back to the conversation, drops junk", async () => {
+    send(e.ADA);
+    await e.sync(w.adaConn);
+    await disconnect(w.ada);
+    const a = await attachment();
+    const kept = await get(w.bob, a.id, "?from=person-12");
+    expect(kept.headers.get("location")).toBe(`/emails/${a.conversation_id}?from=person-12&notice=attachment-unavailable#email-${a.message_id}`);
+    const junk = await get(w.bob, a.id, "?from=%2F%2Fevil.test");
+    expect(junk.headers.get("location")).toBe(`/emails/${a.conversation_id}?notice=attachment-unavailable#email-${a.message_id}`);
   });
 });
 

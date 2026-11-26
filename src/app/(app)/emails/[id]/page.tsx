@@ -76,7 +76,7 @@ export default async function ConversationPage({ params, searchParams }: Props) 
               <span className="c">//</span> EMAILS · OLDEST FIRST
             </div>
             {conversation.emails.map((email) => (
-              <EmailBody key={email.id} email={email} />
+              <EmailBody key={email.id} email={email} from={backName !== null ? fromParam(from) : ""} />
             ))}
           </section>
         </div>
