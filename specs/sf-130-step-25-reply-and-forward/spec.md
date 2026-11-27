@@ -15,6 +15,10 @@
 - Q: Which design? → A: Design: B, small framed `[ REPLY ]` `[ REPLY ALL ]` `[ FORWARD ]` buttons at the right of each email's top line: the "sender → recipients" line of a timeline EMAIL entry, the To line under the sender and date on the conversation page (see `design-options.html`; the Reply and Forward boxes are SF-129's panel as drawn in its shared part).
 - Q: What does a user without a working Gmail connection see on each email? → A: No buttons; one link to Settings in their place: "[ CONNECT GMAIL TO REPLY ]", or "[ RECONNECT GMAIL TO REPLY ]" while Gmail needs reconnecting (A).
 - Q: Can the user change the quoted earlier email in the box? → A: No: the quote shows read-only under the text and is always sent (A).
+- Q: After sending from the conversation page, does that page show "Email sent to …" like the record pages? → A: Yes, the same one-time notice under the conversation's heading (decided by the factory, to confirm)
+- Q: Which record files does the box offer when opened from the conversation page? → A: Only those of the record named in its "← <RECORD>" link, and only while the user can see that record and it is not archived; otherwise files from the computer only (decided by the factory, to confirm)
+- Q: What does the reply box's footer say, in place of SF-129's "It shows on this record…"? → A: "Sent from your Gmail, in this conversation." (decided by the factory, to confirm)
+- Q: A reply or forward adds no hand link (FR-015); does it still widen who can see the conversation when it goes to a private CRM person? → A: Yes, as for any stored email (SF-127's rule is unchanged: a person in its emails whom a viewer cannot see hides the conversation from that viewer) (decided by the factory, to confirm)
 
 ## User Scenarios & Testing *(mandatory)*
 
