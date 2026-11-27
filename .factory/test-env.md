@@ -808,6 +808,8 @@
     part A's header checks read the bare address of "Name <address>"): 42 of 43 pass; US4 3 fails: `EmailBox` takes the
     opening Gmail state from the `box` prop, and the `router.refresh()` after a key refusal re-renders it as `needs_reconnect`,
     so `panelView` turns to "message" and the typed fields go.
+    Round 3 (after fix round 2): same commands, fresh data; 43 of 43 pass (US4 3 keeps the subject and text after the key
+    refusal and the refresh; sidebar "SETTINGS!").
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
