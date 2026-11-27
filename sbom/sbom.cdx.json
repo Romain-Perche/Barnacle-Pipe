@@ -1804,6 +1804,44 @@
       "version": "19.3.0"
     },
     {
+      "bom-ref": "pkg:npm/%40types/whatwg-mimetype@3.0.2",
+      "group": "@types",
+      "name": "whatwg-mimetype",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@types/whatwg-mimetype@3.0.2"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "npm"
+        }
+      ],
+      "purl": "pkg:npm/%40types/whatwg-mimetype@3.0.2",
+      "scope": "excluded",
+      "type": "library",
+      "version": "3.0.2"
+    },
+    {
+      "bom-ref": "pkg:npm/%40types/ws@8.18.2",
+      "group": "@types",
+      "name": "ws",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@types/ws@8.18.2"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "npm"
+        }
+      ],
+      "purl": "pkg:npm/%40types/ws@8.18.2",
+      "scope": "excluded",
+      "type": "library",
+      "version": "8.18.2"
+    },
+    {
       "bom-ref": "pkg:npm/%40vitest/mocker@5.1.0",
       "group": "@vitest",
       "name": "mocker",
@@ -1875,6 +1913,24 @@
       "purl": "pkg:npm/baseline-browser-mapping@2.11.36",
       "type": "library",
       "version": "2.11.36"
+    },
+    {
+      "bom-ref": "pkg:npm/buffer-image-size@0.6.4",
+      "name": "buffer-image-size",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "buffer-image-size@0.6.4"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "npm"
+        }
+      ],
+      "purl": "pkg:npm/buffer-image-size@0.6.4",
+      "scope": "excluded",
+      "type": "library",
+      "version": "0.6.4"
     },
     {
       "bom-ref": "pkg:npm/caniuse-lite@1.0.30001826",
@@ -1962,6 +2018,24 @@
       "purl": "pkg:npm/detect-libc@2.1.2",
       "type": "library",
       "version": "2.1.2"
+    },
+    {
+      "bom-ref": "pkg:npm/entities@7.0.1",
+      "name": "entities",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "entities@7.0.1"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "npm"
+        }
+      ],
+      "purl": "pkg:npm/entities@7.0.1",
+      "scope": "excluded",
+      "type": "library",
+      "version": "7.0.1"
     },
     {
       "bom-ref": "pkg:npm/es-module-lexer@2.3.2",
@@ -2087,6 +2161,24 @@
       "purl": "pkg:npm/geist@1.9.2",
       "type": "library",
       "version": "1.9.2"
+    },
+    {
+      "bom-ref": "pkg:npm/happy-dom@21.0.4",
+      "name": "happy-dom",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "happy-dom@21.0.4"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "npm"
+        }
+      ],
+      "purl": "pkg:npm/happy-dom@21.0.4",
+      "scope": "excluded",
+      "type": "library",
+      "version": "21.0.4"
     },
     {
       "bom-ref": "pkg:npm/lightningcss-android-arm64@1.33.0",
@@ -2778,6 +2870,24 @@
       "version": "5.1.0"
     },
     {
+      "bom-ref": "pkg:npm/whatwg-mimetype@3.0.0",
+      "name": "whatwg-mimetype",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "whatwg-mimetype@3.0.0"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "npm"
+        }
+      ],
+      "purl": "pkg:npm/whatwg-mimetype@3.0.0",
+      "scope": "excluded",
+      "type": "library",
+      "version": "3.0.0"
+    },
+    {
       "bom-ref": "pkg:npm/why-is-node-running@3.2.1",
       "name": "why-is-node-running",
       "properties": [
@@ -2794,6 +2904,24 @@
       "scope": "excluded",
       "type": "library",
       "version": "3.2.1"
+    },
+    {
+      "bom-ref": "pkg:npm/ws@8.23.0",
+      "name": "ws",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "ws@8.23.0"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "npm"
+        }
+      ],
+      "purl": "pkg:npm/ws@8.23.0",
+      "scope": "excluded",
+      "type": "library",
+      "version": "8.23.0"
     },
     {
       "bom-ref": "pkg:npm/yaml@2.9.1",
@@ -2821,6 +2949,7 @@
         "pkg:npm/%40types/react-dom@19.3.0",
         "pkg:npm/%40types/react@19.3.0",
         "pkg:npm/geist@1.9.2",
+        "pkg:npm/happy-dom@21.0.4",
         "pkg:npm/next@16.4.6",
         "pkg:npm/postgres@4.1.1",
         "pkg:npm/react-dom@19.3.1",
@@ -3276,6 +3405,16 @@
       "ref": "pkg:npm/%40types/react@19.3.0"
     },
     {
+      "dependsOn": [],
+      "ref": "pkg:npm/%40types/whatwg-mimetype@3.0.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40types/node@26.6.6"
+      ],
+      "ref": "pkg:npm/%40types/ws@8.18.2"
+    },
+    {
       "dependsOn": [
         "pkg:npm/%40jridgewell/trace-mapping@0.3.31",
         "pkg:npm/%40vitest/spy@5.1.0",
@@ -3298,6 +3437,12 @@
       "ref": "pkg:npm/baseline-browser-mapping@2.11.36"
     },
     {
+      "dependsOn": [
+        "pkg:npm/%40types/node@26.6.6"
+      ],
+      "ref": "pkg:npm/buffer-image-size@0.6.4"
+    },
+    {
       "dependsOn": [],
       "ref": "pkg:npm/caniuse-lite@1.0.30001826"
     },
@@ -3316,6 +3461,10 @@
     {
       "dependsOn": [],
       "ref": "pkg:npm/detect-libc@2.1.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/entities@7.0.1"
     },
     {
       "dependsOn": [],
@@ -3377,6 +3526,18 @@
         "pkg:npm/next@16.4.6"
       ],
       "ref": "pkg:npm/geist@1.9.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40types/node@26.6.6",
+        "pkg:npm/%40types/whatwg-mimetype@3.0.2",
+        "pkg:npm/%40types/ws@8.18.2",
+        "pkg:npm/buffer-image-size@0.6.4",
+        "pkg:npm/entities@7.0.1",
+        "pkg:npm/whatwg-mimetype@3.0.0",
+        "pkg:npm/ws@8.23.0"
+      ],
+      "ref": "pkg:npm/happy-dom@21.0.4"
     },
     {
       "dependsOn": [],
@@ -3650,6 +3811,7 @@
         "pkg:npm/chai@6.3.0",
         "pkg:npm/es-module-lexer@2.3.2",
         "pkg:npm/expect-type@1.4.0",
+        "pkg:npm/happy-dom@21.0.4",
         "pkg:npm/magic-string@1.4.5",
         "pkg:npm/obug@3.0.0",
         "pkg:npm/picomatch@4.0.7",
@@ -3664,7 +3826,15 @@
     },
     {
       "dependsOn": [],
+      "ref": "pkg:npm/whatwg-mimetype@3.0.0"
+    },
+    {
+      "dependsOn": [],
       "ref": "pkg:npm/why-is-node-running@3.2.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/ws@8.23.0"
     },
     {
       "dependsOn": [],

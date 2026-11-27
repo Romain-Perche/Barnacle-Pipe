@@ -110,13 +110,14 @@ flowchart LR
     n21 -->|"7 flows"| n8
     n21 -->|"campaign forms, blocks, preview person"| n1
     n21 -->|"deal form fields, board drags"| n4
-    n21 -->|"3 flows"| n7
+    n21 -->|"4 flows"| n7
     n21 -->|"4 flows"| n12
     n21 -->|"files to add, delete, download, preview"| n6
     n21 -->|"API token, import choices"| n9
     n21 -->|"segment forms and counts requests"| n10
     n21 -->|"file contents (PUT to signed address)"| n24
     n24 -->|"object info and first bytes"| n6
+    n24 -->|"attachment bytes"| n7
     n14 -->|"unsubscribe confirmation page"| n19
     n14 -->|"2 flows"| n2
     n13 -->|"users table and error messages"| n15
@@ -144,7 +145,7 @@ flowchart LR
 | Deals | Pipelines, stages and the deal board, with deals kept private by their person. | Deals board and deal pages, Pipelines admin |
 | Deals database | The Postgres tables for pipelines, stages, deals, their stage time, labels, linked people and followers. | Postgres deal followers, Postgres deal labels and label links, Postgres deal people, Postgres deal stage periods, Postgres deals, Postgres pipelines, Postgres stages |
 | Files | Adds, lists, downloads and deletes files on people, organisations and deals, kept in Supabase Storage. | Files on records |
-| Gmail | Connects a user's Gmail, copies mail into the CRM through push and a 15-minute check, and sends mail. | Google Calendar client, Calendar event links, Calendar sync and push receiver, Email attachment download, Email conversations and links, Email on the timeline, Google API client, Gmail connect and disconnect, Fetch past emails, Gmail send, Gmail sync and push receiver, Gmail connections, threads, messages |
+| Gmail | Connects a user's Gmail, copies mail into the CRM through push and a 15-minute check, and sends mail. | Google Calendar client, Calendar event links, Calendar sync and push receiver, Email attachment download, Email conversations and links, Email on the timeline, Google API client, Gmail connect and disconnect, Fetch past emails, Gmail send and compose, Gmail sync and push receiver, Gmail connections, threads, messages |
 | People and organisations | Staff list, search, create, edit, archive and delete people and organisations, with a timeline and shared lead sources and labels. | Activities (calls, meetings, tasks), Ambassadors and referrals, Lead sources and labels admin, CSV import, Postgres csv_imports, Custom fields, Postgres note mentions, Notes and @mentions, Notifications page, Organisation pages and actions, People pages and actions, One-shot delete notice |
 | Pipedrive import | Connects a Pipedrive token and imports people, organisations and deals page by page, never twice. | Sealed Pipedrive tokens, Pipedrive import, Pipedrive imports and links |
 | Segments | Saved, team-shared people segments and the count of people each one reaches. | Saved segments and reach count, Postgres segments |
@@ -208,9 +209,9 @@ flowchart LR
     n12 -->|"SQL migration text"| n3
     n15 -->|"people, organisations, deals, notes, activities, files"| n1
     n1 -->|"token header, page requests"| n15
-    n13 -->|"19 flows"| n1
+    n13 -->|"20 flows"| n1
     n13 -->|"file contents (PUT to signed address)"| n16
-    n16 -->|"object info and first bytes"| n1
+    n16 -->|"2 flows"| n1
     n1 -->|"unsubscribe confirmation page"| n9
     n1 -->|"users table and error messages"| n5
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
@@ -591,22 +592,25 @@ flowchart LR
         n10("Google API client")
         n11("Gmail connect and disconnect")
         n12("Fetch past emails")
-        n13("Gmail send")
+        n13("Gmail send and compose")
         n14("Gmail sync and push receiver")
         n15[("Gmail connections, threads, messages")]
     end
     subgraph z2["POSTGRES (SUPABASE OR LOCAL)"]
         n16[("Email conversations and links")]
     end
-    n17[["Database"]]
-    n18[["Database commands"]]
-    n19[["People and organisations"]]
-    n20[["Settings"]]
-    n19 -->|"activity changes to mirror"| n7
+    subgraph z3["SUPABASE STORAGE (THIRD PARTY)"]
+        n17["Supabase Storage"]
+    end
+    n18[["Database"]]
+    n19[["Database commands"]]
+    n20[["People and organisations"]]
+    n21[["Settings"]]
+    n20 -->|"activity changes to mirror"| n7
     n1 -->|"events, sync tokens"| n5
     n5 -->|"event and channel requests"| n1
     n6 -->|"event links"| n7
-    n7 -->|"meetings and moves from Google"| n17
+    n7 -->|"meetings and moves from Google"| n18
     n7 -->|"event pull, push, watch calls"| n5
     n7 -->|"event links and agreed bodies"| n6
     n2 -->|"Calendar push notice"| n7
@@ -614,8 +618,8 @@ flowchart LR
     n8 -->|"attachment fetch from Gmail"| n10
     n16 -->|"conversations and emails for timelines"| n9
     n9 -->|"conversations, addresses, links"| n16
-    n9 -->|"Last contacted raised from emails"| n17
-    n20 -->|"GMAIL_TOKEN_KEY, Google settings"| n11
+    n9 -->|"Last contacted raised from emails"| n18
+    n21 -->|"GMAIL_TOKEN_KEY, Google settings"| n11
     n3 -->|"tokens, profile, messages"| n10
     n10 -->|"OAuth and Gmail requests"| n3
     n11 -->|"consent, token, revoke calls"| n10
@@ -623,6 +627,7 @@ flowchart LR
     n12 -->|"thread list and metadata reads"| n10
     n12 -->|"past conversations, fetch progress"| n15
     n13 -->|"outgoing MIME message"| n10
+    n13 -->|"send ledger, upload rows, sent copy"| n15
     n14 -->|"15-minute calendar check"| n7
     n14 -->|"each stored email to process"| n9
     n14 -->|"history and message reads"| n10
@@ -632,23 +637,26 @@ flowchart LR
     n15 -->|"sealed token, fetch cursor"| n12
     n15 -->|"sealed token"| n13
     n15 -->|"sealed token, history id"| n14
-    n18 -->|"schema"| n16
-    n18 -->|"schema"| n15
+    n19 -->|"schema"| n16
+    n19 -->|"schema"| n15
     n4 -->|"attachment download request"| n8
     n4 -->|"link or unlink a record"| n9
     n4 -->|"connect or disconnect Gmail"| n11
+    n4 -->|"email written from a record, attachments"| n13
+    n17 -->|"attachment bytes"| n13
     classDef actor fill:#FFFFFF,stroke:#111827,stroke-width:1px,color:#111827
     classDef process fill:#EDEAFF,stroke:#2B00FF,stroke-width:1.5px,color:#111827
     classDef store fill:#FAF6F1,stroke:#111827,stroke-width:1.5px,color:#111827
     classDef zone fill:#1A1A1A,stroke:#1A1A1A,color:#FFFFFF
     classDef group fill:#2B00FF,stroke:#2B00FF,color:#FFFFFF
     classDef stub fill:#FFFFFF,stroke:#2B00FF,stroke-width:1.5px,stroke-dasharray:5 4,color:#2B00FF
-    class n1,n2,n3,n4 actor
+    class n1,n2,n3,n4,n17 actor
     class n5,n7,n8,n9,n10,n11,n12,n13,n14 process
     class n6,n15,n16 store
-    class n17,n18,n19,n20 stub
+    class n18,n19,n20,n21 stub
     style z1 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
     style z2 fill:#F1EBE2,stroke:#CFC7BB,color:#5D6270
+    style z3 fill:#FFFFFF,stroke:#B9B2A8,stroke-dasharray:4 4,color:#5D6270
 ```
 
 ### People and organisations
@@ -1089,9 +1097,9 @@ flowchart LR
 | Google API client | process | Gmail | Next.js app server (Vercel or local) | `src/server/gmail/google-api.ts` |
 | Gmail connect and disconnect | process | Gmail | Next.js app server (Vercel or local) | `src/app/(app)/settings/actions.ts`, `src/app/(app)/settings/gmail/callback/route.ts`, `src/server/gmail/connections.ts` |
 | Fetch past emails | process | Gmail | Next.js app server (Vercel or local) | `src/app/(app)/settings/PastFetchRunner.tsx`, `src/server/gmail/past.ts` |
-| Gmail send | process | Gmail | Next.js app server (Vercel or local) | `src/server/gmail/send.ts` |
+| Gmail send and compose | process | Gmail | Next.js app server (Vercel or local) | `src/app/(app)/records/email-actions.ts`, `src/server/emails/compose.ts`, `src/server/gmail/send.ts` |
 | Gmail sync and push receiver | process | Gmail | Next.js app server (Vercel or local) | `src/app/cron/gmail/route.ts`, `src/app/gmail/push/route.ts`, `src/server/gmail/push.ts`, `src/server/gmail/sync.ts` |
-| Gmail connections, threads, messages | store | Gmail | Next.js app server (Vercel or local) | `migrations/0016_gmail.sql`, `migrations/0020_past_email_fetches.sql` |
+| Gmail connections, threads, messages | store | Gmail | Next.js app server (Vercel or local) | `migrations/0016_gmail.sql`, `migrations/0020_past_email_fetches.sql`, `migrations/0021_email_send.sql` |
 | Google sign-in routes | process | Sign-in and sessions | Next.js app server (Vercel or local) | `src/app/auth/google`, `src/server/auth/google.ts` |
 | Google OAuth and userinfo API | actor |  | Google (third party) |  |
 | db:migrate command | process | Database commands | Command line (developer machine or Vercel build) | `scripts/migrate.ts` |
@@ -1231,7 +1239,8 @@ flowchart LR
 | Gmail connect and disconnect | Gmail connections, threads, messages | refresh token sealed with AES-256-GCM | `src/server/crypto/seal.ts`, `src/server/gmail/connections.ts` |
 | Fetch past emails | Google API client | thread list and metadata reads | `src/server/gmail/google-api.ts`, `src/server/gmail/past.ts` |
 | Fetch past emails | Gmail connections, threads, messages | past conversations, fetch progress | `src/server/gmail/past.ts`, `src/server/gmail/sync.ts` |
-| Gmail send | Google API client | outgoing MIME message | `src/server/gmail/send.ts` |
+| Gmail send and compose | Google API client | outgoing MIME message | `src/server/gmail/send.ts` |
+| Gmail send and compose | Gmail connections, threads, messages | send ledger, upload rows, sent copy | `migrations/0021_email_send.sql`, `src/server/emails/compose.ts` |
 | Gmail sync and push receiver | Calendar sync and push receiver | 15-minute calendar check | `src/server/gmail/sync.ts` |
 | Gmail sync and push receiver | Email on the timeline | each stored email to process | `src/server/emails/process.ts`, `src/server/gmail/sync.ts` |
 | Gmail sync and push receiver | Google API client | history and message reads | `src/server/gmail/sync.ts` |
@@ -1239,7 +1248,7 @@ flowchart LR
 | Gmail sync and push receiver | Gmail connections, threads, messages | copied threads and messages | `src/server/gmail/sync.ts` |
 | Gmail connections, threads, messages | Email attachment download | attachment names, mailbox token | `src/server/emails/attachments.ts` |
 | Gmail connections, threads, messages | Fetch past emails | sealed token, fetch cursor | `src/server/gmail/past.ts` |
-| Gmail connections, threads, messages | Gmail send | sealed token | `src/server/gmail/send.ts` |
+| Gmail connections, threads, messages | Gmail send and compose | sealed token | `src/server/gmail/send.ts` |
 | Gmail connections, threads, messages | Gmail sync and push receiver | sealed token, history id | `src/server/gmail/sync.ts` |
 | Google sign-in routes | Browser cookies (crm_session, crm_oauth) | OAuth state, PKCE verifier, session token | `src/app/auth/google/callback/route.ts`, `src/app/auth/google/start/route.ts` |
 | Google sign-in routes | Sign-in rules and session creation | Google identity (email, verified, domain, name) | `src/app/auth/google/callback/route.ts` |
@@ -1361,6 +1370,7 @@ flowchart LR
 | Barnacle staff user | Fake Google login (dev and test only) | chosen fake account email and name | `src/app/dev/fake-google/actions.ts` |
 | Barnacle staff user | Files on records | files to add, delete, download, preview | `src/app/(app)/files/file-route.ts`, `src/app/(app)/records/file-actions.ts` |
 | Barnacle staff user | Gmail connect and disconnect | connect or disconnect Gmail | `src/app/(app)/settings/actions.ts` |
+| Barnacle staff user | Gmail send and compose | email written from a record, attachments | `src/app/(app)/records/email-actions.ts`, `src/server/emails/compose.ts` |
 | Barnacle staff user | Google sign-in routes | sign-in start, OAuth code and state | `src/app/auth/google/callback/route.ts`, `src/app/auth/google/start/route.ts` |
 | Barnacle staff user | Notes and @mentions | note text and mentions | `src/app/(app)/records/note-actions.ts` |
 | Barnacle staff user | Notifications page | open, mark all read | `src/app/(app)/notifications/actions.ts` |
@@ -1373,6 +1383,7 @@ flowchart LR
 | Barnacle staff user | Supabase Storage | file contents (PUT to signed address) | `src/app/(app)/records/AddFiles.tsx` |
 | Postgres stages | Deals board and deal pages | stages for the board | `src/server/deals/deals.ts` |
 | Supabase Storage | Files on records | object info and first bytes | `src/server/files/storage.ts` |
+| Supabase Storage | Gmail send and compose | attachment bytes | `src/server/emails/compose.ts`, `src/server/files/storage.ts` |
 | timeline_events table | Ambassadors and referrals | referral events for latest updates | `src/server/records/ambassadors.ts`, `src/server/records/timeline.ts` |
 | timeline_events table | Notes and @mentions | note events | `src/server/records/notes.ts` |
 | Unsubscribe page and one-click | Email recipient / mail app | unsubscribe confirmation page | `src/app/unsubscribe/[token]/page.tsx` |
