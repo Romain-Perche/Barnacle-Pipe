@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:61765a47c536bd709af37dfca0c03e087075553629de1220a48fc41eb0368db5",
+  "pageVersion": "sha256:6225c5af71e7ffd3dec91ab39ecd405b35fe086c6feaceb027a7c178e0d24c70",
   "claims": [
     {
       "id": "claim_26dddd940894480690668615756bf371",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:74cedd11c62e9ae5ac2725d349be8171fca6bc84f32591e2f00e1165767c44dd"
+          "version": "repo-file-v1:sha256:8e0f01abe3bde5b26cee6c469d7acbe7505a8500e5e53ca58e438f9cdec6605f"
         }
       ]
     },
@@ -64,7 +64,7 @@
         },
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:74cedd11c62e9ae5ac2725d349be8171fca6bc84f32591e2f00e1165767c44dd"
+          "version": "repo-file-v1:sha256:8e0f01abe3bde5b26cee6c469d7acbe7505a8500e5e53ca58e438f9cdec6605f"
         }
       ]
     },
@@ -77,10 +77,28 @@
           "version": "repo-file-v1:sha256:d60c3ef3ae0ca111ea444e976f6ff1f706f661e8da27b7a7b49eafd896feeafa"
         }
       ]
+    },
+    {
+      "id": "claim_3914548c6c9349759a793bb7d7990201",
+      "statement": "sendFromRecord claims an email_sends ledger row on conflict (user_id, send_key) do nothing before reading attachments and sending through sendGmail, and storeMessage calls completePendingSend to write the manual link and mark the claim sent.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0021_email_send.sql",
+          "version": "repo-file-v1:sha256:cda99237f2d3d1abd0876858df057ee2f5dbb40c67fa75ec39a498ae054e9349"
+        },
+        {
+          "resource": "repo://src/server/emails/compose.ts",
+          "version": "repo-file-v1:sha256:9b3d78ec92f158ab7c12f970bcd61572ce2b572ddb5663304b45a92ee2174fcd"
+        },
+        {
+          "resource": "repo://src/server/gmail/sync.ts",
+          "version": "repo-file-v1:sha256:8e0f01abe3bde5b26cee6c469d7acbe7505a8500e5e53ca58e438f9cdec6605f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-26T18:09:57.686Z"
+    "at": "2026-11-27T14:26:45.943Z"
   }
 }

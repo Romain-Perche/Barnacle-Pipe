@@ -642,3 +642,32 @@ table.campaigns-list .acts form + a { margin-left: 14px; }
 .msg .hd { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
 .msg .emailtext { font-family: var(--sans); white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; font-size: 14px; line-height: 1.5; }
 .msg .emailatts .att a { font-weight: 700; letter-spacing: 0.1em; color: var(--blue); text-decoration: none; }
+
+/* SF-129 the email box, design B: a tall panel on the right side over the dimmed page (as SF-109's boxes dim it). */
+.overlay.sideoverlay { display: block; padding: 0; }
+.sidepanel { position: absolute; top: 0; right: 0; bottom: 0; width: min(760px, 100%); overflow-y: auto; background: var(--paper);
+  border-left: 0.5px solid var(--line); box-shadow: -12px 0 32px rgba(0, 0, 0, 0.25); padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
+.sidepanel .hd { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 0.5px solid var(--line);
+  padding-bottom: 10px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.2em; overflow-wrap: anywhere; }
+.sidepanel .k { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); }
+.sidepanel .warn { border-left: 3px solid var(--orange); background: var(--note); padding: 8px 10px; }
+.emailform { display: flex; flex-direction: column; gap: 10px; margin: 0; flex: 1; }
+.emailform .frm { display: grid; grid-template-columns: 72px 1fr; gap: 8px 12px; align-items: center; font-size: 14px; }
+.emailform .fld { border: 0.5px solid var(--line); background: var(--panel); padding: 6px 8px; min-height: 34px; font: inherit; color: var(--ink); width: 100%; }
+.emailform .fld.chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.emailform .fld.chips input { flex: 1 1 160px; border: 0; background: transparent; font: inherit; color: var(--ink); outline: none; min-width: 120px; }
+.emailform .fld.big { min-height: 240px; resize: vertical; font-family: var(--sans); white-space: pre-wrap; overflow-wrap: anywhere; }
+.emailform .frm label.k { align-self: start; padding-top: 10px; }
+.emailform .chip { overflow-wrap: anywhere; }
+.emailform .attachlist { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.emailform .attach-acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.emailform .attachpick { position: relative; }
+.emailform .attachpick summary { list-style: none; cursor: pointer; }
+.emailform .attachpick ul { position: absolute; z-index: 2; list-style: none; margin: 4px 0 0; padding: 6px 10px; background: var(--panel);
+  border: 0.5px solid var(--line); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18); min-width: 260px; }
+.emailform .attachpick li { padding: 3px 0; }
+.emailform .tot { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.emailform .ftr { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  border-top: 0.5px solid var(--line); padding-top: 10px; font-size: 13px; }
+.emailform .ftr .acts { display: flex; gap: 8px; }
+.emailform .err { margin: 0; }

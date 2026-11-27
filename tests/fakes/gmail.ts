@@ -33,7 +33,11 @@ export const TEST_GMAIL_KEY = Buffer.alloc(32, 0x5a).toString("base64");
 type Prop = { type?: string; format?: string; $ref?: string; items?: Prop; additionalProperties?: Prop; properties?: Record<string, Prop> };
 type Param = { location: string };
 type Schema = { id: string; type: string; properties: Record<string, Prop> };
-type Method = { httpMethod: string; path: string; parameters?: Record<string, { location: string }>; request?: { $ref: string }; response?: { $ref: string } };
+type MediaUpload = { accept: string[]; maxSize: string; protocols: { simple?: { path: string } } };
+type Method = {
+  httpMethod: string; path: string; parameters?: Record<string, { location: string }>; request?: { $ref: string }; response?: { $ref: string };
+  supportsMediaUpload?: boolean; mediaUpload?: MediaUpload;
+};
 type Resource = { methods?: Record<string, Method>; resources?: Record<string, Resource> };
 type Discovery = { rootUrl: string; servicePath: string; schemas: Record<string, Schema>; resources: Record<string, Resource>; parameters?: Record<string, Param> };
 
@@ -62,6 +66,27 @@ function methodOf(httpMethod: string, pathname: string) {
   const found = methods.find((m) => m.httpMethod === httpMethod && m.re.test(pathname));
   if (!found) throw new Error(`gmail-api.json has no ${httpMethod} ${pathname}`);
   return found;
+}
+
+// SF-129: an upload (users.messages.send through the simple media upload): the path is the method's
+// mediaUpload.protocols.simple.path, uploadType "media" or "multipart", the content type one of `accept`, the body at
+// most `maxSize` bytes, every other query parameter declared for the method or at the discovery's top level.
+export function checkUploadRequest(httpMethod: string, url: URL, contentType: string, size: number) {
+  const m = methods.find(
+    (x) => x.httpMethod === httpMethod && x.mediaUpload?.protocols.simple && new RegExp(`^${x.mediaUpload.protocols.simple.path.replace(/\{[^}]+\}/g, "([^/]+)")}$`).test(url.pathname),
+  );
+  if (!m || !m.mediaUpload) throw new Error(`gmail-api.json has no upload ${httpMethod} ${url.pathname}`);
+  for (const name of url.searchParams.keys()) {
+    const p = m.parameters?.[name] ?? gmailSchema.parameters?.[name];
+    if (!p || p.location !== "query") throw new Error(`${m.name} has no query parameter "${name}" in gmail-api.json`);
+  }
+  const uploadType = url.searchParams.get("uploadType");
+  if (uploadType !== "media" && uploadType !== "multipart") throw new Error(`${m.name} simple upload needs uploadType=media or multipart, got ${uploadType}`);
+  const type = contentType.split(";")[0].trim().toLowerCase();
+  const accepted = m.mediaUpload.accept.some((a) => (a.endsWith("/*") ? type.startsWith(a.slice(0, -1)) : type === a));
+  if (!accepted) throw new Error(`${m.name} upload accepts ${m.mediaUpload.accept.join(", ")}, not "${type}"`);
+  if (size > Number(m.mediaUpload.maxSize)) throw new Error(`${m.name} upload is ${size} bytes, over maxSize ${m.mediaUpload.maxSize}`);
+  return m;
 }
 
 // SF-124: Calendar's events and channels methods, matched on the path under calendar/v3/.
@@ -212,6 +237,19 @@ export class GmailFake extends FakeGoogleMail {
     if (url.origin !== "https://gmail.googleapis.com") {
       if (!["https://oauth2.googleapis.com", "https://www.googleapis.com"].includes(url.origin)) throw new Error(`no Google call to ${url.origin}`);
       return this.fetch(req);
+    }
+    if (url.pathname.startsWith("/upload/")) {
+      const body = new Uint8Array(await req.clone().arrayBuffer());
+      const um = checkUploadRequest(req.method, url, req.headers.get("content-type") ?? "", body.length);
+      const res = await this.fetch(req);
+      if (!res.ok || !um.response) return res;
+      let answer = (await res.json()) as Record<string, unknown>;
+      if (this.tamperNext) {
+        answer = this.tamperNext(answer);
+        this.tamperNext = null;
+      }
+      checkObject(`${um.name} answer`, answer, gmailSchema.schemas[um.response.$ref], gmailSchema.schemas, "gmail-api.json");
+      return new Response(JSON.stringify(answer), { status: res.status, headers: res.headers });
     }
     const m = methodOf(req.method, url.pathname);
     for (const name of url.searchParams.keys()) {

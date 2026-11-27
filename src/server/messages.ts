@@ -344,6 +344,30 @@ export const messages = {
   email_link_refused: "This record can't be linked: it was archived or you can't see it.",
   email_no_links: "Not linked to any record.",
   email_unknown_sender: "Unknown sender",
+  // SF-129: writing an email from a record (data-model.md § Validation).
+  compose_to_required: "Add at least one address in To.",
+  compose_subject_required: "Add a subject.",
+  compose_too_many_addresses: "An email can go to 100 addresses at most.",
+  compose_subject_too_long: "The subject can be 250 characters at most.",
+  compose_text_too_long: "The text can be 100,000 characters at most.",
+  compose_attachments_too_large: "Attachments can be 25 MB in total at most.",
+  compose_attachment_gone: "One of the attached files is no longer on the record. Remove it and send again.",
+  compose_record_archived: "This record is archived: restore it to send email from it.",
+  compose_record_not_found: "This record doesn't exist or you can't see it.",
+  compose_connect_gmail: "Connect your Gmail in Settings to send email from the CRM.",
+  compose_reconnect_gmail: "Reconnect your Gmail in Settings to send email from the CRM.",
+  compose_gmail_off: "Email can't be sent from the CRM right now.",
+  compose_send_failed: "The email could not be sent. Try again in a minute.",
+  compose_footer: "Sent from your Gmail. It shows on this record and on the CRM people it goes to.",
+  compose_add_address: "Add an address",
+  compose_write: "[ WRITE EMAIL ]",
+  compose_heading: "// NEW EMAIL",
+  compose_send: "[ SEND ]",
+  compose_sending: "[ SENDING… ]",
+  compose_cancel: "[ CANCEL ]",
+  compose_close: "[ CLOSE ]",
+  compose_go_to_settings: "[ GO TO SETTINGS ]",
+  compose_attach_computer: "[ ATTACH FROM COMPUTER ]",
   // SF-121: the public unsubscribe page
   unsubscribe_lead: "Stop receiving campaign emails from Barnacle Labs.",
   unsubscribe_done: "You're unsubscribed. You won't get any more campaign emails from us.",
@@ -388,6 +412,15 @@ const recordsPhrase = (people: number, deals: number) => recordLabels(people, de
 const conversationsCopied = (n: number) => `${n} ${n === 1 ? "conversation" : "conversations"} copied`;
 
 export const templates = {
+  // SF-129: an address typed in To / Cc / Bcc (the user's own input), and the notice after sending (addresses from the
+  // server's copy of what was sent, never from the URL): the first ones, then "and <n> more".
+  compose_address_invalid: (address: string) => `${address} is not a valid email address.`,
+  email_sent: (list: string, count = 0) => {
+    const shown = list === "" ? 0 : list.split(", ").length;
+    return count > shown ? `Email sent to ${list} and ${count - shown} more.` : `Email sent to ${list}.`;
+  },
+  compose_attach_record: (kind: "deal" | "person" | "organisation") => `[ ATTACH A ${kind.toUpperCase()} FILE ▾ ]`,
+  compose_room: (used: string) => `${used} of 25 MB`,
   duplicate_email: (name: string) => `${name} already has this email address.`,
   organisation_exists: (name: string) => `${name} already exists.`,
   person_deleted: (name: string) => `${name} was deleted.`,

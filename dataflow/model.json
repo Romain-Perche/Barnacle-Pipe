@@ -459,11 +459,13 @@
     },
     {
       "id": "gmail-send",
-      "label": "Gmail send",
+      "label": "Gmail send and compose",
       "zone": "app",
       "group": "gmail",
       "sources": [
-        "src/server/gmail/send.ts"
+        "src/server/gmail/send.ts",
+        "src/server/emails/compose.ts",
+        "src/app/(app)/records/email-actions.ts"
       ]
     },
     {
@@ -789,7 +791,8 @@
       "group": "gmail",
       "sources": [
         "migrations/0016_gmail.sql",
-        "migrations/0020_past_email_fetches.sql"
+        "migrations/0020_past_email_fetches.sql",
+        "migrations/0021_email_send.sql"
       ]
     },
     {
@@ -2967,6 +2970,33 @@
       "data": "schema",
       "sources": [
         "migrations/0020_email_timeline.sql"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "gmail-send",
+      "data": "email written from a record, attachments",
+      "sources": [
+        "src/app/(app)/records/email-actions.ts",
+        "src/server/emails/compose.ts"
+      ]
+    },
+    {
+      "from": "supabase-storage",
+      "to": "gmail-send",
+      "data": "attachment bytes",
+      "sources": [
+        "src/server/files/storage.ts",
+        "src/server/emails/compose.ts"
+      ]
+    },
+    {
+      "from": "gmail-send",
+      "to": "gmail-tables",
+      "data": "send ledger, upload rows, sent copy",
+      "sources": [
+        "src/server/emails/compose.ts",
+        "migrations/0021_email_send.sql"
       ]
     }
   ]

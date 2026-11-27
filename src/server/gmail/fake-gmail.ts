@@ -40,6 +40,8 @@ const SEND = "https://www.googleapis.com/auth/gmail.send";
 const CODE_MS = 10 * 60 * 1000;
 const ACCESS_SECONDS = 3600;
 const WATCH_MS = 7 * 24 * 60 * 60 * 1000;
+// users.messages.send mediaUpload.maxSize (gmail-api.json).
+const MAX_UPLOAD_BYTES = 36_700_160;
 
 export type FakeMessage = { id: string; threadId: string; labelIds: string[]; internalDate: string; historyId: string; payload: GmailPart; sizeEstimate: number };
 type Mailbox = { messages: FakeMessage[]; history: { id: number; messageId: string }[]; watch: { topic: string; expiration: number } | null };
@@ -60,6 +62,8 @@ export type FakeState = {
   key: { kid: string; privatePem: string };
   // SF-127: attachment bytes (base64url) by "<message id>/<attachment id>", served by messages.attachments.get.
   attachmentData?: Record<string, string>;
+  // SF-129: the Bcc header of each message sent with one (Gmail keeps it in the sender's copy; read by sentMessages).
+  sentBcc?: Record<string, string>;
 } & CalendarState; // SF-124: the fake Google Calendar (src/server/calendar/fake-calendar.ts)
 
 export interface StateStore {
@@ -132,13 +136,18 @@ const header = (name: string, value: string) => ({ name, value });
 // `size` bytes of a fixed fake pattern (an attachment added without its bytes).
 const fakeBytes = (size: number) => (size > 0 ? Buffer.alloc(size, "FAKE-ATTACHMENT\n") : Buffer.alloc(0));
 
-// A small RFC 5322/MIME reader for messages.send: headers, and a body that is text, or multipart with base64 parts.
-function parseMime(raw: string): { headers: { name: string; value: string }[]; parts: GmailPart[] } {
-  const readPart = (text: string): { headers: { name: string; value: string }[]; body: string } => {
+// A small RFC 5322/MIME reader for messages.send: headers, and a body that is text, or multipart (SF-129: nested, and
+// attachment parts — a Content-Disposition attachment or a name — kept with an attachmentId and their bytes, as Gmail
+// does for parts that are not inline).
+type Header = { name: string; value: string };
+type ParsedMime = { headers: Header[]; payload: GmailPart; attachments: { attachmentId: string; data: string }[] };
+function parseMime(raw: string): ParsedMime {
+  const attachments: { attachmentId: string; data: string }[] = [];
+  const readPart = (text: string): { headers: Header[]; body: string } => {
     const at = text.indexOf("\r\n\r\n");
     const head = at < 0 ? text : text.slice(0, at);
     const body = at < 0 ? "" : text.slice(at + 4);
-    const headers: { name: string; value: string }[] = [];
+    const headers: Header[] = [];
     for (const line of head.split("\r\n")) {
       if (/^[ \t]/.test(line) && headers.length) headers[headers.length - 1].value += line.replace(/^[ \t]+/, " ");
       else {
@@ -148,24 +157,57 @@ function parseMime(raw: string): { headers: { name: string; value: string }[]; p
     }
     return { headers, body };
   };
-  const top = readPart(raw);
-  const get = (hs: { name: string; value: string }[], n: string) => hs.find((h) => h.name.toLowerCase() === n.toLowerCase())?.value ?? "";
-  const leaf = (hs: { name: string; value: string }[], body: string, id: string): GmailPart => {
-    const type = get(hs, "Content-Type").split(";")[0].trim() || "text/plain";
+  const get = (hs: Header[], n: string) => hs.find((h) => h.name.toLowerCase() === n.toLowerCase())?.value ?? "";
+  const fileName = (hs: Header[]) => {
+    const disposition = get(hs, "Content-Disposition");
+    const star = /filename\*=UTF-8''([^;\s]+)/i.exec(disposition)?.[1];
+    if (star) {
+      try {
+        return decodeURIComponent(star);
+      } catch {
+        // falls back to the plain name
+      }
+    }
+    return /filename="([^"]*)"/i.exec(disposition)?.[1] ?? /name="([^"]*)"/i.exec(get(hs, "Content-Type"))?.[1] ?? "";
+  };
+  const part = (hs: Header[], body: string, id: string): GmailPart => {
+    const type = get(hs, "Content-Type").split(";")[0].trim().toLowerCase() || "text/plain";
+    const boundary = /boundary="?([^";]+)"?/i.exec(get(hs, "Content-Type"))?.[1];
+    if (type.startsWith("multipart/") && boundary) {
+      const chunks = body.split(`--${boundary}`).slice(1).filter((c) => !c.startsWith("--"));
+      return {
+        partId: id,
+        mimeType: type,
+        filename: "",
+        headers: hs,
+        body: { size: 0 },
+        parts: chunks.map((c, i) => {
+          const p = readPart(c.replace(/^\r\n/, "").replace(/\r\n$/, ""));
+          return part(p.headers, p.body, id === "" ? String(i) : `${id}.${i}`);
+        }),
+      };
+    }
     const bytes = /base64/i.test(get(hs, "Content-Transfer-Encoding")) ? Buffer.from(body.replace(/\s+/g, ""), "base64") : Buffer.from(body, "utf8");
+    const filename = /^attachment/i.test(get(hs, "Content-Disposition")) || /name=/i.test(get(hs, "Content-Type")) ? fileName(hs) : "";
+    if (filename !== "") {
+      const attachmentId = `ANGjdJ${randomBytes(12).toString("hex")}`;
+      attachments.push({ attachmentId, data: b64url(bytes) });
+      return { partId: id, mimeType: type, filename, headers: hs, body: { size: bytes.length, attachmentId } };
+    }
     return { partId: id, mimeType: type, filename: "", headers: hs, body: { size: bytes.length, data: b64url(bytes) } };
   };
-  const boundary = /boundary="?([^";]+)"?/i.exec(get(top.headers, "Content-Type"))?.[1];
-  if (!boundary) return { headers: top.headers, parts: [leaf(top.headers, top.body, "0")] };
-  const chunks = top.body.split(`--${boundary}`).slice(1).filter((c) => !c.startsWith("--"));
-  return {
-    headers: top.headers,
-    parts: chunks.map((c, i) => {
-      const p = readPart(c.replace(/^\r\n/, "").replace(/\r\n$/, ""));
-      return leaf(p.headers, p.body, String(i));
-    }),
-  };
+  const top = readPart(raw);
+  const payload = part(top.headers, top.body, "");
+  // A single-part message: its one leaf under a multipart/alternative-less payload, as SF-118's fake answered.
+  const root: GmailPart = payload.parts ? payload : { partId: "", mimeType: payload.mimeType, filename: "", headers: top.headers, body: { size: 0 }, parts: [{ ...payload, partId: "0" }] };
+  return { headers: top.headers, payload: root, attachments };
 }
+
+// SF-129: what tests read back from a sent message (sentMessages).
+export type SentMessage = {
+  id: string; threadId: string; from: string; to: string; cc: string; bcc: string; subject: string; messageId: string; text: string;
+  attachments: { name: string; type: string; bytes: Buffer }[];
+};
 
 export class FakeGoogleMail {
   readonly requests: FakeRequest[] = [];
@@ -516,6 +558,7 @@ export class FakeGoogleMail {
     if (base === TOKEN_URL) return this.token(req, text);
     if (base === REVOKE_URL) return this.revoke(req, text);
     if (base === CERTS_URL) return this.certs();
+    if (url.origin === "https://gmail.googleapis.com" && url.pathname.startsWith("/upload/")) return this.upload(req, url, text);
     if (url.origin === "https://gmail.googleapis.com") return this.gmail(req, url, body);
     return json(404, { error: "not_found" });
   }
@@ -574,6 +617,75 @@ export class FakeGoogleMail {
     const s = this.state();
     const jwk = createPublicKey(createPrivateKey(s.key.privatePem)).export({ format: "jwk" }) as { kty: string; n: string; e: string };
     return json(200, { keys: [{ kty: jwk.kty, n: jwk.n, e: jwk.e, kid: s.key.kid, alg: "RS256", use: "sig" }] }, { "cache-control": "public, max-age=19800, must-revalidate, no-transform" });
+  }
+
+  // users.messages.send (SF-118 JSON { raw, threadId }; SF-129 the upload endpoint): the message in the sender's
+  // mailbox, labelled SENT (and INBOX when sent to self), Bcc kept out of the stored headers, a given Message-ID kept.
+  private storeSent(s: FakeState, email: string, text: string, askedThread: unknown): Response {
+    const box = this.box(s, email);
+    const mime = parseMime(text);
+    const get = (n: string) => mime.headers.find((h) => h.name.toLowerCase() === n.toLowerCase())?.value ?? "";
+    const threadId = typeof askedThread === "string" && box.messages.some((x) => x.threadId === askedThread) ? askedThread : this.nextId(s);
+    const headers = mime.headers.filter((h) => h.name.toLowerCase() !== "bcc");
+    if (!get("Message-ID")) headers.push(header("Message-ID", `<fake-${randomBytes(8).toString("hex")}@mail.gmail.com>`));
+    const toSelf = [get("To"), get("Cc"), get("Bcc")].join(",").toLowerCase().includes(email);
+    const msg = this.add(s, email, {
+      threadId,
+      labelIds: toSelf ? ["SENT", "INBOX", "UNREAD"] : ["SENT"],
+      internalDate: String(this.now()),
+      payload: { ...mime.payload, headers },
+    });
+    s.attachmentData ??= {};
+    for (const x of mime.attachments) s.attachmentData[`${msg.id}/${x.attachmentId}`] = x.data;
+    if (get("Bcc")) (s.sentBcc ??= {})[msg.id] = get("Bcc");
+    return json(200, { id: msg.id, threadId: msg.threadId, labelIds: msg.labelIds });
+  }
+
+  // SF-129: the simple media upload of users.messages.send (contracts/google.md): uploadType=media, a message/* body of
+  // at most 36,700,160 bytes (413 above), the same scopes and switches as every Gmail call.
+  private upload(req: Request, url: URL, text: string): Response {
+    const m = /^\/upload\/gmail\/v1\/users\/([^/]+)\/messages\/send$/.exec(url.pathname);
+    if (!m || m[1] !== "me" || req.method !== "POST") return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");
+    if (url.searchParams.get("uploadType") !== "media") return gmailError(400, "INVALID_ARGUMENT", "Invalid uploadType", "invalidArgument");
+    if (!/^message\//i.test(req.headers.get("content-type") ?? "")) return gmailError(400, "INVALID_ARGUMENT", "Media type not accepted", "badContent");
+    if (Buffer.byteLength(text, "utf8") > MAX_UPLOAD_BYTES) return gmailError(413, "FAILED_PRECONDITION", "Request too large", "uploadTooLarge");
+    const auth = /^Bearer (.+)$/.exec(req.headers.get("authorization") ?? "")?.[1] ?? "";
+    return this.change((s) => {
+      const a = s.access[auth];
+      if (!a || a.dead || a.expires < this.now()) return gmailError(401, "UNAUTHENTICATED", "Request had invalid authentication credentials.", "authError");
+      if (!a.scopes.includes(MODIFY) && !a.scopes.includes(SEND)) return gmailError(403, "PERMISSION_DENIED", "Request had insufficient authentication scopes.", "insufficientPermissions");
+      if (text === "") return gmailError(400, "INVALID_ARGUMENT", "Missing message", "invalidArgument");
+      return this.storeSent(s, a.email, text, undefined);
+    });
+  }
+
+  // SF-129 (tests): the messages a user sent, as recipients read them (Bcc from the sender's own record of it).
+  sentMessages(email: string): SentMessage[] {
+    const s = this.state();
+    return this.sent(email).map((msg) => {
+      const hs = msg.payload.headers ?? [];
+      const get = (n: string) => hs.find((h) => h.name.toLowerCase() === n.toLowerCase())?.value ?? "";
+      const leaves: GmailPart[] = [];
+      (function walk(p: GmailPart) {
+        if (p.parts) p.parts.forEach(walk);
+        else leaves.push(p);
+      })(msg.payload);
+      const textPart = leaves.find((p) => p.mimeType === "text/plain" && !p.filename);
+      return {
+        id: msg.id,
+        threadId: msg.threadId,
+        from: get("From"),
+        to: get("To"),
+        cc: get("Cc"),
+        bcc: s.sentBcc?.[msg.id] ?? "",
+        subject: get("Subject"),
+        messageId: get("Message-ID"),
+        text: textPart?.body?.data ? Buffer.from(textPart.body.data, "base64url").toString("utf8") : "",
+        attachments: leaves
+          .filter((p) => p.filename)
+          .map((p) => ({ name: p.filename!, type: p.mimeType ?? "", bytes: Buffer.from(s.attachmentData?.[`${msg.id}/${p.body?.attachmentId}`] ?? "", "base64url") })),
+      };
+    });
   }
 
   private gmail(req: Request, url: URL, body: unknown): Response {
@@ -708,20 +820,7 @@ export class FakeGoogleMail {
       if (isSend) {
         const raw = (body as { raw?: unknown })?.raw;
         if (typeof raw !== "string" || raw === "") return gmailError(400, "INVALID_ARGUMENT", "Invalid raw", "invalidArgument");
-        const mime = parseMime(Buffer.from(raw, "base64url").toString("utf8"));
-        const get = (n: string) => mime.headers.find((h) => h.name.toLowerCase() === n.toLowerCase())?.value ?? "";
-        const asked = (body as { threadId?: unknown }).threadId;
-        const threadId = typeof asked === "string" && box.messages.some((x) => x.threadId === asked) ? asked : this.nextId(s);
-        const headers = mime.headers.filter((h) => h.name.toLowerCase() !== "bcc");
-        if (!get("Message-ID")) headers.push(header("Message-ID", `<fake-${randomBytes(8).toString("hex")}@mail.gmail.com>`));
-        const toSelf = [get("To"), get("Cc"), get("Bcc")].join(",").toLowerCase().includes(a.email);
-        const msg = this.add(s, a.email, {
-          threadId,
-          labelIds: toSelf ? ["SENT", "INBOX", "UNREAD"] : ["SENT"],
-          internalDate: String(this.now()),
-          payload: { partId: "", mimeType: mime.parts.length > 1 ? "multipart/alternative" : mime.parts[0]?.mimeType ?? "text/plain", filename: "", headers, body: { size: 0 }, parts: mime.parts },
-        });
-        return json(200, { id: msg.id, threadId: msg.threadId, labelIds: msg.labelIds });
+        return this.storeSent(s, a.email, Buffer.from(raw, "base64url").toString("utf8"), (body as { threadId?: unknown }).threadId);
       }
       return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");
     });

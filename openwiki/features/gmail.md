@@ -18,18 +18,22 @@ sources:
     resource: repo://vercel.json
   - id: openwiki-source-5e8222fa4f836ecb84cdb72d
     resource: repo://migrations/0019_calendar.sql
+  - id: openwiki-source-c57f900911a72e56fead03cd
+    resource: repo://migrations/0021_email_send.sql
   - id: openwiki-source-5f48a9b55cca47c928e3fea2
     resource: repo://src/server/calendar/sync.ts
   - id: openwiki-source-142c3db3613355a16ad2c16c
     resource: repo://src/server/crypto/seal.ts
+  - id: openwiki-source-e7e700e402f038488b8fa680
+    resource: repo://src/server/emails/compose.ts
   - id: openwiki-source-88f5ce2aae6df34b0e7bc3f8
     resource: repo://src/server/emails/process.ts
   - id: openwiki-source-505f917d9247b00a278f8a50
     resource: repo://src/server/gmail/past.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-26T18:09:57.686Z
-generated: { by: "claude-code", at: "2026-11-26T18:09:57.686Z" }
+    at: 2026-11-27T14:26:45.943Z
+generated: { by: "claude-code", at: "2026-11-27T14:26:45.943Z" }
 ---
 
 # Gmail connect and sync
@@ -124,6 +128,20 @@ Google Calendar both ways, in `src/server/calendar/`. A connection whose `scopes
 
 `sendGmail` in `send.ts` is the one way to send. It builds the MIME message (`buildMime` rejects CR/LF in headers) and
 fails with `GmailNotConnected`, `GmailNeedsReconnect` or `GmailUnavailable`. The Settings "send test email" action uses it.
+
+### Write an email from a record (SF-129)
+
+`[ WRITE EMAIL ]` in a record's timeline opens `?email=new` (`records/EmailOverlay.tsx`, `records/EmailBox.tsx`, a side
+panel). `src/server/emails/compose.ts` holds `emailBox` (Gmail state, From, default To, the record's own files, a fresh
+`sendKey`), `startEmailUpload` (computer files go straight to Storage, tracked in `email_uploads`) and
+`sendFromRecord`. The latter checks Gmail state and the pure `compose-rules.ts` validation, then claims a row in the
+`email_sends` ledger (`on conflict (user_id, send_key) do nothing`, so a second press sends nothing), reads attachments
+with `readObject` (`files/storage.ts`), sends through `sendGmail` (which takes `fromName`, `messageId` and `attachments`,
+builds `multipart/mixed`, and refuses over 36,700,160 bytes with `GmailTooLarge`), and stores the sent message. A failure
+before Gmail accepted the message deletes the claim. `storeMessage` in `sync.ts` calls `completePendingSend`, so the one
+manual link to the record written from and the ledger state `sent` are written by whichever of the send path or the sync
+stores the message first. The tables come from `migrations/0021_email_send.sql`; the server action is
+`records/email-actions.ts`. See [dataflow/DATAFLOW.md](../../dataflow/DATAFLOW.md) for the data movement.
 
 ## Modes and fakes
 

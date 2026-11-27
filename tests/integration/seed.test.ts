@@ -560,8 +560,9 @@ describe("fake Gmail (SF-118)", () => {
     };
     const first = await state();
     expect(first.c).toEqual({ state: "working", email: "ada@barnacle.ai", key: true });
-    expect(first.threads).toEqual(["Fake follow-up", "Fake intro call", "Fake proposal"]);
-    expect(first.messages).toBe(4);
+    // SF-129: the seeded email Ada Fake wrote from a fake deal ("Fake next steps") is the fourth conversation.
+    expect(first.threads).toEqual(["Fake follow-up", "Fake intro call", "Fake next steps", "Fake proposal"]);
+    expect(first.messages).toBe(5);
     expect(first.atts).toEqual([
       { name: "logo-fake.png", size: "18432" },
       { name: "notes-fake.txt", size: "1024" },
@@ -571,7 +572,7 @@ describe("fake Gmail (SF-118)", () => {
     const [linked] = await sql<{ unlinked: number; people: number }[]>`
       select (select count(*)::int from email_messages where linked_at is null) as unlinked,
              (select count(distinct conversation_id)::int from email_links where person_id is not null and not removed) as people`;
-    expect(linked).toEqual({ unlinked: 0, people: 3 });
+    expect(linked).toEqual({ unlinked: 0, people: 4 });
     expect(await runSeeders(sql)).toContain("already there Gmail conversations");
     expect(await state()).toEqual(first);
   });
@@ -587,6 +588,30 @@ describe("fake Gmail (SF-118)", () => {
     vi.stubEnv("CRON_SECRET", "a-cron-secret-of-16+");
     expect(await runSeeders(sql)).toContain("Gmail fake data skipped (real Gmail settings).");
     expect((await sql`select 1 from gmail_connections`).length).toBe(0);
+  });
+});
+
+// covers SF-129 FR-024 (T040): Ada Fake's one email written from a fake deal, sent through her fake Gmail, on the deal's
+// timeline by hand link; seeding again sends nothing more.
+describe("fake sent email (SF-129)", () => {
+  afterAll(() => vi.unstubAllEnvs());
+  it("one email from a fake deal to its main person, once", async () => {
+    vi.stubEnv("GMAIL_TOKEN_KEY", Buffer.alloc(32, 0x5a).toString("base64"));
+    vi.stubEnv("GMAIL_PUBSUB_TOPIC", "");
+    const { SEED_SEND_KEY } = await import("@/seed/sent-emails");
+    const lines = await runSeeders(sql);
+    expect(lines.some((l) => l.startsWith("1 sent email on the deal "))).toBe(true);
+    const state = async () =>
+      sql<{ subject: string; direction: string; state: string; deal_link: boolean }[]>`
+        select m.subject, m.direction, s.state,
+               exists (select 1 from email_links l join email_threads t on t.conversation_id = l.conversation_id
+                       where t.id = m.thread_id and l.deal_id = s.deal_id and l.how = 'manual') as deal_link
+        from email_sends s join email_messages m on m.id = s.message_id where s.send_key = ${SEED_SEND_KEY}`;
+    const first = await state();
+    expect(first).toEqual([{ subject: "Fake next steps", direction: "sent", state: "sent", deal_link: true }]);
+    expect(await runSeeders(sql)).toContain("already there sent email");
+    expect(await state()).toEqual(first);
+    expect((await sql`select count(*)::int as n from email_messages where subject = 'Fake next steps'`)[0].n).toBe(1);
   });
 });
 

@@ -98,11 +98,28 @@
   conversations of the spec (60 copied); `tests/integration/gmail-helpers.ts` `makePastPeople` makes their CRM people.
   Tests make parts of 10 threads with `setPastFetchPartForTests` (APP_ENV=test only). `/dev/fake-gmail` adds "Days ago",
   `[ PUT 100 PAST CONVERSATIONS ]`, `[ SLOW DOWN NEXT CALL ]` and `[ GMAIL UNREACHABLE: ON / OFF ]`.
+- Gmail API, SF-129 additions (writing an email from a record): `users.messages.send` through the simple media upload
+  (`POST /upload/gmail/v1/users/me/messages/send?uploadType=media`, `content-type: message/rfc822`, the RFC 5322 bytes as
+  the body), in the same fake and wrapper: `GmailFake` checks the upload against the method's `mediaUpload` in
+  `gmail-api.json` (path = `protocols.simple.path` with `{userId}`, `uploadType` media or multipart, the content type among
+  `accept` `message/*`, the body at most `maxSize` 36700160 bytes, every other query parameter declared for the method or at
+  the discovery's top level) and the answer against `Message`. The fake answers 400 for another `uploadType` or content type,
+  413 over 36,700,160 bytes, parses `multipart/mixed` (nested parts; attachment parts kept with an `attachmentId`, their
+  bytes in its state, served by `attachments.get`), keeps a given `Message-ID`, keeps `Bcc` out of the stored headers (kept
+  aside for tests), and `sentMessages(email)` gives `{ from, to, cc, bcc, subject, messageId, text, attachments: { name,
+  type, bytes } }`. The Settings test email goes through the upload path too. `down()` / `refuseKey(email)` / `tamper(fn)`
+  apply to it. Tested in `tests/unit/gmail-fake-schema.test.ts` (a wrong uploadType, content type, path, query parameter or
+  size throws) and `tests/integration/compose-*.test.ts`.
+- Supabase Storage, SF-129 additions: the whole-object read `GET /object/authenticated/{bucketName}/{*}` (no Range;
+  `readObject(path, size)`, 30 s) of each attachment, checked like every Storage call (a misspelt path or an undeclared
+  query parameter throws: `tests/unit/storage-fake.test.ts`); computer files for an email are signed uploads
+  (`email_uploads`), queued in `file_cleanup` for 24 hours and made due after sending (swept by `sweepFileCleanup`).
 - Google OAuth 2.0 token endpoint (SF-118, reused by SF-128: one fresh access token per part of a past-email fetch): the
   same fake, no public schema (RFC 6749 §5.1-§5.2, §6 and Google's "Using OAuth 2.0 for Web Server Applications":
   `invalid_grant` 400 for a revoked or refused refresh token, access tokens for one hour), checked by
   `tests/unit/gmail-fake-oauth.test.ts` and, per part, by `tests/integration/gmail-past-fetch.test.ts`.
-- Supabase Postgres (SF-128 table `past_email_fetches`, migration 0020): no fake and no public schema; the tests run on
+- Supabase Postgres (SF-128 table `past_email_fetches`, migration 0020; SF-129 tables `email_sends` / `email_uploads`,
+  migration 0021, checked by `tests/integration/compose-migration.test.ts`): no fake and no public schema; the tests run on
   the real local PostgreSQL 17 (`crm_test`, `start-postgres.sh`), migrations applied by `npm run db:migrate`.
 - Cloud Pub/Sub push (SF-118; Gmail's notices to `POST /gmail/push`): the same fake's `notice(email)` (a Google-signed
   OIDC token by the fake's RSA key, served at the certs URL) and `GmailFake.deliver(email)` (to `receiveGmailPush`, the
@@ -323,7 +340,8 @@
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
   `npm test` and `npm run typecheck`. No browser tests in the repo (docs/DECISIONS.md): the AI review drives the app with
-  the scenario scripts below.
+  the scenario scripts below. One component test (SF-129 `tests/unit/email-box-refused.test.tsx`) runs in `happy-dom`
+  (a dev dependency, set per file by `// @vitest-environment happy-dom`); nothing to install.
 - Manual run: `npm run db:migrate && npm run db:seed && npm run build && npm start` with
   `APP_ENV=development DATABASE_URL=postgres://postgres@localhost:5432/crm_dev FIRST_ADMIN_EMAIL=ada@barnacle.ai`,
   then open http://localhost:3000 and use `[ FAKE GOOGLE LOGIN ]`.
@@ -765,6 +783,33 @@
     user is Grace (Alan is deactivated in the seed). `.factory/run/sf128-ctl.ts` (`npx tsx`, env in its head comment) adds
     conversations with days ago or an exact date (`add`), newsletter pads (`pad`), empties a fake mailbox (`clear`) and
     lists it (`box`). US2 1 and edge 8 see parts of 100 threads (10 only in the automated tests).
+  - SF-129 AI review (write an email from a record, all 42 scenarios, ~8 min): fresh data `rm -rf .fake-gmail .fake-storage &&
+    bash .factory/run/reset-db.sh && /usr/lib/postgresql/17/bin/psql -h localhost -U postgres -d crm_dev -f .factory/run/sf129-setup.sql`
+    (Fake Org Ltd with Ana Fake (ana@example.test first, ana.k@example.test), main person of the open "Fake Deal Ltd renewal";
+    Ben Fake (no organisation, no deal); Zed Drawer / "Zed drawer deal" (the drawer); Pia Private (Ada's private) / "Pia deal";
+    Gia Hidden (Grace's private) / "HiddenPerson deal"; Una Unsub (unsubscribed) / "Una deal"; Fio Files / "Files deal"; Lex Later
+    (Last contacted 1 Jun 2027); "NoPerson deal", "NoEmail deal" (Nemo Noemail), "Arch deal" + Ari Archme + Arch Org Ltd (archived
+    while a box is open), "Hide deal" (Linus's, made private), "Delete deal", "Later arch deal", "Later del deal" (Del Deleteme),
+    "Unlink deal", Lone Org Ltd). The app on :3000 (`start-app.sh`) and the Gmail-off app on :3003
+    (`PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh`, US4 4). Then
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf129-a.js` (US1, US2 1-7, US5, edges 4-6, 8, 10, 12) and
+    `… scenarios-sf129-b.js` on the same data (US2 8, US3, US4, edges 1-3, 7, 9, 11, 13-16; edge 14 recipient names (Lone Org Ltd, Grace's private Gia unnamed), edge 15 deactivates Ada Fake, last;
+    `ONLY="Edge case 7,US2 scenario 8"` runs some, part a's US2 4 must have run before US2 8). Helpers `sf129-lib.js` (its `pageAs`
+    signs in with the full name: the free-form fake login otherwise renames Ada to "ada"); `sf129-ctl.ts sent <email>` prints the
+    fake Sent mail through `FakeGoogleMail.sentMessages` (To/Cc/Bcc, text, attachments with size and sha256). The record-file picker
+    is a closed `<details>` (open its summary before reading) and the panel shows names upper-cased. Edge 7 holds the send path 8 s
+    with a `pg_sleep` trigger on `email_sends` and calls `/cron/gmail` meanwhile; edge 11 makes storing fail with a trigger on
+    `email_messages` (subject "Not recorded"), dropped before the next 15-minute check; both on "NoPerson deal" (no automatic link,
+    so the hand link is what puts it there). Teammates' archive / make-private are done by SQL; deletes through Grace's UI.
+    Round 1: 39 of 42 pass; US2 1 (recipients line shows addresses, not CRM names), US3 3 (an over-the-limit file is not kept and
+    [ SEND ] then sends; a record file over the limit shows no message until [ SEND ]), US4 3 (the typed fields are replaced by
+    the reconnect message) fail.
+    Round 2 (scenario list renumbered: edge 14 recipient names is new, deactivated sender is 15, archived/deleted later is 16;
+    part A's header checks read the bare address of "Name <address>"): 42 of 43 pass; US4 3 fails: `EmailBox` takes the
+    opening Gmail state from the `box` prop, and the `router.refresh()` after a key refusal re-renders it as `needs_reconnect`,
+    so `panelView` turns to "message" and the typed fields go.
+    Round 3 (after fix round 2): same commands, fresh data; 43 of 43 pass (US4 3 keeps the subject and text after the key
+    refusal and the refresh; sidebar "SETTINGS!").
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432

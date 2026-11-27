@@ -38,7 +38,7 @@ function settings() {
 }
 
 // One server call with the key; errors that mean "not reachable" become StorageUnreachable.
-async function call(route: string, init: { method: string; body?: string; headers?: Record<string, string> }) {
+async function call(route: string, init: { method: string; body?: string; headers?: Record<string, string> }, timeoutMs = TIMEOUT_MS) {
   const c = settings();
   let res: Response;
   try {
@@ -51,7 +51,7 @@ async function call(route: string, init: { method: string; body?: string; header
         ...(init.body !== undefined ? { "content-type": "application/json" } : {}),
         ...init.headers,
       },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
     // fetch rejects with a TypeError on a network error and a DOMException on a time-out; anything else is a bug.
@@ -107,6 +107,26 @@ export async function readHead(path: string, n: number): Promise<Uint8Array> {
     await reader.cancel().catch(() => {});
   }
   return out.subarray(0, got);
+}
+
+// SF-129 (contracts/google.md § Storage): the whole object, for an email attachment; 30 s. Null when Storage has no such
+// object or its length is not `size` (the file is then "no longer there"); StorageUnreachable on a network error, a
+// time-out or a 5xx (also while the body is read).
+export const READ_OBJECT_TIMEOUT_MS = 30_000;
+export async function readObject(path: string, size: number): Promise<Uint8Array | null> {
+  const { res } = await call(`/object/authenticated/${bucketOf()}/${path}`, { method: "GET" }, READ_OBJECT_TIMEOUT_MS);
+  if (res.status !== 200) {
+    await res.body?.cancel();
+    if (res.status === 400 || res.status === 404) return null;
+    throw new StorageUnreachable(res.status);
+  }
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await res.arrayBuffer());
+  } catch (e) {
+    throw new StorageUnreachable(e);
+  }
+  return bytes.length === size ? bytes : null;
 }
 
 // A 60-second read address for one object; with `download`, Storage answers it as an attachment under that name.

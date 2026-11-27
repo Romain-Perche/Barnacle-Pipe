@@ -228,13 +228,15 @@ export async function cleanupPathsFor(db: Sql, target: FileTarget): Promise<void
     on conflict do nothing`;
 }
 
-// research.md §8: pending uploads older than 2 hours join the list; up to 50 due paths are claimed (pushed 10 minutes
+// research.md §8 (SF-129: and email uploads older than 24 hours are forgotten): pending uploads older than 2 hours join the list; up to 50 due paths are claimed (pushed 10 minutes
 // ahead, committed), then removed from Storage: done rows go, failed ones count an attempt. Never throws.
 export async function sweepFileCleanup(): Promise<void> {
   try {
     await sql`
       with old as (delete from file_uploads where created_at < now() - make_interval(hours => ${UPLOAD_HOURS}) returning storage_path)
       insert into file_cleanup (storage_path) select storage_path from old on conflict do nothing`;
+    // SF-129: a computer file kept for an email is gone after 24 hours (its path was queued for then at upload).
+    await sql`delete from email_uploads where created_at < now() - interval '24 hours'`;
     const claimed = await sql<{ storage_path: string }[]>`
       update file_cleanup set due_at = now() + interval '10 minutes'
       where storage_path in (select storage_path from file_cleanup where due_at <= now() order by due_at limit ${SWEEP_BATCH} for update skip locked)

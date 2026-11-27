@@ -9,7 +9,9 @@ const CODES = ["person_deleted", "organisation_deleted", "person_no_longer_visib
   // SF-119: a deleted campaign draft (its name from the database) and a draft another user deleted.
   "campaign_deleted", "campaign_gone",
   // SF-118: the Gmail notices shown once on Settings (`name`: the user's own address for gmail_test_sent, else empty).
-  "gmail_connected", "gmail_reconnected", "gmail_disconnected", "gmail_test_sent"] as const;
+  "gmail_connected", "gmail_reconnected", "gmail_disconnected", "gmail_test_sent",
+  // SF-129: "Email sent to …" (`name`: the first addresses sent to, from the server's copy; `count`: all of them).
+  "email_sent"] as const;
 export type FlashCode = (typeof CODES)[number];
 // `count`: people handed over, `deals`: deals handed over (handed_over only). `detail`: the refusal code of a
 // custom_choice_error (SF-115: a choice change refused in the custom field box; `name` is the choice typed).
@@ -38,6 +40,7 @@ function render(code: FlashCode, name: string, count: unknown, deals: unknown = 
     return templates.handed_over(name, count, deals);
   }
   if (code === "gmail_test_sent") return templates.gmail_test_sent(name);
+  if (code === "email_sent") return isCount(count) && name !== "" ? templates.email_sent(name, count) : undefined;
   if (code === "gmail_connected" || code === "gmail_reconnected" || code === "gmail_disconnected") return messages[code];
   return templates[code](name);
 }
