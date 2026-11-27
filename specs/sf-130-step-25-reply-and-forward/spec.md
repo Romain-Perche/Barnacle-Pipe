@@ -8,6 +8,14 @@
 
 **Input**: User description: "Step 25 - Reply and forward. [ REPLY ], [ REPLY ALL ] and [ FORWARD ] on each email of a conversation (`docs/PRODUCT.md` section 3: "Compose, reply and forward from a deal or contact. Emails go from the user's own address and stay in the same thread"), on the conversation page of SF-127 and on each EMAIL entry of a timeline. They open SF-129's email box (the panel on the right), with everything that box already does: recipients named as the sender's CRM people, attachments up to 25 MB in total, the box kept after a refused Gmail key, a double press sending once. Reply: To holds the email's sender (for an email the user sent, its To); Subject "Re: <subject>" (never "Re: Re:"). Reply all: To and Cc also hold the email's other recipients, without the user's own address. Forward: To empty; Subject "Fwd: <subject>"; the email's attachments are included (fetched from Gmail as SF-127's downloads are) and can be removed. The earlier email is quoted below the text as plain text ("On <date>, <name> wrote:" then its lines starting with "> "; a forward with the usual "Forwarded message" block of From, Date, Subject and To). Sent from the user's own Gmail through SF-129's send, with the In-Reply-To and References headers, so recipients see it in the same conversation, even when the conversation was copied from a colleague's mailbox; when the user's own mailbox holds the conversation, it also stays in the same Gmail thread for them. In the CRM it is added to the same conversation at once, with its links (no new conversation), and shows as an EMAIL entry on every timeline the conversation is on. The buttons show only to users who can see the conversation (SF-127's rule) and have Gmail connected (otherwise the link to connect Gmail, as in SF-129). Gmail is faked in tests."
 
+## Clarifications
+
+### Session 2026-11-27
+
+- Q: Which design? → A: Design: B, small framed `[ REPLY ]` `[ REPLY ALL ]` `[ FORWARD ]` buttons at the right of each email's top line: the "sender → recipients" line of a timeline EMAIL entry, the To line under the sender and date on the conversation page (see `design-options.html`; the Reply and Forward boxes are SF-129's panel as drawn in its shared part).
+- Q: What does a user without a working Gmail connection see on each email? → A: No buttons; one link to Settings in their place: "[ CONNECT GMAIL TO REPLY ]", or "[ RECONNECT GMAIL TO REPLY ]" while Gmail needs reconnecting (A).
+- Q: Can the user change the quoted earlier email in the box? → A: No: the quote shows read-only under the text and is always sent (A).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Reply to an email from its conversation or its timeline entry (Priority: P1)
@@ -27,6 +35,8 @@ A team member reads an email from a contact, on the deal's timeline or on SF-127
 5. **Given** an email whose subject already starts with "Re:" (in any letter case, for example "RE: Pricing" or "Re: Re: Pricing"), **When** the user presses `[ REPLY ]`, **Then** the Subject is the earlier subject unchanged, never "Re: Re: …"; an email with no subject gives "Re: (no subject)".
 6. **Given** a reply box filled in, **When** the user closes it with `[ CANCEL ]` or the close button, **Then** nothing is sent and no timeline gains an entry.
 7. **Given** a reply sent, **When** the sent message is opened on the fake mailbox page, **Then** it shows In-Reply-To with the earlier email's Message-ID and References with the Message-IDs of the conversation's emails up to and including it, oldest first (what makes Ana Fake's mail app show it in the same conversation).
+
+8. **Given** a connected user who can see a conversation of two emails, **When** they open a timeline showing its EMAIL entries and then its conversation page, **Then** each EMAIL entry shows `[ REPLY ]`, `[ REPLY ALL ]` and `[ FORWARD ]` as small framed buttons at the right of its "sender → recipients" line, and each of the two emails on the conversation page shows them at the right of its To line.
 
 ---
 
@@ -131,8 +141,8 @@ A user who can see the conversation but has no working Gmail connection does not
 
 **Buttons**
 
-- **FR-001**: Each email on SF-127's conversation page and each EMAIL entry on a timeline (deal page, deal drawer, person page, organisation page) MUST show `[ REPLY ]`, `[ REPLY ALL ]` and `[ FORWARD ]` to a signed-in active user who can see the conversation (SF-127's rule) and has a working Gmail connection, except on the timelines of archived records.
-- **FR-002**: A user who can see the conversation but has no Gmail connection MUST see "[ CONNECT GMAIL TO REPLY ]" in place of the three buttons, and one whose connection needs reconnecting "[ RECONNECT GMAIL TO REPLY ]", each a link to Settings; when Gmail is off for the app, neither buttons nor link are shown.
+- **FR-001**: Each email on SF-127's conversation page and each EMAIL entry on a timeline (deal page, deal drawer, person page, organisation page) MUST show `[ REPLY ]`, `[ REPLY ALL ]` and `[ FORWARD ]` to a signed-in active user who can see the conversation (SF-127's rule) and has a working Gmail connection, except on the timelines of archived records. Design B: they are small framed buttons at the right of the email's top line (the "sender → recipients" line of an EMAIL entry; the To line under the sender and date on the conversation page).
+- **FR-002**: A user who can see the conversation but has no Gmail connection MUST see "[ CONNECT GMAIL TO REPLY ]" in place of the three buttons, and one whose connection needs reconnecting "[ RECONNECT GMAIL TO REPLY ]", each a link to Settings in the same place; when Gmail is off for the app, neither buttons nor link are shown.
 - **FR-003**: Each button MUST open SF-129's email box (the right-side panel, design B) for that email, headed "// REPLY", "// REPLY ALL" or "// FORWARD" then "· <subject of the email>", and closing or sending MUST return to the same page (and the same open drawer).
 
 **Filling the box**
@@ -187,9 +197,9 @@ A user who can see the conversation but has no working Gmail connection does not
 
 ## Assumptions
 
-- The buttons sit on each email (the conversation page lists several, a timeline EMAIL entry is one email); their exact place and look follow `docs/DESIGN.md` and SF-127's design, and may be chosen in a design step (decided by the factory, to confirm).
-- Without a working Gmail connection the three buttons are replaced by one link to Settings per email rather than opening a box that cannot send (reading of "otherwise the link to connect Gmail"; decided by the factory, to confirm).
-- The quote is shown read-only below the text area and always sent; the user cannot edit or remove it in this issue (decided by the factory, to confirm). Its date reads like "27 Nov 2026 at 14:05" in UK time.
+- The buttons follow design B of `design-options.html` (clarified 2026-11-27) with `docs/DESIGN.md` and SF-127's design B.
+- Without a working Gmail connection the three buttons are replaced by one link to Settings per email (clarified 2026-11-27); opening a reply address directly still shows SF-129's message in the box.
+- The quote is shown read-only below the text area and always sent; the user cannot edit or remove it (clarified 2026-11-27). Its date reads like "27 Nov 2026 at 14:05" in UK time.
 - The "reply to" address of an email is its sender (From); a Reply-To header is not stored by SF-118 and is not used (decided by the factory, to confirm).
 - Forward includes all the earlier email's attachments, removable; the forwarded block lists From, Date, Subject and To only (as requested), not Cc.
 - A forward also carries the threading headers and joins the same conversation, as the request says for everything sent from these buttons.

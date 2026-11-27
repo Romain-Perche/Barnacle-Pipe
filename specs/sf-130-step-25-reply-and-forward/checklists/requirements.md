@@ -32,4 +32,4 @@
 ## Notes
 
 - In-Reply-To / References headers and Gmail threads are named because the user request names them: they are the observable outcome ("recipients see it in the same conversation"), not an implementation choice.
-- Four choices are recorded in Assumptions as "decided by the factory, to confirm" instead of clarification markers: button placement, the Settings link replacing the buttons without Gmail, a read-only quote, and From (not Reply-To) as the reply address. Good candidates for `/speckit-clarify`.
+- Clarified 2026-11-27: design B for the buttons, a Settings link in place of the buttons without Gmail, a read-only quote. Still a factory assumption: From (not Reply-To) as the reply address.
