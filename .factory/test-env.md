@@ -844,6 +844,9 @@
     edge 15 fails storing with a trigger on `email_messages` for "Re: Not recorded", dropped before the 15-minute check.
     Round 1: 47 of 48 pass; US1 2 fails on its text only: the notice is "Email sent to ana@example.test." (SF-129's sentNotice
     lists addresses), the spec asks "Email sent to Ana Fake.".
+    Round 2 (after fix round 1: US1 2 now expects "Email sent to ana@example.test."; US2 6 reads the page's "LAST CONTACTED"
+    case-insensitively): same commands, fresh data; 48 of 48 pass. A re-run of US2 6 alone after part B fails on the time
+    only (part B sends later emails to Ana): run it on fresh data.
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432

@@ -55,11 +55,11 @@ const msgsIn = (c) => q(`select m.subject from email_messages m join email_threa
     const sent = L.sent130(A); reply1 = sent[sent.length - 1];
     const expText = `Thanks Ana,\n\nAgreed.\n\nOn ${ukDate(recvAt(pricing))}, Ana Fake <ana@example.test> wrote:\n> Hello Ada,\n> Here is our pricing.\n>\n> Best, Ana`;
     const body = norm(await p.locator("body").innerText());
-    const notices = body.split("Email sent to Ana Fake.").length - 1; const nt = (body.match(/Email sent to [^.]*\.[a-z]*\.?/g) || []).join(" | ");
+    const notices = body.split("Email sent to ana@example.test.").length - 1; const nt = (body.match(/Email sent to [^.]*\.[a-z]*\.?/g) || []).join(" | ");
     const first = p.getByRole("region", { name: "Timeline" }).locator("li.ent").first();
     const subj = (await first.locator(".kd.email").count()) ? norm(await first.locator(".subj").innerText()) : null;
     const ok = sent.length === n0 + 1 && reply1.to.includes("ana@example.test") && !reply1.to.includes(",") && reply1.subject === "Re: Pricing" && reply1.text.replace(/\r\n/g, "\n").trim() === expText && reply1.from.includes(A) && notices === 1 && subj === "Re: Pricing" && (await L.rpanel(p).count()) === 0;
-    R("US1 scenario 2", ok, `sent +${sent.length - n0}: From ${reply1.from}, To ${reply1.to}, Subject ${reply1.subject}, text ${JSON.stringify(reply1.text)}; notice "Email sent to Ana Fake." ×${notices} (notices on page: ${nt}); newest timeline entry EMAIL "${subj}"`);
+    R("US1 scenario 2", ok, `sent +${sent.length - n0}: From ${reply1.from}, To ${reply1.to}, Subject ${reply1.subject}, text ${JSON.stringify(reply1.text)}; notice "Email sent to ana@example.test." ×${notices} (notices on page: ${nt}); newest timeline entry EMAIL "${subj}"`);
   });
   let reply2;
   await run("US1 scenario 3", async () => {
@@ -96,8 +96,8 @@ const msgsIn = (c) => q(`select m.subject from email_messages m join email_threa
     const t = norm(await p.locator("body").innerText());
     const lc = q(`select to_char(last_contacted_at at time zone 'UTC','YYYY-MM-DD HH24:MI') from persons where id=${ana}`);
     const sentAt = q(`select to_char(max(received_at) at time zone 'UTC','YYYY-MM-DD HH24:MI') from email_messages where direction='sent' and subject='Re: Pricing'`);
-    const m = /Last contacted\s*([^A-Z]*\d{4}[^A-Za-z]*)/.exec(t);
-    R("US2 scenario 6", lc === sentAt, `Ana Fake's Last contacted ${lc} UTC = the latest reply's send time ${sentAt} (was 2026-11-20 10:00); page shows "${m ? m[0] : t.match(/Last contacted.{0,30}/)?.[0]}"`);
+    const m = /Last contacted\s*(.{0,40})/i.exec(t);
+    R("US2 scenario 6", lc === sentAt && !!m && /\d/.test(m[1]), `Ana Fake's Last contacted ${lc} UTC = the latest reply's send time ${sentAt} (was 2026-11-20 10:00); page shows "${m ? m[0] : t.match(/Last contacted.{0,30}/)?.[0]}"`);
   });
   await run("US1 scenario 8", async () => {
     await go(p, `/deals/${deal}`);

@@ -427,7 +427,7 @@ const tlCount = async (p, path, subj) => (await L.emailEntries(p, path)).filter(
     await L.runCheck(p, A);
     const after = msgCount(c), rows = Number(q(`select count(*) from email_messages where subject='Re: Not recorded'`));
     const inConv = rows > 0 && Number(q(`select count(*) from email_messages m join email_threads t on t.id=m.thread_id where m.subject='Re: Not recorded' and t.conversation_id=${c}`)) === rows;
-    R("Edge case 15", notice && before === 1 && after === 2 && rows === 1 && inConv, `"Email sent to Ana Fake." ${notice}; conversation emails ${before} (storing failed) → ${after} after the 15-minute check; copies ${rows}, in the same conversation ${inConv}`);
+    R("Edge case 15", notice && before === 1 && after === 2 && rows === 1 && inConv, `"Email sent to …" ${notice}; conversation emails ${before} (storing failed) → ${after} after the 15-minute check; copies ${rows}, in the same conversation ${inConv}`);
   });
   await run("Edge case 17", async () => {
     const zd = L.recId("deal", "Zed drawer deal");
