@@ -229,7 +229,32 @@ The AI review (2026-11-27) found four problems: three are the build not doing wh
 
 Files: `src/server/emails/compose.ts`, `src/server/emails/compose-rules.ts`, `src/server/gmail/rules.ts` (`MimeInput`,
 `buildMime`), `src/app/(app)/records/EmailBox.tsx`, `docs/DECISIONS.md`, `AGENTS.md` (one clause: recipient names),
-the tests of T045. No migration, no new dependency, no new outside service.
+the tests of T045. No migration, no new dependency (fix round 2 adds `happy-dom`, tests only), no new outside service.
+
+## Fix round 2
+
+The AI review (2026-11-27, after fix round 1) found one problem: US4 scenario 3 (FR-008, SC-006) still fails.
+
+- *Problem*: when Google refuses the Gmail key at send time, the box shows the reconnect message and the Settings link,
+  but the To, Subject and text fields and the attachments disappear. What the user typed is no longer shown.
+- *Cause*: fix round 1 made the pure `panelView(opened, refused)` right, but `EmailBox` passes `box.gmail` (the prop) as
+  `opened`. After a `gmail` answer, `router.refresh()` (kept for the sidebar "!") re-renders the page, the server now reads
+  the connection as `needs_reconnect`, and the new `box` prop gives `panelView("needs_reconnect", "needs_reconnect")` =
+  "message". The integration test mocks `router.refresh()` as a no-op, so the prop never changed in the tests.
+- *Fix*: `EmailBox` keeps the Gmail state it opened with in client state: `const [opened] = useState(box.gmail)`, and uses
+  `opened` (never `box.gmail`) for `panelView` and for the message (`refusedBy ?? opened`). A later prop change does not
+  change the view: a box that opened with a working connection keeps its form until it closes. The `sendKey` and the
+  offered files already come from the first render's state or are unchanged by the refresh; no other prop decides the view.
+  `router.refresh()` stays. No spec change: US4 scenario 3 already says what the user gets.
+- *Test*: a component test that renders the real `EmailBox` in a browser-like DOM (`happy-dom`, dev dependency, set for
+  that one test file only with `// @vitest-environment happy-dom`; the other tests stay on `node`). The mocked
+  `sendEmailFromRecord` answers `{ status: "gmail", state: "needs_reconnect" }`, and the mocked `router.refresh()`
+  re-renders the box with `box.gmail = "needs_reconnect"`, as the real refresh does. It fails on the current code (the
+  subject input is gone) and passes after the fix.
+
+Files: `src/app/(app)/records/EmailBox.tsx`, `tests/unit/email-box-refused.test.tsx` (new), `package.json` /
+`package-lock.json` (`happy-dom` dev dependency), `vitest.config.ts` (`include` also takes `tests/unit/**/*.test.tsx`). No
+migration, no new outside service.
 
 ## Outside services
 

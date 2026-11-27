@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "name": "happy-dom",
+    "version": "21.0.4",
+    "manager": "npm",
+    "why": "devDependency for the tests only: a browser-like page for one test of the email box (the box must keep what was typed after Google refuses the Gmail key and the page refreshes). The other tests stay without it. Writing a DOM by hand is not a few lines. It is never in the app bundle."
+  }
+]

@@ -451,6 +451,25 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 - [x] T051 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test
   DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; all green.
 
+## Fix round 2 (AI review 2026-11-27, plan.md § Fix round 2)
+
+- [ ] T052 Write the failing test first. Add `happy-dom` 21.0.4 as a dev dependency; `vitest.config.ts` `include` also takes
+  `tests/unit/**/*.test.tsx`. `tests/unit/email-box-refused.test.tsx`
+  (`// @vitest-environment happy-dom`; `// covers US4 scenario 3, FR-008, SC-006`): mock `next/navigation` (`useRouter`
+  whose `refresh()` re-renders the box with the same props but `box.gmail = "needs_reconnect"`, as the real refresh does
+  after the server marks the connection), `next/link` (a plain `<a>`) and `@/app/(app)/records/email-actions`
+  (`sendEmailFromRecord` resolves `{ status: "gmail", state: "needs_reconnect" }`). Render `EmailBox` with React 19
+  `createRoot` inside `act()`, a box opened with `gmail: "ok"`, To `ana@example.test`, one offered record file. Type a
+  subject "Next steps" and a text "Hi Ana", attach the record file, add Cc `ben@example.test`, submit the form. Check
+  after the refresh re-render: the subject input value is "Next steps", the text is "Hi Ana", the To and Cc chips and the
+  attached file are still there, the reconnect message and a link to `/settings` are shown, no `[ SEND ]` button. A
+  second case: a box opened with `gmail: "needs_reconnect"` shows the message only, no subject input (US4 scenario 2
+  unchanged). The first case fails now (no subject input after the refresh).
+- [ ] T053 `src/app/(app)/records/EmailBox.tsx`: `const [opened] = useState(box.gmail)`; `panelView(opened, refusedBy)` and
+  the message state `refusedBy ?? opened`; nothing else reads `box.gmail`. `router.refresh()` stays (the sidebar "!").
+- [ ] T054 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test
+  DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; all green, T052 included.
+
 ## Dependencies & Execution Order
 
 - **T000** first: the plan is written against main with SF-127.
@@ -482,7 +501,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ## Notes
 
-- **Task count**: 50 (T000–T051; fix round 1 adds T045–T051; T028 and T029 were removed in the re-plan on SF-127: SF-127 does their work).
+- **Task count**: 53 (T000–T054; fix round 1 adds T045–T051, fix round 2 T052–T054; T028 and T029 were removed in the re-plan on SF-127: SF-127 does their work).
   - Setup 4 (T000–T003), Foundational 10.
   - US1 11, US2 3, US3 6, US4 2, US5 2.
   - Polish 5.
