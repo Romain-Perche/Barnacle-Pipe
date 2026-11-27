@@ -9,7 +9,7 @@ const parts = new Intl.DateTimeFormat("en-GB", {
   hourCycle: "h23",
 });
 
-function ukParts(date: Date): Record<string, string> {
+export function ukParts(date: Date): Record<string, string> {
   return Object.fromEntries(parts.formatToParts(date).map((x) => [x.type, x.value]));
 }
 

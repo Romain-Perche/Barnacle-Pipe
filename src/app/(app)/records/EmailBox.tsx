@@ -8,6 +8,10 @@
 // The size message shows for as long as the attachments are over 25 MB in total; only a single computer file over
 // 25 MB is refused when picked.
 // Everything typed or read from the database is rendered as text nodes.
+// SF-130: the same box for a reply, reply all or forward (box.reply): its heading, To / Cc / Subject prefilled (chips
+// show the CRM name of an address, the address in `title`), the quote read-only under the text (never sent back: the
+// server rebuilds it), the forwarded attachments as removable chips counted in the 25 MB, the record files only when a
+// record is set, its footer, [ SEND ] through sendEmailReply. `missing`: email_not_found and [ CLOSE ] only.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
@@ -17,7 +21,7 @@ import { validateFile } from "@/server/files/rules";
 import { formatFileSize } from "@/server/format";
 import { messages, templates } from "@/server/messages";
 import { put } from "./AddFiles";
-import { sendEmailFromRecord, startEmailUpload } from "./email-actions";
+import { sendEmailFromRecord, sendEmailReply, startEmailUpload } from "./email-actions";
 
 type Field = "to" | "cc" | "bcc";
 type Upload = { id: number; name: string; size: number };
@@ -32,8 +36,8 @@ function refusalText(r: Refusal): string {
   return r.code === "compose_address_invalid" ? templates.compose_address_invalid(r.address ?? "") : messages[r.code];
 }
 
-function Addresses({ label, list, draft, onDraft, onAdd, onRemove }: {
-  label: string; list: string[]; draft: string; onDraft: (v: string) => void; onAdd: (text: string) => void; onRemove: (i: number) => void;
+function Addresses({ label, list, names, draft, onDraft, onAdd, onRemove }: {
+  label: string; list: string[]; names: Record<string, string>; draft: string; onDraft: (v: string) => void; onAdd: (text: string) => void; onRemove: (i: number) => void;
 }) {
   const keyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (["Enter", ",", ";", " "].includes(e.key)) {
@@ -50,8 +54,8 @@ function Addresses({ label, list, draft, onDraft, onAdd, onRemove }: {
       <span className="k">{label}</span>
       <div className="fld chips">
         {list.map((a, i) => (
-          <span key={`${a}-${i}`} className="chip">
-            {a}
+          <span key={`${a}-${i}`} className="chip" title={names[a.toLowerCase()] ? a : undefined}>
+            {names[a.toLowerCase()] ?? a}
             <button type="button" className="chip-x" aria-label={`Remove ${a}`} onClick={() => onRemove(i)}>
               ×
             </button>
@@ -78,9 +82,10 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
   const [opened] = useState(box.gmail);
   const input = useRef<HTMLInputElement>(null);
   const [refusedBy, setRefusedBy] = useState<Exclude<GmailState, "ok"> | null>(null);
-  const [fields, setFields] = useState<Record<Field, string[]>>({ to: box.to, cc: [], bcc: [] });
+  const [fields, setFields] = useState<Record<Field, string[]>>({ to: box.to, cc: box.cc, bcc: [] });
   const [drafts, setDrafts] = useState<Record<Field, string>>({ to: "", cc: "", bcc: "" });
-  const [subject, setSubject] = useState("");
+  const [subject, setSubject] = useState(box.reply?.subject ?? "");
+  const [forwarded, setForwarded] = useState(box.reply?.forwarded ?? []);
   const [text, setText] = useState("");
   const [fileIds, setFileIds] = useState<number[]>([]);
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -89,7 +94,7 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
   const [pending, setPending] = useState(false);
 
   const files = fileIds.map((id) => box.files.find((f) => f.id === id)!).filter(Boolean);
-  const used = totalBytes([...files.map((f) => f.size), ...uploads.map((u) => u.size)]);
+  const used = totalBytes([...forwarded.map((f) => f.size), ...files.map((f) => f.size), ...uploads.map((u) => u.size)]);
   const offered = box.files.filter((f) => !fileIds.includes(f.id));
   const over = overAttachmentLimit(used);
   const view = panelView(opened, refusedBy);
@@ -142,10 +147,16 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
     // Over 25 MB: the size message is already shown; nothing is sent (the server checks again).
     if (over) return;
     setPending(true);
-    const answer = await sendEmailFromRecord({
-      target: box.record.kind, id: box.record.id, sendKey: box.sendKey, ...all, subject, text,
-      fileIds, uploadIds: uploads.map((u) => u.id), back,
-    }).catch(() => null);
+    const common = { sendKey: box.sendKey, ...all, subject, text, fileIds, uploadIds: uploads.map((u) => u.id), back };
+    const answer = await (box.reply
+      ? sendEmailReply({
+          mode: box.reply.mode, messageId: box.reply.messageId, record: box.record ? { target: box.record.kind, id: box.record.id } : null,
+          forwardIds: forwarded.map((f) => f.id), ...common,
+        })
+      : box.record
+        ? sendEmailFromRecord({ target: box.record.kind, id: box.record.id, ...common })
+        : Promise.reject(new Error("no record"))
+    ).catch(() => null);
     setPending(false);
     if (!answer) return setErrors([messages.compose_send_failed]);
     if (answer.status === "sent") {
@@ -163,9 +174,7 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
 
   const heading = (
     <div className="hd">
-      <span>
-        {messages.compose_heading} · {box.record.name.toUpperCase()}
-      </span>
+      <span>{box.reply ? box.reply.heading : box.record ? `${messages.compose_heading} · ${box.record.name.toUpperCase()}` : messages.compose_heading}</span>
       <Link className="btn" href={back} scroll={false}>
         {messages.compose_close}
       </Link>
@@ -174,9 +183,14 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
 
   return (
     <div className="overlay sideoverlay">
-      <section className="sidepanel" role="dialog" aria-modal="true" aria-label="New email">
+      <section className="sidepanel" role="dialog" aria-modal="true" aria-label={box.reply ? "Reply" : "New email"}>
         {heading}
-        {gmail !== "ok" && (
+        {box.missing && (
+          <p className="notice warn" role="alert">
+            {messages.email_not_found}
+          </p>
+        )}
+        {!box.missing && gmail !== "ok" && (
           <>
             <p className="notice warn" role="alert">
               {GMAIL_TEXT[gmail]}
@@ -188,7 +202,7 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
             )}
           </>
         )}
-        {view !== "message" && (
+        {!box.missing && view !== "message" && (
           <form
             className="emailform"
             onSubmit={(e) => {
@@ -204,6 +218,7 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
                   key={f}
                   label={f === "to" ? "To" : f === "cc" ? "Cc" : "Bcc"}
                   list={fields[f]}
+                  names={box.names}
                   draft={drafts[f]}
                   onDraft={(v) => setDrafts((d) => ({ ...d, [f]: v }))}
                   onAdd={(raw) => add(f, raw)}
@@ -218,10 +233,26 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
                 Text
               </label>
               <textarea id="email-text" className="fld big" value={text} onChange={(e) => setText(e.target.value)} rows={12} />
+              {box.reply && (
+                <>
+                  <span className="k">{messages.reply_quote_label}</span>
+                  <pre className="quote" aria-label={messages.reply_quote_label}>
+                    {box.reply.quote}
+                  </pre>
+                </>
+              )}
             </div>
             <div className="k attach-k">Attachments</div>
-            {(files.length > 0 || uploads.length > 0) && (
+            {(forwarded.length > 0 || files.length > 0 || uploads.length > 0) && (
               <ul className="attachlist">
+                {forwarded.map((f) => (
+                  <li key={`w-${f.id}`} className="chip">
+                    <span className="muted">{messages.reply_forwarded_label}</span> {f.name} · {formatFileSize(f.size)}
+                    <button type="button" className="chip-x" aria-label={`Remove ${f.name}`} onClick={() => setForwarded((list) => list.filter((x) => x.id !== f.id))}>
+                      ×
+                    </button>
+                  </li>
+                ))}
                 {files.map((f) => (
                   <li key={`f-${f.id}`} className="chip">
                     {f.name} · {formatFileSize(f.size)}
@@ -241,7 +272,7 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
               </ul>
             )}
             <div className="attach-acts">
-              {offered.length > 0 && (
+              {box.record && offered.length > 0 && (
                 <details className="attachpick">
                   <summary className="btn">{templates.compose_attach_record(box.record.kind)}</summary>
                   <ul>
@@ -287,7 +318,7 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
               </div>
             )}
             <div className="ftr">
-              <span className="muted">{messages.compose_footer}</span>
+              <span className="muted">{box.reply ? messages.reply_footer : messages.compose_footer}</span>
               <span className="acts">
                 <Link className="btn" href={back} scroll={false}>
                   {messages.compose_cancel}

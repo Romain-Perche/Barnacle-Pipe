@@ -290,3 +290,53 @@ describe("SF-129: the upload send against mediaUpload", () => {
     expect(Object.keys((await res.json()) as object).sort()).toEqual(["id", "labelIds", "threadId"]);
   });
 });
+
+// covers SF-130 FR-011, FR-020, contracts/google.md § Fake and its check (T009, T038): the multipart upload of
+// users.messages.send with a threadId, checked against mediaUpload.protocols.simple; attachments.get parameters.
+describe("SF-130: multipart upload of users.messages.send against gmail-api.json", () => {
+  const U = "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send";
+  const rfc = (subject = "Re: Hi") =>
+    ["From: linus@barnacle.ai", "To: ana@example.test", `Subject: ${subject}`, "In-Reply-To: <first@example.test>", "References: <root@example.test>", " <first@example.test>", "MIME-Version: 1.0", 'Content-Type: text/plain; charset="UTF-8"', "", "Thanks"].join("\r\n");
+  const multipart = (json: string, message: string, type = "message/rfc822") =>
+    ["--crm-b", "Content-Type: application/json; charset=UTF-8", "", json, "--crm-b", `Content-Type: ${type}`, "", message, "--crm-b--", ""].join("\r\n");
+  const send = async (url: string, body: string, contentType = 'multipart/related; boundary="crm-b"') =>
+    fake.checkedFetch(url, { method: "POST", headers: { authorization: `Bearer ${await accessToken()}`, "content-type": contentType }, body });
+
+  it("passes a multipart send: kept in the named thread of that mailbox, In-Reply-To and References read back", async () => {
+    const first = fake.addMessage("linus@barnacle.ai", { from: "ana@example.test", to: "linus@barnacle.ai", subject: "Hi", text: "Hello", messageId: "<first@example.test>" });
+    const res = await send(`${U}?uploadType=multipart`, multipart(JSON.stringify({ threadId: first.threadId }), rfc()));
+    expect(res.status).toBe(200);
+    const answer = (await res.json()) as { id: string; threadId: string };
+    expect(answer.threadId).toBe(first.threadId);
+    const [m] = fake.sentMessages("linus@barnacle.ai");
+    expect(m).toMatchObject({ threadId: first.threadId, subject: "Re: Hi", inReplyTo: "<first@example.test>", references: "<root@example.test> <first@example.test>", text: "Thanks" });
+    // A thread of no message of that mailbox: a new thread.
+    const other = await send(`${U}?uploadType=multipart`, multipart(JSON.stringify({ threadId: "not-mine" }), rfc()));
+    expect(((await other.json()) as { threadId: string }).threadId).not.toBe("not-mine");
+    expect(fake.violations).toEqual([]);
+  });
+  it("refuses a JSON part with a field Message does not declare (thread_id)", async () => {
+    await expect(send(`${U}?uploadType=multipart`, multipart(JSON.stringify({ thread_id: "x" }), rfc()))).rejects.toThrow(/no property "thread_id" in Message/);
+    fake.violations.length = 0;
+    expect(fake.sentMessages("linus@barnacle.ai")).toEqual([]);
+  });
+  it("refuses uploadType=resumable on the simple path, a second part that is not message/*, a body that is not multipart/related", async () => {
+    await expect(send(`${U}?uploadType=resumable`, multipart("{}", rfc()))).rejects.toThrow(/uploadType/);
+    await expect(send(`${U}?uploadType=multipart`, multipart("{}", rfc(), "text/plain"))).rejects.toThrow(/accepts message\/\*/);
+    await expect(send(`${U}?uploadType=multipart`, rfc(), "message/rfc822")).rejects.toThrow(/multipart\/related/);
+    expect(fake.violations).toHaveLength(3);
+    fake.violations.length = 0;
+  });
+  it("refuses a message part over maxSize", async () => {
+    const big = rfc() + "x".repeat(36_700_161);
+    await expect(send(`${U}?uploadType=multipart`, multipart("{}", big))).rejects.toThrow(/over maxSize 36700160/);
+    fake.violations.length = 0;
+  });
+  it("refuses attachments.get on a wrong path or with an undeclared query parameter (attachment_id)", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const { id } = fake.addMessage("linus@barnacle.ai", { from: "ana@example.test", to: "linus@barnacle.ai", subject: "F", text: "x", attachments: [{ name: "a.pdf", size: 5 }] });
+    await expect(fake.checkedFetch(`${G}/messages/${id}/attachments?attachment_id=x`, { method: "GET", headers: auth })).rejects.toThrow(/gmail-api.json has no GET/);
+    await expect(fake.checkedFetch(`${G}/messages/${id}/attachments/x?attachment_id=x`, { method: "GET", headers: auth })).rejects.toThrow(/no query parameter "attachment_id"/);
+    fake.violations.length = 0;
+  });
+});

@@ -562,7 +562,8 @@ describe("fake Gmail (SF-118)", () => {
     expect(first.c).toEqual({ state: "working", email: "ada@barnacle.ai", key: true });
     // SF-129: the seeded email Ada Fake wrote from a fake deal ("Fake next steps") is the fourth conversation.
     expect(first.threads).toEqual(["Fake follow-up", "Fake intro call", "Fake next steps", "Fake proposal"]);
-    expect(first.messages).toBe(5);
+    // SF-130: plus Ada Fake's seeded reply in "Fake proposal" (in its Gmail thread: no fifth thread).
+    expect(first.messages).toBe(6);
     expect(first.atts).toEqual([
       { name: "logo-fake.png", size: "18432" },
       { name: "notes-fake.txt", size: "1024" },
@@ -612,6 +613,29 @@ describe("fake sent email (SF-129)", () => {
     expect(await runSeeders(sql)).toContain("already there sent email");
     expect(await state()).toEqual(first);
     expect((await sql`select count(*)::int as n from email_messages where subject = 'Fake next steps'`)[0].n).toBe(1);
+  });
+});
+
+// covers SF-130 FR-021 (T049): Ada Fake's one reply in her seeded "Fake proposal" conversation, sent through sendReply
+// and her fake Gmail, in the same conversation; seeding again adds nothing.
+describe("fake reply (SF-130)", () => {
+  afterAll(() => vi.unstubAllEnvs());
+  it("one reply to the newest email of the Fake proposal conversation, in that conversation, once", async () => {
+    vi.stubEnv("GMAIL_TOKEN_KEY", Buffer.alloc(32, 0x5a).toString("base64"));
+    vi.stubEnv("GMAIL_PUBSUB_TOPIC", "");
+    const { SEED_REPLY_KEY } = await import("@/seed/sent-emails");
+    const lines = await runSeeders(sql);
+    expect(lines).toContain('1 reply in the conversation "Fake proposal"');
+    const state = async () =>
+      sql<{ subject: string; state: string; same: boolean }[]>`
+        select m.subject, s.state,
+               (select t.conversation_id from email_threads t where t.id = m.thread_id) =
+               (select t.conversation_id from email_messages a join email_threads t on t.id = a.thread_id where a.id = s.reply_message_id) as same
+        from email_sends s join email_messages m on m.id = s.message_id where s.send_key = ${SEED_REPLY_KEY}`;
+    const first = await state();
+    expect(first).toEqual([{ subject: "Re: Fake proposal", state: "sent", same: true }]);
+    expect(await runSeeders(sql)).toContain("already there reply");
+    expect(await state()).toEqual(first);
   });
 });
 

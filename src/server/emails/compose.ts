@@ -7,6 +7,9 @@
 //   the conversation, its automatic links and Last contacted; completePendingSend (run by storeMessage in its
 //   transaction) adds the one hand link to the record written from. No Storage or Google call inside sql.begin().
 // Consent is never read here: it is for campaigns only (PRODUCT §4); an Unsubscribed person can still be written to.
+// SF-130: the steps from the ledger claim on (claim, Storage reads, forwarded attachments from Gmail, sendGmail, storing,
+// upload clean-up) are one shared `deliver`, used by sendFromRecord and by reply.ts sendReply (a reply's ledger row
+// names the answered email in reply_message_id and has no record: no hand link).
 import { randomBytes, randomUUID } from "node:crypto";
 import { sql, type Sql } from "@/server/db";
 import { gmailConfig } from "@/server/env";
@@ -20,6 +23,7 @@ import { createSignedUploadUrl, newStoragePath, readObject, StorageUnreachable }
 import { BadHeader, type MimeAttachment, type ReadMessage } from "@/server/gmail/rules";
 import { GmailNeedsReconnect, GmailNotConnected, GmailTooLarge, GmailUnavailable, sendGmail } from "@/server/gmail/send";
 import { storeMessage, syncConnection } from "@/server/gmail/sync";
+import { fetchAttachment, type AttachmentAccess } from "@/server/emails/attachments";
 import type { Target } from "@/server/records/timeline";
 import { visibleDeal, visibleFile, visiblePerson } from "@/server/records/visibility";
 
@@ -27,13 +31,27 @@ export type ComposeKind = "deal" | "person" | "organisation";
 export type ComposeTarget = { kind: ComposeKind; id: number };
 export type GmailState = "ok" | "off" | "not_connected" | "needs_reconnect";
 export type BoxFile = { id: number; name: string; size: number };
+export type ReplyView = {
+  mode: "reply" | "reply_all" | "forward";
+  messageId: number;
+  heading: string;
+  subject: string;
+  quote: string;
+  forwarded: BoxFile[];
+};
+// SF-130 contracts/routes.md § replyBox → EmailBox props: Cc and the CRM names of the prefilled addresses (lower-cased
+// address → name), a record that may be null (no record files then), the reply view, `missing` (email_not_found).
 export type EmailBox = {
   gmail: GmailState;
   from: string | null;
   to: string[];
+  cc: string[];
+  names: Record<string, string>;
   files: BoxFile[];
   sendKey: string;
-  record: { kind: ComposeKind; id: number; name: string };
+  record: { kind: ComposeKind; id: number; name: string } | null;
+  reply: ReplyView | null;
+  missing?: true;
 };
 export type SendInput = {
   target: ComposeTarget; sendKey: string; to: string[]; cc: string[]; bcc: string[]; subject: string; text: string;
@@ -44,7 +62,9 @@ export type RefusalCode =
   | "compose_attachment_gone"
   | "compose_record_archived"
   | "compose_record_not_found"
-  | "compose_send_failed";
+  | "compose_send_failed"
+  | "email_not_found"
+  | "reply_forward_unavailable";
 export type Refusal = { code: RefusalCode; address?: string };
 export type SendResult =
   | { status: "sent"; notice: { name: string; count: number } }
@@ -70,14 +90,14 @@ export function onRecordSentForTests(fn: (() => Promise<void>) | null): void {
   beforeStoreHook = fn;
 }
 
-type Connection = { id: number; email: string; state: string };
+export type Connection = { id: number; email: string; state: string };
 
-async function connectionOf(userId: number): Promise<Connection | null> {
+export async function connectionOf(userId: number): Promise<Connection | null> {
   const [row] = await sql<Connection[]>`select id::int as id, email, state from gmail_connections where user_id = ${userId}`;
   return row ?? null;
 }
 
-function gmailState(c: Connection | null): GmailState {
+export function gmailState(c: Connection | null): GmailState {
   if (gmailConfig().mode === "off") return "off";
   if (!c || c.state === "disconnected") return "not_connected";
   return c.state === "working" ? "ok" : "needs_reconnect";
@@ -86,7 +106,7 @@ function gmailState(c: Connection | null): GmailState {
 type RecordRow = { name: string; archived: boolean; personId: number | null };
 
 // The record when the viewer can see it (organisations have no private rule).
-async function readRecord(db: Sql, viewerId: number, t: ComposeTarget): Promise<RecordRow | null> {
+export async function readRecord(db: Sql, viewerId: number, t: ComposeTarget): Promise<RecordRow | null> {
   const [row] =
     t.kind === "deal"
       ? await db<RecordRow[]>`
@@ -118,9 +138,12 @@ export async function emailBox(viewerId: number, target: ComposeTarget): Promise
     gmail: gmailState(connection),
     from: connection?.email ?? null,
     to: first ? [first.email] : [],
+    cc: [],
+    names: {},
     files,
     sendKey: randomUUID(),
     record: { kind: target.kind, id: target.id, name: record.name },
+    reply: null,
   };
 }
 
@@ -153,18 +176,25 @@ export async function startEmailUpload(actorId: number, file: { name: string; si
 }
 
 export type Named = { email: string; name: string | null };
-type NamedRecipients = { to: Named[]; cc: Named[]; bcc: Named[] };
+export type NamedRecipients = { to: Named[]; cc: Named[]; bcc: Named[] };
 
-// Each address named as a person the sender can see (archived included) with that address, ignoring case; several →
-// the lowest person id; none → no name. A name an email header cannot hold (a line break) is dropped for that address.
-async function nameRecipients(actorId: number, r: { to: string[]; cc: string[]; bcc: string[] }): Promise<NamedRecipients> {
-  const keys = [...new Set(allAddresses(r).map((a) => a.toLowerCase()))];
+// SF-130: each address (lower-cased) → the name of a person the sender can see (archived included) with that address;
+// several → the lowest person id. Used for the headers and stored copy (nameRecipients) and the box's chips.
+export async function namesFor(actorId: number, addresses: string[]): Promise<Record<string, string>> {
+  const keys = [...new Set(addresses.map((a) => a.toLowerCase()))];
+  if (keys.length === 0) return {};
   const rows = await sql<{ key: string; name: string }[]>`
     select distinct on (lower(pe.email)) lower(pe.email) as key, btrim(p.first_name || ' ' || p.last_name) as name
     from person_emails pe join persons p on p.id = pe.person_id
     where lower(pe.email) = any(${keys}::text[]) and ${visiblePerson(sql, actorId)}
     order by lower(pe.email), p.id`;
-  const names = new Map(rows.map((row) => [row.key, row.name]));
+  return Object.fromEntries(rows.filter((row) => row.name !== "").map((row) => [row.key, row.name]));
+}
+
+// Each address named as namesFor gives; none → no name. A name an email header cannot hold (a line break) is dropped
+// for that address.
+export async function nameRecipients(actorId: number, r: { to: string[]; cc: string[]; bcc: string[] }): Promise<NamedRecipients> {
+  const names = new Map(Object.entries(await namesFor(actorId, allAddresses(r))));
   const named = (list: string[]) =>
     list.map((email) => {
       const name = names.get(email.toLowerCase()) ?? "";
@@ -224,65 +254,89 @@ export async function completePendingSend(db: Sql, connectionId: number, message
   await db`update email_sends set state = 'sent', message_id = ${messageId} where id = ${send.id}`;
 }
 
-const refused = (...errors: Refusal[]): SendResult => ({ status: "refused", errors });
-const unique = (ids: number[]) => [...new Set(ids)];
+export const refused = (...errors: Refusal[]): SendResult => ({ status: "refused", errors });
+export const unique = (ids: number[]) => [...new Set(ids)];
 
-type Attached = { id: number; name: string; contentType: string; size: number; path: string };
+export type Attached = { id: number; name: string; contentType: string; size: number; path: string };
+export const isSendKey = (key: string) => UUID.test(key);
 
-// contracts/routes.md § sendEmailFromRecord, steps 1–9 (the action sets the flash).
-export async function sendFromRecord(actorId: number, input: SendInput, now = new Date()): Promise<SendResult> {
-  // 1. Gmail usable.
-  const connection = await connectionOf(actorId);
-  const state = gmailState(connection);
-  if (state !== "ok") return { status: "gmail", state };
-  if (!UUID.test(input.sendKey)) return refused({ code: "compose_send_failed" });
-  // 2. The pure checks.
-  const r = normaliseRecipients(input);
-  const errors = validateCompose({ ...r, subject: input.subject, text: input.text });
-  if (errors.length > 0) return refused(...errors);
-  // 3. The record, as the user sees it now.
-  const record = await readRecord(sql, actorId, input.target);
-  if (!record) return refused({ code: "compose_record_not_found" });
-  if (record.archived) return refused({ code: "compose_record_archived" });
-  // 4. The attachments: the record's own visible files, the user's own uploads.
-  const fileIds = unique(input.fileIds);
-  const uploadIds = unique(input.uploadIds);
+// SF-129 step 4 / SF-130 §8: the record's own visible files (when a record is given) and the user's own uploads, in box
+// order (record files as chosen, then computer files); null when one of them is gone. A record file is sent with the
+// type it was stored with (SF-116 stores uploadContentType(name)).
+export async function readAttached(actorId: number, target: ComposeTarget | null, fileIds: number[], uploadIds: number[]): Promise<Attached[] | null> {
+  if (fileIds.length > 0 && !target) return null;
   const files = fileIds.length
     ? await sql<Attached[]>`
         select f.id::int as id, f.name, f.size::float8 as size, f.storage_path as path, '' as "contentType" from files f
-        where f.id = any(${fileIds}::bigint[]) and f.${sql(column(input.target.kind))} = ${input.target.id} and ${visibleFile(sql, actorId)}`
+        where f.id = any(${fileIds}::bigint[]) and f.${sql(column(target!.kind))} = ${target!.id} and ${visibleFile(sql, actorId)}`
     : [];
   const uploads = uploadIds.length
     ? await sql<Attached[]>`
         select u.id::int as id, u.name, u.size::float8 as size, u.storage_path as path, u.content_type as "contentType" from email_uploads u
         where u.id = any(${uploadIds}::bigint[]) and u.user_id = ${actorId}`
     : [];
-  if (files.length !== fileIds.length || uploads.length !== uploadIds.length) return refused({ code: "compose_attachment_gone" });
-  // Box order: the record's files as chosen, then the computer files. A record file is sent with the type it was
-  // stored with (SF-116 stores uploadContentType(name)).
+  if (files.length !== fileIds.length || uploads.length !== uploadIds.length) return null;
   const inOrder = (rows: Attached[], ids: number[]) => ids.map((id) => rows.find((row) => row.id === id)!);
-  const attached: Attached[] = [...inOrder(files, fileIds).map((f) => ({ ...f, contentType: uploadContentType(f.name) })), ...inOrder(uploads, uploadIds)];
-  if (totalBytes(attached.map((a) => a.size)) > MAX_ATTACHMENT_BYTES) return refused({ code: "compose_attachments_too_large" });
+  return [...inOrder(files, fileIds).map((f) => ({ ...f, contentType: uploadContentType(f.name) })), ...inOrder(uploads, uploadIds)];
+}
 
-  // Recipients named as the sender's CRM people (fix round 1): the same names in the headers and the stored copy.
-  const named = await nameRecipients(actorId, r);
+export type Forwarded = { access: AttachmentAccess; contentType: string };
+export type Delivery = {
+  actorId: number;
+  connection: Connection;
+  sendKey: string;
+  record: ComposeTarget | null;
+  replyMessageId: number | null;
+  named: NamedRecipients;
+  notice: { name: string; count: number };
+  subject: string;
+  body: string;
+  attached: Attached[];
+  forwarded: Forwarded[];
+  uploadIds: number[];
+  threadId: string | null;
+  inReplyTo: string | null;
+  references: string[];
+  now: Date;
+};
 
+// SF-129 steps 5–9, shared with SF-130's replies: the ledger claim, the Storage reads, the forwarded attachments from
+// Gmail, Gmail, storing, the upload clean-up. No Storage or Google call inside sql.begin().
+export async function deliver(d: Delivery): Promise<SendResult> {
+  const { actorId, connection, notice } = d;
   // 5. The ledger claim: a second press (same box, same key) sends nothing.
   const [user] = await sql<{ name: string }[]>`select name from users where id = ${actorId}`;
   const rfcMessageId = `<crm-${randomBytes(12).toString("hex")}@barnacle.ai>`;
-  const c = column(input.target.kind);
+  const recordId = (kind: ComposeKind) => (d.record?.kind === kind ? d.record.id : null);
   const [claim] = await sql<{ id: number }[]>`
-    insert into email_sends (user_id, send_key, connection_id, ${sql(c)}, rfc_message_id, state, upload_ids)
-    values (${actorId}, ${input.sendKey}, ${connection!.id}, ${input.target.id}, ${rfcMessageId}, 'sending', ${uploadIds}::bigint[])
+    insert into email_sends (user_id, send_key, connection_id, deal_id, person_id, organisation_id, reply_message_id, rfc_message_id, state, upload_ids)
+    values (${actorId}, ${d.sendKey}, ${connection.id}, ${recordId("deal")}, ${recordId("person")}, ${recordId("organisation")}, ${d.replyMessageId},
+            ${rfcMessageId}, 'sending', ${d.uploadIds}::bigint[])
     on conflict (user_id, send_key) do nothing
     returning id::int as id`;
-  const notice = sentNotice(allAddresses(r));
   if (!claim) return { status: "sent", notice };
   const unclaim = () => sql`delete from email_sends where id = ${claim.id}`;
 
-  // 6. The attachments' bytes, one after the other.
+  // 6. The attachments' bytes, one after the other: forwarded ones from Gmail (SF-130, the user's own mailbox first;
+  // held in memory only), then the record and computer files from Storage.
   const mimeFiles: MimeAttachment[] = [];
-  for (const a of attached) {
+  const stored: { name: string; contentType: string; size: number }[] = [];
+  for (const f of d.forwarded) {
+    let got: Awaited<ReturnType<typeof fetchAttachment>>;
+    try {
+      got = await fetchAttachment(f.access);
+    } catch (e) {
+      await unclaim();
+      throw e;
+    }
+    if (got === "unavailable") {
+      await unclaim();
+      return refused({ code: "reply_forward_unavailable" });
+    }
+    mimeFiles.push({ name: f.access.attachment.name, contentType: f.contentType, bytes: got.bytes });
+    stored.push({ name: f.access.attachment.name, contentType: f.contentType, size: got.bytes.length });
+  }
+  for (const a of d.attached) {
     let bytes: Uint8Array | null;
     try {
       bytes = await readObject(a.path, a.size);
@@ -296,13 +350,15 @@ export async function sendFromRecord(actorId: number, input: SendInput, now = ne
       return refused({ code: "compose_attachment_gone" });
     }
     mimeFiles.push({ name: a.name, contentType: a.contentType, bytes });
+    stored.push(a);
   }
 
   // 7. Gmail.
   let sent: { messageId: string; threadId: string };
   try {
     sent = await sendGmail(actorId, {
-      ...named, subject: input.subject, text: input.text, fromName: user?.name ?? null, messageId: rfcMessageId, attachments: mimeFiles, date: now,
+      ...d.named, subject: d.subject, text: d.body, fromName: user?.name ?? null, messageId: rfcMessageId, attachments: mimeFiles, date: d.now,
+      threadId: d.threadId, inReplyTo: d.inReplyTo, references: d.references,
     });
   } catch (e) {
     await unclaim();
@@ -313,28 +369,63 @@ export async function sendFromRecord(actorId: number, input: SendInput, now = ne
     throw e;
   }
 
-  // 8. Recorded at once (SF-127 processing + the hand link); a failure here is caught up by the Gmail sync.
+  // 8. Recorded at once (SF-127 processing + the hand link, or SF-130's placing in the answered conversation); a failure
+  // here is caught up by the Gmail sync.
   try {
-    await sql`update email_sends set gmail_message_id = ${sent.messageId}, gmail_thread_id = ${sent.threadId} where id = ${claim.id}`;
+    // SF-130: the test hook runs before the Gmail ids are saved, so a sync storing first matches on the Message-ID.
     if (beforeStoreHook) await beforeStoreHook();
+    await sql`update email_sends set gmail_message_id = ${sent.messageId}, gmail_thread_id = ${sent.threadId} where id = ${claim.id}`;
     await storeMessage(
-      connection!.id,
+      connection.id,
       sentMessage({
-        gmailMessageId: sent.messageId, gmailThreadId: sent.threadId, rfcMessageId, from: { email: connection!.email, name: user?.name ?? "" },
-        ...named, subject: input.subject, text: input.text, attachments: attached, now,
+        gmailMessageId: sent.messageId, gmailThreadId: sent.threadId, rfcMessageId, from: { email: connection.email, name: user?.name ?? "" },
+        ...d.named, subject: d.subject, text: d.body, attachments: stored, now: d.now,
       }),
     );
   } catch (e) {
     console.error("SF-129: an email was sent but could not be recorded; the Gmail sync will catch up.", e instanceof Error ? e.name : "");
-    const id = connection!.id;
+    const id = connection.id;
     runAfterResponse(() => syncConnection(id));
   }
 
   // 9. The computer files are no longer needed.
-  if (uploadIds.length > 0) {
-    await sql`update file_cleanup set due_at = now() where storage_path in (select storage_path from email_uploads where id = any(${uploadIds}::bigint[]))`;
-    await sql`delete from email_uploads where id = any(${uploadIds}::bigint[])`;
+  if (d.uploadIds.length > 0) {
+    await sql`update file_cleanup set due_at = now() where storage_path in (select storage_path from email_uploads where id = any(${d.uploadIds}::bigint[]))`;
+    await sql`delete from email_uploads where id = any(${d.uploadIds}::bigint[])`;
     runAfterResponse(sweepFileCleanup);
   }
   return { status: "sent", notice };
+}
+
+// contracts/routes.md § sendEmailFromRecord, steps 1–9 (the action sets the flash).
+export async function sendFromRecord(actorId: number, input: SendInput, now = new Date()): Promise<SendResult> {
+  // 1. Gmail usable.
+  const connection = await connectionOf(actorId);
+  const state = gmailState(connection);
+  if (state !== "ok") return { status: "gmail", state };
+  if (!isSendKey(input.sendKey)) return refused({ code: "compose_send_failed" });
+  // 2. The pure checks.
+  const r = normaliseRecipients(input);
+  const errors = validateCompose({ ...r, subject: input.subject, text: input.text });
+  if (errors.length > 0) return refused(...errors);
+  // 3. The record, as the user sees it now.
+  const record = await readRecord(sql, actorId, input.target);
+  if (!record) return refused({ code: "compose_record_not_found" });
+  if (record.archived) return refused({ code: "compose_record_archived" });
+  // 4. The attachments: the record's own visible files, the user's own uploads.
+  const fileIds = unique(input.fileIds);
+  const uploadIds = unique(input.uploadIds);
+  const attached = await readAttached(actorId, input.target, fileIds, uploadIds);
+  if (!attached) return refused({ code: "compose_attachment_gone" });
+  if (totalBytes(attached.map((a) => a.size)) > MAX_ATTACHMENT_BYTES) return refused({ code: "compose_attachments_too_large" });
+
+  // Recipients named as the sender's CRM people (fix round 1): the same names in the headers and the stored copy.
+  const named = await nameRecipients(actorId, r);
+
+  // 5–9. The ledger claim, the bytes, Gmail, storing, the clean-up.
+  return deliver({
+    actorId, connection: connection!, sendKey: input.sendKey, record: input.target, replyMessageId: null, named,
+    notice: sentNotice(allAddresses(r)), subject: input.subject, body: input.text, attached, forwarded: [], uploadIds,
+    threadId: null, inReplyTo: null, references: [], now,
+  });
 }

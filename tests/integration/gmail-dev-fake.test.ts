@@ -211,6 +211,22 @@ describe("a tester's run through the fake pages", () => {
 
 // covers SF-124 FR-001, US1 scenario 2, T031: the fake consent screen shows one box per asked scope, Calendar's too when
 // Calendar sync is on; leaving it unticked is refused at the callback.
+// covers SF-130 FR-020 (T050): the fake mailbox page shows each message's Gmail thread and, when present, its
+// In-Reply-To and References as text, so a tester can read a reply's threading.
+describe("SF-130: threading on the fake mailbox page", () => {
+  it("a reply sent in a thread shows thread, In-Reply-To and References", async () => {
+    expect(await follow(await post(allowForm(await h.startConnect())))).toBe("/settings");
+    const { fakeGmail } = await import("@/server/gmail/fake-gmail");
+    const { sendGmail } = await import("@/server/gmail/send");
+    const first = fakeGmail().addMessage("linus@barnacle.ai", { from: "ana@example.test", to: "linus@barnacle.ai", subject: "Pricing", text: "x", messageId: "<p1@example.test>" });
+    await sendGmail(linus.id, { to: ["ana@example.test"], subject: "Re: Pricing", text: "ok", threadId: first.threadId, inReplyTo: "<p1@example.test>", references: ["<p0@example.test>", "<p1@example.test>"] });
+    const page = renderToStaticMarkup(await MailboxPage({ searchParams: Promise.resolve({ user: "linus@barnacle.ai" }) }));
+    expect(page.split(`thread ${first.threadId}`)).toHaveLength(3);
+    expect(page).toContain("<div>In-Reply-To &lt;p1@example.test&gt;</div>");
+    expect(page).toContain("<div>References &lt;p0@example.test&gt; &lt;p1@example.test&gt;</div>");
+  });
+});
+
 describe("the Calendar box on the fake consent screen (SF-124)", () => {
   const CAL = "https://www.googleapis.com/auth/calendar.events.owned";
   it("shows the Calendar box when Calendar is on, not when off", async () => {

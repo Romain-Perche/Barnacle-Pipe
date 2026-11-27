@@ -31,10 +31,10 @@ type Props = {
   // SF-116: an error code of a file delete (`?error=`), shown in // FILES when it is one of its codes.
   fileError?: string;
   // SF-129: where the timeline's [ WRITE EMAIL ] goes (the board: the same address with email=new); none on the list.
-  emailHref?: string;
+  emailBase?: string;
 };
 
-export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, hereHref, closeHref, deleteHref, back, fileError, emailHref }: Props) {
+export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, hereHref, closeHref, deleteHref, back, fileError, emailBase }: Props) {
   const canMove = deal.status === "open" && !deal.archived;
   return (
     <aside className="drawer deal-drawer" aria-label="Deal">
@@ -130,7 +130,7 @@ export function DealDrawer({ deal, pipelines, viewerId, isAdmin, confirmDelete, 
       </div>
       <NextActivities viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} back={hereHref} />
       <FilesSection viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} back={hereHref} error={fileError} />
-      <RecordTimeline viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} readOnly emailHref={emailHref} />
+      <RecordTimeline viewerId={viewerId} target={{ dealId: deal.id }} archived={deal.archived} readOnly emailBase={emailBase} />
     </aside>
   );
 }

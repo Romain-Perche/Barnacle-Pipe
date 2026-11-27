@@ -182,7 +182,7 @@ export default async function PersonPage({ params, searchParams }: Props) {
             target={{ personId: id }}
             archived={person.archived}
             query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
-            emailHref={`${href}?email=new`}
+            emailBase={`${href}?email=`}
           />
         </div>
       </div>

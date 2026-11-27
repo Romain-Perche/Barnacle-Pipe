@@ -20,7 +20,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach } from "vitest";
 import { gmailConfig } from "@/server/env";
-import { FakeGoogleMail, MemoryStore, type PushNotice } from "@/server/gmail/fake-gmail";
+import { FakeGoogleMail, MemoryStore, readRelated, type PushNotice } from "@/server/gmail/fake-gmail";
 import { useGmailFetchForTests } from "@/server/gmail/google-api";
 import { receiveGmailPush } from "@/server/gmail/push";
 
@@ -33,7 +33,7 @@ export const TEST_GMAIL_KEY = Buffer.alloc(32, 0x5a).toString("base64");
 type Prop = { type?: string; format?: string; $ref?: string; items?: Prop; additionalProperties?: Prop; properties?: Record<string, Prop> };
 type Param = { location: string };
 type Schema = { id: string; type: string; properties: Record<string, Prop> };
-type MediaUpload = { accept: string[]; maxSize: string; protocols: { simple?: { path: string } } };
+type MediaUpload = { accept: string[]; maxSize: string; protocols: { simple?: { path: string; multipart?: boolean } } };
 type Method = {
   httpMethod: string; path: string; parameters?: Record<string, { location: string }>; request?: { $ref: string }; response?: { $ref: string };
   supportsMediaUpload?: boolean; mediaUpload?: MediaUpload;
@@ -71,7 +71,10 @@ function methodOf(httpMethod: string, pathname: string) {
 // SF-129: an upload (users.messages.send through the simple media upload): the path is the method's
 // mediaUpload.protocols.simple.path, uploadType "media" or "multipart", the content type one of `accept`, the body at
 // most `maxSize` bytes, every other query parameter declared for the method or at the discovery's top level.
-export function checkUploadRequest(httpMethod: string, url: URL, contentType: string, size: number) {
+// SF-130: uploadType=multipart needs protocols.simple.multipart, a multipart/related body of exactly two parts: a JSON
+// object whose every property is declared in the method's request schema (Message), then the media part, whose type is
+// one of `accept` and whose size is at most `maxSize`.
+export function checkUploadRequest(httpMethod: string, url: URL, contentType: string, body: Uint8Array) {
   const m = methods.find(
     (x) => x.httpMethod === httpMethod && x.mediaUpload?.protocols.simple && new RegExp(`^${x.mediaUpload.protocols.simple.path.replace(/\{[^}]+\}/g, "([^/]+)")}$`).test(url.pathname),
   );
@@ -82,10 +85,24 @@ export function checkUploadRequest(httpMethod: string, url: URL, contentType: st
   }
   const uploadType = url.searchParams.get("uploadType");
   if (uploadType !== "media" && uploadType !== "multipart") throw new Error(`${m.name} simple upload needs uploadType=media or multipart, got ${uploadType}`);
-  const type = contentType.split(";")[0].trim().toLowerCase();
-  const accepted = m.mediaUpload.accept.some((a) => (a.endsWith("/*") ? type.startsWith(a.slice(0, -1)) : type === a));
-  if (!accepted) throw new Error(`${m.name} upload accepts ${m.mediaUpload.accept.join(", ")}, not "${type}"`);
-  if (size > Number(m.mediaUpload.maxSize)) throw new Error(`${m.name} upload is ${size} bytes, over maxSize ${m.mediaUpload.maxSize}`);
+  const media = (type: string, size: number) => {
+    const t = type.split(";")[0].trim().toLowerCase();
+    const accepted = m.mediaUpload!.accept.some((a) => (a.endsWith("/*") ? t.startsWith(a.slice(0, -1)) : t === a));
+    if (!accepted) throw new Error(`${m.name} upload accepts ${m.mediaUpload!.accept.join(", ")}, not "${t}"`);
+    if (size > Number(m.mediaUpload!.maxSize)) throw new Error(`${m.name} upload is ${size} bytes, over maxSize ${m.mediaUpload!.maxSize}`);
+  };
+  if (uploadType === "media") {
+    media(contentType, body.length);
+    return m;
+  }
+  if (m.mediaUpload.protocols.simple?.multipart !== true) throw new Error(`${m.name} simple upload is not multipart in gmail-api.json`);
+  const parts = readRelated(contentType, Buffer.from(body).toString("latin1"));
+  if (!parts) throw new Error(`${m.name} multipart upload needs a multipart/related body, got "${contentType}"`);
+  if (parts.length !== 2) throw new Error(`${m.name} multipart upload needs 2 parts (metadata, media), got ${parts.length}`);
+  if (!/^application\/json/i.test(parts[0].type)) throw new Error(`${m.name} multipart metadata part must be application/json, not "${parts[0].type}"`);
+  if (!m.request) throw new Error(`${m.name} takes no metadata in gmail-api.json`);
+  checkObject(`${m.name} metadata`, JSON.parse(Buffer.from(parts[0].body, "latin1").toString("utf8")), gmailSchema.schemas[m.request.$ref], gmailSchema.schemas, "gmail-api.json");
+  media(parts[1].type, parts[1].body.length);
   return m;
 }
 
@@ -240,7 +257,7 @@ export class GmailFake extends FakeGoogleMail {
     }
     if (url.pathname.startsWith("/upload/")) {
       const body = new Uint8Array(await req.clone().arrayBuffer());
-      const um = checkUploadRequest(req.method, url, req.headers.get("content-type") ?? "", body.length);
+      const um = checkUploadRequest(req.method, url, req.headers.get("content-type") ?? "", body);
       const res = await this.fetch(req);
       if (!res.ok || !um.response) return res;
       let answer = (await res.json()) as Record<string, unknown>;

@@ -459,13 +459,14 @@
     },
     {
       "id": "gmail-send",
-      "label": "Gmail send and compose",
+      "label": "Gmail send, reply and forward",
       "zone": "app",
       "group": "gmail",
       "sources": [
         "src/server/gmail/send.ts",
         "src/server/emails/compose.ts",
-        "src/app/(app)/records/email-actions.ts"
+        "src/app/(app)/records/email-actions.ts",
+        "src/server/emails/reply.ts"
       ]
     },
     {
@@ -792,7 +793,8 @@
       "sources": [
         "migrations/0016_gmail.sql",
         "migrations/0020_past_email_fetches.sql",
-        "migrations/0021_email_send.sql"
+        "migrations/0021_email_send.sql",
+        "migrations/0022_email_reply.sql"
       ]
     },
     {
@@ -2997,6 +2999,15 @@
       "sources": [
         "src/server/emails/compose.ts",
         "migrations/0021_email_send.sql"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "gmail-send",
+      "data": "reply or forward of an email, attachments",
+      "sources": [
+        "src/app/(app)/records/email-actions.ts",
+        "src/server/emails/reply.ts"
       ]
     }
   ]

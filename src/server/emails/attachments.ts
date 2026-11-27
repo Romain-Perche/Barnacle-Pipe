@@ -1,7 +1,8 @@
 // Attachments of copied emails (SF-127 research.md §9, FR-006): never stored; fetched from Gmail when opened, through a
 // working mailbox holding a copy of that email (the attachment's own copy first, then the others by id). No
 // transaction is held while Gmail is called. A refused key marks that mailbox needs_reconnect; anything Gmail can't
-// give (down, message or part gone) tries the next copy; none → "unavailable".
+// give (down, message or part gone) tries the next copy; none → "unavailable". SF-130: a forward reads the same way, with
+// the sender's own mailbox first (preferConnectionId); the download route passes nothing.
 import { sql } from "@/server/db";
 import { loadKey, markNeedsReconnect } from "@/server/gmail/connections";
 import { getAttachment, getMessage, GoogleKeyRefused, GoogleUnavailable, refreshAccessToken } from "@/server/gmail/google-api";
@@ -15,7 +16,7 @@ export type AttachmentAccess = {
 };
 
 // Null when the attachment does not exist or its conversation is hidden from the viewer (the same answer).
-export async function attachmentAccess(viewerId: number, id: number): Promise<AttachmentAccess | null> {
+export async function attachmentAccess(viewerId: number, id: number, opts: { preferConnectionId?: number } = {}): Promise<AttachmentAccess | null> {
   const [a] = await sql<{ id: number; name: string; size: number; message_id: number; conversation_id: number; dedupe_key: string; position: number }[]>`
     select a.id::int as id, a.name, a.size::float8 as size, a.message_id::int as message_id, c.id::int as conversation_id, m.dedupe_key, a.position
     from email_attachments a
@@ -38,6 +39,8 @@ export async function attachmentAccess(viewerId: number, id: number): Promise<At
     order by (m.id = ${a.message_id}) desc, m.id, ca.position`;
   const seen = new Set<number>();
   const candidates = rows.filter((r) => (seen.has(r.connection_id) ? false : (seen.add(r.connection_id), true)));
+  const preferred = candidates.findIndex((r) => r.connection_id === opts.preferConnectionId);
+  if (preferred > 0) candidates.unshift(...candidates.splice(preferred, 1));
   return {
     attachment: { id: a.id, name: a.name, size: a.size, messageId: a.message_id, conversationId: a.conversation_id },
     candidates: candidates.map((r) => ({ connectionId: r.connection_id, gmailMessageId: r.gmail_message_id, position: r.position })),

@@ -16,6 +16,12 @@ sources:
     resource: repo://src/server/env.ts
   - id: sf118-src-vercel
     resource: repo://vercel.json
+  - id: sf130-src-reply
+    resource: repo://src/server/emails/reply.ts
+  - id: sf130-src-reply-rules
+    resource: repo://src/server/emails/reply-rules.ts
+  - id: sf130-src-migration
+    resource: repo://migrations/0022_email_reply.sql
   - id: openwiki-source-5e8222fa4f836ecb84cdb72d
     resource: repo://migrations/0019_calendar.sql
   - id: openwiki-source-c57f900911a72e56fead03cd
@@ -32,8 +38,8 @@ sources:
     resource: repo://src/server/gmail/past.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-27T14:26:45.943Z
-generated: { by: "claude-code", at: "2026-11-27T14:26:45.943Z" }
+    at: 2026-11-27T16:27:33.613Z
+generated: { by: "claude-code", at: "2026-11-27T16:27:33.613Z" }
 ---
 
 # Gmail connect and sync
@@ -142,6 +148,20 @@ before Gmail accepted the message deletes the claim. `storeMessage` in `sync.ts`
 manual link to the record written from and the ledger state `sent` are written by whichever of the send path or the sync
 stores the message first. The tables come from `migrations/0021_email_send.sql`; the server action is
 `records/email-actions.ts`. See [dataflow/DATAFLOW.md](../../dataflow/DATAFLOW.md) for the data movement.
+
+### Reply, reply all and forward (SF-130)
+
+Each email on a record timeline and on the conversation page shows reply buttons (`records/ReplyButtons.tsx`) when Gmail is
+usable, or a Settings link when it must be connected or reconnected. They open the same box with `?email=reply-<id>`,
+`reply-all-<id>` or `forward-<id>` (`parseEmailParam` in the pure `emails/reply-rules.ts`, which also holds `prefill`, the
+subjects, the quote and `referencesFor`). `emails/reply.ts` holds `replyState`, `replyBox` (the answered email is read
+through `visibleConversation()`; a hidden or missing one gives the `missing` view) and `sendReply`. `sendReply` repeats the
+checks at send time, rebuilds the quote on the server, sets In-Reply-To and References from the stored Message-IDs, uses the
+user's own Gmail thread of the conversation when they hold one, and hands over to `deliver` in `compose.ts` (the steps shared
+with `sendFromRecord`), with `email_sends.reply_message_id` set and no record, so no hand link is made. Forwarded attachments
+are fetched through `fetchAttachment`. `placePendingReply`, called by `storeMessage` before `processMessage`, puts a pending
+reply's new thread row into the answered email's conversation, whichever of the send path or the sync stores it first. The
+column comes from `migrations/0022_email_reply.sql`; the action is `sendEmailReply` in `records/email-actions.ts`.
 
 ## Modes and fakes
 

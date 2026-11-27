@@ -103,20 +103,21 @@ describe("US3 scenario 2: Gmail does not answer or refuses for another reason", 
 });
 
 describe("US3 scenario 3: sendGmail for later features", () => {
-  it("sends in a conversation: reads its headers, sets In-Reply-To and References, returns Gmail's ids", async () => {
+  // SF-130 (research.md §2, §3, contracts/google.md): in a conversation the caller gives In-Reply-To and References from
+  // the CRM's own data; the message goes through the multipart upload with the threadId (no Gmail lookup first).
+  it("sends in a conversation: the given In-Reply-To and References, the multipart upload with threadId, Gmail's ids", async () => {
     const first = fake.addMessage(LINUS, { from: "ana@example.test", to: LINUS, subject: "Proposal", text: "Here", messageId: "<first@example.test>" });
-    const result = await sendGmail(linus.id, { to: ["ana@example.test"], cc: ["kim@example.test"], subject: "Re: Proposal", text: "Thanks", html: "<p>Thanks</p>", threadId: first.threadId });
-    const thread = fake.requests.find((r) => r.path.includes("/threads/"))!;
-    expect(thread.query).toMatchObject({ format: "metadata" });
-    const raw = rawOf();
-    expect(raw).toContain("In-Reply-To: <first@example.test>\r\n");
-    expect(raw).toContain("References: <first@example.test>\r\n");
-    expect(raw).toContain("Cc: kim@example.test\r\n");
-    expect(raw).toContain("multipart/alternative");
-    const sent = fake.sent(LINUS);
+    const result = await sendGmail(linus.id, {
+      to: ["ana@example.test"], cc: ["kim@example.test"], subject: "Re: Proposal", text: "Thanks", html: "<p>Thanks</p>", threadId: first.threadId,
+      inReplyTo: "<first@example.test>", references: ["<root@example.test>", "<first@example.test>"],
+    });
+    expect(fake.requests.some((r) => r.path.includes("/threads/"))).toBe(false);
+    expect(sends()).toHaveLength(1);
+    expect(sends()[0]).toMatchObject({ path: "/upload/gmail/v1/users/me/messages/send", query: { uploadType: "multipart" } });
+    const sent = fake.sentMessages(LINUS);
     expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ inReplyTo: "<first@example.test>", references: "<root@example.test> <first@example.test>", cc: "kim@example.test", threadId: first.threadId });
     expect(result).toEqual({ messageId: sent[0].id, threadId: first.threadId });
-    expect(sends()[0].body).toMatchObject({ threadId: first.threadId });
   });
   it("refuses without a connection, with no Google call", async () => {
     await expect(sendGmail(margaret.id, { to: ["ana@example.test"], subject: "Hi", text: "x" })).rejects.toThrow(GmailNotConnected);

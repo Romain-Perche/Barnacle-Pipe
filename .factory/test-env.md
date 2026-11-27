@@ -121,6 +121,26 @@
 - Supabase Postgres (SF-128 table `past_email_fetches`, migration 0020; SF-129 tables `email_sends` / `email_uploads`,
   migration 0021, checked by `tests/integration/compose-migration.test.ts`): no fake and no public schema; the tests run on
   the real local PostgreSQL 17 (`crm_test`, `start-postgres.sh`), migrations applied by `npm run db:migrate`.
+- Gmail API, SF-130 additions (reply and forward): `users.messages.send` through the **multipart** upload with a thread
+  (`POST /upload/gmail/v1/users/me/messages/send?uploadType=multipart`, `multipart/related`: a JSON `Message` part
+  `{"threadId":…}` then a `message/rfc822` part), in the same fake (`FakeGoogleMail`, `src/server/gmail/fake-gmail.ts`) and
+  wrapper (`tests/fakes/gmail.ts`, schema `gmail-api.json`): the check needs `protocols.simple.multipart === true`, the
+  path `protocols.simple.path`, exactly two parts, the first JSON whose every key is a `Message` property, the second's type
+  among `accept` and its size at most `maxSize`; the answer is checked against `Message`. The fake keeps the thread when it
+  is one of that mailbox (else a new one), keeps In-Reply-To / References, and `sentMessages` adds `inReplyTo` and
+  `references` (unfolded). Forwarded attachments are read with `messages.get` + `messages.attachments.get` (paths,
+  parameters and `MessagePartBody` checked); `failAttachments(on)` makes `attachments.get` answer 503. Tested in
+  `tests/unit/gmail-fake-schema.test.ts` (a JSON part with `thread_id`, `uploadType=resumable` on the simple path, a second
+  part not `message/*`, a body not `multipart/related`, an oversize part, `attachments.get` with `attachment_id` all throw)
+  and `tests/integration/reply-*.test.ts`. `/dev/fake-gmail` lists each message's thread, In-Reply-To and References.
+- Supabase Storage, SF-130: unchanged (SF-129's `readObject` for the record and computer files sent with a reply or
+  forward, through the checked `StorageFake`; `tests/unit/storage-fake.test.ts` refuses `?download_as=x`;
+  `tests/integration/reply-forward.test.ts`).
+- Google OAuth 2.0 token endpoint, SF-130: unchanged fake (no public schema; RFC 6749 §5.2): a refused refresh token
+  (`refuseKey`) before a reply gives `{ status: "gmail", state: "needs_reconnect" }` and marks the connection
+  (`tests/integration/reply-send.test.ts`).
+- Supabase Postgres, SF-130: migration 0022 (`email_sends.reply_message_id`, `on delete set null`), checked on the real
+  local PostgreSQL by `tests/integration/reply-migration.test.ts`; no fake.
 - Cloud Pub/Sub push (SF-118; Gmail's notices to `POST /gmail/push`): the same fake's `notice(email)` (a Google-signed
   OIDC token by the fake's RSA key, served at the certs URL) and `GmailFake.deliver(email)` (to `receiveGmailPush`, the
   route's own handler), every push body checked against `PubsubMessage` in the schema `pubsub-api.json` (`message`
@@ -810,6 +830,23 @@
     so `panelView` turns to "message" and the typed fields go.
     Round 3 (after fix round 2): same commands, fresh data; 43 of 43 pass (US4 3 keeps the subject and text after the key
     refusal and the refresh; sidebar "SETTINGS!").
+  - SF-130 AI review (reply and forward, all 48 scenarios, ~6 min): `bash .factory/run/sf130-fresh.sh` (fresh fake Gmail /
+    Storage, `reset-db.sh`, `sf129-setup.sql`), the app on :3000 (`start-app.sh`) and the Gmail-off app on :3003 (as SF-129, US5 3).
+    Then `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf130-a.js` (puts the emails in Ada's fake mailbox
+    through /dev/fake-gmail, adds Cat Fake and Zed Org Ltd; US1, US2 2/6, US3) and `… scenarios-sf130-b.js` on the same data (its
+    own emails; US4, US2 1/3/4/5, US5, edges 1-17; Linus connects Gmail there). `ONLY="…"` runs some, `SKIP_DATA=1` skips the
+    mailbox puts on a re-run. Emails put in the fake mailbox must NOT have a negative date offset: SF-118 copies only email
+    dated after the connection (the seed connects Ada at seed time). Helpers `sf130-lib.js` (`entryOf` matches the exact
+    subject: "Pricing" must not match "Re: Re: Pricing"; the reply panel is `section.sidepanel[aria-label="Reply"]`, but a missing
+    or hidden email opens it as "New email" with "// NEW EMAIL") and `sf130-ctl.ts` (`sent <email>` with threadId, In-Reply-To,
+    References and attachment sha256; `box`; `att <email> <subject>`; `failatt on|off` the fake's attachment 503). Edge 5 clears
+    the sender by SQL (the fake page always writes a From); edge 2 / edge 3 / US2 3 change visibility, archive and links by SQL;
+    edge 15 fails storing with a trigger on `email_messages` for "Re: Not recorded", dropped before the 15-minute check.
+    Round 1: 47 of 48 pass; US1 2 fails on its text only: the notice is "Email sent to ana@example.test." (SF-129's sentNotice
+    lists addresses), the spec asks "Email sent to Ana Fake.".
+    Round 2 (after fix round 1: US1 2 now expects "Email sent to ana@example.test."; US2 6 reads the page's "LAST CONTACTED"
+    case-insensitively): same commands, fresh data; 48 of 48 pass. A re-run of US2 6 alone after part B fails on the time
+    only (part B sends later emails to Ana): run it on fresh data.
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432

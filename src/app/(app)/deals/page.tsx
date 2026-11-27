@@ -126,7 +126,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
               closeHref={boardHref(open.pipeline.id)}
               deleteHref={boardHref(open.pipeline.id, { open: open.id, confirm: "delete" })}
               fileError={first(params, "error")}
-              emailHref={`${boardHref(open.pipeline.id, { open: open.id })}&email=new`}
+              emailBase={`${boardHref(open.pipeline.id, { open: open.id })}&email=`}
             />
           )}
           {open && (
