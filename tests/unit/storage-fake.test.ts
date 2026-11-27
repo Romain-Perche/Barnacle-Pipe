@@ -141,3 +141,11 @@ describe("SF-129: readObject (GET /object/authenticated/{bucketName}/{*})", () =
     fake.down(false);
   });
 });
+
+// covers SF-130 T037: the record and computer files sent with a forward are read through the same checked fake; a read
+// with a query parameter the schema does not declare fails.
+describe("SF-130: reading attachments for a forward", () => {
+  it("refuses GET /object/authenticated/{bucket}/{path} with ?download_as=x", async () => {
+    await expect(fake.fetch(url("/object/authenticated/crm-files/files/a?download_as=x"), { method: "GET", headers: auth })).rejects.toThrow(/query parameter "download_as"/);
+  });
+});

@@ -372,8 +372,9 @@ export async function deliver(d: Delivery): Promise<SendResult> {
   // 8. Recorded at once (SF-127 processing + the hand link, or SF-130's placing in the answered conversation); a failure
   // here is caught up by the Gmail sync.
   try {
-    await sql`update email_sends set gmail_message_id = ${sent.messageId}, gmail_thread_id = ${sent.threadId} where id = ${claim.id}`;
+    // SF-130: the test hook runs before the Gmail ids are saved, so a sync storing first matches on the Message-ID.
     if (beforeStoreHook) await beforeStoreHook();
+    await sql`update email_sends set gmail_message_id = ${sent.messageId}, gmail_thread_id = ${sent.threadId} where id = ${claim.id}`;
     await storeMessage(
       connection.id,
       sentMessage({
