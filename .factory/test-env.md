@@ -340,7 +340,8 @@
 - Browsers: Chromium for the AI review's scenario scripts (`NODE_PATH=/opt/playwright/node_modules`) is in `~/.cache/ms-playwright`.
 - Tests: `export APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test`, then
   `npm test` and `npm run typecheck`. No browser tests in the repo (docs/DECISIONS.md): the AI review drives the app with
-  the scenario scripts below.
+  the scenario scripts below. One component test (SF-129 `tests/unit/email-box-refused.test.tsx`) runs in `happy-dom`
+  (a dev dependency, set per file by `// @vitest-environment happy-dom`); nothing to install.
 - Manual run: `npm run db:migrate && npm run db:seed && npm run build && npm start` with
   `APP_ENV=development DATABASE_URL=postgres://postgres@localhost:5432/crm_dev FIRST_ADMIN_EMAIL=ada@barnacle.ai`,
   then open http://localhost:3000 and use `[ FAKE GOOGLE LOGIN ]`.

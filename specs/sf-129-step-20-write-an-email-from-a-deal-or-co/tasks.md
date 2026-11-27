@@ -453,7 +453,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ## Fix round 2 (AI review 2026-11-27, plan.md § Fix round 2)
 
-- [ ] T052 Write the failing test first. Add `happy-dom` 21.0.4 as a dev dependency; `vitest.config.ts` `include` also takes
+- [x] T052 Write the failing test first. Add `happy-dom` 21.0.4 as a dev dependency; `vitest.config.ts` `include` also takes
   `tests/unit/**/*.test.tsx`. `tests/unit/email-box-refused.test.tsx`
   (`// @vitest-environment happy-dom`; `// covers US4 scenario 3, FR-008, SC-006`): mock `next/navigation` (`useRouter`
   whose `refresh()` re-renders the box with the same props but `box.gmail = "needs_reconnect"`, as the real refresh does
@@ -465,7 +465,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
   attached file are still there, the reconnect message and a link to `/settings` are shown, no `[ SEND ]` button. A
   second case: a box opened with `gmail: "needs_reconnect"` shows the message only, no subject input (US4 scenario 2
   unchanged). The first case fails now (no subject input after the refresh).
-- [ ] T053 `src/app/(app)/records/EmailBox.tsx`: `const [opened] = useState(box.gmail)`; `panelView(opened, refusedBy)` and
+- [x] T053 `src/app/(app)/records/EmailBox.tsx`: `const [opened] = useState(box.gmail)`; `panelView(opened, refusedBy)` and
   the message state `refusedBy ?? opened`; nothing else reads `box.gmail`. `router.refresh()` stays (the sidebar "!").
 - [ ] T054 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test
   DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; all green, T052 included.

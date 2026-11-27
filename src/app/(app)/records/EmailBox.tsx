@@ -73,6 +73,9 @@ function Addresses({ label, list, draft, onDraft, onAdd, onRemove }: {
 
 export function EmailBox({ box, back }: { box: Box; back: string }) {
   const router = useRouter();
+  // The Gmail state the box opened with: router.refresh() after a refusal re-renders with the connection now marked,
+  // and that must not take the form (and what was typed) away. Only a send answer changes the view.
+  const [opened] = useState(box.gmail);
   const input = useRef<HTMLInputElement>(null);
   const [refusedBy, setRefusedBy] = useState<Exclude<GmailState, "ok"> | null>(null);
   const [fields, setFields] = useState<Record<Field, string[]>>({ to: box.to, cc: [], bcc: [] });
@@ -89,8 +92,8 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
   const used = totalBytes([...files.map((f) => f.size), ...uploads.map((u) => u.size)]);
   const offered = box.files.filter((f) => !fileIds.includes(f.id));
   const over = overAttachmentLimit(used);
-  const view = panelView(box.gmail, refusedBy);
-  const gmail = refusedBy ?? box.gmail;
+  const view = panelView(opened, refusedBy);
+  const gmail = refusedBy ?? opened;
 
   const add = (field: Field, raw: string) => {
     const more = splitAddresses(raw);

@@ -291,7 +291,7 @@ npm test && npm run typecheck
 Each test names what it covers (`// covers FR-003, US1 scenario 2`). Fakes only for outside services
 (Google Sign-In: `tests/fakes/google.ts`; Supabase Storage: `tests/fakes/storage.ts`, checked against
 `storage_v0_openapi.json`; Gmail, Pub/Sub and Google Calendar: `tests/fakes/gmail.ts`, checked against `gmail-api.json`,
-`pubsub-api.json` and `calendar-api.json`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY` and `CALENDAR_SYNC=on`; Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
+`pubsub-api.json` and `calendar-api.json`; `vitest.config.ts` sets a test `GMAIL_TOKEN_KEY` and `CALENDAR_SYNC=on`; tests run on `node`, except a `tests/unit/*.test.tsx` file that asks for `// @vitest-environment happy-dom` (SF-129: `email-box-refused.test.tsx` renders the real `EmailBox`); Pipedrive: `tests/fakes/pipedrive.ts` (`installFakePipedrive`), checked against
 `pipedrive_v2_openapi.json` and `pipedrive_v1_openapi.yml` (a v1 path that file lacks: `pipedrive_v1_full_openapi.yml`;
 downloads checked for their content type only; the fake file host refuses the token) by `tests/fakes/pipedrive-schema.ts`; each checked against
 its schema; see `.factory/test-env.md`).
