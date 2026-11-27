@@ -782,6 +782,27 @@
     user is Grace (Alan is deactivated in the seed). `.factory/run/sf128-ctl.ts` (`npx tsx`, env in its head comment) adds
     conversations with days ago or an exact date (`add`), newsletter pads (`pad`), empties a fake mailbox (`clear`) and
     lists it (`box`). US2 1 and edge 8 see parts of 100 threads (10 only in the automated tests).
+  - SF-129 AI review (write an email from a record, all 42 scenarios, ~8 min): fresh data `rm -rf .fake-gmail .fake-storage &&
+    bash .factory/run/reset-db.sh && /usr/lib/postgresql/17/bin/psql -h localhost -U postgres -d crm_dev -f .factory/run/sf129-setup.sql`
+    (Fake Org Ltd with Ana Fake (ana@example.test first, ana.k@example.test), main person of the open "Fake Deal Ltd renewal";
+    Ben Fake (no organisation, no deal); Zed Drawer / "Zed drawer deal" (the drawer); Pia Private (Ada's private) / "Pia deal";
+    Gia Hidden (Grace's private) / "HiddenPerson deal"; Una Unsub (unsubscribed) / "Una deal"; Fio Files / "Files deal"; Lex Later
+    (Last contacted 1 Jun 2027); "NoPerson deal", "NoEmail deal" (Nemo Noemail), "Arch deal" + Ari Archme + Arch Org Ltd (archived
+    while a box is open), "Hide deal" (Linus's, made private), "Delete deal", "Later arch deal", "Later del deal" (Del Deleteme),
+    "Unlink deal", Lone Org Ltd). The app on :3000 (`start-app.sh`) and the Gmail-off app on :3003
+    (`PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh`, US4 4). Then
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf129-a.js` (US1, US2 1-7, US5, edges 4-6, 8, 10, 12) and
+    `… scenarios-sf129-b.js` on the same data (US2 8, US3, US4, edges 1-3, 7, 9, 11, 13-15; edge 14 deactivates Ada Fake, last;
+    `ONLY="Edge case 7,US2 scenario 8"` runs some, part a's US2 4 must have run before US2 8). Helpers `sf129-lib.js` (its `pageAs`
+    signs in with the full name: the free-form fake login otherwise renames Ada to "ada"); `sf129-ctl.ts sent <email>` prints the
+    fake Sent mail through `FakeGoogleMail.sentMessages` (To/Cc/Bcc, text, attachments with size and sha256). The record-file picker
+    is a closed `<details>` (open its summary before reading) and the panel shows names upper-cased. Edge 7 holds the send path 8 s
+    with a `pg_sleep` trigger on `email_sends` and calls `/cron/gmail` meanwhile; edge 11 makes storing fail with a trigger on
+    `email_messages` (subject "Not recorded"), dropped before the next 15-minute check; both on "NoPerson deal" (no automatic link,
+    so the hand link is what puts it there). Teammates' archive / make-private are done by SQL; deletes through Grace's UI.
+    Round 1: 39 of 42 pass; US2 1 (recipients line shows addresses, not CRM names), US3 3 (an over-the-limit file is not kept and
+    [ SEND ] then sends; a record file over the limit shows no message until [ SEND ]), US4 3 (the typed fields are replaced by
+    the reconnect message) fail.
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
