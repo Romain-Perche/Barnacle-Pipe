@@ -204,7 +204,11 @@ export default async function FakeGmailPage({ searchParams }: Props) {
                   <td>{head(m, "to")}</td>
                   <td>{head(m, "subject")}</td>
                   <td>{m.labelIds.join(", ")}</td>
-                  <td>{m.threadId}</td>
+                  <td>
+                    {`thread ${m.threadId}`}
+                    {head(m, "in-reply-to") && <div>{`In-Reply-To ${head(m, "in-reply-to")}`}</div>}
+                    {head(m, "references") && <div>{`References ${head(m, "references")}`}</div>}
+                  </td>
                 </tr>
               ))}
             </tbody>

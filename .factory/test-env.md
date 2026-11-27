@@ -121,6 +121,26 @@
 - Supabase Postgres (SF-128 table `past_email_fetches`, migration 0020; SF-129 tables `email_sends` / `email_uploads`,
   migration 0021, checked by `tests/integration/compose-migration.test.ts`): no fake and no public schema; the tests run on
   the real local PostgreSQL 17 (`crm_test`, `start-postgres.sh`), migrations applied by `npm run db:migrate`.
+- Gmail API, SF-130 additions (reply and forward): `users.messages.send` through the **multipart** upload with a thread
+  (`POST /upload/gmail/v1/users/me/messages/send?uploadType=multipart`, `multipart/related`: a JSON `Message` part
+  `{"threadId":…}` then a `message/rfc822` part), in the same fake (`FakeGoogleMail`, `src/server/gmail/fake-gmail.ts`) and
+  wrapper (`tests/fakes/gmail.ts`, schema `gmail-api.json`): the check needs `protocols.simple.multipart === true`, the
+  path `protocols.simple.path`, exactly two parts, the first JSON whose every key is a `Message` property, the second's type
+  among `accept` and its size at most `maxSize`; the answer is checked against `Message`. The fake keeps the thread when it
+  is one of that mailbox (else a new one), keeps In-Reply-To / References, and `sentMessages` adds `inReplyTo` and
+  `references` (unfolded). Forwarded attachments are read with `messages.get` + `messages.attachments.get` (paths,
+  parameters and `MessagePartBody` checked); `failAttachments(on)` makes `attachments.get` answer 503. Tested in
+  `tests/unit/gmail-fake-schema.test.ts` (a JSON part with `thread_id`, `uploadType=resumable` on the simple path, a second
+  part not `message/*`, a body not `multipart/related`, an oversize part, `attachments.get` with `attachment_id` all throw)
+  and `tests/integration/reply-*.test.ts`. `/dev/fake-gmail` lists each message's thread, In-Reply-To and References.
+- Supabase Storage, SF-130: unchanged (SF-129's `readObject` for the record and computer files sent with a reply or
+  forward, through the checked `StorageFake`; `tests/unit/storage-fake.test.ts` refuses `?download_as=x`;
+  `tests/integration/reply-forward.test.ts`).
+- Google OAuth 2.0 token endpoint, SF-130: unchanged fake (no public schema; RFC 6749 §5.2): a refused refresh token
+  (`refuseKey`) before a reply gives `{ status: "gmail", state: "needs_reconnect" }` and marks the connection
+  (`tests/integration/reply-send.test.ts`).
+- Supabase Postgres, SF-130: migration 0022 (`email_sends.reply_message_id`, `on delete set null`), checked on the real
+  local PostgreSQL by `tests/integration/reply-migration.test.ts`; no fake.
 - Cloud Pub/Sub push (SF-118; Gmail's notices to `POST /gmail/push`): the same fake's `notice(email)` (a Google-signed
   OIDC token by the fake's RSA key, served at the certs URL) and `GmailFake.deliver(email)` (to `receiveGmailPush`, the
   route's own handler), every push body checked against `PubsubMessage` in the schema `pubsub-api.json` (`message`

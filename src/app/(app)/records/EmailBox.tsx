@@ -54,7 +54,7 @@ function Addresses({ label, list, names, draft, onDraft, onAdd, onRemove }: {
       <span className="k">{label}</span>
       <div className="fld chips">
         {list.map((a, i) => (
-          <span key={`${a}-${i}`} className="chip" title={a}>
+          <span key={`${a}-${i}`} className="chip" title={names[a.toLowerCase()] ? a : undefined}>
             {names[a.toLowerCase()] ?? a}
             <button type="button" className="chip-x" aria-label={`Remove ${a}`} onClick={() => onRemove(i)}>
               ×

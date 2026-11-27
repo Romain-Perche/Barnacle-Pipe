@@ -221,11 +221,32 @@ OAuth code flow and database sessions.
   bytes before any Google call, and without a thread sends through the upload endpoint (`sendRawUpload`, `message/rfc822`, 40 s).
   `files/storage.ts` `readObject(path, size)` (30 s). Tables `email_sends`, `email_uploads` (migration 0021). The sent email is an
   SF-118 message processed by SF-127 (timeline entry, links, Last contacted): no timeline code of its own. Consent is never read.
-  UI: `records/RecordTimeline.tsx` `emailHref` (`[ WRITE EMAIL ]` in the // TIMELINE heading, not when archived; the board's
+  UI: `records/RecordTimeline.tsx` `emailBase` (SF-130; `${emailBase}new` is `[ WRITE EMAIL ]` in the // TIMELINE heading, not when archived; the board's
   drawer too), `records/EmailOverlay.tsx` (`?email=new` → the box), `records/EmailBox.tsx` (client: the right side panel,
   design B; uploads through `AddFiles.tsx`'s `put`), `records/email-actions.ts` (`startEmailUpload`, `sendEmailFromRecord`:
   flash `email_sent`, then the box goes to `back`). The four pages that hold the box export `maxDuration = 60`. Fake data:
   `src/seed/sent-emails.ts` (fixed send key).
+- SF-130 reply and forward: `src/server/emails/reply-rules.ts` (pure and client-safe: `parseEmailParam` (`?email=new` /
+  `reply-<id>` / `reply-all-<id>` / `forward-<id>`), `prefill` (To / Cc per mode, own address compared lower-cased),
+  `replySubject` / `forwardSubject`, `quoteDate` (UK "27 Nov 2026 at 14:05"), `replyQuote` / `forwardQuote` (from SF-127's
+  `emailText`), `bodyWithQuote`, `referencesFor`, `MESSAGE_ID`) and `src/server/emails/reply.ts` (`replyState` → `ok` /
+  `connect` / `reconnect` / `off`; `replyBox` (the answered email read under `visibleConversation()`, `missing` when hidden or
+  gone; record files only when the record is visible and not archived); `sendReply(actorId, input, now)` (Gmail → typed-text
+  checks → the answered email still visible → record files, uploads, forwarded ids of that email → 25 MB → names → the quote
+  rebuilt on the server, In-Reply-To / References from the stored Message-IDs, `userThread` (the user's own Gmail thread of the
+  conversation) → `deliver`); `placePendingReply` (in `storeMessage`, before `processMessage`: a pending reply's new thread row
+  joins the answered email's conversation)). `compose.ts` `deliver` is SF-129's steps 5–9 shared by both sends (ledger claim with
+  `email_sends.reply_message_id` (migration 0022) and no record for a reply, Storage reads, forwarded bytes through SF-127's
+  `fetchAttachment` (`attachmentAccess(…, { preferConnectionId })`: the sender's mailbox first; `reply_forward_unavailable`),
+  `sendGmail`, storing); `namesFor` (the box's chip names). `gmail/rules.ts` `decideCopy` `pendingSend` (the sync copies a message
+  with a pending ledger row even with no CRM address) and `buildMime` References as a folded list, In-Reply-To only when a
+  Message-ID. `sendGmail` takes `inReplyTo` / `references`; with a `threadId`, `sendRawUpload` uses the multipart upload
+  (`uploadType=multipart`, JSON `{ threadId }` + `message/rfc822`). The fake Gmail answers it, keeps `inReplyTo` / `references` in
+  `sentMessages`, has `failAttachments`; `/dev/fake-gmail` lists each message's thread, In-Reply-To and References. UI:
+  `records/ReplyButtons.tsx` (server: the three buttons, the Settings link, or nothing), the `.eh` row of `EmailEntry.tsx` and
+  `emails/EmailBody.tsx`, `EmailOverlay.tsx` reply modes (target nullable), `EmailBox.tsx` reply view (`pre.quote`, forwarded
+  chips, `sendEmailReply` in `email-actions.ts`); the conversation page reads the flash, opens the box and exports
+  `maxDuration = 60`. Fake data: one reply by Ada Fake in "Fake proposal" (`SEED_REPLY_KEY`).
 - `src/app/(app)/emails/` (SF-127) — the conversation page `[id]/page.tsx` (design B: `← <RECORD>`, // LINKED TO
   `LinkedTo.tsx` with `?link=deal|person|organisation` forms, // EMAILS · OLDEST FIRST `EmailBody.tsx` as plain text,
   `?notice=` fixed texts, `not-found.tsx`), `actions.ts` (`linkRecord`, `unlinkRecord`) and
