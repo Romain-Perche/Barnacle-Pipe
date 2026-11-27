@@ -216,6 +216,13 @@ nothing when Gmail is off.
 
 ---
 
+## Fix round 1
+
+- [ ] T055 Check that `tests/integration/reply-send.test.ts` asserts the flash text "Email sent to ana@example.test." after a reply to Ana Fake's email (US1 scenario 2 as corrected; SF-129's `sentNotice` unchanged), naming `// covers US1 scenario 2 (fix round 1)`; it passes now and must keep passing (no app code changes in this round)
+- [ ] T056 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test DATABASE_URL=postgres://postgres@localhost:5432/crm_test` and fix failures
+
+---
+
 ## Dependencies & Execution Order
 
 - Setup (T001–T002) → Foundational (T003–T008) → stories.

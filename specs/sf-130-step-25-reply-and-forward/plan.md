@@ -203,6 +203,18 @@ AGENTS.md, docs/DECISIONS.md                      # SF-130 lines
       visible and not archived.
     - No blueprint line (no blueprint exception).
 
+## Fix round 1
+
+- **Problem:** the AI review failed US1 scenario 2 only: after a reply the deal page shows "Email sent to
+  ana@example.test.", and the scenario asked for "Email sent to Ana Fake.".
+- **Cause:** the spec contradicted itself. The scenario called the text "SF-129's notice", and FR-009 keeps SF-129's
+  box unchanged; SF-129's notice (`sentNotice`) lists the addresses (SF-129 US1 scenario 2: "Email sent to
+  ana@example.test."). The code does what SF-129 and FR-009 say, and `tests/integration/reply-send.test.ts` already
+  checks "Email sent to ana@example.test." after a reply.
+- **Fix:** correct US1 scenario 2 in `spec.md` to "Email sent to ana@example.test." (done in this round). No app code
+  changes. Build re-runs the existing reply send test and the full suite to confirm.
+- **Files:** `spec.md` only.
+
 ## Outside services
 
 - Gmail API (`users.messages.send` through the simple media and **multipart** upload with `threadId`,
