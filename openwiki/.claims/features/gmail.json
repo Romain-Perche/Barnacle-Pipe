@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b31dc2240fb7246574d424672678ec4bb073dcd7f8b2aec72637ee94871bcb25",
+  "pageVersion": "sha256:61765a47c536bd709af37dfca0c03e087075553629de1220a48fc41eb0368db5",
   "claims": [
     {
       "id": "claim_26dddd940894480690668615756bf371",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:9d3119e84206053d59c49b302720bcfbd31f73ed323079090fb1e5d2aa2a683b"
+          "version": "repo-file-v1:sha256:74cedd11c62e9ae5ac2725d349be8171fca6bc84f32591e2f00e1165767c44dd"
         }
       ]
     },
@@ -64,13 +64,23 @@
         },
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:9d3119e84206053d59c49b302720bcfbd31f73ed323079090fb1e5d2aa2a683b"
+          "version": "repo-file-v1:sha256:74cedd11c62e9ae5ac2725d349be8171fca6bc84f32591e2f00e1165767c44dd"
+        }
+      ]
+    },
+    {
+      "id": "claim_011089295df44c56bc03fb49a46d7abe",
+      "statement": "processMessage runs inside storeMessage's transaction, locks email_conversations, raises Last contacted without lowering it, merges conversations sharing a Message-ID into the smaller id, and auto-links with insert on conflict do nothing so hand choices are kept.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/emails/process.ts",
+          "version": "repo-file-v1:sha256:d60c3ef3ae0ca111ea444e976f6ff1f706f661e8da27b7a7b49eafd896feeafa"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-26T16:45:42.910Z"
+    "at": "2026-11-26T18:09:57.686Z"
   }
 }

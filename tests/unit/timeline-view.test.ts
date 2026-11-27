@@ -29,6 +29,10 @@ describe("entryTag", () => {
     expect(entryTag({ kind: "note", deal: { id: 1, title: "x", archived: false } })).toBe("DEAL");
     expect(entryTag({ kind: "added", deal: { id: 1, title: "x", archived: false } })).toBe("DEAL");
   });
+  it("is EMAIL for a copied email (SF-127 FR-001)", () => {
+    // covers SF-127 FR-001: the EMAIL tag
+    expect(entryTag({ kind: "email", deal: null })).toBe("EMAIL");
+  });
 });
 
 // covers SF-114 US3 scenario 4: an entry of a referred person is tagged PERSON on the ambassador page

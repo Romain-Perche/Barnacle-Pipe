@@ -14,6 +14,8 @@ import {
   hasAllScopes,
   hasCalendarScope,
   parseAddressList,
+  attachmentName,
+  attachmentParts,
   readMessage,
   testEmail,
   type GmailMessage,
@@ -199,6 +201,31 @@ describe("readMessage", () => {
     expect(m.subject).toBe("ab");
     expect(m.textBody).toBe("ab");
     expect(m.rfcMessageId).toBeNull();
+  });
+});
+
+describe("attachmentParts (SF-127 contracts/gmail.md)", () => {
+  // covers SF-127 FR-006: the positions stored at copy time are the positions read at download (one walk).
+  it("lists a nested multipart's attachments in readMessage's order, inline image included", () => {
+    const payload = {
+      mimeType: "multipart/mixed",
+      parts: [
+        {
+          mimeType: "multipart/related",
+          parts: [
+            { mimeType: "multipart/alternative", parts: [{ mimeType: "text/plain", body: { size: 2, data: b64("hi") } }, { mimeType: "text/html", body: { size: 9, data: b64("<b>hi</b>") } }] },
+            { partId: "0.1", mimeType: "image/png", filename: "", body: { size: 50, attachmentId: "img" } },
+          ],
+        },
+        { partId: "1", mimeType: "application/pdf", filename: "figures.pdf", body: { size: 245760, attachmentId: "pdf" } },
+        { partId: "2", mimeType: "text/plain", filename: "=?UTF-8?B?w6l0w6kudHh0?=", body: { size: 3, data: b64("abc") } },
+      ],
+    };
+    const parts = attachmentParts(payload);
+    expect(parts.map((p) => p.body?.attachmentId ?? p.body?.data)).toEqual(["img", "pdf", b64("abc")]);
+    expect(parts.map(attachmentName)).toEqual(readMessage(message({ parts: payload.parts })).attachments.map((a) => a.name));
+    expect(parts.map(attachmentName)).toEqual(["(no name)", "figures.pdf", "été.txt"]);
+    expect(attachmentParts({ mimeType: "text/plain", body: { size: 1, data: b64("x") } })).toEqual([]);
   });
 });
 

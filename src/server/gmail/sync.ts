@@ -4,7 +4,8 @@
 // decideCopy, then one transaction per stored message. Unique indexes keep every message once per account.
 // runGmailCheck: the 15-minute job (/cron/gmail): every working connection, then the daily watch renewal; SF-124: then
 // its calendar sync and the daily renewal of its Calendar notice channel (runCalendarCheck); SF-128: then the running
-// past-email fetches (runPastFetches).
+// past-email fetches (runPastFetches). SF-127: storeMessage processes each stored email (processMessage); runGmailCheck
+// first links the emails not processed yet (catchUpEmails).
 import { sql, type Sql } from "@/server/db";
 import { gmailConfig } from "@/server/env";
 import { loadKey, markNeedsReconnect } from "@/server/gmail/connections";
@@ -21,6 +22,7 @@ import {
 } from "@/server/gmail/google-api";
 import { decideCopy, readMessage, type ReadMessage } from "@/server/gmail/rules";
 import { runCalendarCheck } from "@/server/calendar/sync";
+import { catchUpEmails, processMessage } from "@/server/emails/process";
 import { runPastFetches } from "@/server/gmail/past";
 
 const LEASE_MS = 2 * 60 * 1000;
@@ -110,6 +112,8 @@ export async function storeMessage(connectionId: number, m: ReadMessage, opts: {
         insert into email_attachments (message_id, position, name, content_type, size)
         values (${msg.id}, ${position}, ${a.name}, ${a.contentType}, ${a.size})`;
     }
+    // SF-127: its conversation, links and the Last contacted of the people in it, in the same transaction.
+    await processMessage(db, Number(msg.id));
     return true;
   });
 }
@@ -245,6 +249,12 @@ export async function renewWatch(connectionId: number, now = new Date()): Promis
 // Stops starting new connections after 240 s (the function may run 300 s).
 export async function runGmailCheck(now = new Date()): Promise<void> {
   if (gmailConfig().mode === "off") return;
+  try {
+    // SF-127: emails copied before email on the timeline (or whose processing failed) are linked first.
+    await catchUpEmails();
+  } catch {
+    // Never stops the check.
+  }
   const started = Date.now();
   const rows = await sql<{ id: string }[]>`
     select id::text as id from gmail_connections where state = 'working' order by last_synced_at asc nulls first, id`;

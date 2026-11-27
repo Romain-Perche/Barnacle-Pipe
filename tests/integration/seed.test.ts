@@ -567,6 +567,11 @@ describe("fake Gmail (SF-118)", () => {
       { name: "notes-fake.txt", size: "1024" },
       { name: "proposal-fake.pdf", size: "250880" },
     ]);
+    // SF-127 T044: the seeded emails go through the real path: each conversation linked to its fake person.
+    const [linked] = await sql<{ unlinked: number; people: number }[]>`
+      select (select count(*)::int from email_messages where linked_at is null) as unlinked,
+             (select count(distinct conversation_id)::int from email_links where person_id is not null and not removed) as people`;
+    expect(linked).toEqual({ unlinked: 0, people: 3 });
     expect(await runSeeders(sql)).toContain("already there Gmail conversations");
     expect(await state()).toEqual(first);
   });

@@ -56,6 +56,7 @@ export async function putFakeMessage(form: FormData): Promise<void> {
     labels,
     internalDate: new Date(fake.now() + (Number.isFinite(minutes) ? minutes : 0) * 60_000 - (Number.isFinite(days) ? days : 0) * 86_400_000),
     threadId: str(form, "thread") || null,
+    messageId: str(form, "messageId") || undefined,
   });
   if (form.get("deliver") === "on") {
     const n = fake.notice(user);

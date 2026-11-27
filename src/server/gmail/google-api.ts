@@ -94,10 +94,10 @@ export function consentUrl({ state, codeChallenge, loginHint }: { state: string;
   return url.toString();
 }
 
-export async function call(url: string, init: { method: string; headers?: Record<string, string>; body?: string }): Promise<Response> {
+export async function call(url: string, init: { method: string; headers?: Record<string, string>; body?: string }, timeoutMs = TIMEOUT_MS): Promise<Response> {
   const c = settings();
   try {
-    return await c.fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    return await c.fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
   } catch (e) {
     // fetch rejects with a TypeError on a network error and a DOMException on a time-out; anything else is a bug.
     if (e instanceof TypeError || (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError"))) throw new GoogleUnavailable("network");
@@ -161,13 +161,13 @@ export async function revokeToken(token: string): Promise<void> {
   if (!res.ok) await failWith(res);
 }
 
-async function gmail(accessToken: string, method: string, route: string, opts: { query?: [string, string][]; body?: unknown } = {}): Promise<Response> {
+async function gmail(accessToken: string, method: string, route: string, opts: { query?: [string, string][]; body?: unknown; timeoutMs?: number } = {}): Promise<Response> {
   const q = new URLSearchParams(opts.query ?? []).toString();
   const res = await call(`${GMAIL}/${route}${q ? `?${q}` : ""}`, {
     method,
     headers: { authorization: `Bearer ${accessToken}`, ...(opts.body !== undefined ? { "content-type": "application/json" } : {}) },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-  });
+  }, opts.timeoutMs);
   return res;
 }
 
@@ -233,6 +233,17 @@ export async function getMessage(accessToken: string, id: string): Promise<Gmail
   if (res.status === 404) return null;
   if (!res.ok) return failWith(res);
   return (await readJson(res)) as GmailMessage;
+}
+
+// SF-127 (contracts/gmail.md): an attachment's bytes (users.messages.attachments.get, up to Gmail's 25 MB: 30 s);
+// null when the message or the attachment is gone.
+export async function getAttachment(accessToken: string, messageId: string, attachmentId: string): Promise<Uint8Array | null> {
+  const res = await gmail(accessToken, "GET", `messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`, { timeoutMs: 30_000 });
+  if (res.status === 404) return null;
+  if (!res.ok) return failWith(res);
+  const body = (await readJson(res)) as { data?: unknown } | null;
+  if (typeof body?.data !== "string") throw new GoogleUnavailable(200, "bad_attachment");
+  return new Uint8Array(Buffer.from(body.data, "base64url"));
 }
 
 // SF-128 (contracts/google.md § New calls): one page of the user's threads for `q`, spam and bin left out. A 400 while

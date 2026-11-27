@@ -2,7 +2,8 @@
 // their current owner, admins included. Every query that reads `persons` uses this fragment.
 // `viewer` is a user id, or (SF-102 research.md §5) a SQL fragment such as sql`u.id` to ask which users can see a record.
 // SF-109: `visibleActivity()` below it: every `activities` read uses it.
-// SF-116: `visibleFile()` at the end: every `files` read uses it.
+// SF-116: `visibleFile()`: every `files` read uses it.
+// SF-127: `visibleConversation()` at the end: every read of the email tables for a viewer uses it.
 import type { Fragment, Sql } from "@/server/db";
 
 export type Viewer = number | Fragment;
@@ -45,4 +46,22 @@ export function visibleFile(db: Sql, viewer: Viewer, alias = "f") {
   const f = db(alias);
   return db`((${f}.deal_id is null or exists (select 1 from deals vfd where vfd.id = ${f}.deal_id and ${visibleDeal(db, viewer, "vfd")}))
     and (${f}.person_id is null or exists (select 1 from persons vfp where vfp.id = ${f}.person_id and ${visiblePerson(db, viewer, "vfp")})))`;
+}
+
+// SF-127 (research.md §6): a copied email conversation is seen by those who can see every person in its emails (any
+// From / To / Cc / Bcc address of email_conversation_addresses that belongs to a person) and every person and deal it
+// is linked to (links not removed); organisations are never private. Every read of email_conversations,
+// email_threads, email_messages, email_attachments and email_links for a viewer uses this fragment on the
+// conversation row `alias`, so a hidden conversation does not exist for them: timelines, the conversation page,
+// attachment downloads and link actions all answer as for a missing one.
+export function visibleConversation(db: Sql, viewer: Viewer, alias = "c") {
+  const c = db(alias);
+  return db`(not exists (select 1 from email_conversation_addresses vca
+                         join person_emails vpe on vpe.email = vca.email
+                         join persons vcp on vcp.id = vpe.person_id
+                         where vca.conversation_id = ${c}.id and not ${visiblePerson(db, viewer, "vcp")})
+    and not exists (select 1 from email_links vl join persons vlp on vlp.id = vl.person_id
+                    where vl.conversation_id = ${c}.id and not vl.removed and not ${visiblePerson(db, viewer, "vlp")})
+    and not exists (select 1 from email_links vl join deals vld on vld.id = vl.deal_id
+                    where vl.conversation_id = ${c}.id and not vl.removed and not ${visibleDeal(db, viewer, "vld")}))`;
 }

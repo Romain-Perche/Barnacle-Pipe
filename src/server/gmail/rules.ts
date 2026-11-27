@@ -218,28 +218,45 @@ function internalDateOf(m: GmailMessage): Date {
   return Number.isFinite(ms) && m.internalDate !== undefined && m.internalDate !== "" ? new Date(ms) : new Date(NaN);
 }
 
+const isAttachmentPart = (part: GmailPart) => (part.filename ?? "") !== "" || Boolean(part.body?.attachmentId);
+
+// Every part of a message, depth first (the one walk of readMessage and of an attachment's download).
+function allParts(part: GmailPart, out: GmailPart[] = []): GmailPart[] {
+  out.push(part);
+  for (const child of part.parts ?? []) allParts(child, out);
+  return out;
+}
+
+// SF-127 (contracts/gmail.md): the parts read as attachments, in walk order. email_attachments.position is the index
+// in this list, so the download finds the part again in a fresh messages.get.
+export function attachmentParts(payload: GmailPart): GmailPart[] {
+  return allParts(payload).filter(isAttachmentPart);
+}
+
+// The name an attachment part is stored under.
+export function attachmentName(part: GmailPart): string {
+  return clean(decodeHeader(part.filename ?? "")).slice(0, NAME_MAX) || "(no name)";
+}
+
 export function readMessage(m: GmailMessage): ReadMessage {
   const headers = m.payload?.headers ?? [];
   let textBody: string | null = null;
   let htmlBody: string | null = null;
-  const attachments: Attachment[] = [];
-  const walk = (part: GmailPart) => {
-    const isAttachment = (part.filename ?? "") !== "" || Boolean(part.body?.attachmentId);
+  const parts = m.payload ? allParts(m.payload) : [];
+  for (const part of parts) {
+    if (isAttachmentPart(part)) continue;
     const type = (part.mimeType ?? "").toLowerCase();
-    if (isAttachment) {
-      attachments.push({
-        name: clean(decodeHeader(part.filename ?? "")).slice(0, NAME_MAX) || "(no name)",
-        contentType: (part.mimeType || "application/octet-stream").slice(0, NAME_MAX),
-        size: Math.max(0, Number(part.body?.size ?? 0) || 0),
-      });
-    } else if (type === "text/plain" && textBody === null && part.body?.data !== undefined) {
+    if (type === "text/plain" && textBody === null && part.body?.data !== undefined) {
       textBody = clean(decodeBytes(Buffer.from(part.body.data, "base64url"), charsetOf(part)));
     } else if (type === "text/html" && htmlBody === null && part.body?.data !== undefined) {
       htmlBody = clean(decodeBytes(Buffer.from(part.body.data, "base64url"), charsetOf(part)));
     }
-    for (const child of part.parts ?? []) walk(child);
-  };
-  if (m.payload) walk(m.payload);
+  }
+  const attachments: Attachment[] = (m.payload ? attachmentParts(m.payload) : []).map((part) => ({
+    name: attachmentName(part),
+    contentType: (part.mimeType || "application/octet-stream").slice(0, NAME_MAX),
+    size: Math.max(0, Number(part.body?.size ?? 0) || 0),
+  }));
   const from = parseAddressList(headerValue(headers, "From"))[0] ?? null;
   const to = parseAddressList(headerValue(headers, "To"));
   const cc = parseAddressList(headerValue(headers, "Cc"));

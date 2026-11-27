@@ -335,6 +335,15 @@ export const messages = {
   calendar_settings_warn: "Reconnect Google to sync your calendar",
   calendar_untitled: "(No title)",
   calendar_done_mark: "✓ ",
+  // SF-127: email on the timeline (contracts/routes.md § Messages).
+  email_no_subject: "(no subject)",
+  email_attachment_unavailable: "This attachment can't be fetched from Gmail right now. Try again later.",
+  email_not_found: "This conversation doesn't exist or you can't see it.",
+  email_linked: "Linked.",
+  email_unlinked: "Unlinked.",
+  email_link_refused: "This record can't be linked: it was archived or you can't see it.",
+  email_no_links: "Not linked to any record.",
+  email_unknown_sender: "Unknown sender",
   // SF-121: the public unsubscribe page
   unsubscribe_lead: "Stop receiving campaign emails from Barnacle Labs.",
   unsubscribe_done: "You're unsubscribed. You won't get any more campaign emails from us.",
@@ -580,6 +589,8 @@ export const templates = {
   unsubscribed_link_event: "Unsubscribed from campaigns through the unsubscribe link",
   unsubscribed_mail_app_event: "Unsubscribed from campaigns through their mail app",
   consent_changed_event: (from: string, to: string) => `Consent: ${from} → ${to}`,
+  // SF-127: the conversation page's kicker.
+  conversation_count: (n: number) => `CONVERSATION · ${n} ${n === 1 ? "EMAIL" : "EMAILS"}`,
 } as const;
 
 export type TemplateCode = keyof typeof templates;

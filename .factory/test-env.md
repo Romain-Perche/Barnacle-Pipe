@@ -64,8 +64,8 @@
   adds 2 pipelines, 30 deals, 40 notes, 30 activities and 6 files (PDF, PNG, 26 MB, empty, Drive link, email
   attachment). Engine hook `onSaveForTests` (APP_ENV=test only) runs inside every import transaction: tests use it to
   prove no Pipedrive call happens while one is open, to force a failure, or to move the cursor (a stale part).
-- Gmail API (SF-118; users.getProfile, watch, stop, history.list, messages.list/get/send, threads.get; SF-128:
-  threads.list, threads.get format=minimal/metadata/full): fake
+- Gmail API (SF-118; users.getProfile, watch, stop, history.list, messages.list/get/send, threads.get; SF-127:
+  users.messages.attachments.get for attachment downloads; SF-128: threads.list, threads.get format=minimal/metadata/full): fake
   `src/server/gmail/fake-gmail.ts` (`FakeGoogleMail`), wrapped for the tests by `tests/fakes/gmail.ts` (`GmailFake`,
   `installGmailFake()`, installed with `useGmailFetchForTests`), which checks every Gmail request and answer against the
   schema `gmail-api.json` (path and method among `resources.users` methods, each query parameter declared for that
@@ -78,7 +78,12 @@
   `messages.list` newest first with `q=after:<seconds>` and spam/bin left out, a watch for 7 days, `messages.send` puts
   the message in the sender's mailbox with SENT (and INBOX when sent to self). Switches: `down()`, `refuseKey(email)`,
   `failWatch(on)`, `forgetHistory()`, `advance(ms)`, `tamper(fn)`, `requests`, `mailbox(email)`, `sent(email)`,
-  `tokenStatus(token)`, `tokensOf(email)`, `watchOf(email)`. In the running app (APP_ENV development/test,
+  `tokenStatus(token)`, `tokensOf(email)`, `watchOf(email)`. SF-127: `addMessage` attachments carry bytes (`data`, default
+  `size` bytes of a fake pattern; `inline: true` puts them in the part's `body.data` with no `attachmentId`, as Gmail does
+  for small parts), `messages/{id}/attachments/{attachmentId}` answers `MessagePartBody` `{ size, data }` (base64url) or
+  Gmail's 404, `deleteMessage(email, id)` removes a message for good; `GmailFake` checks the attachments call like the
+  others (`users.messages.attachments.get`: path, query parameters, `MessagePartBody` answer), tested in
+  `tests/unit/gmail-fake-schema.test.ts`. In the running app (APP_ENV development/test,
   `GMAIL_PUBSUB_TOPIC` empty, `GMAIL_TOKEN_KEY` set) the same fake runs in process (state in `.fake-gmail/state.json`):
   `[ CONNECT GMAIL ]` opens the fake consent screen `/dev/fake-google/gmail`, and `/dev/fake-gmail` puts mail in a
   user's mailbox (with or without its notice), runs the 15-minute check, refuses the key, fails renewals, forgets history.
@@ -135,7 +140,8 @@
   a wrong `code_verifier` or a revoked/refused refresh token, `401 invalid_client` for a wrong secret, `400
   invalid_request` for a missing parameter, `scope` with only the ticked scopes, a refresh token only with
   `access_type=offline`, 1-hour access tokens that die with their refresh token, revoke `200` / `400 invalid_token`, a
-  JWK set (`kid`, `kty` RSA, `alg` RS256, `n`, `e`) with `cache-control: max-age`.
+  JWK set (`kid`, `kty` RSA, `alg` RS256, `n`, `e`) with `cache-control: max-age`. SF-127: the attachment download refreshes
+  the mailbox's access token here too (`refresh_tokn=` → `400 invalid_request`, tested).
 - Supabase Postgres (through the Supavisor pooler): no fake — a real local PostgreSQL 17. No public schema
   on GitHub; follows Supabase's docs (https://supabase.com/docs/guides/database/connecting-to-postgres):
   transaction-mode pooler copied by always connecting with `prepare: false` and taking only
@@ -723,6 +729,30 @@
     reports FAIL because no [ EDIT ] is offered on the archived person's page, which is the SF-109 behaviour).
     Round 3 (after merging origin/main with SF-123 reminders): same order on fresh data, 42 of 42 pass (edge 10 again through
     check-sf124-edge9.js; the b script's probe FAIL is the same known false negative).
+  - SF-127 (email on the timeline): app on :3000 from `start-app.sh` (fake Gmail) on fresh data (`rm -rf .fake-gmail && bash
+    .factory/run/reset-db.sh`): the seed's three conversations of Ada Fake go through the real path, so they are already on
+    their fake people's timelines. `/dev/fake-gmail` puts mail in any connected user's mailbox: attachments as "name:size"
+    lines (the fake serves `size` bytes of a fake pattern for [ DOWNLOAD ]), an optional Message-ID (put the same one in Ada's
+    and Bob's mailboxes for one email copied twice), [ RUN THE 15-MINUTE CHECK ] for the check. A second mailbox: sign in as
+    another fake user and [ CONNECT GMAIL ]. Attachment failures: [ REFUSE THE KEY ] on the fake page, or disconnect in Settings.
+    AI review run (all 55 SF-127 scenarios, ~15 min): fresh data `rm -rf .fake-gmail && bash .factory/run/reset-db.sh &&
+    /usr/lib/postgresql/17/bin/psql -h localhost -U postgres -d crm_dev -f .factory/run/sf127-setup.sql` (psql is not on PATH; organisations Example Ltd / Other Co / Pia Org /
+    Mover Org / Gone Org, people Ana and Ben Example, Pia Private (Ada's), Cat Twodeals, Dan Closed, Eve Linked, Fay Pdeal, Gus
+    Mover, Hal Archived, Ivy Later, Jo Gone, Kim Twoaddr and their deals; Ada's `connected_at` set to 1 Nov so older emails are
+    copied: SF-118 copies only email after connecting, and a new thread only when a CRM person is in it). Then
+    `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf127-a.js` (US1, US2 1-3/5, US3, US6, edges 6-11, 13)
+    and then `… scenarios-sf127-b.js` on the same data (US4, US5, US7, US2 4, edges 1-5, 12, 14-16; it breaks Ada's, Linus's and
+    Grace's mailboxes at the end). Helpers in `sf127-lib.js`; Linus Fake plays the spec's "Bob". `gmail-ctl.ts` ops `delete <email>
+    <subject>` (Gmail no longer has the message) and `unreachable on|off` (every Google call fails). Link pickers: type, click the
+    option (the open list covers [ LINK ]), then [ LINK ].
+    Fix round 1: then `… scenarios-sf127-c.js` on the same data (after part b: it connects Ada's and Linus's mailboxes again):
+    edges 17 (attachment unavailable opened from Ana's timeline keeps "← ANA EXAMPLE"), 18 (two same-name attachments, from
+    the own copy and from Linus's copy after `gmail-ctl.ts delete`) and 14 again (part b's edge 14 used to fail on its own
+    data: CatConv is linked by hand to Kim in US4 3, so making Kim private hid it; check reordered) and US6 scenario 4 (private
+    Pia's Last contacted; no part ran it before). `ONLY="Edge case 18,US6 scenario 4"` runs some; mailboxes reconnected only if not working.
+    Round 2 (after fix round 1): a 30/30, b 24 of 25 (edge 14 failed on the old order, passes in c), c 4/4: all 57 scenarios pass.
+    Round 3 (after merging origin/main: SF-126 double-click, SF-128 fetch past emails): same order on fresh data, a 30/30,
+    b 25/25 (edge 14 passes there too now), c 4/4: all 57 pass; five smoke checks pass.
   - SF-128 AI review (fetch past emails, all 28 scenarios, ~4 min): `rm -rf .fake-gmail && bash .factory/run/reset-db.sh`
     (run start-app.sh first on a fresh VM: it installs PostgreSQL), the app on :3000 (`start-app.sh`, fake Gmail) and
     `PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh` (edge 9, Gmail not set up). Then

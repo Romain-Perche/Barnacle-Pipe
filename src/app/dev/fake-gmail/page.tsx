@@ -147,6 +147,10 @@ export default async function FakeGmailPage({ searchParams }: Props) {
               <textarea className="input" name="attachments" rows={2} placeholder="contract.pdf:20971520" />
             </label>
             <label className="field">
+              <span>Message-ID (optional; the same in two mailboxes: one email copied twice)</span>
+              <input className="input" name="messageId" placeholder="<shared-1@example.test>" />
+            </label>
+            <label className="field">
               <span>Date offset in minutes (negative: earlier)</span>
               <input className="input" name="offset" type="number" defaultValue={0} />
             </label>
