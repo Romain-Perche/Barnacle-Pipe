@@ -1,4 +1,5 @@
 // SF-129 AI review, part A: US1, US2 (1-7), US5, edges 4-6, 8, 10, 12. Fresh data first (see test-env.md § SF-129).
+const bare = (h) => (h || "").replace(/^.*<([^>]+)>$/, "$1");
 const L = require("./sf129-lib.js");
 const { q, norm, go, R, S, sleep } = L;
 const fs = require("fs");
@@ -48,7 +49,7 @@ async function pasteInto(p, label, text) {
     const body = await bodyText(p);
     const nw = await newestIsEmail(p, "Next steps");
     const closed = (await L.panel(p).count()) === 0;
-    const ok = s.length === n0 + 1 && /ada@barnacle\.ai/.test(m.from) && m.to === "ana@example.test" && m.subject === "Next steps" && m.text.replace(/\r\n/g, "\n") === "Hi Ana,\n\nHere is the plan." && closed && occurrences(body, "Email sent to ana@example.test.") === 1 && nw.ok;
+    const ok = s.length === n0 + 1 && /ada@barnacle\.ai/.test(m.from) && bare(m.to) === "ana@example.test" && m.subject === "Next steps" && m.text.replace(/\r\n/g, "\n") === "Hi Ana,\n\nHere is the plan." && closed && occurrences(body, "Email sent to ana@example.test.") === 1 && nw.ok;
     R("US1 scenario 2", ok, `Sent +${s.length - n0}: From "${m.from}", To "${m.to}", Subject "${m.subject}", text ${JSON.stringify(m.text)}; box closed ${closed}; url ${p.url().replace(L.BASE, "")}; notice shown ${occurrences(body, "Email sent to ana@example.test.")}×; newest timeline entry EMAIL "${nw.s}"`);
   });
   await run("US1 scenario 3", async () => {
@@ -84,7 +85,7 @@ async function pasteInto(p, label, text) {
     await L.fill(p, { to: ["ana@example.test"], subject: "Org hello", text: "From the org." });
     await L.send(p);
     const m = lastSent();
-    R("US1 scenario 5", to.length === 0 && sentCount() === n0 + 1 && m.to === "ana@example.test", `To at open ${JSON.stringify(to)}; typed ana@example.test and sent: Sent +${sentCount() - n0}, To "${m.to}"`);
+    R("US1 scenario 5", to.length === 0 && sentCount() === n0 + 1 && bare(m.to) === "ana@example.test", `To at open ${JSON.stringify(to)}; typed ana@example.test and sent: Sent +${sentCount() - n0}, To "${m.to}"`);
   });
   await run("US2 scenario 3", async () => {
     const lo = L.recId("org", "Lone Org Ltd");
@@ -99,7 +100,7 @@ async function pasteInto(p, label, text) {
     await L.send(p);
     const m = lastSent();
     const all = [m.to, m.cc, m.bcc].join(",");
-    R("US1 scenario 6", sentCount() === n0 + 1 && m.to === "ben@example.test" && m.cc === "cat@example.test" && m.bcc === "dan@example.test" && !all.includes("ana@"), `sent To "${m.to}", Cc "${m.cc}", Bcc "${m.bcc}"`);
+    R("US1 scenario 6", sentCount() === n0 + 1 && bare(m.to) === "ben@example.test" && m.cc === "cat@example.test" && m.bcc === "dan@example.test" && !all.includes("ana@"), `sent To "${m.to}", Cc "${m.cc}", Bcc "${m.bcc}"`);
   });
   await run("US1 scenario 7", async () => {
     const before = (await entries(p, `/deals/${deal}`)).length; const n0 = sentCount();
@@ -222,7 +223,7 @@ async function pasteInto(p, label, text) {
     await L.removeAll(p, "To");
     await pasteInto(p, "To", "a@example.test, b@example.test; c@example.test");
     const pasted = await L.chips(p, "To");
-    const ok = e1.includes("ana@ is not a valid email address.") && n1 === n0 && sentCount() === n0 + 1 && m.to.toLowerCase() === "ana@example.test" && m.cc === "" && pasted.length === 3;
+    const ok = e1.includes("ana@ is not a valid email address.") && n1 === n0 && sentCount() === n0 + 1 && bare(m.to).toLowerCase() === "ana@example.test" && m.cc === "" && pasted.length === 3;
     R("Edge case 4", ok, `"ana@": ${JSON.stringify(e1)}, Sent ${n0}→${n1}; To Ana@Example.test + Cc "ana@example.test ": sent To "${m.to}", Cc "${m.cc}"; pasted → ${JSON.stringify(pasted)}`);
   });
   await run("Edge case 5", async () => {
@@ -267,7 +268,7 @@ async function pasteInto(p, label, text) {
     await L.fill(p, { cc: ["ana.k@example.test"], subject: "Two of Ana", text: "hi" }); await L.send(p);
     const es = (await entries(p, `/people/${ana}`)).filter((e) => e.subj === "Two of Ana");
     const m = lastSent();
-    R("Edge case 8", es.length === 1 && m.to === "ana@example.test" && m.cc === "ana.k@example.test", `sent To ${m.to} Cc ${m.cc}; Ana Fake's page ${es.length}× "${es[0] && es[0].head}"`);
+    R("Edge case 8", es.length === 1 && m.to === "Ana Fake <ana@example.test>" && m.cc === "Ana Fake <ana.k@example.test>" && es[0].head === "Ada Fake → Ana Fake · Cc Ana Fake", `sent To ${m.to} Cc ${m.cc}; Ana Fake's page ${es.length}× "${es[0] && es[0].head}"`);
   });
   await run("Edge case 10", async () => {
     const before = (await entries(p, `/deals/${deal}`)).length; const n0 = sentCount();

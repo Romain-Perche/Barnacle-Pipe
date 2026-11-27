@@ -1,5 +1,5 @@
-// SF-129 AI review, part B: US2 8, US3, US4, edges 1-3, 7, 9, 11, 13-15. After part A on the same data; the Gmail-off app
-// on :3003 (PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh). Edge 14 deactivates Ada
+// SF-129 AI review, part B: US2 8, US3, US4, edges 1-3, 7, 9, 11, 13-16. After part A on the same data; the Gmail-off app
+// on :3003 (PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh). Edge 15 deactivates Ada
 // Fake (last). ONLY="Edge case 7,…" runs some.
 const L = require("./sf129-lib.js");
 const { q, norm, go, R, S, sleep } = L;
@@ -91,7 +91,7 @@ const hasWrite = async (p, scope) => (await (scope || p).getByRole("link", { nam
     const closed = (await L.panel(p).count()) === 0;
     const e2 = closed ? ["(box closed: sent)"] : await L.errs(p);
     const n1 = sentCount();
-    R("US3 scenario 3", e1.includes("Attachments can be 25 MB in total at most.") && !closed && e2.includes("Attachments can be 25 MB in total at most.") && n1 === n0, `24 MB attached ("${tot0}"); adding a 2 MB computer file: ${JSON.stringify(e1)}, list now ${JSON.stringify(list1)} (the 2 MB file is refused at pick time, so it is never in the list); pressing [ SEND ]: ${JSON.stringify(e2)}, Sent +${n1 - n0}`);
+    R("US3 scenario 3", e1.includes("Attachments can be 25 MB in total at most.") && !closed && e2.includes("Attachments can be 25 MB in total at most.") && n1 === n0, `24 MB attached ("${tot0}"); adding a 2 MB computer file: ${JSON.stringify(e1)}, list now ${JSON.stringify(list1)}; pressing [ SEND ]: ${JSON.stringify(e2)}, Sent +${n1 - n0}`);
     // variant: the 2 MB file is a record file (proposal.pdf)
     if (!closed) await go(p, `/deals/${fd}`);
     await L.openBox(p, `/deals/${fd}`);
@@ -255,7 +255,7 @@ const hasWrite = async (p, scope) => (await (scope || p).getByRole("link", { nam
     R("US2 scenario 8", d === 0 && l2.every((x) => !x.startsWith("d:Unlink deal") || x.includes("(removed)")), `${who} unlinked the deal: links ${JSON.stringify(l1)}; after the 15-minute check ${JSON.stringify(l2)}; Unlink deal shows it ${d}×`);
     await lp.context().close();
   });
-  await run("Edge case 15", async () => {
+  await run("Edge case 16", async () => {
     const la = L.recId("deal", "Later arch deal"), ldd = L.recId("deal", "Later del deal"), del = L.recId("person", "Del Deleteme");
     for (const [id, s] of [[la, "Later archived"], [ldd, "Later deleted"]]) { await L.openBox(p, `/deals/${id}`); if (id === la) await L.fill(p, { to: ["ben@example.test"] }); await L.fill(p, { subject: s, text: "x" }); await L.send(p); }
     PSQL(`update deals set archived_at=now() where id=${la}`);
@@ -265,7 +265,25 @@ const hasWrite = async (p, scope) => (await (scope || p).getByRole("link", { nam
     const left = q(`select count(*) from deals where id=${ldd}`);
     const dp = L.countSubj(await L.emailEntries(p, `/people/${del}`), "Later deleted");
     const bp = L.countSubj(await L.emailEntries(p, `/people/${L.recId("person", "Ben Fake")}`), "Later archived");
-    R("Edge case 15", a === 1 && left === "0" && dp === 1 && bp === 1, `archived deal still shows its entry ${a}×; deleted deal (rows ${left}): Del Deleteme's page ${dp}×; Ben's page (archived deal's recipient) ${bp}×`);
+    R("Edge case 16", a === 1 && left === "0" && dp === 1 && bp === 1, `archived deal still shows its entry ${a}×; deleted deal (rows ${left}): Del Deleteme's page ${dp}×; Ben's page (archived deal's recipient) ${bp}×`);
+  });
+  await run("Edge case 14", async () => {
+    const lo = L.recId("org", "Lone Org Ltd");
+    await L.openBox(p, `/organisations/${lo}`);
+    await L.fill(p, { to: ["ana@example.test"], cc: ["nobody14@nowhere.test"], subject: "Names fourteen", text: "x" });
+    await L.send(p);
+    const m1 = lastSent();
+    await L.openBox(p, `/organisations/${lo}`);
+    await L.fill(p, { to: ["gia@example.test"], subject: "Names hidden fourteen", text: "x" });
+    await L.send(p);
+    const m2 = lastSent();
+    const e1 = (await L.emailEntries(p, `/organisations/${lo}`)).filter((e) => e.subj === "Names fourteen")[0] || { head: "" };
+    const g = await L.pageAs(b, L.G);
+    const e2 = (await L.emailEntries(g, `/organisations/${lo}`)).filter((e) => e.subj === "Names hidden fourteen")[0] || { head: "" };
+    await g.context().close();
+    const ok = /Ana Fake/.test(m1.to) && /ana@example\.test/.test(m1.to) && !/"?[A-Z]/.test(m1.cc.replace(/nobody14@nowhere\.test/, "")) &&
+      e1.head === "Ada Fake → Ana Fake · Cc nobody14@nowhere.test" && !/Gia/.test(m2.to) && e2.head === "Ada Fake → gia@example.test";
+    R("Edge case 14", ok, `sent headers: To ${JSON.stringify(m1.to)} Cc ${JSON.stringify(m1.cc)}; entry head (Ada) "${e1.head}"; to Grace's private Gia: To header ${JSON.stringify(m2.to)}, entry head as Grace sees it "${e2.head}"`);
   });
   await run("US4 scenario 1", async () => {
     const g = await L.pageAs(b, L.G);
@@ -330,7 +348,7 @@ const hasWrite = async (p, scope) => (await (scope || p).getByRole("link", { nam
     await ctx2.context().close(); await fp.close();
     await L.connect(p); // working again for the rest
   });
-  await run("Edge case 14", async () => {
+  await run("Edge case 15", async () => {
     const g = await L.pageAs(b, L.G);
     await go(g, "/admin/users");
     await Promise.all([g.waitForLoadState("networkidle"), g.locator("tr", { hasText: L.A }).getByRole("button", { name: "[ DEACTIVATE ]" }).click()]);
@@ -338,7 +356,7 @@ const hasWrite = async (p, scope) => (await (scope || p).getByRole("link", { nam
     const st = q(`select status from users where email='${L.A}'`);
     const es = await L.emailEntries(g, `/deals/${deal}`);
     const heads = es.map((e) => e.head);
-    R("Edge case 14", st === "deactivated" && heads.length > 0 && heads.every((h) => h.startsWith("Ada Fake →")), `Grace deactivated Ada (status ${st}); Grace sees ${heads.length} EMAIL entries on Fake Deal Ltd renewal, heads e.g. "${heads[0]}"; all start "Ada Fake →" ${heads.every((h) => h.startsWith("Ada Fake →"))}`);
+    R("Edge case 15", st === "deactivated" && heads.length > 0 && heads.every((h) => h.startsWith("Ada Fake →")), `Grace deactivated Ada (status ${st}); Grace sees ${heads.length} EMAIL entries on Fake Deal Ltd renewal, heads e.g. "${heads[0]}"; all start "Ada Fake →" ${heads.every((h) => h.startsWith("Ada Fake →"))}`);
     await g.context().close();
   });
   fs.writeFileSync("/tmp/sf129-b.json", JSON.stringify(S, null, 1));

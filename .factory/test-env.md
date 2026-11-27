@@ -792,7 +792,7 @@
     "Unlink deal", Lone Org Ltd). The app on :3000 (`start-app.sh`) and the Gmail-off app on :3003
     (`PORT=3003 SKIP_BUILD=1 SKIP_SEED=1 GMAIL_TOKEN_KEY= bash .factory/run/start-app.sh`, US4 4). Then
     `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf129-a.js` (US1, US2 1-7, US5, edges 4-6, 8, 10, 12) and
-    `… scenarios-sf129-b.js` on the same data (US2 8, US3, US4, edges 1-3, 7, 9, 11, 13-15; edge 14 deactivates Ada Fake, last;
+    `… scenarios-sf129-b.js` on the same data (US2 8, US3, US4, edges 1-3, 7, 9, 11, 13-16; edge 14 recipient names (Lone Org Ltd, Grace's private Gia unnamed), edge 15 deactivates Ada Fake, last;
     `ONLY="Edge case 7,US2 scenario 8"` runs some, part a's US2 4 must have run before US2 8). Helpers `sf129-lib.js` (its `pageAs`
     signs in with the full name: the free-form fake login otherwise renames Ada to "ada"); `sf129-ctl.ts sent <email>` prints the
     fake Sent mail through `FakeGoogleMail.sentMessages` (To/Cc/Bcc, text, attachments with size and sha256). The record-file picker
@@ -803,6 +803,10 @@
     Round 1: 39 of 42 pass; US2 1 (recipients line shows addresses, not CRM names), US3 3 (an over-the-limit file is not kept and
     [ SEND ] then sends; a record file over the limit shows no message until [ SEND ]), US4 3 (the typed fields are replaced by
     the reconnect message) fail.
+    Round 2 (scenario list renumbered: edge 14 recipient names is new, deactivated sender is 15, archived/deleted later is 16;
+    part A's header checks read the bare address of "Name <address>"): 42 of 43 pass; US4 3 fails: `EmailBox` takes the
+    opening Gmail state from the `box` prop, and the `router.refresh()` after a key refusal re-renders it as `needs_reconnect`,
+    so `panelView` turns to "message" and the typed fields go.
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
