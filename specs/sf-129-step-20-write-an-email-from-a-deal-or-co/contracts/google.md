@@ -49,7 +49,7 @@ Content-Transfer-Encoding: base64
 ```
 
 The fake (`FakeGoogleMail`, `src/server/gmail/fake-gmail.ts`) answers the upload path too: it reads the body as the
-message, parses `multipart/mixed` (and the nested parts it already reads), keeps each attachment part with its
+message, parses `multipart/mixed` (and the nested parts it already reads), keeps each attachment part (SF-127 already keeps attachment bytes for `getAttachment`; reuse it) with its
 `filename`, `mimeType`, `body.size` and `body.attachmentId` (bytes kept in its state, readable by tests through
 `sentMessages(email)` → `{ to, cc, bcc, subject, text, attachments: { name, type, bytes } }`), removes `Bcc` from stored
 headers, keeps a given `Message-ID`, labels SENT, and answers `{ id, threadId, labelIds }`. `tests/fakes/gmail.ts`

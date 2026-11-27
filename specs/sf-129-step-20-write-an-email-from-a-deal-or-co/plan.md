@@ -1,6 +1,6 @@
 # Implementation Plan: Write an email from a deal or contact
 
-**Branch**: `factory/sf-129-step-20-write-an-email-from-a-deal-or-co` | **Date**: 2026-11-26 | **Spec**: [spec.md](./spec.md)
+**Branch**: `factory/sf-129-step-20-write-an-email-from-a-deal-or-co` | **Date**: 2026-11-27 (re-planned on SF-127) | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `/specs/sf-129-step-20-write-an-email-from-a-deal-or-co/spec.md`
 
@@ -11,12 +11,16 @@ page opens a tall right-side panel (design B, `?email=new`) to write a plain-tex
 text and attachments (the record's own files and files from the computer, 25 MB in total). `[ SEND ]` goes through
 SF-118's single `sendGmail`, extended with attachments and sent through Gmail's media-upload endpoint (35 MiB limit).
 Files from the computer go straight from the browser to Storage (as SF-116's `[ ADD FILE ]`), never through the app,
-and are removed after sending. The sent email is stored at once in SF-118's `email_messages` (so the later Gmail sync
-recognises it by its Gmail id and never shows or counts it twice), linked by a new `email_links` table to the record it
-was written from and to every CRM person it went to, and read into `readTimeline` as a new EMAIL entry, hidden from
-anyone who cannot see one of its linked records (`visibleEmail`). A small `email_sends` ledger, claimed before any
-Google call, makes a double press send once and lets the sync finish the links if recording failed after Gmail
-accepted the email. Recipients' Last contacted is raised to the send time.
+and are removed after sending.
+
+Re-planned on SF-127 (Email on the timeline, now on main; the person's answer of 2026-11-27): the sent email is stored at
+once through the sync's own `storeMessage` (SF-118 tables), whose transaction already runs SF-127's `processMessage`
+(conversation, addresses, automatic links to the people in it, their organisation and their one open deal, Last
+contacted). The only addition there is one link **by hand** (`email_links.how = 'manual'`, SF-127's table) to the record
+the email was written from. The timeline needs no change: SF-127's `timelineEmails` / `EmailEntry` show it, hidden by
+`visibleConversation()`. The later Gmail sync finds the message by its Gmail id and neither shows nor counts it twice.
+A small `email_sends` ledger, claimed before any Google call, makes a double press send once and lets the sync add the
+hand link when storing failed after Gmail accepted the email.
 
 ## Technical Context
 
@@ -24,8 +28,8 @@ accepted the email. Recipients' Last contacted is raised to the send time.
 
 **Primary Dependencies**: `next`, `react`, `postgres` (postgres.js); no new package (see `dependencies.json`: `[]`)
 
-**Storage**: Postgres (migration `0020_sent_email.sql`: `email_links`, `email_sends`, `email_uploads`); Supabase
-Storage for attachments' bytes (record files, temporary computer uploads)
+**Storage**: Postgres (migration `0021_email_send.sql`: `email_sends`, `email_uploads`; SF-118 / SF-127 email tables
+reused unchanged); Supabase Storage for attachments' bytes (record files, temporary computer uploads)
 
 **Testing**: Vitest unit + integration on real Postgres; fake Gmail (`FakeGoogleMail`) and fake Storage
 (`FakeStorage`) checked against the pinned schemas (`npm run test:schemas`)
@@ -54,14 +58,14 @@ through an action); Gmail upload ≤ 36,700,160 bytes; fixed messages only; plai
 |---|---|
 | Server components by default; client only where the browser is needed | PASS — `EmailOverlay` server; `EmailBox` client (chips, uploads, pending state) |
 | Every page `requireUser()`; every action `requireUser()` first; no reliance on hidden links | PASS — `startEmailUpload`, `sendEmailFromRecord` re-check record visibility, archive state, files and Gmail at send time (FR-021) |
-| User-facing text from `messages.ts`; nothing from the URL; redirects via `isSafeNext` | PASS — new `email_*` messages and templates; `back` checked |
-| Migrations transaction-safe, RLS enabled after each `create table`, never at app start | PASS — `0020_sent_email.sql` |
+| User-facing text from `messages.ts`; nothing from the URL; redirects via `isSafeNext` | PASS — new `compose_*` messages and templates; `back` checked |
+| Migrations transaction-safe, RLS enabled after each `create table`, never at app start | PASS — `0021_email_send.sql` |
 | Fakes only for outside services, checked against their schemas | PASS — fake Gmail upload path checked against `gmail-api.json` `mediaUpload`; Storage GET against `storage_v0_openapi.json` |
-| Fake data clearly fake; only when `isFakeAllowed()` | PASS — `src/seed/emails.ts` |
+| Fake data clearly fake; only when `isFakeAllowed()` | PASS — `src/seed/sent-emails.ts` |
 | No secrets; every setting in `.env.example` and README | PASS — no new setting |
-| One visibility rule per table (`visible*()` in `visibility.ts`) | PASS — `visibleEmail()` |
-| DECISIONS 2026-11-24: an email with someone the user cannot see is hidden entirely | PASS — `visibleEmail()` over every link |
-| No Google call inside `sql.begin()` (SF-118/SF-124) | PASS — order in `contracts/routes.md` |
+| SF-127: every read of the email tables for a viewer uses `visibleConversation()` | PASS — no new read of them for a viewer: timelines and the conversation page are SF-127's |
+| SF-127: automatic linking only ever `insert … on conflict do nothing`; a hand choice is never changed | PASS — the written-from link is one more hand link, inserted `on conflict do nothing` |
+| No Google call inside `sql.begin()` (SF-118/SF-124/SF-127) | PASS — order in `contracts/routes.md` |
 
 Post-design re-check: PASS, no violation (Complexity Tracking empty).
 
@@ -85,25 +89,23 @@ specs/sf-129-step-20-write-an-email-from-a-deal-or-co/
 ### Source Code (repository root)
 
 ```text
-migrations/0020_sent_email.sql                    # email_links, email_sends, email_uploads (data-model.md)
-src/server/email/rules.ts                         # NEW pure, client-safe: addresses, dedupe, limits, totals, preview
-src/server/email/emails.ts                        # NEW emailBox, startEmailUpload, sendFromRecord, recordSent,
+migrations/0021_email_send.sql                    # email_sends, email_uploads (data-model.md)
+src/server/emails/compose-rules.ts                # NEW pure, client-safe: addresses, dedupe, limits, totals, sent notice
+src/server/emails/compose.ts                      # NEW emailBox, startEmailUpload, sendFromRecord, sentMessage,
                                                   #     completePendingSend, onRecordSentForTests
 src/server/gmail/rules.ts                         # buildMime: fromName, messageId, attachments (multipart/mixed);
                                                   #     export isHeaderAddress
 src/server/gmail/google-api.ts                    # sendRawUpload (upload endpoint, message/rfc822, 40 s)
 src/server/gmail/send.ts                          # SendInput + attachments/fromName/messageId; GmailTooLarge; upload path
-src/server/gmail/sync.ts                          # storeMessage calls completePendingSend in its transaction
+src/server/gmail/sync.ts                          # storeMessage: also for a message already stored, then
+                                                  #     completePendingSend in the same transaction
 src/server/gmail/fake-gmail.ts                    # upload path, multipart/mixed attachments, sentMessages()
 src/server/files/storage.ts                       # readObject(path, size)
 src/server/files/fake-storage.ts                  # full GET (check; add if missing)
 src/server/files/files.ts                         # sweepFileCleanup also drops email_uploads older than 24 h
-src/server/records/visibility.ts                  # visibleEmail()
-src/server/records/timeline.ts                    # "email" kind, TimelineEntry.email, sentEmails(), merged in selectEntries
-src/server/records/timeline-view.ts               # EntryTag "EMAIL"
 src/server/records/flash.ts                       # flash code email_sent
-src/server/messages.ts                            # email_* messages and templates
-src/app/(app)/records/RecordTimeline.tsx          # [ WRITE EMAIL ] in the heading; EMAIL entry with <details> [ SHOW ALL ]
+src/server/messages.ts                            # compose_* messages and templates
+src/app/(app)/records/RecordTimeline.tsx          # [ WRITE EMAIL ] in the // TIMELINE heading (EMAIL entries: SF-127, unchanged)
 src/app/(app)/records/EmailOverlay.tsx            # NEW server: ?email=new → the panel's data
 src/app/(app)/records/EmailBox.tsx                # NEW client: the panel (design B)
 src/app/(app)/records/email-actions.ts            # NEW startEmailUpload, sendEmailFromRecord
@@ -111,26 +113,30 @@ src/app/(app)/deals/[id]/page.tsx                 # overlay, maxDuration = 60
 src/app/(app)/deals/page.tsx, deals/DealDrawer.tsx# drawer button + overlay over board, maxDuration = 60
 src/app/(app)/people/[id]/page.tsx                # overlay, maxDuration = 60
 src/app/(app)/organisations/[id]/page.tsx         # overlay, maxDuration = 60
-src/app/globals.css                               # .sidepanel (right panel over dimmed page), .emailentry
-src/seed/emails.ts, src/seed/index.ts             # one sent email on a fake deal, fixed send_key
+src/app/globals.css                               # .sidepanel (right panel over dimmed page)
+src/seed/sent-emails.ts, src/seed/index.ts        # one sent email on a fake deal, fixed send_key
 tests/fakes/gmail.ts                              # check the upload request/answer against mediaUpload + Message
-tests/support/reset.ts                            # empty the three new tables
+tests/support/reset.ts                            # empty the two new tables
 tests/unit/…, tests/integration/…                 # Build writes them (quickstart.md lists what they prove)
-AGENTS.md                                         # Layout: SF-129 lines (src/server/email, the panel, email_links)
+AGENTS.md                                         # Layout: SF-129 lines
 ```
 
-**Structure Decision**: the single Next.js project as it is. Domain code in a new `src/server/email/` (sending from a
-record and recording it, the base the later Inbox and replies build on); Gmail transport stays in `src/server/gmail/`;
-the UI sits with the other shared record parts in `src/app/(app)/records/`.
+Not changed (SF-127 does it already): `email_links`, `processMessage` / `autoLink`, `timelineEmails`, `EmailEntry.tsx`,
+the conversation page, `visibleConversation()`, Last contacted.
+
+**Structure Decision**: the single Next.js project as it is. Domain code next to SF-127's in `src/server/emails/`
+(`compose-rules.ts` pure, `compose.ts`); Gmail transport stays in `src/server/gmail/`; the UI sits with the other shared
+record parts in `src/app/(app)/records/`.
 
 ## Implementation steps (for Build)
 
-1. **Migration** `0020_sent_email.sql` exactly as `data-model.md` (checks, partial unique indexes, RLS on each table).
-   Add the three tables to `tests/support/reset.ts`.
-2. **Pure rules** `src/server/email/rules.ts`: `splitAddresses(text)` (split on `/[\s,;]+/`, drop empties),
+0. **Base**: merge `origin/main` (SF-127, SF-128, SF-126) into this branch first; this plan is written against it.
+1. **Migration** `0021_email_send.sql` exactly as `data-model.md` (checks, indexes, RLS on each table). Add the two
+   tables to `tests/support/reset.ts`.
+2. **Pure rules** `src/server/emails/compose-rules.ts`: `splitAddresses(text)` (split on `/[\s,;]+/`, drop empties),
    `normaliseRecipients({ to, cc, bcc })` (trim, dedupe by lower-case across fields, first kept, To > Cc > Bcc),
-   `validateEmail(input)` → list of codes (data-model.md table; limits in code points via `[...s].length`), `totalBytes`,
-   `emailPreview(text)` (first 140 code points, line breaks to spaces, "…" when cut). Constants `MAX_RECIPIENTS = 100`,
+   `validateCompose(input)` → list of codes (data-model.md table; limits in code points via `[...s].length`),
+   `totalBytes`, `sentNotice(addresses)` (first 5, then "and <n> more"). Constants `MAX_RECIPIENTS = 100`,
    `MAX_SUBJECT = 250`, `MAX_TEXT = 100_000`; size limit `MAX_FILE_BYTES` from `files/rules.ts`. No import of
    `@/server/db`.
 3. **MIME** (`gmail/rules.ts`): `MimeInput` gains `fromName?`, `messageId?`, `attachments?: { name, contentType, bytes:
@@ -141,10 +147,22 @@ the UI sits with the other shared record parts in `src/app/(app)/records/`.
    `> MAX_RAW_BYTES (36_700_160)` → `GmailTooLarge` before any Google call; no `threadId` → `sendRawUpload`, else the
    existing JSON call. The Settings test email keeps working through the upload path.
 5. **Storage read**: `storage.ts` `readObject(path, size)` (contracts/google.md); fake Storage full GET.
-6. **Visibility**: `visibleEmail(db, viewer, alias = "m")` = `not exists (select 1 from email_links vl join deals vd on
-   vd.id = vl.deal_id where vl.message_id = m.id and not visibleDeal(vd)) and not exists (… persons vp … not
-   visiblePerson(vp))`.
-7. **Domain** `src/server/email/emails.ts`:
+6. **Storing the sent email** (research §4):
+   - `sentMessage(...)` (pure) builds SF-118's `ReadMessage` from what was sent: Gmail ids, `rfcMessageId` = the
+     CRM's Message-ID, `direction 'sent'`, `from { email: connection address, name: users.name }`, To/Cc/Bcc as
+     `{ email, name: null }`, subject, `sentAt = receivedAt = now`, `textBody` = the text, `htmlBody` null, attachments
+     name/type/size, `labelIds ['SENT']`, `addresses`.
+   - `gmail/sync.ts` `storeMessage`: when the message insert finds the row already there, it no longer returns at
+     once: it selects that row's id and still calls `processMessage` (a no-op for a processed message) and then
+     `completePendingSend(db, connectionId, messageId)`; for a new message, `completePendingSend` after
+     `processMessage`. Return value unchanged (true only when new).
+   - `completePendingSend(db, connectionId, messageId)` (`compose.ts`): the `email_sends` row of that connection in state
+     `sending` with the message's `gmail_message_id` or `rfc_message_id`, `for update`; none → return. Else: the
+     message's `email_threads.conversation_id`; insert the hand link `email_links (conversation_id, <deal|person|
+     organisation>_id, how 'manual', changed_by = user_id)` `on conflict do nothing` (skipped when the record was
+     deleted: all three ids null); ledger `state = 'sent'`, `message_id`. Calls `onRecordSentForTests` first (tests only).
+   - The send path calls `storeMessage(connectionId, sentMessage(...))` right after Gmail's answer.
+7. **Domain** `src/server/emails/compose.ts`:
    - `emailBox(viewerId, target)`: `gmailConfig().mode === "off"` → `off`; connection state; record (visible, not
      archived, else null); To prefill = first `person_emails` row (by position, as "first email" elsewhere) of the
      person / the deal's main person when `visiblePerson`; record files = `listFiles(viewerId, target)` (own files
@@ -152,38 +170,23 @@ the UI sits with the other shared record parts in `src/app/(app)/records/`.
    - `startEmailUpload(actorId, file)` (research §2).
    - `sendFromRecord(actorId, input, now = new Date())` in the order of `contracts/routes.md`. Message-ID
      `<crm-${randomBytes(12).toString("hex")}@barnacle.ai>`; From name = `users.name`.
-   - `recordSent(db, { send, connectionId, gmail ids, recipients, subject, text, attachments, at })` in one
-     `sql.begin()`: lock the ledger row `for update`; thread and message `on conflict do nothing` (then select); the
-     attachments when the message is new; link `written_from` then recipients (`person_emails.email = any(lower
-     addresses)`, distinct persons, `on conflict do nothing`); raise `last_contacted_at` for recipient persons
-     (SF-109 statement); ledger `state = 'sent'`, `message_id`. Calls `onRecordSentForTests` first (tests only).
-   - `completePendingSend(db, connectionId, m)` for the sync: ledger row `sending` of that connection with
-     `gmail_message_id = m.gmailMessageId` or `rfc_message_id = m.rfcMessageId`, `for update`; same links and Last
-     contacted (time = the ledger's `created_at`); `sent`.
    - After a send: `update file_cleanup set due_at = now()` for the sent uploads, delete their `email_uploads` rows,
      `runAfterResponse(sweepFileCleanup)`.
-8. **Sync**: `storeMessage` (gmail/sync.ts) calls `completePendingSend(db, connectionId, m)` inside its transaction
-   after the message insert (also when the insert found the row: no-op unless a `sending` ledger row matches).
-9. **Timeline**: `EventKind` + `"email"`; `TimelineEntry.email: { id, senderName, senderActive, to, cc, bcc, subject,
-   text, preview, attachments: { name, size }[] } | null` (other kinds `null`; update every literal that builds a
-   `TimelineEntry`, as SF-109 did for `activity`); `emailWhere(target)` per research §5; `sentEmails(viewerId, target,
-   limit + 1)` with `visibleEmail`, ordered `received_at desc, id desc`; merged in `selectEntries` when
-   `show.activitiesOf` is set (ambassador updates: not). `entryTag` → `"EMAIL"` for kind `email`.
-10. **Messages and flash**: data-model.md table into `messages.ts` (`templates.email_address_invalid`,
-   `templates.email_sent`), `email_box_footer`: "Sent from your Gmail. It shows on this record and on the CRM people it
-   goes to.", button labels; flash code `email_sent` (`name` = the addresses joined, rendered by `templates.email_sent`
-   with the 5-address cap).
-11. **UI**: `RecordTimeline.tsx` heading link `[ WRITE EMAIL ]` (`href` = current address + `email=new`; hidden when
-   archived; shown in the drawer too, `readOnly` still hides the note box only) and the EMAIL entry (routes.md);
-   `EmailOverlay.tsx` + `EmailBox.tsx` (design B, `docs/DESIGN.md` look; uploads with progress reusing `AddFiles.tsx`'s
-   `put`; a computer file over the remaining room refused at pick time with `email_attachments_too_large`; after
-   `needs_reconnect` → `router.refresh()`); the four pages render the overlay and export `maxDuration = 60`;
-   `globals.css` `.sidepanel`.
-12. **Fake Gmail and its check**: upload path, multipart/mixed, attachments kept with bytes, `sentMessages(email)` for
-   tests; `tests/fakes/gmail.ts` checks per contracts/google.md.
-13. **Seed** `src/seed/emails.ts` (research §9), registered in `src/seed/index.ts` after `gmail` and `files`.
-14. **Docs**: `AGENTS.md` Layout lines for SF-129 (`src/server/email/`, `email_links` / `email_sends` / `email_uploads`,
-   `visibleEmail()`, the panel files, the upload send path); no `docs/DECISIONS.md` line (no blueprint exception).
+8. **Messages and flash**: data-model.md table into `messages.ts` (`templates.compose_address_invalid`,
+   `templates.email_sent`), `compose_footer`: "Sent from your Gmail. It shows on this record and on the CRM people it
+   goes to.", button labels; flash code `email_sent` (`name` = the first addresses that fit in the flash's 300
+   characters, at most 5; `count` = all addresses; rendered by `templates.email_sent`).
+9. **UI**: `RecordTimeline.tsx` heading link `[ WRITE EMAIL ]` (`href` = current address + `email=new`; hidden when
+   archived; shown in the drawer too); `EmailOverlay.tsx` + `EmailBox.tsx` (design B, `docs/DESIGN.md` look; uploads
+   with progress reusing `AddFiles.tsx`'s `put`; a computer file over the remaining room refused at pick time with
+   `compose_attachments_too_large`; after `needs_reconnect` → `router.refresh()`); the four pages render the overlay and
+   export `maxDuration = 60`; `globals.css` `.sidepanel`. The EMAIL entry is SF-127's `EmailEntry`, unchanged.
+10. **Fake Gmail and its check**: upload path, multipart/mixed, attachments kept with bytes (as SF-127's attachment
+   bytes), `sentMessages(email)` for tests; `tests/fakes/gmail.ts` checks per contracts/google.md.
+11. **Seed** `src/seed/sent-emails.ts` (research §9), registered in `src/seed/index.ts` after `gmail` and `files`.
+12. **Docs**: `AGENTS.md` Layout lines for SF-129 (`compose-rules.ts` / `compose.ts`, `email_sends` / `email_uploads`,
+   the hand link to the written-from record, the panel files, the upload send path); no `docs/DECISIONS.md` line (no
+   blueprint exception).
 
 ## Outside services
 

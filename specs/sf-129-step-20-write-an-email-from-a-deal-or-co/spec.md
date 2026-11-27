@@ -12,13 +12,17 @@
 
 ### Session 2026-11-26
 
-- Q: Which design? → A: Design: B, `[ WRITE EMAIL ]` in the // TIMELINE heading next to the note box; the email box is a tall panel on the right side of the screen, over the dimmed page, as in Pipedrive; a short EMAIL entry on the timeline with `[ SHOW ALL ]` (see `design-options.html`; the person's answer: "Put it on the side of the screen, just like in pipedrive").
+- Q: Which design? → A: Design: B, `[ WRITE EMAIL ]` in the // TIMELINE heading; the email box is a tall panel on the right side of the screen, over the dimmed page, as in Pipedrive (see `design-options.html`; the person's answer: "Put it on the side of the screen, just like in pipedrive"). The timeline entry is SF-127's EMAIL entry (Session 2026-11-27), not the short entry with `[ SHOW ALL ]` drawn in `design-options.html`.
 - Q: Does an email sent from the CRM update the Last contacted date of the CRM people it goes to? → A: Yes: it is set to the send time, never lowered, like a done call or meeting (A).
 - Q: Is a file attached from the computer also saved in the record's // FILES? → A: No: the file goes only in the email; the timeline entry shows its name and size (A).
 - Q: How long does the CRM keep a file chosen from the computer? → A: Only for sending: it is held in the CRM's file storage from the moment it is chosen, deleted right after the email is sent, and deleted at the latest 24 hours after it was chosen when the email is never sent; it is never listed anywhere (decided by the factory, to confirm)
 - Q: What sender name do recipients see? → A: The user's name in the CRM with their Gmail address, for example "Ada Fake <ada@barnacle.ai>" (decided by the factory, to confirm)
-- Q: Whose "Last contacted" does sending raise when the email was written from a person's page but that person was removed from To? → A: Only the CRM people the email actually went to (To, Cc or Bcc), not the person it was written from (decided by the factory, to confirm)
 - Q: How long is the "Email sent to …" notice when the email went to many addresses? → A: It names the first 5 addresses (To, then Cc, then Bcc) and then "and <n> more" (decided by the factory, to confirm)
+
+### Session 2026-11-27
+
+- Q: Main now holds SF-127 (Email on the timeline). How is the sent email stored, linked and shown? → A: On top of SF-127: the sent email is an email of SF-127 (its conversation, its EMAIL entry on the timeline, its email links), not a new timeline entry or linking of its own (alexis@barnacle.ai)
+- Q: Whose "Last contacted" does sending raise when the email was written from a person's page but that person was removed from To? → A: Only the CRM people in the email (To, Cc or Bcc), by SF-127's rule for every copied email; the person it was written from is not raised when they are not in it (follows from the answer above, alexis@barnacle.ai)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -42,23 +46,24 @@ A team member is on a deal page (or a person page, or has a deal open in the boa
 
 ---
 
-### User Story 2 - The sent email is on the timelines of the record and of the people it went to (Priority: P1)
+### User Story 2 - The sent email is on the timelines, as any email of SF-127 (Priority: P1)
 
-The email the user just sent shows at once, without waiting for the Gmail sync, as an EMAIL entry on the timeline of the record it was written from and on the timeline of every CRM person it went to (To, Cc or Bcc). Teammates who can see those records see it too. When the Gmail sync later copies the same message from the user's Sent folder, it is not shown a second time.
+The email the user just sent shows at once, without waiting for the Gmail sync, as SF-127's EMAIL entry. It is linked to the record it was written from, and SF-127's automatic linking adds every CRM person in it (To, Cc or Bcc), their organisation and their one open deal. Teammates who can see those records see it too, by SF-127's rules. When the Gmail sync later copies the same message from the user's Sent folder, it is not shown or counted a second time.
 
 **Why this priority**: The timeline is the team's shared history of a deal or contact (PRODUCT §1, §2: "one timeline … emails …"); an email sent from the CRM that does not show there would be lost to the team.
 
-**Independent Test**: Send an email from a deal to its main person and to a second CRM person in Cc; confirm an EMAIL entry on the deal, on both people's timelines, and that a teammate sees it; then run the fake Gmail's sync and confirm each timeline still shows exactly one entry for it.
+**Independent Test**: Send an email from a deal to its main person and to a second CRM person in Cc; confirm an EMAIL entry on the deal and on both people's timelines, and that a teammate sees it; then run the fake Gmail's sync and confirm each timeline still shows exactly one entry for it.
 
 **Acceptance Scenarios**:
 
-1. **Given** an email sent from the deal "Fake Deal Ltd renewal" to Ana Fake (To) and Ben Fake (Cc, a CRM person on no deal), **When** anyone who can see these records opens them, **Then** the deal's page and drawer, Ana Fake's page, Ben Fake's page and the deal's organisation's page each show one entry tagged EMAIL at the send time with the sender's name, the addresses it went to, the number of files, the subject and the start of the text, and `[ SHOW ALL ]`; pressing `[ SHOW ALL ]` shows "To", "Cc" (and "Bcc" when any) addresses, the whole text with its line breaks, and the attachments' names and sizes.
-2. **Given** an email sent from Ana Fake's person page, **When** the deal on which Ana Fake is the main person is opened, **Then** the email is not on that deal's timeline (it was written from the person, not the deal), and Ana Fake's organisation page does not show it (an organisation shows its own and its deals' entries, not its people's).
+1. **Given** an email sent from the deal "Fake Deal Ltd renewal" to Ana Fake (To) and Ben Fake (Cc, a CRM person with no organisation and no open deal), **When** anyone who can see these records opens them, **Then** the deal's page and drawer, Ana Fake's page and Ben Fake's page each show one EMAIL entry at the send time: "<sender name> → Ana Fake · Cc Ben Fake", the subject as a link, the start of the text and each attachment's name and size; the subject opens SF-127's conversation page, which shows the whole text with its line breaks and lists the deal, Ana Fake and Ben Fake under // LINKED TO.
+2. **Given** an email sent from Ana Fake's person page, where Ana Fake belongs to the organisation "Fake Org Ltd" and is the main person of exactly one open deal, **When** Ana Fake's page, Fake Org Ltd's page and that deal's page are opened, **Then** each shows the entry once (SF-127's automatic linking: the person, her organisation, her one open deal).
 3. **Given** an email sent from an organisation page to "ana@example.test", **When** the organisation and Ana Fake's page are opened, **Then** both show the entry once.
 4. **Given** an email sent to an address that belongs to no CRM person, **When** the record it was written from is opened, **Then** the entry is there; no person is created.
 5. **Given** a sent email, **When** the Gmail sync (push notice or the 15-minute check) copies the user's mailbox, **Then** every timeline still shows that email exactly once, and the user's Settings count of conversations copied counts its conversation once.
-6. **Given** an email that went to a private person whom a teammate cannot see, **When** that teammate opens the record it was written from, **Then** the email is not shown to them at all (DECISIONS 2026-11-24: a conversation that includes someone the user cannot see is hidden entirely).
+6. **Given** an email that went to a private person whom a teammate cannot see, **When** that teammate opens the record it was written from, **Then** the email is not shown to them at all (SF-127: a conversation with someone the user cannot see is hidden entirely).
 7. **Given** a person who received the email, **When** their page is opened, **Then** their "Last contacted" is the send time, unless it was already later.
+8. **Given** an email sent from a deal, **When** a teammate unlinks the deal on the conversation page (SF-127) and the Gmail sync runs again, **Then** the deal's timeline no longer shows it and the sync does not link it back.
 
 ---
 
@@ -121,13 +126,15 @@ A person marked Unsubscribed has opted out of campaigns only. A user can still w
 - **Addresses**: `[ SEND ]` with "ana@" in To shows "ana@ is not a valid email address." and the fake mailbox's Sent mail has no new message. With "Ana@Example.test" in To and "ana@example.test " in Cc, the sent message has that address once, in To. Pasting "a@example.test, b@example.test; c@example.test" in To shows three addresses.
 - **Required fields**: `[ SEND ]` with To empty shows "Add at least one address in To."; with the subject empty, "Add a subject."; with 101 addresses across To, Cc and Bcc, "An email can go to 100 addresses at most."; with a 251-character subject, "The subject can be 250 characters at most."; with a 100,001-character text, "The text can be 100,000 characters at most." In each case the fake mailbox's Sent mail has no new message. An empty text with a subject sends.
 - **Sending to oneself or a teammate**: sending to "bob@barnacle.ai" (a teammate, not a CRM person) succeeds; the record it was written from shows the EMAIL entry and no person page gains one.
+- **The sync stored it first**: when a Gmail push notice copies the sent message before the CRM records it, the record it was written from still gets its link, and every timeline shows the email once.
 - **One CRM person with two addresses in To and Cc**: Ana Fake's page shows one EMAIL entry for it, listing both addresses.
 - **Gmail slow or failing (not the key)**: with the fake Gmail set to fail, `[ SEND ]` leaves the box open with every address, the subject, the text and the attachments still there, shows "The email could not be sent. Try again in a minute.", and no timeline gains an entry.
 - **Double press**: pressing `[ SEND ]` twice quickly leaves one new message in the fake mailbox's Sent mail and one new EMAIL entry on the timeline.
-- **Sent but the CRM could not record it** (checked by automated tests, it cannot be caused in the running app): when Gmail accepted the email but recording it failed, the user sees "Email sent to …", not a failure, and after the next Gmail sync the email shows once on the timelines of the CRM people it went to.
-- **Line breaks and characters**: the text "Bonjour Zoë,⏎⏎<b>prix</b> 🎉⏎https://example.test" is in the fake mailbox's sent message exactly as typed, and the EMAIL entry, after `[ SHOW ALL ]`, shows "<b>prix</b>" as those characters (not bold), on separate lines as typed.
+- **Sent but the CRM could not record it** (checked by automated tests, it cannot be caused in the running app): when Gmail accepted the email but recording it failed, the user sees "Email sent to …", not a failure, and after the next Gmail sync the email shows once on the timeline of the record it was written from and of the CRM people it went to.
+- **Line breaks and characters**: the text "Bonjour Zoë,⏎⏎<b>prix</b> 🎉⏎https://example.test" is in the fake mailbox's sent message exactly as typed, and the conversation page opened from the EMAIL entry shows "<b>prix</b>" as those characters (not bold), on separate lines as typed.
 - **Big files from the computer**: choosing a 30 MB file from the computer shows "Attachments can be 25 MB in total at most." at once and the file is not in the attachments list.
 - **Deactivated sender**: after an admin deactivates Ada Fake, the EMAIL entries she sent still show "Ada Fake" as the sender.
+- **Written from an archived-later or deleted record**: when the record the email was written from is later archived, its page still shows the entry; when it is deleted, the entry stays on the people's timelines.
 
 ## Requirements *(mandatory)*
 
@@ -155,14 +162,14 @@ A person marked Unsubscribed has opted out of campaigns only. A user can still w
 - **FR-012**: All attachments of one email together MUST be at most 25 MB (counted on the files' own sizes); a single computer file over 25 MB MUST be refused as soon as it is chosen; the email MUST NOT be sent while the total is over.
 - **FR-013**: An attached record file MUST be sent with its stored name, type and exact contents; one no longer on the record at send time MUST stop the send with the message of US3 scenario 5. Files from the computer MUST be sent with their name, type and exact contents and MUST NOT be added to the record's files.
 
-**Recording and showing the email**
+**Recording and showing the email** (on SF-127)
 
-- **FR-014**: As soon as Gmail accepts the email, the CRM MUST record it, before the page shows "Email sent to …": sender, To, Cc, Bcc, subject, text, the send time, Gmail's message and conversation identifiers, and each attachment's name, type and size (never its contents, as for synced email, SF-118).
-- **FR-015**: The recorded email MUST be linked to the record it was written from and to every CRM person (archived and private ones included) with any of their addresses among To, Cc or Bcc, and MUST appear at once as one EMAIL entry on the timeline of each of these records (deal page and drawer, person page, organisation page), placed by its send time among the other entries. Entries a record already shows from its linked deals keep the existing rules and appear once.
-- **FR-016**: When the Gmail sync later copies the same message from the user's mailbox, it MUST be recognised as the email already recorded: no second entry on any timeline and no second count in the user's conversations copied.
-- **FR-017**: The EMAIL entry MUST first show, on its short form (design B), the sender's name, the time, the addresses it went to, the number of files, the subject, the start of the text and `[ SHOW ALL ]`; `[ SHOW ALL ]` MUST show "To", "Cc" and "Bcc" addresses (Cc and Bcc only when there are any), the whole text with its line breaks as plain text (never as HTML), and the attachments' names and sizes. It MUST sit among the other timeline entries (design B of SF-102, a new EMAIL tag) and offer no reply, forward, edit or delete in this issue.
-- **FR-018**: An EMAIL entry MUST be shown only to users who can see the record and every CRM person linked to the email (DECISIONS 2026-11-24); a user who cannot see one of them MUST not see the entry anywhere, and no message may hint that it exists.
-- **FR-019**: Sending MUST set the "Last contacted" of every CRM person the email was linked to (FR-015) to the send time when that is later than their current value, never lowering it.
+- **FR-014**: As soon as Gmail accepts the email, the CRM MUST store it as a copied email of the user's mailbox (SF-118, direction "sent"), before the page shows "Email sent to …": sender (the user's name and Gmail address), To, Cc, Bcc, subject, text, the send time, Gmail's message and conversation identifiers, and each attachment's name, type and size (never its contents). Storing it MUST run SF-127's processing of a copied email: its conversation, the addresses in it, SF-127's automatic links and the Last contacted of the people in it.
+- **FR-015**: In the same step, the email's conversation MUST be linked by hand (as SF-127's "link" on the conversation page does, by the sender) to the record it was written from: the deal, the person or the organisation. No other linking rule is added: the people in the email, their organisation and their one open deal come from SF-127's automatic linking.
+- **FR-016**: When the Gmail sync later copies the same message from the user's mailbox, it MUST be recognised as the email already stored: no second entry on any timeline and no second count in the user's conversations copied. When the sync stored it first, the CRM MUST still add the link of FR-015.
+- **FR-017**: The email MUST appear on timelines as SF-127's EMAIL entry, with no change to that entry, and open SF-127's conversation page; no reply, forward, edit or delete in this issue.
+- **FR-018**: Who sees the email follows SF-127 unchanged: hidden entirely from a user who cannot see one of the people in it or one of its linked people or deals; no message may hint that it exists.
+- **FR-019**: "Last contacted" follows SF-127 unchanged: every CRM person with an address in the email is raised to the send time, never lowered.
 - **FR-020**: Sending MUST NOT notify anyone in the app and MUST NOT change the record, its owner, its stage or its consent.
 
 **Access, messages, fakes**
@@ -174,9 +181,11 @@ A person marked Unsubscribed has opted out of campaigns only. A user can still w
 
 ### Key Entities
 
-- **Sent email** (a copied email message, SF-118, recorded at send time): the user's Gmail connection, direction "sent", Gmail's message and conversation identifiers, sender, To, Cc, Bcc, subject, text, send time.
+- **Sent email** (a copied email message, SF-118, stored at send time): the user's Gmail connection, direction "sent", Gmail's message and conversation identifiers, sender, To, Cc, Bcc, subject, text, send time; it belongs to an SF-127 conversation.
 - **Email attachment** (existing, SF-118): name, type and size of each attachment of the email; no contents.
-- **Email link**: which records an email belongs to: the record it was written from (a deal, a person or an organisation) and every CRM person it went to. Later issues (automatic and manual thread linking, the inbox) build on it.
+- **Email link** (existing, SF-127): a conversation's link to a deal, a person or an organisation, automatic or by hand. Sending adds one by hand: to the record the email was written from.
+- **Send** (new): one press of `[ SEND ]` on one box: who, the record written from, the state (sending, sent), Gmail's identifiers once accepted. It makes a double press send once and lets the sync add the FR-015 link when storing failed.
+- **File chosen from the computer** (new): held in the CRM's file storage only until the email is sent (24 hours at most), never in "// FILES".
 - **Record file** (existing, SF-116): a file in a record's "// FILES", which can be attached.
 - **Gmail connection** (existing, SF-118): decides whether the user can send.
 - **Person** (existing): their first email address fills To; their "Last contacted" is raised by sending.
@@ -195,13 +204,13 @@ A person marked Unsubscribed has opted out of campaigns only. A user can still w
 ## Assumptions
 
 - The existing send function (SF-118) is extended for attachments rather than replaced; it stays the only way the CRM sends email.
-- Reply, forward, templates, merge fields, scheduled sending, open and click tracking, HTML or formatted text, signatures, drafts saved in the CRM or Gmail, the inbox view, and linking synced conversations to deals, people and organisations automatically or by hand are not in this issue (user request; PRODUCT §3 later steps). Showing synced emails (written in Gmail itself) on timelines is also a later issue: only emails sent from the CRM box get EMAIL entries here.
+- Reply, forward, templates, merge fields, scheduled sending, open and click tracking, HTML or formatted text, signatures, drafts saved in the CRM or Gmail and the inbox view are not in this issue (user request; PRODUCT §3 later steps). Emails on the timeline, their conversation page and their linking (automatic and by hand) are SF-127's, already on main, and are reused unchanged.
 - Each email starts a new Gmail conversation (no "in the same thread" until reply exists).
 - An email written from an organisation page starts with an empty To: an organisation has no main person (decided by the factory, to confirm).
 - A subject is required and the text may be empty; at most 100 addresses per email, subject 250 characters, text 100,000 characters (decided by the factory, to confirm).
 - Sending from the CRM counts as contacting the person and raises "Last contacted", like a done call or meeting (SF-109) (clarified 2026-11-26).
 - Files from the computer stay only in the email and are not saved to the record (clarified 2026-11-26); to keep one on the record, the user adds it to "// FILES" first.
 - The 25 MB limit is counted on the attached files' own sizes, which is how Gmail shows its limit to users; Gmail's own limit on the encoded message is large enough for this.
-- Bcc addresses are shown on the timeline entry to teammates who can see it: they are the team's own record of who was written to.
+- Bcc addresses are shown on the timeline entry to teammates who can see it, as SF-127 shows the sender's copy: they are the team's own record of who was written to.
 - The design is B of `design-options.html` (clarified 2026-11-26) with `docs/DESIGN.md` and SF-102's timeline design B. The "without a working Gmail" message of US4 shows inside the same right-side panel.
 - Technical choices already in `docs/DECISIONS.md` and `AGENTS.md` apply (no Google call inside a database transaction, fixed messages, fakes for outside services) and are not repeated here.
