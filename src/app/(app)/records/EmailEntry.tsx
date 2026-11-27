@@ -16,10 +16,14 @@ export function EmailEntry({ entry, from, reply = null }: { entry: TimelineEntry
     <li id={`email-${m.messageId}`} className="ent">
       <span className="kd email">EMAIL</span>
       <div className="ent-body">
-        <div className="eh">
+        {reply ? (
+          <div className="eh">
+            <div className="emailhead">{recipientsLine(m)}</div>
+            <ReplyButtons messageId={m.messageId} base={reply.base} state={reply.state} />
+          </div>
+        ) : (
           <div className="emailhead">{recipientsLine(m)}</div>
-          {reply && <ReplyButtons messageId={m.messageId} base={reply.base} state={reply.state} />}
-        </div>
+        )}
         <div className="emailbody">
           <Link className="subj" href={`/emails/${m.conversationId}?from=${from}#email-${m.messageId}`}>
             {subjectOrDefault(m.subject)}
