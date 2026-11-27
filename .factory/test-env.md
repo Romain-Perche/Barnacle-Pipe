@@ -98,11 +98,28 @@
   conversations of the spec (60 copied); `tests/integration/gmail-helpers.ts` `makePastPeople` makes their CRM people.
   Tests make parts of 10 threads with `setPastFetchPartForTests` (APP_ENV=test only). `/dev/fake-gmail` adds "Days ago",
   `[ PUT 100 PAST CONVERSATIONS ]`, `[ SLOW DOWN NEXT CALL ]` and `[ GMAIL UNREACHABLE: ON / OFF ]`.
+- Gmail API, SF-129 additions (writing an email from a record): `users.messages.send` through the simple media upload
+  (`POST /upload/gmail/v1/users/me/messages/send?uploadType=media`, `content-type: message/rfc822`, the RFC 5322 bytes as
+  the body), in the same fake and wrapper: `GmailFake` checks the upload against the method's `mediaUpload` in
+  `gmail-api.json` (path = `protocols.simple.path` with `{userId}`, `uploadType` media or multipart, the content type among
+  `accept` `message/*`, the body at most `maxSize` 36700160 bytes, every other query parameter declared for the method or at
+  the discovery's top level) and the answer against `Message`. The fake answers 400 for another `uploadType` or content type,
+  413 over 36,700,160 bytes, parses `multipart/mixed` (nested parts; attachment parts kept with an `attachmentId`, their
+  bytes in its state, served by `attachments.get`), keeps a given `Message-ID`, keeps `Bcc` out of the stored headers (kept
+  aside for tests), and `sentMessages(email)` gives `{ from, to, cc, bcc, subject, messageId, text, attachments: { name,
+  type, bytes } }`. The Settings test email goes through the upload path too. `down()` / `refuseKey(email)` / `tamper(fn)`
+  apply to it. Tested in `tests/unit/gmail-fake-schema.test.ts` (a wrong uploadType, content type, path, query parameter or
+  size throws) and `tests/integration/compose-*.test.ts`.
+- Supabase Storage, SF-129 additions: the whole-object read `GET /object/authenticated/{bucketName}/{*}` (no Range;
+  `readObject(path, size)`, 30 s) of each attachment, checked like every Storage call (a misspelt path or an undeclared
+  query parameter throws: `tests/unit/storage-fake.test.ts`); computer files for an email are signed uploads
+  (`email_uploads`), queued in `file_cleanup` for 24 hours and made due after sending (swept by `sweepFileCleanup`).
 - Google OAuth 2.0 token endpoint (SF-118, reused by SF-128: one fresh access token per part of a past-email fetch): the
   same fake, no public schema (RFC 6749 §5.1-§5.2, §6 and Google's "Using OAuth 2.0 for Web Server Applications":
   `invalid_grant` 400 for a revoked or refused refresh token, access tokens for one hour), checked by
   `tests/unit/gmail-fake-oauth.test.ts` and, per part, by `tests/integration/gmail-past-fetch.test.ts`.
-- Supabase Postgres (SF-128 table `past_email_fetches`, migration 0020): no fake and no public schema; the tests run on
+- Supabase Postgres (SF-128 table `past_email_fetches`, migration 0020; SF-129 tables `email_sends` / `email_uploads`,
+  migration 0021, checked by `tests/integration/compose-migration.test.ts`): no fake and no public schema; the tests run on
   the real local PostgreSQL 17 (`crm_test`, `start-postgres.sh`), migrations applied by `npm run db:migrate`.
 - Cloud Pub/Sub push (SF-118; Gmail's notices to `POST /gmail/push`): the same fake's `notice(email)` (a Google-signed
   OIDC token by the fake's RSA key, served at the certs URL) and `GmailFake.deliver(email)` (to `receiveGmailPush`, the

@@ -7,6 +7,8 @@
 import { randomBytes } from "node:crypto";
 import { calendarConfig } from "@/server/env";
 import { messages } from "@/server/messages";
+import { HEADER_ADDRESS } from "@/server/gmail/address";
+export { isHeaderAddress } from "@/server/gmail/address";
 
 export const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"] as const;
 // SF-124 (research.md §2): events of the calendars the user owns, the primary one included; nothing else.
@@ -32,7 +34,7 @@ export function hasCalendarScope(scopes: string): boolean {
 export type Address = { email: string; name: string | null };
 
 const clean = (text: string) => text.replace(/\u0000/g, "");
-const ADDRESS = /^[^\s@<>()",;:\\[\]]+@[^\s@<>()",;:\\[\]]+$/;
+const ADDRESS = HEADER_ADDRESS;
 
 // RFC 2047 encoded words (=?charset?B|Q?text?=); whitespace between two encoded words is dropped.
 export function decodeHeader(value: string): string {
@@ -392,7 +394,13 @@ export type MimeInput = {
   inReplyTo?: string | null;
   references?: string | null;
   date?: Date;
+  // SF-129: the sender's name ("Ada Fake <ada@barnacle.ai>"), the CRM's own Message-ID, and files sent with the email
+  // (multipart/mixed). None given: the same text as SF-118 built (Gmail sets its own Message-ID).
+  fromName?: string | null;
+  messageId?: string | null;
+  attachments?: MimeAttachment[];
 };
+export type MimeAttachment = { name: string; contentType: string; bytes: Uint8Array };
 
 const noBreak = (v: string) => {
   if (/[\r\n]/.test(v)) throw new BadHeader();
@@ -420,7 +428,34 @@ function encodeSubject(subject: string): string {
   return words.map((w) => `=?UTF-8?B?${Buffer.from(w, "utf8").toString("base64")}?=`).join("\r\n ");
 }
 
-const base64Lines = (text: string) => (Buffer.from(text, "utf8").toString("base64").match(/.{1,76}/g) ?? [""]).join("\r\n");
+const base64Lines = (text: string | Uint8Array) =>
+  ((typeof text === "string" ? Buffer.from(text, "utf8") : Buffer.from(text.buffer, text.byteOffset, text.byteLength)).toString("base64").match(/.{1,76}/g) ?? [""]).join("\r\n");
+
+// SF-129: "Name <address>": a plain ASCII name as it is (quoted when it holds specials), any other in RFC 2047 words.
+function mailbox(name: string | null | undefined, email: string): string {
+  const n = noBreak(name ?? "").trim();
+  if (n === "") return email;
+  if (/^[A-Za-z0-9 !#$%&'*+\-/=?^_`{|}~]*$/.test(n)) return `${n} <${email}>`;
+  if (/^[\x20-\x7e]*$/.test(n)) return `"${n.replace(/(["\\])/g, "\\$1")}" <${email}>`;
+  return `${encodeSubject(n)} <${email}>`;
+}
+
+// RFC 2231 file names: an ASCII fallback in `filename` / `name`, the exact UTF-8 name in `filename*`.
+const asciiName = (name: string) => name.replace(/[^\x20-\x7e]|["\\]/g, "_");
+const rfc2231 = (name: string) => encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+
+function attachmentPart(a: MimeAttachment): string[] {
+  const name = noBreak(a.name);
+  const type = noBreak(a.contentType).trim();
+  if (!/^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+$/.test(type)) throw new BadHeader();
+  return [
+    `Content-Type: ${type}; name="${asciiName(name)}"`,
+    `Content-Disposition: attachment; filename="${asciiName(name)}"; filename*=UTF-8''${rfc2231(name)}`,
+    "Content-Transfer-Encoding: base64",
+    "",
+    base64Lines(a.bytes),
+  ];
+}
 
 // RFC 5322 date, e.g. "Tue, 24 Nov 2026 10:00:00 +0000".
 function rfcDate(d: Date): string {
@@ -430,32 +465,39 @@ function rfcDate(d: Date): string {
   return `${days[d.getUTCDay()]}, ${p(d.getUTCDate())} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())} +0000`;
 }
 
-// The RFC 5322 text Gmail's messages.send takes (base64url-encoded by the caller). Gmail sets its own Message-ID.
+// The RFC 5322 text Gmail's messages.send takes (SF-118: base64url-encoded by the caller; SF-129: as it is through the
+// upload endpoint). Without a `messageId` Gmail sets its own Message-ID.
 export function buildMime(input: MimeInput): string {
   const to = input.to.map(address);
   if (to.length === 0) throw new BadHeader();
   const cc = (input.cc ?? []).map(address);
   const bcc = (input.bcc ?? []).map(address);
-  const lines = [`From: ${address(input.from)}`, `To: ${to.join(", ")}`];
+  const lines = [`From: ${mailbox(input.fromName, address(input.from))}`, `To: ${to.join(", ")}`];
   if (cc.length) lines.push(`Cc: ${cc.join(", ")}`);
   if (bcc.length) lines.push(`Bcc: ${bcc.join(", ")}`);
   lines.push(`Subject: ${encodeSubject(noBreak(input.subject))}`, `Date: ${rfcDate(input.date ?? new Date())}`);
+  if (input.messageId) lines.push(`Message-ID: ${noBreak(input.messageId)}`);
   if (input.inReplyTo) lines.push(`In-Reply-To: ${noBreak(input.inReplyTo)}`);
   if (input.references) lines.push(`References: ${noBreak(input.references)}`);
   lines.push("MIME-Version: 1.0");
+  const files = (input.attachments ?? []).map(attachmentPart);
   const textPart = ['Content-Type: text/plain; charset="UTF-8"', "Content-Transfer-Encoding: base64", "", base64Lines(input.text)];
-  if (!input.html) return [...lines, ...textPart].join("\r\n");
-  const boundary = `crm-${randomBytes(12).toString("hex")}`;
-  const htmlPart = ['Content-Type: text/html; charset="UTF-8"', "Content-Transfer-Encoding: base64", "", base64Lines(input.html)];
+  let body = textPart;
+  if (input.html) {
+    const boundary = `crm-${randomBytes(12).toString("hex")}`;
+    const htmlPart = ['Content-Type: text/html; charset="UTF-8"', "Content-Transfer-Encoding: base64", "", base64Lines(input.html)];
+    body = [`Content-Type: multipart/alternative; boundary="${boundary}"`, "", `--${boundary}`, ...textPart, `--${boundary}`, ...htmlPart, `--${boundary}--`, ""];
+  }
+  if (files.length === 0) return [...lines, ...body].join("\r\n");
+  const mixed = `crm-${randomBytes(12).toString("hex")}`;
   return [
     ...lines,
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    `Content-Type: multipart/mixed; boundary="${mixed}"`,
     "",
-    `--${boundary}`,
-    ...textPart,
-    `--${boundary}`,
-    ...htmlPart,
-    `--${boundary}--`,
+    `--${mixed}`,
+    ...body,
+    ...files.flatMap((f) => [`--${mixed}`, ...f]),
+    `--${mixed}--`,
     "",
   ].join("\r\n");
 }

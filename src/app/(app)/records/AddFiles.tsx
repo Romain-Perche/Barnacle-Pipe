@@ -27,7 +27,7 @@ function refusal(code: string, name: string): string {
 }
 
 // The file goes straight to Storage (never through the app): true once Storage answered 2xx.
-function put(url: string, contentType: string, file: File, onProgress: (n: number) => void): Promise<boolean> {
+export function put(url: string, contentType: string, file: File, onProgress: (n: number) => void): Promise<boolean> {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);

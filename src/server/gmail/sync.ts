@@ -5,7 +5,9 @@
 // runGmailCheck: the 15-minute job (/cron/gmail): every working connection, then the daily watch renewal; SF-124: then
 // its calendar sync and the daily renewal of its Calendar notice channel (runCalendarCheck); SF-128: then the running
 // past-email fetches (runPastFetches). SF-127: storeMessage processes each stored email (processMessage); runGmailCheck
-// first links the emails not processed yet (catchUpEmails).
+// first links the emails not processed yet (catchUpEmails). SF-129: storeMessage also runs for a message already stored
+// (processMessage is then a no-op) and ends with completePendingSend, so an email written from a record gets its hand
+// link whoever stores it first: the send path or the sync.
 import { sql, type Sql } from "@/server/db";
 import { gmailConfig } from "@/server/env";
 import { loadKey, markNeedsReconnect } from "@/server/gmail/connections";
@@ -24,6 +26,7 @@ import { decideCopy, readMessage, type ReadMessage } from "@/server/gmail/rules"
 import { runCalendarCheck } from "@/server/calendar/sync";
 import { catchUpEmails, processMessage } from "@/server/emails/process";
 import { runPastFetches } from "@/server/gmail/past";
+import { completePendingSend } from "@/server/emails/compose";
 
 const LEASE_MS = 2 * 60 * 1000;
 export const MAX_GETS_PER_RUN = 300;
@@ -106,7 +109,17 @@ export async function storeMessage(connectionId: number, m: ReadMessage, opts: {
               ${m.receivedAt}, ${m.textBody}, ${m.htmlBody})
       on conflict (connection_id, gmail_message_id) do nothing
       returning id::text as id`;
-    if (!msg) return false;
+    if (!msg) {
+      // Already stored (by the sync or by the send path): processed if it was not yet, and its pending send completed.
+      const [existing] = await db<{ id: string; unlinked: boolean }[]>`
+        select id::text as id, linked_at is null as unlinked from email_messages
+        where connection_id = ${connectionId} and gmail_message_id = ${m.gmailMessageId}`;
+      if (existing) {
+        if (existing.unlinked) await processMessage(db, Number(existing.id));
+        await completePendingSend(db, connectionId, Number(existing.id));
+      }
+      return false;
+    }
     for (const [position, a] of m.attachments.entries()) {
       await db`
         insert into email_attachments (message_id, position, name, content_type, size)
@@ -114,6 +127,8 @@ export async function storeMessage(connectionId: number, m: ReadMessage, opts: {
     }
     // SF-127: its conversation, links and the Last contacted of the people in it, in the same transaction.
     await processMessage(db, Number(msg.id));
+    // SF-129: the hand link to the record an email was written from, and its ledger row `sent`.
+    await completePendingSend(db, connectionId, Number(msg.id));
     return true;
   });
 }

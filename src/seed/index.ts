@@ -14,6 +14,7 @@ import { seedGmail } from "@/seed/gmail";
 import { seedNotes } from "@/seed/notes";
 import { seedPeople } from "@/seed/people";
 import { seedSegments } from "@/seed/segments";
+import { seedSentEmails } from "@/seed/sent-emails";
 import { seedUsers } from "@/seed/users";
 
 export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] = [
@@ -33,6 +34,8 @@ export const seeders: { name: string; run: (sql: Sql) => Promise<string[]> }[] =
   { name: "ambassadors", run: seedAmbassadors },
   // SF-116: files on deals, people and organisations, through the (fake) file storage, with their FILE entries.
   { name: "files", run: seedFiles },
+  // SF-129: one email Ada Fake wrote from a fake deal to its main person, through her fake Gmail (after gmail and files).
+  { name: "sent-emails", run: seedSentEmails },
   // SF-115: custom fields of every type and values on fake records (after the people, organisations and deals).
   { name: "custom-fields", run: seedCustomFields },
   // SF-119: campaign drafts, one per layout and one pasted HTML email (after the custom fields: one links "Diet (fake)").

@@ -56,7 +56,12 @@ afterAll(async () => {
 });
 
 const sends = () => fake.requests.filter((r) => r.path.endsWith("/messages/send"));
-const rawOf = (i = 0) => Buffer.from((sends()[i].body as { raw: string }).raw, "base64url").toString("utf8");
+// SF-129: without a thread the message goes through the upload endpoint (the body is the message itself); in a thread
+// through the JSON call ({ raw } in base64url).
+const rawOf = (i = 0) => {
+  const body = sends()[i].body;
+  return typeof body === "string" ? body : Buffer.from((body as { raw: string }).raw, "base64url").toString("utf8");
+};
 const page = async (query: Record<string, string> = {}) => renderToStaticMarkup(await SettingsPage({ searchParams: Promise.resolve(query) }));
 
 describe("US3 scenario 1: [ SEND ME A TEST EMAIL ]", () => {
@@ -86,7 +91,7 @@ describe("US3 scenario 2: Gmail does not answer or refuses for another reason", 
     // A 500 from Gmail on send.
     const original = fake.checkedFetch;
     const failing = async (input: string, init: RequestInit) =>
-      input.endsWith("/messages/send") ? new Response(JSON.stringify({ error: { code: 500, message: "Backend Error", status: "INTERNAL" } }), { status: 500 }) : original(input, init);
+      new URL(input).pathname.endsWith("/messages/send") ? new Response(JSON.stringify({ error: { code: 500, message: "Backend Error", status: "INTERNAL" } }), { status: 500 }) : original(input, init);
     const { useGmailFetchForTests } = await import("@/server/gmail/google-api");
     useGmailFetchForTests(failing);
     expect(await h.redirectOf(actions.sendTestEmail())).toBe("/settings?gmail=test_failed");

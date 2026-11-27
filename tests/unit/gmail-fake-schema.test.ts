@@ -234,3 +234,59 @@ describe("SF-128 slow-down", () => {
     expect(await caught(err(500, "backendError"))).not.toBeInstanceOf(GmailSlowDown);
   });
 });
+
+// covers SF-129 FR-023, T014: the upload send (users.messages.send mediaUpload) against gmail-api.json.
+describe("SF-129: the upload send against mediaUpload", () => {
+  const U = "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send";
+  const mime = (extra = "") =>
+    [
+      "From: linus@barnacle.ai",
+      "To: ana@example.test",
+      "Subject: Hi",
+      "MIME-Version: 1.0",
+      'Content-Type: multipart/mixed; boundary="b1"',
+      "",
+      "--b1",
+      'Content-Type: text/plain; charset="UTF-8"',
+      "Content-Transfer-Encoding: base64",
+      "",
+      Buffer.from("Hello").toString("base64"),
+      "--b1",
+      'Content-Type: application/pdf; name="a.pdf"',
+      `Content-Disposition: attachment; filename="a.pdf"; filename*=UTF-8''a.pdf`,
+      "Content-Transfer-Encoding: base64",
+      "",
+      Buffer.from([1, 2, 3, 250]).toString("base64"),
+      "--b1--",
+      extra,
+    ].join("\r\n");
+  const send = async (url: string, contentType: string, body: string) =>
+    fake.checkedFetch(url, { method: "POST", headers: { authorization: `Bearer ${await accessToken()}`, "content-type": contentType }, body });
+
+  it("passes a valid upload, and its attachment bytes are read back from sentMessages", async () => {
+    const res = await send(`${U}?uploadType=media`, "message/rfc822", mime());
+    expect(res.status).toBe(200);
+    const [m] = fake.sentMessages("linus@barnacle.ai");
+    expect(m.text).toBe("Hello");
+    expect(m.attachments).toEqual([{ name: "a.pdf", type: "application/pdf", bytes: Buffer.from([1, 2, 3, 250]) }]);
+    expect(fake.violations).toEqual([]);
+  });
+  it("refuses another uploadType, another content type, another path, an undeclared parameter, a body over maxSize", async () => {
+    await expect(send(`${U}?uploadType=raw`, "message/rfc822", mime())).rejects.toThrow(/uploadType/);
+    await expect(send(`${U}?uploadType=media`, "application/json", mime())).rejects.toThrow(/accepts message\/\*/);
+    await expect(send(`${U}d?uploadType=media`, "message/rfc822", mime())).rejects.toThrow(/no upload POST/);
+    await expect(send(`${U}?uploadType=media&raw=1`, "message/rfc822", mime())).rejects.toThrow(/no query parameter "raw"/);
+    const big = "x".repeat(36_700_161 - mime().length);
+    await expect(send(`${U}?uploadType=media`, "message/rfc822", mime(big))).rejects.toThrow(/over maxSize 36700160/);
+    expect(fake.violations).toHaveLength(5);
+    fake.violations.length = 0;
+    expect(fake.sentMessages("linus@barnacle.ai")).toEqual([]);
+  });
+  it("refuses an answer with a property Message does not declare", async () => {
+    fake.tamper((b) => ({ ...b, sentAt: "now" }));
+    await expect(send(`${U}?uploadType=media`, "message/rfc822", mime())).rejects.toThrow(/no property "sentAt" in Message/);
+    fake.violations.length = 0;
+    const res = await send(`${U}?uploadType=media`, "message/rfc822", mime());
+    expect(Object.keys((await res.json()) as object).sort()).toEqual(["id", "labelIds", "threadId"]);
+  });
+});

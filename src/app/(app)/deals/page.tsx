@@ -15,11 +15,15 @@ import { ViewSwitch } from "./ViewSwitch";
 import { ActivityNotices } from "../activities/ActivityNotices";
 import { ActivityOverlays } from "../activities/ActivityOverlays";
 import { FileOverlays } from "../records/FileOverlays";
+import { EmailOverlay } from "../records/EmailOverlay";
 
 function first(params: BoardParams, key: string): string | undefined {
   const v = params[key];
   return Array.isArray(v) ? v[0] : v;
 }
+
+// SF-129: sending an email from the drawer with 25 MB of attachments within one function run.
+export const maxDuration = 60;
 
 export default async function DealsPage({ searchParams }: { searchParams: Promise<BoardParams> }) {
   const user = await requireUser();
@@ -27,7 +31,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
   const query = parseBoardQuery(params);
   const [board, flash] = await Promise.all([
     getBoard(user.id, query.pipeline),
-    readFlash(["deal_deleted", "deal_no_longer_visible", "note_not_found", "file_not_found"]),
+    readFlash(["deal_deleted", "deal_no_longer_visible", "note_not_found", "file_not_found", "email_sent"]),
   ]);
   const isAdmin = user.role === "admin";
 
@@ -122,6 +126,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
               closeHref={boardHref(open.pipeline.id)}
               deleteHref={boardHref(open.pipeline.id, { open: open.id, confirm: "delete" })}
               fileError={first(params, "error")}
+              emailHref={`${boardHref(open.pipeline.id, { open: open.id })}&email=new`}
             />
           )}
           {open && (
@@ -132,6 +137,9 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
               back={boardHref(open.pipeline.id, { open: open.id })}
               query={{ activity: first(params, "activity"), followup: first(params, "followup"), deleteActivity: first(params, "delete-activity") }}
             />
+          )}
+          {open && (
+            <EmailOverlay viewerId={user.id} target={{ dealId: open.id }} email={first(params, "email")} back={boardHref(open.pipeline.id, { open: open.id })} />
           )}
           {open && (
             <FileOverlays

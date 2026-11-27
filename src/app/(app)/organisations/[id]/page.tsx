@@ -13,6 +13,8 @@ import { NoteNotices } from "../../records/NoteNotices";
 import { RecordTimeline } from "../../records/RecordTimeline";
 import { TimelineNoteBox } from "../../records/TimelineNoteBox";
 import { FileOverlays } from "../../records/FileOverlays";
+import { EmailOverlay } from "../../records/EmailOverlay";
+import { readFlash } from "@/server/records/flash";
 import { FilesSection } from "../../records/FilesSection";
 import { ActivityNotices } from "../../activities/ActivityNotices";
 import { ActivityOverlays } from "../../activities/ActivityOverlays";
@@ -27,6 +29,9 @@ function first(params: Params, key: string): string | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
 
+// SF-129: sending an email with 25 MB of attachments (Storage reads, then Gmail's upload) within one function run.
+export const maxDuration = 60;
+
 export default async function OrganisationPage({ params, searchParams }: Props) {
   const user = await requireUser();
   const id = parseId((await params).id);
@@ -38,6 +43,7 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
   const isAdmin = user.role === "admin";
   const confirming = isAdmin && first(query, "confirm") === "delete";
   const href = `/organisations/${id}`;
+  const flash = await readFlash(["email_sent"]);
   const rows: [string, React.ReactNode][] = [
     [
       "Website",
@@ -69,6 +75,11 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
         restore={restoreOrganisation}
       />
       {confirming && <DeleteConfirm name={org.name} id={id} action={deleteOrganisation} cancelHref={href} />}
+      {flash && (
+        <p className="notice" role="status">
+          {flash.text}
+        </p>
+      )}
       <NoteNotices error={first(query, "error")} />
       <ActivityNotices error={first(query, "error")} />
 
@@ -130,6 +141,7 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
             target={{ organisationId: id }}
             archived={org.archived}
             query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+            emailHref={`${href}?email=new`}
           />
         </div>
       </div>
@@ -140,6 +152,7 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
         back={href}
         query={{ activity: first(query, "activity"), followup: first(query, "followup"), deleteActivity: first(query, "delete-activity") }}
       />
+      <EmailOverlay viewerId={user.id} target={{ organisationId: id }} email={first(query, "email")} back={href} />
       <FileOverlays
         viewerId={user.id}
         target={{ organisationId: id }}

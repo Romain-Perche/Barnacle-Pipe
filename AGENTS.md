@@ -205,6 +205,27 @@ OAuth code flow and database sessions.
   the email tables for a viewer uses it (a person in its emails or a linked person or deal the viewer cannot see hides it).
   Tables `email_conversations`, `email_conversation_addresses`, `email_links` (`how` auto / manual, `removed` = unlinked by
   hand); columns `email_threads.conversation_id`, `email_messages.linked_at` / `dedupe_key`. No email HTML is ever rendered.
+- SF-129 write an email from a record: `src/server/emails/compose-rules.ts` (pure and client-safe: `splitAddresses`,
+  `normaliseRecipients` (dedupe across To / Cc / Bcc, first kept), `validateCompose` (codes `compose_*`, limits in code points:
+  100 addresses, subject 250, text 100,000, attachments `MAX_FILE_BYTES` in total), `sentNotice` (5 addresses within 300
+  characters + a count)) and `compose.ts` (`emailBox` (Gmail state, From, To = the first address of the person / the deal's
+  visible main person, the record's own files, a fresh `sendKey`), `startEmailUpload` (a computer file straight to Storage:
+  `email_uploads` row + `file_cleanup` due in 24 h), `sendFromRecord(actorId, input, now)` (Gmail state → checks → record
+  visible and not archived → attachments (own visible record files, own uploads) → ledger claim `email_sends` `on conflict
+  (user_id, send_key) do nothing` (a second press sends nothing) → `readObject` → `sendGmail` → Gmail ids on the claim →
+  `storeMessage(sentMessage(…))`; a failure before Gmail accepted deletes the claim; a storing failure is logged and the
+  sync started by `runAfterResponse`), `completePendingSend` (called by `storeMessage` in its transaction, also for a message
+  already stored: the one hand link `email_links.how = 'manual'` to the record written from, `on conflict do nothing`, and the
+  claim `sent`), `onRecordSentForTests`). `gmail/address.ts` `isHeaderAddress` (client-safe). `sendGmail` (SF-118) takes
+  `fromName`, `messageId`, `attachments` (`buildMime`: `multipart/mixed`, RFC 2231 names), `GmailTooLarge` over 36,700,160
+  bytes before any Google call, and without a thread sends through the upload endpoint (`sendRawUpload`, `message/rfc822`, 40 s).
+  `files/storage.ts` `readObject(path, size)` (30 s). Tables `email_sends`, `email_uploads` (migration 0021). The sent email is an
+  SF-118 message processed by SF-127 (timeline entry, links, Last contacted): no timeline code of its own. Consent is never read.
+  UI: `records/RecordTimeline.tsx` `emailHref` (`[ WRITE EMAIL ]` in the // TIMELINE heading, not when archived; the board's
+  drawer too), `records/EmailOverlay.tsx` (`?email=new` → the box), `records/EmailBox.tsx` (client: the right side panel,
+  design B; uploads through `AddFiles.tsx`'s `put`), `records/email-actions.ts` (`startEmailUpload`, `sendEmailFromRecord`:
+  flash `email_sent`, then the box goes to `back`). The four pages that hold the box export `maxDuration = 60`. Fake data:
+  `src/seed/sent-emails.ts` (fixed send key).
 - `src/app/(app)/emails/` (SF-127) — the conversation page `[id]/page.tsx` (design B: `← <RECORD>`, // LINKED TO
   `LinkedTo.tsx` with `?link=deal|person|organisation` forms, // EMAILS · OLDEST FIRST `EmailBody.tsx` as plain text,
   `?notice=` fixed texts, `not-found.tsx`), `actions.ts` (`linkRecord`, `unlinkRecord`) and
@@ -240,7 +261,7 @@ OAuth code flow and database sessions.
 - `src/seed/` — fake data; `index.ts` is the seeder registry (users, people, deals, gmail (SF-118: Ada Fake's fake Gmail
   connection and three conversations), notes, activities, calendar (SF-124: Ada Fake's fake calendar and one meeting
   from Google: `calendar.ts`), ambassadors, files, custom fields: `custom-fields.ts`,
-  campaigns: `campaigns.ts`, segments: `segments.ts`). The fake Pipedrive needs no seeding.
+  campaigns: `campaigns.ts`, segments: `segments.ts`, SF-129: `sent-emails.ts`). The fake Pipedrive needs no seeding.
 - `migrations/` — numbered SQL files, applied by `scripts/migrate.ts`.
 - `scripts/fetch-schemas.mjs` (`npm run test:schemas`, before `npm test`: pinned Google, Supabase Storage, Pipedrive
   v2 / v1 (plus the full Pipedrive v1 copy `pipedrive_v1_full_openapi.yml`), Gmail, Pub/Sub and Google Calendar schemas).

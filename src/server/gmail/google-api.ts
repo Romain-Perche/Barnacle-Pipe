@@ -12,7 +12,10 @@ import { askedScopes, classifyGoogleError, slowDownSeconds, type GmailMessage } 
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GMAIL = "https://gmail.googleapis.com/gmail/v1/users/me";
+// SF-129 (contracts/google.md): users.messages.send through the simple media upload, for up to 35 MiB.
+const GMAIL_UPLOAD_SEND = "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media";
 const TIMEOUT_MS = 10_000;
+export const SEND_TIMEOUT_MS = 40_000;
 
 export class GoogleKeyRefused extends Error {
   constructor(status: number, code: string) {
@@ -94,7 +97,7 @@ export function consentUrl({ state, codeChallenge, loginHint }: { state: string;
   return url.toString();
 }
 
-export async function call(url: string, init: { method: string; headers?: Record<string, string>; body?: string }, timeoutMs = TIMEOUT_MS): Promise<Response> {
+export async function call(url: string, init: { method: string; headers?: Record<string, string>; body?: string | Uint8Array<ArrayBuffer> }, timeoutMs = TIMEOUT_MS): Promise<Response> {
   const c = settings();
   try {
     return await c.fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
@@ -283,6 +286,15 @@ export async function getThreadMetadata(accessToken: string, threadId: string): 
 
 export async function sendRaw(accessToken: string, raw: string, threadId?: string | null): Promise<{ id: string; threadId: string }> {
   const sent = await gmailJson<{ id?: unknown; threadId?: unknown }>(accessToken, "POST", "messages/send", { body: threadId ? { raw, threadId } : { raw } });
+  if (typeof sent?.id !== "string" || typeof sent.threadId !== "string") throw new GoogleUnavailable(200, "bad_send");
+  return { id: sent.id, threadId: sent.threadId };
+}
+
+// SF-129: the RFC 5322 bytes as they are (message/rfc822), 40 s; Gmail answers the Message (id, threadId).
+export async function sendRawUpload(accessToken: string, mime: Uint8Array<ArrayBuffer>): Promise<{ id: string; threadId: string }> {
+  const res = await call(GMAIL_UPLOAD_SEND, { method: "POST", headers: { authorization: `Bearer ${accessToken}`, "content-type": "message/rfc822" }, body: mime }, SEND_TIMEOUT_MS);
+  if (!res.ok) return failWith(res);
+  const sent = (await readJson(res)) as { id?: unknown; threadId?: unknown } | null;
   if (typeof sent?.id !== "string" || typeof sent.threadId !== "string") throw new GoogleUnavailable(200, "bad_send");
   return { id: sent.id, threadId: sent.threadId };
 }

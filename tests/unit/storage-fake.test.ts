@@ -120,3 +120,24 @@ describe("SF-122: the Pipedrive import's Storage calls", () => {
     expect(await objectInfo(path)).toBeNull();
   });
 });
+
+// covers SF-129 FR-013, FR-023 (T030): the whole-object read of an email attachment against the schema and the fake.
+describe("SF-129: readObject (GET /object/authenticated/{bucketName}/{*})", () => {
+  it("refuses a path the schema does not have and an undeclared query parameter", async () => {
+    // (`/object/authenticated-x/…` is a GET /object/{bucketName}/{*} of the schema, so a misspelt prefix is shown instead.)
+    await expect(fake.fetch(url("/objects/authenticated/crm-files/files/a"), { method: "GET", headers: auth })).rejects.toThrow();
+    await expect(fake.fetch(url("/object/authenticated/crm-files/files/a?raw=1"), { method: "GET", headers: auth })).rejects.toThrow(/query parameter "raw"/);
+  });
+  it("returns the exact bytes; null for a missing object or another length; StorageUnreachable when down", async () => {
+    const { readObject, StorageUnreachable } = await import("@/server/files/storage");
+    const path = newStoragePath();
+    const bytes = Uint8Array.from({ length: 70_000 }, (_, i) => (i * 7) % 256);
+    fake.put(path, bytes, "application/pdf");
+    expect(await readObject(path, bytes.length)).toEqual(bytes);
+    expect(await readObject(path, bytes.length + 1)).toBeNull();
+    expect(await readObject(newStoragePath(), 10)).toBeNull();
+    fake.down();
+    await expect(readObject(path, bytes.length)).rejects.toThrow(StorageUnreachable);
+    fake.down(false);
+  });
+});

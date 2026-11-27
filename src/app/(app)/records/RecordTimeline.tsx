@@ -5,9 +5,10 @@
 // entry (type, subject, note as text, "Done by <name>") with its box to untick it, except on archived records (its own or a linked one) and in the drawer.
 // SF-116: FILE entries (a file added or deleted); the name of a file that still exists links to it.
 // SF-127: EMAIL entries (EmailEntry.tsx); the note box moved out to TimelineNoteBox.tsx, first in the right column.
+// SF-129: [ WRITE EMAIL ] in the heading (`emailHref`: the page's address with email=new), never on an archived record.
 import Link from "next/link";
 import { formatTime } from "@/server/format";
-import { templates } from "@/server/messages";
+import { messages, templates } from "@/server/messages";
 import { parseId } from "@/server/records/list-query";
 import { mentionCandidates, noteForEdit, type NoteTarget } from "@/server/records/notes";
 import { parseShown } from "@/server/records/notes-rules";
@@ -31,6 +32,8 @@ type Props = {
   // The deal drawer: the newest 50 entries, no note box, no [ EDIT ] / [ DELETE ]; more on the deal page.
   readOnly?: boolean;
   query?: Query;
+  // SF-129: where [ WRITE EMAIL ] goes (the drawer too); no button without it.
+  emailHref?: string;
 };
 
 export function NoteText({ entry }: { entry: TimelineEntry }) {
@@ -42,7 +45,7 @@ export function NoteText({ entry }: { entry: TimelineEntry }) {
   );
 }
 
-export async function RecordTimeline({ viewerId, target, archived, readOnly = false, query = {} }: Props) {
+export async function RecordTimeline({ viewerId, target, archived, readOnly = false, query = {}, emailHref }: Props) {
   const limit = readOnly ? 50 : parseShown(query.timeline);
   const canChange = !readOnly && !archived;
   const page = await readTimeline(viewerId, target, limit);
@@ -66,8 +69,15 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
 
   return (
     <section aria-label="Timeline" className="timeline">
-      <div className="label sect">
-        <span className="c">//</span> TIMELINE
+      <div className="label sect sect-row">
+        <span>
+          <span className="c">//</span> TIMELINE
+        </span>
+        {emailHref && !archived && (
+          <Link className="btn solid" href={emailHref} scroll={false}>
+            {messages.compose_write}
+          </Link>
+        )}
       </div>
       {groupByDay(page.entries, new Date()).map((group) => (
         <div key={group.key} className="daygroup">

@@ -23,6 +23,7 @@ import { PersonPicker } from "../../records/PersonPicker";
 import { RecordTimeline } from "../../records/RecordTimeline";
 import { TimelineNoteBox } from "../../records/TimelineNoteBox";
 import { FileOverlays } from "../../records/FileOverlays";
+import { EmailOverlay } from "../../records/EmailOverlay";
 import { FilesSection } from "../../records/FilesSection";
 import { ReferredBy } from "../../records/ReferredBy";
 import { archiveDeal, deleteDeal, followDeal, linkPerson, markWon, reopenDeal, restoreDeal, unfollowDeal, unlinkPerson } from "../actions";
@@ -51,6 +52,9 @@ function Hidden({ id, version }: { id: number; version?: number }) {
   );
 }
 
+// SF-129: sending an email with 25 MB of attachments (Storage reads, then Gmail's upload) within one function run.
+export const maxDuration = 60;
+
 export default async function DealPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Params> }) {
   const user = await requireUser();
   const id = parseId((await params).id);
@@ -62,7 +66,7 @@ export default async function DealPage({ params, searchParams }: { params: Promi
   const [seconds, people, flash] = await Promise.all([
     getStageSeconds(deal.id, deal.pipeline.id),
     deal.archived ? Promise.resolve([]) : linkablePeople(user.id),
-    readFlash(["note_deleted"]),
+    readFlash(["note_deleted", "email_sent"]),
   ]);
   const open = deal.status === "open" && !deal.archived;
   const closed = deal.status !== "open" && !deal.archived;
@@ -293,6 +297,7 @@ export default async function DealPage({ params, searchParams }: { params: Promi
             target={{ dealId: deal.id }}
             archived={deal.archived}
             query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+            emailHref={`${here}?email=new`}
           />
         </div>
       </div>
@@ -311,6 +316,7 @@ export default async function DealPage({ params, searchParams }: { params: Promi
         back={here}
         query={{ file: first(query, "file"), deleteFile: first(query, "delete-file") }}
       />
+      <EmailOverlay viewerId={user.id} target={{ dealId: deal.id }} email={first(query, "email")} back={here} />
       {confirmLost && <LostBox dealId={deal.id} version={deal.version} error={boxError} />}
     </div>
   );

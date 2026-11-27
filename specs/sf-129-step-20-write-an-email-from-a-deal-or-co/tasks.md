@@ -50,8 +50,8 @@ description: "Task list for SF-129 Write an email from a deal or contact"
 
 ## Phase 1: Setup
 
-- [ ] T000 Merge `origin/main` (SF-126, SF-127, SF-128) into this branch; `npm test` green before any SF-129 change.
-- [ ] T001 Write `migrations/0021_email_send.sql` exactly as data-model.md (only statements allowed in a transaction;
+- [x] T000 Merge `origin/main` (SF-126, SF-127, SF-128) into this branch; `npm test` green before any SF-129 change.
+- [x] T001 Write `migrations/0021_email_send.sql` exactly as data-model.md (only statements allowed in a transaction;
   `alter table … enable row level security` after each `create table`, no policies; it runs after the two `0020_*`):
   - `email_sends`: `user_id bigint not null references users (id)`; `send_key uuid not null`, `unique (user_id,
     send_key)`; `connection_id bigint not null references gmail_connections (id) on delete cascade`; `deal_id` /
@@ -64,9 +64,9 @@ description: "Task list for SF-129 Write an email from a deal or contact"
     not null check (char_length(name) between 1 and 255)`; `size bigint not null check (size between 1 and
     26214400)`; `content_type text not null check (char_length(content_type) <= 255)`; `created_at timestamptz not
     null default now()`.
-- [ ] T002 [P] Add `email_sends` and `email_uploads` to the tables emptied by `tests/support/reset.ts` (before
+- [x] T002 [P] Add `email_sends` and `email_uploads` to the tables emptied by `tests/support/reset.ts` (before
   `email_messages` / `gmail_connections`, so foreign keys allow it).
-- [ ] T003 [P] Add the SF-129 messages to `src/server/messages.ts`, verbatim from data-model.md § Validation (prefix
+- [x] T003 [P] Add the SF-129 messages to `src/server/messages.ts`, verbatim from data-model.md § Validation (prefix
   `compose_`, so none clashes with SF-127's `email_*`): `compose_to_required`, `compose_subject_required`,
   `compose_too_many_addresses`, `compose_subject_too_long`, `compose_text_too_long`, `compose_attachments_too_large`,
   `compose_attachment_gone`, `compose_record_archived`, `compose_record_not_found`, `compose_connect_gmail`,
@@ -82,7 +82,7 @@ description: "Task list for SF-129 Write an email from a deal or contact"
 
 ## Phase 2: Foundational (blocking prerequisites)
 
-- [ ] T004 [P] Write `tests/unit/compose-rules.test.ts` (`// covers FR-004, FR-005, Edge Cases "Addresses" and
+- [x] T004 [P] Write `tests/unit/compose-rules.test.ts` (`// covers FR-004, FR-005, Edge Cases "Addresses" and
   "Required fields"`) for `src/server/emails/compose-rules.ts`:
   - `splitAddresses("a@example.test, b@example.test; c@example.test")` → three addresses; new lines and spaces split too;
   - `normaliseRecipients`: "Ana@Example.test" in To and "ana@example.test " in Cc → once, in To, as typed in To;
@@ -93,12 +93,12 @@ description: "Task list for SF-129 Write an email from a deal or contact"
     text with a subject passes;
   - an address with CR or LF, or `<`/`>`/`,` inside, is invalid (the header-safe check);
   - `sentNotice`: 7 addresses → the first 5 then a count of 2; long addresses → fewer, within 300 characters.
-- [ ] T005 Write `src/server/emails/compose-rules.ts` (pure, client-safe, no `@/server/db` import) to pass T004:
+- [x] T005 Write `src/server/emails/compose-rules.ts` (pure, client-safe, no `@/server/db` import) to pass T004:
   `splitAddresses`, `normaliseRecipients`, `validateCompose`, `totalBytes`, `sentNotice`, `MAX_RECIPIENTS = 100`,
   `MAX_SUBJECT = 250`, `MAX_TEXT = 100_000`; size limit `MAX_FILE_BYTES` from `src/server/files/rules.ts`; address
   validity = `isValidEmail` (records/rules.ts) and `isHeaderAddress` (exported from `src/server/gmail/rules.ts`, the
   existing `ADDRESS` test).
-- [ ] T006 [P] Write `tests/unit/gmail-mime.test.ts` additions (`// covers FR-006, FR-013, research §7`) for
+- [x] T006 [P] Write `tests/unit/gmail-mime.test.ts` additions (`// covers FR-006, FR-013, research §7`) for
   `buildMime`:
   - `fromName: "Zoë Fake"` → `From: =?UTF-8?B?…?= <zoe@barnacle.ai>`; `fromName: "Ada Fake"` → `From: Ada Fake
     <ada@barnacle.ai>` (quoted when it holds specials);
@@ -107,9 +107,9 @@ description: "Task list for SF-129 Write an email from a deal or contact"
     `Content-Type: <type>; name="…"`, `Content-Disposition: attachment; filename="…"; filename*=UTF-8''<percent-encoded>`,
     base64 in lines of at most 76 characters; decoding each part gives the exact bytes;
   - a file name or type holding CR/LF throws `BadHeader`.
-- [ ] T007 Extend `buildMime` and `MimeInput` in `src/server/gmail/rules.ts` (`fromName?`, `messageId?`,
+- [x] T007 Extend `buildMime` and `MimeInput` in `src/server/gmail/rules.ts` (`fromName?`, `messageId?`,
   `attachments?: { name, contentType, bytes: Uint8Array }[]`) to pass T006; export `isHeaderAddress`.
-- [ ] T008 [P] Write `tests/integration/compose-store.test.ts` (`// covers FR-014, FR-015, FR-016, Edge Case "The sync
+- [x] T008 [P] Write `tests/integration/compose-store.test.ts` (`// covers FR-014, FR-015, FR-016, Edge Case "The sync
   stored it first"`) with a connected fake user and an `email_sends` row in state `sending` for a deal:
   - `storeMessage(connectionId, sentMessage(…))` → one `email_messages` row (`direction 'sent'`, `from_name` = the
     user's name, `rfc_message_id` = the ledger's), `linked_at` set (SF-127 processed it), an `email_links` row for the
@@ -120,7 +120,7 @@ description: "Task list for SF-129 Write an email from a deal or contact"
     `storeMessage` again → the hand link is added (the "already stored" path runs `completePendingSend`);
   - the record deleted before storing (ledger ids null) → stored and processed, no hand link, the ledger `sent`;
   - a ledger row of another connection, or already `sent`, is not touched.
-- [ ] T009 Write `sentMessage(…)` and `completePendingSend(db, connectionId, messageId)` in
+- [x] T009 Write `sentMessage(…)` and `completePendingSend(db, connectionId, messageId)` in
   `src/server/emails/compose.ts` (plan.md step 6: ledger row `for update` by `gmail_message_id` or `rfc_message_id`;
   the thread's `conversation_id`; `insert into email_links (conversation_id, <kind>_id, how, changed_by) values (…,
   'manual', <user>) on conflict do nothing`; `state = 'sent'`, `message_id`; `onRecordSentForTests` first, tests only).
@@ -128,18 +128,18 @@ description: "Task list for SF-129 Write an email from a deal or contact"
   `processMessage` and `completePendingSend` instead of returning at once; after `processMessage` for a new message,
   call `completePendingSend`; return value unchanged. Update both header comments. T008 green; SF-127's and SF-118's
   sync tests still green.
-- [ ] T010 [P] Add the flash code `email_sent` to `CODES` in `src/server/records/flash.ts`, rendered by
+- [x] T010 [P] Add the flash code `email_sent` to `CODES` in `src/server/records/flash.ts`, rendered by
   `templates.email_sent` from `name` (the first addresses joined by ", " by the server through `sentNotice`, at most 300
   characters, never from the URL) and `count` (all addresses).
-- [ ] T011 [P] Add `sendRawUpload(accessToken, mime: Buffer)` to `src/server/gmail/google-api.ts`: `POST
+- [x] T011 [P] Add `sendRawUpload(accessToken, mime: Buffer)` to `src/server/gmail/google-api.ts`: `POST
   https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media`, `content-type:
   message/rfc822`, `SEND_TIMEOUT_MS = 40_000`, the same error mapping as `gmailJson`, `{ id, threadId }` strings or
   `GoogleUnavailable(200, "bad_send")` (contracts/google.md).
-- [ ] T012 Extend `sendGmail` in `src/server/gmail/send.ts`: `SendInput` gains `fromName?`, `messageId?`,
+- [x] T012 Extend `sendGmail` in `src/server/gmail/send.ts`: `SendInput` gains `fromName?`, `messageId?`,
   `attachments?`; the MIME bytes built once; longer than `MAX_RAW_BYTES = 36_700_160` → `GmailTooLarge` (new class)
   before any Google call; no `threadId` → `sendRawUpload`, with `threadId` → the existing JSON call. Update the header
   comment.
-- [ ] T013 Teach the fake Gmail (`src/server/gmail/fake-gmail.ts`) the upload path of contracts/google.md: route
+- [x] T013 Teach the fake Gmail (`src/server/gmail/fake-gmail.ts`) the upload path of contracts/google.md: route
   `/upload/gmail/v1/users/me/messages/send` with `uploadType=media` and a `message/rfc822` body (refuse another
   `uploadType` or type with 400 `invalidArgument`, a body over 36,700,160 bytes with 413); parse `multipart/mixed`
   (attachment parts with `filename` from `Content-Disposition`, `body.attachmentId`, bytes kept in the state); keep a
@@ -161,7 +161,7 @@ the record's timeline at once (SF-127's EMAIL entry).
 
 ### Tests for User Story 1
 
-- [ ] T014 [US1] Download `gmail-api.json` from
+- [x] T014 [US1] Download `gmail-api.json` from
   `https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json`
   at commit `3f740bc15212818d4d0eb041b02c951457ff63fa` into `.factory/schemas/` (`git init -q /tmp/google-api-go-client
   && git -C /tmp/google-api-go-client fetch -q --depth 1 https://github.com/googleapis/google-api-go-client
@@ -176,18 +176,18 @@ the record's timeline at once (SF-127's EMAIL entry).
     upload with `content-type: application/json` throws, an upload path `/upload/gmail/v1/users/me/messages/sendd`
     throws, a body of 36,700,161 bytes throws, and a valid upload with an attachment passes and its bytes are read back
     from `sentMessages`.
-- [ ] T015 [P] [US1] Google OAuth 2.0 token endpoint (the refresh before each send) has no public schema on GitHub. The
+- [x] T015 [P] [US1] Google OAuth 2.0 token endpoint (the refresh before each send) has no public schema on GitHub. The
   fake (`src/server/gmail/fake-gmail.ts`) keeps following Google's "Using OAuth 2.0 for Web Server Applications" page
   (developers.google.com/identity/protocols/oauth2/web-server, § Refreshing an access token) and RFC 6749 §6 / §5.2. It
   copies: `invalid_grant` for a revoked or unknown refresh token (→ `GmailNeedsReconnect`), 1-hour access tokens, and
   the `unreachable` switch (→ `GmailUnavailable`). Add to `tests/unit/gmail-fake-oauth.test.ts` (`// covers FR-008`) a
   refresh with a revoked token answering 400 `invalid_grant`.
-- [ ] T016 [P] [US1] Supabase Postgres has no public schema on GitHub and no fake: the integration tests run on a real
+- [x] T016 [P] [US1] Supabase Postgres has no public schema on GitHub and no fake: the integration tests run on a real
   local Postgres (`crm_test`) with `0021_email_send.sql` applied, following the PostgreSQL 16 documentation
   (postgresql.org/docs/16, § Constraints and § INSERT … ON CONFLICT). Add to `tests/integration/compose-migration.test.ts`
   (`// covers FR-010, FR-014`): each check of T001 refuses a bad row (`state = 'other'`, two records on one send, a
   second `(user_id, send_key)`, a second `rfc_message_id`, an `email_uploads.size` of 26214401 or 0, an empty name).
-- [ ] T017 [P] [US1] Write `tests/integration/compose-send.test.ts` (`// covers US1 scenarios 1–7, FR-002, FR-003, FR-006,
+- [x] T017 [P] [US1] Write `tests/integration/compose-send.test.ts` (`// covers US1 scenarios 1–7, FR-002, FR-003, FR-006,
   FR-010, FR-014, FR-020, SC-002`) with a connected fake user (`installGmailFake`):
   - `emailBox` on a deal whose main person Ana Fake has "ana@example.test" (first) and "ana.k@example.test" → To =
     ["ana@example.test"], From = the user's address, Cc / Bcc / subject / text / files empty, a UUID `sendKey`;
@@ -203,7 +203,7 @@ the record's timeline at once (SF-127's EMAIL entry).
     sends;
   - nothing in the record changes (owner, stage, version, consent) and no notification row is added;
   - "Bonjour Zoë,\n\n<b>prix</b> 🎉\nhttps://example.test" is in the fake's text exactly.
-- [ ] T018 [P] [US1] Write `tests/integration/compose-checks.test.ts` (`// covers FR-005, FR-021, Edge Cases
+- [x] T018 [P] [US1] Write `tests/integration/compose-checks.test.ts` (`// covers FR-005, FR-021, Edge Cases
   "Archived records", "Record no longer visible", "Addresses", "Required fields", "Sending to oneself"`): every
   refusal of data-model.md § Validation returns its code and leaves the fake's Sent mail empty and no `email_sends` row;
   the record archived after `emailBox` → `compose_record_archived`; deleted or made private →
@@ -212,7 +212,7 @@ the record's timeline at once (SF-127's EMAIL entry).
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] Write `src/server/emails/compose.ts` part 1 (plan.md step 7):
+- [x] T019 [US1] Write `src/server/emails/compose.ts` part 1 (plan.md step 7):
   - `emailBox(viewerId, target)` → `{ gmail: "ok" | "off" | "not_connected" | "needs_reconnect", from, to, files,
     sendKey, record: { kind, id, name } } | null` (null: record not visible or archived); To = the first `person_emails`
     row `order by position` of the person / the deal's main person when `visiblePerson`; files = `listFiles(viewerId,
@@ -224,24 +224,24 @@ the record's timeline at once (SF-127's EMAIL entry).
     Gmail's answer the Gmail ids on the ledger (own statement, errors caught), then `storeMessage(connectionId,
     sentMessage(…))` (T009); a failure there logged and followed by `runAfterResponse(() =>
     syncConnection(connectionId))`, the result still `sent`.
-- [ ] T020 [US1] Write `src/app/(app)/records/email-actions.ts`: `sendEmailFromRecord(input)` (`requireUser()` first,
+- [x] T020 [US1] Write `src/app/(app)/records/email-actions.ts`: `sendEmailFromRecord(input)` (`requireUser()` first,
   input shape checked, `back` through `isSafeNext`, then `sendFromRecord`, `setFlash({ code: "email_sent", … })` on
   `sent`).
-- [ ] T021 [US1] Check that nothing in `src/server/records/timeline.ts`, `timeline-view.ts`, `src/server/emails/timeline.ts`
+- [x] T021 [US1] Check that nothing in `src/server/records/timeline.ts`, `timeline-view.ts`, `src/server/emails/timeline.ts`
   or `src/app/(app)/records/EmailEntry.tsx` needs a change: the sent email shows through SF-127's `timelineEmails`
   (T017's timeline assertion). Change nothing there unless that test fails.
-- [ ] T022 [US1] Write `src/app/(app)/records/EmailOverlay.tsx` (server: `?email=new` only; nothing on an archived or
+- [x] T022 [US1] Write `src/app/(app)/records/EmailOverlay.tsx` (server: `?email=new` only; nothing on an archived or
   hidden record; `emailBox`) and `src/app/(app)/records/EmailBox.tsx` (client, design B of `design-options.html`: tall
   panel on the right over the dimmed page, heading `// NEW EMAIL · <RECORD NAME>`, From, To / Cc / Bcc chips with "Add
   an address" (Enter, comma, semicolon, space and paste add through `splitAddresses`; × removes), Subject, Text
   `<textarea>`, footer `compose_footer`, `[ CANCEL ]` / `[ CLOSE ]` links to `back`, `[ SEND ]` disabled while
   pending; refusals listed with their fixed messages and every field kept; on `sent` → `router.push(back)` +
   `router.refresh()`). Text nodes only.
-- [ ] T023 [US1] In `src/app/(app)/records/RecordTimeline.tsx`: `[ WRITE EMAIL ]` in the // TIMELINE heading (a link to
+- [x] T023 [US1] In `src/app/(app)/records/RecordTimeline.tsx`: `[ WRITE EMAIL ]` in the // TIMELINE heading (a link to
   the current address plus `email=new`; not on archived records; shown in the drawer too). The EMAIL entry stays
   SF-127's `EmailEntry`. Style `.sidepanel` in `src/app/globals.css` (look of `docs/DESIGN.md`; the two-column record
   pages of SF-127 stay dimmed behind it).
-- [ ] T024 [US1] Render `EmailOverlay` and export `maxDuration = 60` in `src/app/(app)/deals/[id]/page.tsx`,
+- [x] T024 [US1] Render `EmailOverlay` and export `maxDuration = 60` in `src/app/(app)/deals/[id]/page.tsx`,
   `src/app/(app)/people/[id]/page.tsx`, `src/app/(app)/organisations/[id]/page.tsx` and `src/app/(app)/deals/page.tsx`
   (board with `deal=<id>`; `back` keeps `deal=<id>` so the drawer is open again after sending); the drawer's heading
   button in `src/app/(app)/deals/DealDrawer.tsx` through `RecordTimeline`.
@@ -259,7 +259,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ### Tests for User Story 2
 
-- [ ] T025 [P] [US2] Write `tests/integration/compose-timeline.test.ts` (`// covers US2 scenarios 1–4, 6–8, FR-015,
+- [x] T025 [P] [US2] Write `tests/integration/compose-timeline.test.ts` (`// covers US2 scenarios 1–4, 6–8, FR-015,
   FR-017, FR-018, FR-019, Edge Cases "One CRM person with two addresses", "Deactivated sender", "Written from an
   archived-later or deleted record"`):
   - from the deal to Ana (To) and Ben (Cc, no organisation, no open deal) → one `email` entry each on the deal, Ana and
@@ -274,7 +274,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
   - `unlinkRecord` of the deal, then `syncConnection` → not on the deal's timeline, the link still `removed`;
   - after the sender is deactivated, the entry still shows their name; the written-from deal archived → its page
     still shows the entry; deleted → the people's timelines still show it.
-- [ ] T026 [P] [US2] Write `tests/integration/compose-sync.test.ts` (`// covers US2 scenario 5, FR-016, SC-003, Edge
+- [x] T026 [P] [US2] Write `tests/integration/compose-sync.test.ts` (`// covers US2 scenario 5, FR-016, SC-003, Edge
   Case "Sent but the CRM could not record it"`):
   - after a send, `syncConnection` → each timeline still one entry, `email_messages` one row, Settings
     `conversations` + 1 only;
@@ -285,7 +285,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] No new code is planned for US2 (SF-127 and T009 do it). Fix in `src/server/emails/compose.ts` or
+- [x] T027 [US2] No new code is planned for US2 (SF-127 and T009 do it). Fix in `src/server/emails/compose.ts` or
   `src/server/gmail/sync.ts` only what T025 / T026 show; never change SF-127's linking or visibility rules.
 
 **Checkpoint**: US1 + US2 green: the MVP.
@@ -300,7 +300,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ### Tests for User Story 3
 
-- [ ] T030 [US3] Download `storage_v0_openapi.json` from
+- [x] T030 [US3] Download `storage_v0_openapi.json` from
   `https://github.com/supabase/supabase/blob/aa0fb9e84b9d128342f0127c7650d8cc5b240202/apps/docs/spec/storage_v0_openapi.json`
   at commit `aa0fb9e84b9d128342f0127c7650d8cc5b240202` into `.factory/schemas/` (`git init -q /tmp/supabase && git -C
   /tmp/supabase fetch -q --depth 1 https://github.com/supabase/supabase aa0fb9e84b9d128342f0127c7650d8cc5b240202 &&
@@ -312,7 +312,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
   - `tests/unit/storage-fake.test.ts` (`// covers FR-013, FR-023`) must show: a GET on `/object/authenticated-x/…`
     throws, a GET with an undeclared query parameter `?raw=1` throws, and `readObject` of a stored file returns its
     exact bytes (a missing object → `null`, `down()` → `StorageUnreachable`).
-- [ ] T031 [P] [US3] Write `tests/integration/compose-attachments.test.ts` (`// covers US3 scenarios 1–6, FR-011, FR-012,
+- [x] T031 [P] [US3] Write `tests/integration/compose-attachments.test.ts` (`// covers US3 scenarios 1–6, FR-011, FR-012,
   FR-013, SC-002, Edge Case "Big files from the computer"`):
   - `emailBox` on a deal offers its files ("proposal.pdf", "logo.png") with names and sizes, none attached; a person
     / organisation offers only its own files;
@@ -329,11 +329,11 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ### Implementation for User Story 3
 
-- [ ] T032 [P] [US3] Add `readObject(path, size)` to `src/server/files/storage.ts` (contracts/google.md § Storage: GET
+- [x] T032 [P] [US3] Add `readObject(path, size)` to `src/server/files/storage.ts` (contracts/google.md § Storage: GET
   `/object/authenticated/{bucket}/{path}`, 30 s time-out, bytes when their length is `size`, `null` on 400/404 or a
   different length, `StorageUnreachable` on a network error, time-out or 5xx); make `src/server/files/fake-storage.ts`
   serve a GET without `range` if it does not yet.
-- [ ] T033 [US3] In `src/server/emails/compose.ts`: `startEmailUpload(actorId, { name, size, type })` (`validateFile`,
+- [x] T033 [US3] In `src/server/emails/compose.ts`: `startEmailUpload(actorId, { name, size, type })` (`validateFile`,
   size ≤ `MAX_FILE_BYTES`, `newStoragePath()`, `createSignedUploadUrl`, `email_uploads` row and `file_cleanup` row
   `due_at = now() + interval '24 hours'` in one transaction after the Storage call; the type from the browser or
   `uploadContentType(name)`); in `sendFromRecord` steps 4 and 6 (record files with `visibleFile()` and `<record>_id` =
@@ -341,12 +341,12 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
   `GmailTooLarge` → `compose_attachments_too_large`); the attachments' name, type and size in `sentMessage` (box
   order; `storeMessage` writes the `email_attachments` rows); after a send, the uploads' cleanup due now, their rows deleted, `runAfterResponse(sweepFileCleanup)`.
   In `src/server/files/files.ts`, `sweepFileCleanup` also deletes `email_uploads` rows older than 24 hours.
-- [ ] T034 [US3] Add `startEmailUpload` to `src/app/(app)/records/email-actions.ts` (`requireUser()` first) and the
+- [x] T034 [US3] Add `startEmailUpload` to `src/app/(app)/records/email-actions.ts` (`requireUser()` first) and the
   attachments part of `EmailBox.tsx`: the list (name · size · ×), `[ ATTACH A <KIND> FILE ▾ ]` (the record's files not
   yet attached), `[ ATTACH FROM COMPUTER ]` (multiple; each file over the remaining room refused at once with
   `compose_attachments_too_large`; the PUT with progress reusing `put` from `AddFiles.tsx`, moved to a shared module if
   needed), "<n> MB of 25 MB", `[ SEND ]` disabled while uploading; a refusal `compose_attachment_gone` keeps everything.
-- [ ] T035 [US3] Format sizes in the box with `formatFileSize` (`src/server/format`, as SF-127's `EmailEntry` and
+- [x] T035 [US3] Format sizes in the box with `formatFileSize` (`src/server/format`, as SF-127's `EmailEntry` and
   `FilesSection` do); names as text nodes.
 
 **Checkpoint**: attachments green.
@@ -361,7 +361,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ### Tests for User Story 4
 
-- [ ] T036 [P] [US4] Write `tests/integration/compose-gmail-state.test.ts` (`// covers US4 scenarios 1–4, FR-008, SC-004,
+- [x] T036 [P] [US4] Write `tests/integration/compose-gmail-state.test.ts` (`// covers US4 scenarios 1–4, FR-008, SC-004,
   SC-006`):
   - never connected / disconnected → `emailBox.gmail = "not_connected"`; needs reconnecting → `"needs_reconnect"`;
     Gmail off → `"off"`;
@@ -371,7 +371,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ### Implementation for User Story 4
 
-- [ ] T037 [US4] In `EmailOverlay.tsx` / `EmailBox.tsx`: the US4 message for each state (`compose_connect_gmail`,
+- [x] T037 [US4] In `EmailOverlay.tsx` / `EmailBox.tsx`: the US4 message for each state (`compose_connect_gmail`,
   `compose_reconnect_gmail` with `[ GO TO SETTINGS ]` → `/settings`; `compose_gmail_off` without the link), no fields and no
   `[ SEND ]`; on a `gmail` answer from `[ SEND ]` the box switches to that message, keeps the typed state in memory, and
   calls `router.refresh()` so the sidebar's Settings "!" shows.
@@ -384,30 +384,30 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 **Independent test**: quickstart.md row US5.
 
-- [ ] T038 [P] [US5] Write `tests/integration/compose-unsubscribed.test.ts` (`// covers US5 scenarios 1–2, FR-007`): Ana
+- [x] T038 [P] [US5] Write `tests/integration/compose-unsubscribed.test.ts` (`// covers US5 scenarios 1–2, FR-007`): Ana
   Unsubscribed → `emailBox` fills To with her first address, `sendFromRecord` sends, her consent is still
   `unsubscribed`, no `consent_changed` event, her timeline has the entry.
-- [ ] T039 [US5] Check that nothing in `src/server/emails/compose*.ts` reads `persons.consent` (a comment in `compose.ts` says
+- [x] T039 [US5] Check that nothing in `src/server/emails/compose*.ts` reads `persons.consent` (a comment in `compose.ts` says
   consent is for campaigns only, PRODUCT §4); fix if T038 fails.
 
 ---
 
 ## Phase 8: Polish & cross-cutting concerns
 
-- [ ] T040 [P] Write `src/seed/sent-emails.ts` (research §9: Ada Fake sends one email from a fake deal to its fake main
+- [x] T040 [P] Write `src/seed/sent-emails.ts` (research §9: Ada Fake sends one email from a fake deal to its fake main
   person through `sendFromRecord` with `send_key` `00000000-0000-4000-8000-000000000129`; only when `isFakeAllowed()`)
   and register it in `src/seed/index.ts` after `gmail` and `files`; `tests/integration/seed.test.ts` (`// covers
   FR-024`): seeding twice leaves one such email.
-- [ ] T041 [P] Write `tests/unit/compose-messages.test.ts` (`// covers FR-022`): `templates.email_sent` with 5 addresses
+- [x] T041 [P] Write `tests/unit/compose-messages.test.ts` (`// covers FR-022`): `templates.email_sent` with 5 addresses
   and a count of 7 names 5 then "and 2 more"; every `compose_*` code used in `src/server/emails/compose*.ts` exists in
   `messages.ts`.
-- [ ] T042 [P] Update `AGENTS.md` § Layout with the SF-129 lines (`src/server/emails/compose-rules.ts` / `compose.ts`,
+- [x] T042 [P] Update `AGENTS.md` § Layout with the SF-129 lines (`src/server/emails/compose-rules.ts` / `compose.ts`,
   tables `email_sends` / `email_uploads`, the hand link to the written-from record in SF-127's `email_links`,
   `EmailOverlay.tsx` / `EmailBox.tsx` / `email-actions.ts`, `sendGmail` through the upload path, `completePendingSend`
   in `storeMessage`, `readObject`).
-- [ ] T043 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test
+- [x] T043 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test
   DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; fix every failure; run quickstart.md § By hand.
-- [ ] T044 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
+- [x] T044 Write the test recipe `.factory/test-env.md`: a `## Services` line for each outside service (its fake, its
   schema) and `## Schemas` (each schema's GitHub URL at its commit).
   - Gmail API: extend the SF-118 line with the upload send (`/upload/gmail/v1/users/me/messages/send?uploadType=media`,
     checked against `mediaUpload` and `Message` of `gmail-api.json`), `multipart/mixed` attachments, `sentMessages`.
