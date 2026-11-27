@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --paper: #FAF6F1; --ink: #111827; --muted: rgba(17,24,39,.6);
+    --line: rgba(0,0,0,.4); --line-soft: rgba(0,0,0,.1); --line-list: rgba(0,0,0,.08);
+    --blue: #2B00FF; --blue-deep: #1A0099; --orange: #FF4200; --danger: #DC2626; --green: #16A34A;
+    --wash: rgba(43,0,255,.05); --panel: #FFFFFF; --page: #EDE7DF; --note: rgba(255,66,0,.06);
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1A1A1A; --ink: #F3F0EB; --muted: rgba(243,240,235,.6);
+      --line: rgba(255,255,255,.4); --line-soft: rgba(255,255,255,.1); --line-list: rgba(255,255,255,.08);
+      --wash: rgba(120,100,255,.12); --panel: #232323; --page: #0E0E0E; --note: rgba(255,66,0,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); }
+  header.top { padding: 24px 32px 8px; }
+  .label { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .25em; font-size: 11px; }
+  .c { color: var(--orange); }
+  header.top h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+  .legend { font-size: 13px; color: var(--muted); margin: 4px 32px 0; }
+  .legend span { outline: 2px dashed var(--orange); outline-offset: 2px; padding: 0 4px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(620px, 1fr)); gap: 24px; padding: 24px 32px 40px; overflow-x: auto; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .tag { font-family: var(--mono); font-weight: 700; letter-spacing: .25em; font-size: 12px; text-transform: uppercase; }
+  .tag b { background: var(--orange); color: #fff; padding: 2px 8px; margin-right: 8px; letter-spacing: .1em; }
+  .sub2 { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+  figcaption { font-size: 14px; line-height: 1.45; }
+
+  .app { display: grid; grid-template-columns: 140px 1fr; height: 700px; border: .5px solid var(--line); overflow: hidden; position: relative; }
+  .app.short { height: 330px; }
+  .side { background: var(--blue); color: #fff; display: flex; flex-direction: column; padding: 16px 10px; font-family: var(--mono); }
+  .wm { font-weight: 700; letter-spacing: .2em; font-size: 9px; margin-bottom: 22px; }
+  .nav span { display: block; color: rgba(255,255,255,.75); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; }
+  .nav span.on { color: #fff; background: var(--blue-deep); }
+  .nav .cnt { background: var(--orange); color: #fff; padding: 0 4px; margin-left: 4px; }
+  .grp { margin-top: 18px; font-size: 8px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); padding: 0 8px 4px; }
+  .me { margin-top: auto; border-top: .5px solid rgba(255,255,255,.4); padding-top: 10px; font-size: 9px; }
+  .me .n { font-family: var(--sans); font-size: 11px; margin-bottom: 4px; }
+  .me .so { color: rgba(255,255,255,.75); font-weight: 700; letter-spacing: .1em; }
+  .main { background: var(--paper); padding: 14px 16px; overflow: hidden; position: relative; }
+  .back { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: .5px solid var(--line); padding-bottom: 8px; margin-bottom: 6px; gap: 8px; }
+  .ph h2 { margin: 3px 0 0; font-size: 18px; font-weight: 700; }
+  .kind { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); }
+  .btn { font-family: var(--mono); font-weight: 700; letter-spacing: .1em; font-size: 9px; text-transform: uppercase; border: .5px solid var(--line); padding: 4px 7px; color: var(--ink); white-space: nowrap; display: inline-block; }
+  .btn.solid { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.won { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn.lost { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .btn.link { border: 0; padding: 1px 0; color: var(--muted); }
+  .btn.red { color: var(--danger); }
+  .acts { display: flex; gap: 4px; align-items: center; }
+  .bar { display: flex; gap: 2px; margin: 4px 0; }
+  .bar span { flex: 1; font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 4px 6px; background: var(--line-soft); clip-path: polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%, 6% 50%); }
+  .bar span.done { background: var(--blue); color: #fff; }
+  .strip { display: flex; border: .5px solid var(--line-soft); background: var(--panel); margin: 4px 0; }
+  .strip > div { flex: 1 1 0; padding: 4px 7px; border-right: .5px solid var(--line-soft); }
+  .strip > div:last-child { border-right: 0; }
+  .k { font-family: var(--mono); font-size: 7px; letter-spacing: .25em; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .strip .n { font-size: 11px; font-weight: 600; }
+  .sect { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 8px 0 4px; border-top: .5px solid var(--line); padding-top: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .lk { color: var(--blue); }
+  .muted { color: var(--muted); }
+  .arow { display: flex; gap: 6px; align-items: center; font-size: 10px; padding: 3px 0; border-bottom: .5px solid var(--line-list); }
+  .box { width: 10px; height: 10px; border: .5px solid var(--line); display: inline-block; }
+  .kd { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; border: .5px solid var(--line); padding: 1px 3px; text-align: center; }
+  .kd.note { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .kd.deal { color: var(--blue); border-color: var(--blue); }
+  .kd.file { color: var(--ink); background: var(--wash); border-color: var(--blue); }
+  .day { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .25em; color: var(--muted); margin: 6px 0 2px; }
+  .ent { display: grid; grid-template-columns: 46px 1fr auto; gap: 7px; padding: 4px 0; border-bottom: .5px solid var(--line-list); font-size: 10px; align-items: start; }
+  .when { font-family: var(--mono); font-size: 8px; color: var(--muted); white-space: nowrap; }
+  .notebody { border-left: 3px solid var(--orange); background: var(--note); padding: 3px 6px; border-radius: 0 6px 6px 0; }
+  .ta { border: .5px solid var(--line); background: var(--panel); padding: 6px 8px; font-size: 10px; min-height: 34px; color: var(--muted); }
+  .new { outline: 2px dashed var(--orange); outline-offset: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { font-family: var(--mono); font-size: 7px; letter-spacing: .2em; text-transform: uppercase; text-align: left; color: var(--muted); font-weight: 700; padding: 3px 4px; border-bottom: .5px solid var(--line-soft); white-space: nowrap; }
+  td { padding: 3px 4px; border-bottom: .5px solid var(--line-list); vertical-align: middle; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .ft { font-family: var(--mono); font-size: 7px; font-weight: 700; letter-spacing: .1em; border: .5px solid var(--line); padding: 1px 3px; }
+  .notice { font-size: 10px; border-left: 3px solid var(--blue); background: var(--wash); padding: 3px 6px; margin: 4px 0; }
+  /* B tiles */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .tile { border: .5px solid var(--line-soft); background: var(--panel); border-radius: 6px; overflow: hidden; font-size: 9px; }
+  .thumb { height: 46px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; font-size: 10px; letter-spacing: .1em; color: var(--muted); background: var(--line-soft); }
+  .thumb.img { background: linear-gradient(135deg, #8FB3FF 0%, #2B00FF 60%, #FF4200 100%); color: transparent; }
+  .tile .tn { padding: 3px 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .tile .tm { padding: 0 5px 4px; color: var(--muted); font-family: var(--mono); font-size: 7px; }
+  .drop { border: 1px dashed var(--line); border-radius: 6px; padding: 8px; text-align: center; font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+  /* C chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { border: .5px solid var(--line); border-radius: 999px; padding: 2px 8px; font-size: 9px; background: var(--panel); }
+  .chip .lk { font-weight: 600; }
+  /* overlay box */
+  .dim { position: absolute; inset: 0; background: rgba(17,24,39,.45); display: flex; align-items: center; justify-content: center; }
+  .modal { background: var(--paper); border: .5px solid var(--line); width: 86%; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+  .modal .hd { display: flex; justify-content: space-between; align-items: center; border-bottom: .5px solid var(--line); padding-bottom: 6px; margin-bottom: 8px; font-size: 11px; font-weight: 600; }
+  .pic { height: 190px; background: linear-gradient(135deg, #8FB3FF 0%, #2B00FF 60%, #FF4200 100%); display: flex; align-items: end; justify-content: start; padding: 6px; color: #fff; font-family: var(--mono); font-size: 8px; }
+  .fullpic { height: 230px; background: linear-gradient(135deg, #8FB3FF 0%, #2B00FF 60%, #FF4200 100%); margin-top: 8px; display: flex; align-items: end; padding: 6px; color: #fff; font-family: var(--mono); font-size: 8px; }
+
+  .grid { grid-template-columns: repeat(3, minmax(640px, 1fr)); }
+  .app { height: 760px; }
+  .app.short { height: 250px; }
+  .kd.mail { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .mailbody { border-left: 3px solid var(--blue); background: var(--wash); padding: 4px 7px; border-radius: 0 6px 6px 0; margin-top: 2px; }
+  .mailbody .sj { font-weight: 700; }
+  .mailbody .hdr { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+  .mailbody p { margin: 3px 0 0; white-space: pre-line; }
+  .att { font-family: var(--mono); font-size: 8px; margin-top: 3px; }
+  .att span { border: .5px solid var(--line-soft); background: var(--panel); padding: 1px 4px; margin-right: 3px; }
+  .frm { display: grid; grid-template-columns: 52px 1fr; gap: 5px 8px; align-items: center; font-size: 10px; }
+  .frm .k { font-size: 7px; }
+  .fld { border: .5px solid var(--line); background: var(--panel); padding: 4px 6px; min-height: 22px; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+  .fld.big { min-height: 96px; align-items: flex-start; white-space: pre-line; display: block; }
+  .chip.x::after { content: " ×"; color: var(--muted); }
+  .ph2 { color: var(--muted); }
+  .ftr { display: flex; justify-content: space-between; align-items: center; border-top: .5px solid var(--line); margin-top: 8px; padding-top: 6px; font-size: 9px; }
+  .tick { display: flex; gap: 6px; align-items: center; font-size: 10px; padding: 2px 0; border-bottom: .5px solid var(--line-list); }
+  .tick .box.on { background: var(--blue); border-color: var(--blue); }
+  .panel { position: absolute; top: 0; right: 0; bottom: 0; width: 62%; background: var(--paper); border-left: .5px solid var(--line); padding: 10px 12px; box-shadow: -10px 0 30px rgba(0,0,0,.25); }
+  .dock { position: absolute; right: 10px; bottom: 0; width: 64%; background: var(--paper); border: .5px solid var(--line); border-bottom: 0; box-shadow: 0 -6px 24px rgba(0,0,0,.25); }
+  .dock .bar2 { background: var(--blue); color: #fff; font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .1em; padding: 5px 8px; display: flex; justify-content: space-between; }
+  .dock .in { padding: 8px 10px; }
+  .line { border-bottom: .5px solid var(--line-soft); padding: 4px 0; font-size: 10px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .line .k { width: 34px; }
+  .tot { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+  .warnbox { border-left: 3px solid var(--orange); background: var(--note); padding: 6px 8px; font-size: 11px; margin: 6px 0; }
+  .shared { padding: 0 32px 40px; }
+  .shared .grid { padding: 12px 0 0; }
+  .grid { grid-template-columns: repeat(3, minmax(560px, 1fr)); }
+  .app { height: 340px; }
+  .app.conv { height: 380px; }
+  .app.tall { height: 640px; }
+  .cols { display: grid; grid-template-columns: 34% 1fr; gap: 12px; }
+  .cols .left .k { margin-top: 4px; }
+  .lrow { display: flex; justify-content: space-between; font-size: 10px; padding: 3px 0; border-bottom: .5px solid var(--line-list); }
+  .lrow .kind { margin-right: 4px; }
+  .msg { border-bottom: .5px solid var(--line-list); padding: 6px 0; font-size: 10px; }
+  .msg .who { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .msg .hd2 { color: var(--muted); font-size: 9px; }
+  .msg .tx { white-space: pre-line; margin-top: 3px; }
+  .eh { color: var(--muted); display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+  .racts { display: flex; gap: 10px; margin-top: 3px; }
+  .racts .btn.link { color: var(--blue); font-size: 8px; }
+  .mini .btn { font-size: 7px; padding: 2px 4px; }
+  .menu { display: inline-block; position: relative; margin-top: 3px; }
+  .menu .list { position: absolute; left: 0; top: 18px; background: var(--panel); border: .5px solid var(--line); box-shadow: 0 6px 18px rgba(0,0,0,.2); z-index: 2; min-width: 110px; }
+  .menu .list span { display: block; font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; padding: 5px 8px; border-bottom: .5px solid var(--line-soft); }
+  .quote { border-left: 2px solid var(--line); padding: 4px 8px; font-size: 9px; color: var(--muted); white-space: pre-line; background: var(--panel); max-height: 120px; overflow: hidden; }
+  .warnlink { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .1em; color: var(--orange); }
+  .shared .grid { grid-template-columns: repeat(3, minmax(560px, 1fr)); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="label"><span class="c">//</span> SF-130 · REPLY AND FORWARD · DESIGN OPTIONS</div>
+  <h1>Where [ REPLY ], [ REPLY ALL ] and [ FORWARD ] sit on each email</h1>
+  <p>Each design shows the same two places: an EMAIL entry on the deal's // TIMELINE (the same on person and organisation pages and in the deal drawer), and the conversation page. The buttons open SF-129's panel on the right; that panel is the same for all three designs (bottom of the page).</p>
+</header>
+<p class="legend"><span>Dashed orange</span> = new in this issue.</p>
+<div class="grid">
+
+<!-- ================= A ================= -->
+<figure>
+  <div class="tag"><b>A</b>A row of text buttons under each email</div>
+  <div class="sub2">Deal page · // TIMELINE</div>
+  <div class="app"><aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">Deals</span><span>People</span><span>Organisations</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="me"><div class="nav"><span>Settings</span></div><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="sect"><span><span class="c">//</span> TIMELINE</span><span class="btn solid">[ WRITE EMAIL ]</span></div>
+      <div class="day">// TODAY · 27 NOV 2026</div>
+      <div class="ent"><span class="kd mail">Email</span><div>
+        <div class="eh">Ana Fake → Ada Fake · Cc Ben Fake</div>
+        <div class="mailbody"><div class="sj lk">Pricing</div><p class="muted">Hi Ada, could you send the price for the second phase? I attach our plan…</p>
+          <div class="att"><span>plan.pdf · 2.0 MB</span><span>logo.png · 300 KB</span></div></div>
+        <div class="racts new"><span class="btn link">[ REPLY ]</span><span class="btn link">[ REPLY ALL ]</span><span class="btn link">[ FORWARD ]</span></div>
+      </div><span class="when">14:05</span></div>
+      <div class="day">// 25 NOV 2026</div>
+      <div class="ent"><span class="kd mail">Email</span><div>
+        <div class="eh">Ada Fake → Ana Fake</div>
+        <div class="mailbody"><div class="sj lk">Next steps on the website</div><p class="muted">Hi Ana, Here is the proposal we talked about…</p></div>
+        <div class="racts new"><span class="btn link">[ REPLY ]</span><span class="btn link">[ REPLY ALL ]</span><span class="btn link">[ FORWARD ]</span></div>
+      </div><span class="when">09:40</span></div>
+    </div></div>
+  <div class="sub2">Conversation page</div>
+  <div class="app conv"><aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">Deals</span><span>People</span><span>Organisations</span></div></aside>
+    <div class="main"><div class="back">← EXAMPLE LTD FAKE · WEBSITE</div>
+      <div class="ph"><div><div class="kind"><span class="c">//</span> CONVERSATION · 2 EMAILS</div><h2>Pricing</h2></div></div>
+      <div class="cols"><div class="left"><div class="sect"><span><span class="c">//</span> LINKED TO</span></div>
+        <div class="lrow"><span><span class="kind k">DEAL</span>Example Ltd Fake · website</span></div>
+        <div class="lrow"><span><span class="kind k">PERSON</span>Ana Fake</span></div>
+        <div class="lrow"><span><span class="kind k">PERSON</span>Ben Fake</span></div></div>
+      <div><div class="sect"><span><span class="c">//</span> EMAILS · OLDEST FIRST</span></div>
+        <div class="msg"><div class="who"><b>Ada Fake &lt;ada@barnacle.ai&gt;</b><span class="when">26 NOV 2026, 16:30</span></div>
+          <div class="hd2">To Ana Fake &lt;ana@example.test&gt;</div><div class="tx">Hi Ana,
+The first phase is £4,500.</div>
+          <div class="racts new"><span class="btn link">[ REPLY ]</span><span class="btn link">[ REPLY ALL ]</span><span class="btn link">[ FORWARD ]</span></div></div>
+        <div class="msg"><div class="who"><b>Ana Fake &lt;ana@example.test&gt;</b><span class="when">27 NOV 2026, 14:05</span></div>
+          <div class="hd2">To Ada Fake &lt;ada@barnacle.ai&gt; · Cc Ben Fake &lt;ben@example.test&gt;</div><div class="tx">Hi Ada,
+Could you send the price for the second phase? I attach our plan.</div>
+          <div class="att"><span>plan.pdf · 2.0 MB <b class="lk">[ DOWNLOAD ]</b></span></div>
+          <div class="racts new"><span class="btn link">[ REPLY ]</span><span class="btn link">[ REPLY ALL ]</span><span class="btn link">[ FORWARD ]</span></div></div>
+      </div></div></div></div>
+  <figcaption>Good for: the buttons are where you finish reading, the same in both places; light blue text keeps a long timeline calm.</figcaption>
+</figure>
+
+<!-- ================= B ================= -->
+<figure>
+  <div class="tag"><b>B</b>Small framed buttons on the email's top line, at the right</div>
+  <div class="sub2">Deal page · // TIMELINE</div>
+  <div class="app"><aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">Deals</span><span>People</span><span>Organisations</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="me"><div class="nav"><span>Settings</span></div><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="sect"><span><span class="c">//</span> TIMELINE</span><span class="btn solid">[ WRITE EMAIL ]</span></div>
+      <div class="day">// TODAY · 27 NOV 2026</div>
+      <div class="ent"><span class="kd mail">Email</span><div>
+        <div class="eh"><span>Ana Fake → Ada Fake · Cc Ben Fake</span><span class="acts mini new"><span class="btn">[ REPLY ]</span><span class="btn">[ REPLY ALL ]</span><span class="btn">[ FORWARD ]</span></span></div>
+        <div class="mailbody"><div class="sj lk">Pricing</div><p class="muted">Hi Ada, could you send the price for the second phase? I attach our plan…</p>
+          <div class="att"><span>plan.pdf · 2.0 MB</span><span>logo.png · 300 KB</span></div></div>
+      </div><span class="when">14:05</span></div>
+      <div class="day">// 25 NOV 2026</div>
+      <div class="ent"><span class="kd mail">Email</span><div>
+        <div class="eh"><span>Ada Fake → Ana Fake</span><span class="acts mini new"><span class="btn">[ REPLY ]</span><span class="btn">[ REPLY ALL ]</span><span class="btn">[ FORWARD ]</span></span></div>
+        <div class="mailbody"><div class="sj lk">Next steps on the website</div><p class="muted">Hi Ana, Here is the proposal we talked about…</p></div>
+      </div><span class="when">09:40</span></div>
+    </div></div>
+  <div class="sub2">Conversation page</div>
+  <div class="app conv"><aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">Deals</span><span>People</span><span>Organisations</span></div></aside>
+    <div class="main"><div class="back">← EXAMPLE LTD FAKE · WEBSITE</div>
+      <div class="ph"><div><div class="kind"><span class="c">//</span> CONVERSATION · 2 EMAILS</div><h2>Pricing</h2></div></div>
+      <div class="cols"><div class="left"><div class="sect"><span><span class="c">//</span> LINKED TO</span></div>
+        <div class="lrow"><span><span class="kind k">DEAL</span>Example Ltd Fake · website</span></div>
+        <div class="lrow"><span><span class="kind k">PERSON</span>Ana Fake</span></div>
+        <div class="lrow"><span><span class="kind k">PERSON</span>Ben Fake</span></div></div>
+      <div><div class="sect"><span><span class="c">//</span> EMAILS · OLDEST FIRST</span></div>
+        <div class="msg"><div class="who"><b>Ada Fake &lt;ada@barnacle.ai&gt;</b><span class="when">26 NOV 2026, 16:30</span></div>
+          <div class="eh"><span class="hd2">To Ana Fake &lt;ana@example.test&gt;</span><span class="acts mini new"><span class="btn">[ REPLY ]</span><span class="btn">[ REPLY ALL ]</span><span class="btn">[ FORWARD ]</span></span></div>
+          <div class="tx">Hi Ana,
+The first phase is £4,500.</div></div>
+        <div class="msg"><div class="who"><b>Ana Fake &lt;ana@example.test&gt;</b><span class="when">27 NOV 2026, 14:05</span></div>
+          <div class="eh"><span class="hd2">To Ada Fake · Cc Ben Fake</span><span class="acts mini new"><span class="btn">[ REPLY ]</span><span class="btn">[ REPLY ALL ]</span><span class="btn">[ FORWARD ]</span></span></div>
+          <div class="tx">Hi Ada,
+Could you send the price for the second phase? I attach our plan.</div>
+          <div class="att"><span>plan.pdf · 2.0 MB <b class="lk">[ DOWNLOAD ]</b></span></div></div>
+      </div></div></div></div>
+  <figcaption>Good for: the buttons are seen before reading and look like the app's other buttons; they take no extra line.</figcaption>
+</figure>
+
+<!-- ================= C ================= -->
+<figure>
+  <div class="tag"><b>C</b>One [ REPLY ▾ ] that opens a short menu on the timeline; all three on the conversation page</div>
+  <div class="sub2">Deal page · // TIMELINE (menu drawn open)</div>
+  <div class="app"><aside class="side">
+      <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">Deals</span><span>People</span><span>Organisations</span><span>Activities</span><span>Notifications<span class="cnt">2</span></span></div>
+      <div class="me"><div class="nav"><span>Settings</span></div><div class="n">Ada Fake</div><div class="so">[ SIGN OUT ]</div></div>
+    </aside>
+    <div class="main">
+      <div class="sect"><span><span class="c">//</span> TIMELINE</span><span class="btn solid">[ WRITE EMAIL ]</span></div>
+      <div class="day">// TODAY · 27 NOV 2026</div>
+      <div class="ent"><span class="kd mail">Email</span><div>
+        <div class="eh">Ana Fake → Ada Fake · Cc Ben Fake</div>
+        <div class="mailbody"><div class="sj lk">Pricing</div><p class="muted">Hi Ada, could you send the price for the second phase? I attach our plan…</p>
+          <div class="att"><span>plan.pdf · 2.0 MB</span><span>logo.png · 300 KB</span></div></div>
+        <div class="menu new"><span class="btn">[ REPLY ▾ ]</span><div class="list"><span>REPLY</span><span>REPLY ALL</span><span>FORWARD</span></div></div>
+      </div><span class="when">14:05</span></div>
+      <div class="day" style="margin-top:56px">// 25 NOV 2026</div>
+      <div class="ent"><span class="kd mail">Email</span><div>
+        <div class="eh">Ada Fake → Ana Fake</div>
+        <div class="mailbody"><div class="sj lk">Next steps on the website</div><p class="muted">Hi Ana, Here is the proposal we talked about…</p></div>
+        <div class="menu new"><span class="btn">[ REPLY ▾ ]</span></div>
+      </div><span class="when">09:40</span></div>
+    </div></div>
+  <div class="sub2">Conversation page</div>
+  <div class="app conv"><aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+      <div class="nav"><span>Home</span><span class="on">Deals</span><span>People</span><span>Organisations</span></div></aside>
+    <div class="main"><div class="back">← EXAMPLE LTD FAKE · WEBSITE</div>
+      <div class="ph"><div><div class="kind"><span class="c">//</span> CONVERSATION · 2 EMAILS</div><h2>Pricing</h2></div></div>
+      <div class="cols"><div class="left"><div class="sect"><span><span class="c">//</span> LINKED TO</span></div>
+        <div class="lrow"><span><span class="kind k">DEAL</span>Example Ltd Fake · website</span></div>
+        <div class="lrow"><span><span class="kind k">PERSON</span>Ana Fake</span></div>
+        <div class="lrow"><span><span class="kind k">PERSON</span>Ben Fake</span></div></div>
+      <div><div class="sect"><span><span class="c">//</span> EMAILS · OLDEST FIRST</span></div>
+        <div class="msg"><div class="who"><b>Ada Fake &lt;ada@barnacle.ai&gt;</b><span class="when">26 NOV 2026, 16:30</span></div>
+          <div class="hd2">To Ana Fake &lt;ana@example.test&gt;</div><div class="tx">Hi Ana,
+The first phase is £4,500.</div>
+          <div class="acts mini new" style="margin-top:3px"><span class="btn">[ REPLY ]</span><span class="btn">[ REPLY ALL ]</span><span class="btn">[ FORWARD ]</span></div></div>
+        <div class="msg"><div class="who"><b>Ana Fake &lt;ana@example.test&gt;</b><span class="when">27 NOV 2026, 14:05</span></div>
+          <div class="hd2">To Ada Fake · Cc Ben Fake</div><div class="tx">Hi Ada,
+Could you send the price for the second phase? I attach our plan.</div>
+          <div class="att"><span>plan.pdf · 2.0 MB <b class="lk">[ DOWNLOAD ]</b></span></div>
+          <div class="acts mini new" style="margin-top:3px"><span class="btn solid">[ REPLY ]</span><span class="btn">[ REPLY ALL ]</span><span class="btn">[ FORWARD ]</span></div></div>
+      </div></div></div></div>
+  <figcaption>Good for: the shortest timeline (one button per email); the conversation page, where people read, keeps all three.</figcaption>
+</figure>
+</div>
+
+<!-- ================= SHARED ================= -->
+<section class="shared">
+  <div class="label"><span class="c">//</span> THE SAME IN EVERY DESIGN</div>
+  <div class="grid">
+  <figure>
+    <div class="sub2">[ REPLY ] pressed: SF-129's panel, filled, with the quote under the text</div>
+    <div class="app tall"><aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+        <div class="nav"><span>Home</span><span class="on">Deals</span><span>People</span></div></aside>
+      <div class="main"><div class="back">← EXAMPLE LTD FAKE · WEBSITE</div>
+        <div class="ph"><div><div class="kind"><span class="c">//</span> CONVERSATION · 2 EMAILS</div><h2>Pricing</h2></div></div>
+        <div class="dim" style="background:rgba(17,24,39,.35)"></div>
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;border-bottom:.5px solid var(--line);padding-bottom:6px;margin-bottom:8px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.2em"><span><span class="c">//</span> <span class="new">REPLY</span> · PRICING</span><span class="btn">[ CLOSE ]</span></div>
+          <div class="frm">
+            <span class="k">From</span><span class="muted">ada@barnacle.ai</span>
+            <span class="k">To</span><div class="fld new"><span class="chip x">Ana Fake</span><span class="ph2">Add an address</span></div>
+            <span class="k">Cc</span><div class="fld"></div>
+            <span class="k">Bcc</span><div class="fld"></div>
+            <span class="k">Subject</span><div class="fld new">Re: Pricing</div>
+            <span class="k">Text</span><div class="fld big">Hi Ana,
+
+The second phase is £3,200. Talk on Thursday?
+
+Ada</div>
+            <span class="k"></span><div class="quote new">On 27 Nov 2026 at 14:05, Ana Fake &lt;ana@example.test&gt; wrote:
+&gt; Hi Ada,
+&gt; Could you send the price for the second phase? I attach our plan.</div>
+          </div>
+          <div class="k" style="margin:8px 0 3px">Attachments</div>
+          <div class="acts"><span class="btn">[ ATTACH A DEAL FILE ▾ ]</span><span class="btn">[ ATTACH FROM COMPUTER ]</span><span class="tot">0 MB of 25 MB</span></div>
+          <div class="ftr"><span class="muted">Sent from your Gmail. It shows on this record and on the CRM people it goes to.</span><span class="acts"><span class="btn">[ CANCEL ]</span><span class="btn solid">[ SEND ]</span></span></div>
+        </div></div></div>
+    <figcaption>[ REPLY ALL ] is the same with Ben Fake in Cc and "// REPLY ALL". The quote is sent below the text; it is not changed in the box.</figcaption>
+  </figure>
+  <figure>
+    <div class="sub2">[ FORWARD ] pressed: To empty, the email's attachments already attached</div>
+    <div class="app tall"><aside class="side"><div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+        <div class="nav"><span>Home</span><span class="on">Deals</span><span>People</span></div></aside>
+      <div class="main"><div class="back">← EXAMPLE LTD FAKE · WEBSITE</div>
+        <div class="ph"><div><div class="kind"><span class="c">//</span> CONVERSATION · 2 EMAILS</div><h2>Pricing</h2></div></div>
+        <div class="dim" style="background:rgba(17,24,39,.35)"></div>
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;border-bottom:.5px solid var(--line);padding-bottom:6px;margin-bottom:8px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.2em"><span><span class="c">//</span> <span class="new">FORWARD</span> · PRICING</span><span class="btn">[ CLOSE ]</span></div>
+          <div class="frm">
+            <span class="k">From</span><span class="muted">ada@barnacle.ai</span>
+            <span class="k">To</span><div class="fld"><span class="ph2">Add an address</span></div>
+            <span class="k">Cc</span><div class="fld"></div>
+            <span class="k">Bcc</span><div class="fld"></div>
+            <span class="k">Subject</span><div class="fld new">Fwd: Pricing</div>
+            <span class="k">Text</span><div class="fld big" style="min-height:60px"><span class="ph2">Write your text…</span></div>
+            <span class="k"></span><div class="quote new">---------- Forwarded message ---------
+From: Ana Fake &lt;ana@example.test&gt;
+Date: 27 Nov 2026 at 14:05
+Subject: Pricing
+To: Ada Fake &lt;ada@barnacle.ai&gt;
+
+Hi Ada,
+Could you send the price for the second phase? I attach our plan.</div>
+          </div>
+          <div class="k" style="margin:8px 0 3px">Attachments</div>
+          <div class="chips new"><span class="chip x">plan.pdf · 2.0 MB</span><span class="chip x">logo.png · 300 KB</span></div>
+          <div style="margin-top:4px" class="acts"><span class="btn">[ ATTACH A DEAL FILE ▾ ]</span><span class="btn">[ ATTACH FROM COMPUTER ]</span><span class="tot">2.3 MB of 25 MB</span></div>
+          <div class="ftr"><span class="muted">Sent from your Gmail. It shows on this record and on the CRM people it goes to.</span><span class="acts"><span class="btn">[ CANCEL ]</span><span class="btn solid">[ SEND ]</span></span></div>
+        </div></div></div>
+    <figcaption>Each forwarded attachment has × to remove it; they count in the 25 MB.</figcaption>
+  </figure>
+  <figure>
+    <div class="sub2">Gmail not connected: a link to Settings in place of the buttons (drawn with design A)</div>
+    <div class="app"><aside class="side">
+        <div class="wm">BARNACLE<span class="c">_</span>LABS</div>
+        <div class="nav"><span>Home</span><span class="on">Deals</span><span>People</span><span>Organisations</span></div>
+        <div class="me"><div class="nav"><span>Settings</span></div><div class="n">Bob Fake</div><div class="so">[ SIGN OUT ]</div></div></aside>
+      <div class="main">
+        <div class="sect"><span><span class="c">//</span> TIMELINE</span><span class="btn solid">[ WRITE EMAIL ]</span></div>
+        <div class="day">// TODAY · 27 NOV 2026</div>
+        <div class="ent"><span class="kd mail">Email</span><div>
+          <div class="eh">Ana Fake → Ada Fake · Cc Ben Fake</div>
+          <div class="mailbody"><div class="sj lk">Pricing</div><p class="muted">Hi Ada, could you send the price for the second phase? I attach our plan…</p></div>
+          <div class="racts new"><span class="btn link">[ CONNECT GMAIL TO REPLY ]</span></div>
+        </div><span class="when">14:05</span></div>
+      </div></div>
+    <figcaption>When Gmail needs reconnecting: [ RECONNECT GMAIL TO REPLY ]. When Gmail is off for the app: nothing.</figcaption>
+  </figure>
+  </div>
+</section>
+</body>
+</html>
