@@ -22,10 +22,14 @@ sources:
     resource: repo://src/server/calendar/sync.ts
   - id: openwiki-source-142c3db3613355a16ad2c16c
     resource: repo://src/server/crypto/seal.ts
+  - id: openwiki-source-88f5ce2aae6df34b0e7bc3f8
+    resource: repo://src/server/emails/process.ts
+  - id: openwiki-source-505f917d9247b00a278f8a50
+    resource: repo://src/server/gmail/past.ts
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-25T13:24:53.309Z
-generated: { by: "claude-code", at: "2026-11-25T13:24:53.309Z" }
+    at: 2026-11-26T18:09:57.686Z
+generated: { by: "claude-code", at: "2026-11-26T18:09:57.686Z" }
 ---
 
 # Gmail connect and sync
@@ -57,9 +61,46 @@ How data moves is in [dataflow/DATAFLOW.md](../../dataflow/DATAFLOW.md); the set
   messages when history is gone), applies `decideCopy` and stores each message in its own transaction. Drafts, spam and
   bin are never copied, nor mail from before the connection; a message is copied when its thread is already copied or an
   address belongs to a CRM person. At most 300 `messages.get` calls per run. No Google call is made inside a
-  transaction.
+  transaction. `storeMessage` also calls `processMessage` (SF-127, below) in the same transaction.
 - Tables (`migrations/0016_gmail.sql`): `gmail_connections` (one per user), `email_threads`, `email_messages`,
   `email_attachments` (names and sizes only, never contents).
+
+## Email on the timeline (SF-127)
+
+Copied emails show on people, organisations and deals, in `src/server/emails/` (table changes in
+`migrations/0020_email_timeline.sql`).
+
+- `processMessage` (`process.ts`) runs inside `storeMessage`'s transaction. It locks `email_conversations`, raises the
+  people's Last contacted (never lowers it), puts the thread in a conversation (two mailboxes holding the same Message-ID
+  are one conversation; two found to be one are merged into the smaller id), records its addresses, then `autoLink`. No
+  network call. `catchUpEmails` processes emails copied before SF-127 (`linked_at` null) first thing in `runGmailCheck`.
+- `autoLink` links by address to people, their organisation and their one open deal, only with
+  `insert … on conflict do nothing`, so a hand choice (`email_links.how` manual, `removed` = unlinked by hand) is never
+  changed. `linkForPeople` does the same when a person is created, edited or imported.
+- `timeline.ts` gives one EMAIL entry per email to `readTimeline`; `conversations.ts` reads the conversation page
+  (`/emails/[id]`, plain text only, never HTML) and links or unlinks records; `visibleConversation()` in
+  `records/visibility.ts` hides a conversation when a person in it or a linked person or deal is not visible to the viewer.
+- `attachments.ts` serves attachments from `/emails/attachments/[id]/download`: it fetches the bytes from Gmail through a
+  mailbox holding the email (no Google call inside a transaction) and sends them as `application/octet-stream` with
+  `Content-Disposition: attachment`, or redirects back with a notice.
+
+## Fetch past emails (SF-128)
+
+The Gmail card on Settings can fetch the last 12 months of mail for CRM people, in `src/server/gmail/past.ts`.
+
+- `startPastFetch` (the button) holds the connection row and does a conditional upsert, so two fetches never run at once.
+  Its state is one `past_email_fetches` row per connection (`migrations/0020_past_email_fetches.sql`), deleted by a
+  disconnect or deactivation (`forgetGmailInTx`); copied mail stays.
+- `runPastFetchPart` works under a lease column, walking the window backwards in 7-day slices with `threads.list`. It reads
+  each thread as metadata, decides with the pure `planPastThread` (`rules.ts`), and stores each new message through
+  `storeMessage` in `sync.ts` (one transaction each, counting new conversations in `copied`). The cursor is saved after every
+  thread. A part is capped at 100 threads or 20 s. No Google call is made inside a transaction.
+- Two callers: the Settings page's `PastFetchRunner.tsx` through `runPastFetchPartFor`, and `runGmailCheck` through
+  `runPastFetches` after the connections. Slow-downs set `wait_until`; "can't be reached" keeps the cursor; a refused key marks
+  the connection as needing reconnect while the fetch waits.
+- The fake mailbox of 100 conversations is `fake-past-mailbox.ts`, shown at `/dev/fake-gmail`.
+
+Data movement is drawn in [the data flow](../../dataflow/DATAFLOW.md).
 
 ## Google Calendar sync (SF-124)
 

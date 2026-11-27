@@ -10,6 +10,8 @@
 //   send <userId> <json SendInput>    sendGmail(userId, input) → {ok, result} or {ok:false, error: <class name>}
 //   sent <email>                      the user's mailbox messages labelled SENT: [{id, threadId, from, to, subject, inReplyTo}]
 //   tokens <email>                    the status of every refresh token the fake gave the user
+//   delete <email> <subject>          (SF-127) removes the user's message with that subject for good (Gmail's 404)
+//   unreachable on|off                (SF-127) every Google call fails as a network error / works again
 import { fakeGmail } from "@/server/gmail/fake-gmail";
 import { sendGmail } from "@/server/gmail/send";
 import { sql } from "@/server/db";
@@ -39,6 +41,15 @@ async function main() {
     const h = (m: any, n: string) => m.payload.headers.find((x: any) => x.name.toLowerCase() === n)?.value ?? "";
     out = fake.mailbox(a).filter((m: any) => m.labelIds.includes("SENT")).map((m: any) => ({ id: m.id, threadId: m.threadId, from: h(m, "from"), to: h(m, "to"), subject: h(m, "subject"), inReplyTo: h(m, "in-reply-to") }));
   } else if (op === "tokens") out = fake.tokensOf(a).map((t: any) => t.status);
+  // SF-127: a message Gmail no longer has (deleted for good), and Google unreachable for every route of the dev server.
+  else if (op === "delete") {
+    const m = fake.mailbox(a).find((x: any) => x.payload.headers.some((h: any) => h.name === "Subject" && h.value === b));
+    if (m) fake.deleteMessage(a, m.id);
+    out = !!m;
+  } else if (op === "unreachable") {
+    fake.setUnreachable(a === "on");
+    out = a === "on";
+  }
   else throw new Error("unknown op " + op);
   console.log(JSON.stringify(out));
   await sql.end();

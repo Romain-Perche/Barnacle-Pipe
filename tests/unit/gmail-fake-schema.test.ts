@@ -78,6 +78,59 @@ describe("Gmail requests and answers against gmail-api.json", () => {
   });
 });
 
+describe("SF-127: messages.get and messages.attachments.get against gmail-api.json", () => {
+  // covers SF-127 FR-006, contracts/gmail.md § Fake, T011, T019
+  const addWithFile = (o: { inline?: boolean } = {}) =>
+    fake.addMessage("linus@barnacle.ai", { from: "ana@example.test", to: "linus@barnacle.ai", subject: "F", text: "x", attachments: [{ name: "figures.pdf", size: 5, data: "%PDF!", inline: o.inline }] });
+  const part = async (auth: Record<string, string>, id: string) =>
+    ((await (await fake.checkedFetch(`${G}/messages/${id}?format=full`, { method: "GET", headers: auth })).json()) as { payload: { parts: { filename: string; body: { attachmentId?: string; data?: string } }[] } }).payload.parts.find((p) => p.filename === "figures.pdf")!;
+  it("serves an attachment's bytes as MessagePartBody { size, data } (base64url); an inline part carries them in body.data", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const { id } = addWithFile();
+    const p = await part(auth, id);
+    const res = await fake.checkedFetch(`${G}/messages/${id}/attachments/${p.body.attachmentId}`, { method: "GET", headers: auth });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { size: number; data: string };
+    expect(body.size).toBe(5);
+    expect(Buffer.from(body.data, "base64url").toString()).toBe("%PDF!");
+    const inline = await part(auth, addWithFile({ inline: true }).id);
+    expect(inline.body.attachmentId).toBeUndefined();
+    expect(Buffer.from(inline.body.data!, "base64url").toString()).toBe("%PDF!");
+    expect((await fake.checkedFetch(`${G}/messages/${id}/attachments/nope`, { method: "GET", headers: auth })).status).toBe(404);
+    expect((await fake.checkedFetch(`${G}/messages/${id}/attachments/${p.body.attachmentId}`, { method: "GET", headers: { authorization: "Bearer dead" } })).status).toBe(401);
+    expect(fake.violations).toEqual([]);
+  });
+  it("refuses messages.get with an undeclared query parameter (formatt)", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const { id } = addWithFile();
+    await expect(fake.checkedFetch(`${G}/messages/${id}?formatt=full`, { method: "GET", headers: auth })).rejects.toThrow(/no query parameter "formatt"/);
+    fake.violations.length = 0;
+  });
+  it("refuses a messages.get answer whose part body has an undeclared property", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const { id } = addWithFile();
+    fake.tamper((b) => {
+      const payload = b.payload as { parts: { body: Record<string, unknown> }[] };
+      payload.parts[1].body.attachment = "x";
+      return b;
+    });
+    await expect(fake.checkedFetch(`${G}/messages/${id}?format=full`, { method: "GET", headers: auth })).rejects.toThrow(/no property "attachment" in MessagePartBody/);
+    fake.violations.length = 0;
+  });
+  it("refuses attachments.get with an undeclared query parameter, and an answer with `dataa`", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const { id } = addWithFile();
+    const p = await part(auth, id);
+    const url = `${G}/messages/${id}/attachments/${p.body.attachmentId}`;
+    await expect(fake.checkedFetch(`${url}?format=raw`, { method: "GET", headers: auth })).rejects.toThrow(/users.messages.attachments.get has no query parameter "format"/);
+    fake.tamper(({ data, ...rest }) => ({ ...rest, dataa: data }));
+    await expect(fake.checkedFetch(url, { method: "GET", headers: auth })).rejects.toThrow(/no property "dataa" in MessagePartBody/);
+    fake.tamper((b) => ({ ...b, size: "5" }));
+    await expect(fake.checkedFetch(url, { method: "GET", headers: auth })).rejects.toThrow(/size must be an integer/);
+    fake.violations.length = 0;
+  });
+});
+
 describe("push bodies against pubsub-api.json", () => {
   it("accepts the fake's notice and refuses message.payload instead of message.data", async () => {
     await accessToken();
@@ -89,5 +142,95 @@ describe("push bodies against pubsub-api.json", () => {
     expect(() => checkPushBody({ ...n.body, message: { ...rest, payload: data } })).toThrow(/no property "payload" in PubsubMessage/);
     expect(() => checkPushBody({ ...n.body, extra: 1 })).toThrow(/push body has no "extra"/);
     expect(() => checkPushBody({ ...n.body, message: { ...n.body.message, data: "%%%" } })).toThrow(/base64/);
+  });
+});
+
+// covers SF-128 FR-015, T006: the thread calls of a past-email fetch (users.threads.list, users.threads.get) are checked
+// against gmail-api.json like the rest of the fake.
+describe("SF-128 threads.list and threads.get against gmail-api.json", () => {
+  const put = (days: number, threadId?: string) =>
+    fake.addMessage("linus@barnacle.ai", { from: "ana@example.test", to: "linus@barnacle.ai", subject: "Hi", text: "Hello", internalDate: new Date(Date.now() - days * 86_400_000), threadId });
+  it("lets through q, maxResults, pageToken, includeSpamTrash, format and metadataHeaders, answering ListThreadsResponse / Thread", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const a = put(3);
+    put(2, a.threadId);
+    put(40);
+    put(400);
+    const since = Math.floor((Date.now() - 100 * 86_400_000) / 1000);
+    const first = await fake.checkedFetch(`${G}/threads?q=after%3A${since}+before%3A${Math.ceil(Date.now() / 1000) + 60}&maxResults=1&includeSpamTrash=false`, { method: "GET", headers: auth });
+    const p1 = (await first.json()) as { threads: { id: string }[]; nextPageToken: string; resultSizeEstimate: number };
+    expect(p1.threads.map((t) => t.id)).toEqual([a.threadId]);
+    expect(p1.resultSizeEstimate).toBe(2);
+    const p2 = (await (await fake.checkedFetch(`${G}/threads?q=after%3A${since}&maxResults=1&includeSpamTrash=false&pageToken=${p1.nextPageToken}`, { method: "GET", headers: auth })).json()) as { threads: { id: string }[]; nextPageToken?: string };
+    expect(p2.threads).toHaveLength(1);
+    expect(p2.nextPageToken).toBeUndefined();
+    const t = (await (await fake.checkedFetch(`${G}/threads/${a.threadId}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Cc&metadataHeaders=Bcc`, { method: "GET", headers: auth })).json()) as {
+      messages: { payload: { headers: { name: string }[]; parts?: unknown } }[];
+    };
+    expect(t.messages).toHaveLength(2);
+    expect(t.messages[0].payload.headers.map((h) => h.name)).toEqual(["From", "To"]);
+    expect(t.messages[0].payload.parts).toBeUndefined();
+    const min = (await (await fake.checkedFetch(`${G}/threads/${a.threadId}?format=minimal`, { method: "GET", headers: auth })).json()) as { messages: { payload?: unknown }[] };
+    expect(min.messages[0].payload).toBeUndefined();
+    const full = (await (await fake.checkedFetch(`${G}/threads/${a.threadId}?format=full`, { method: "GET", headers: auth })).json()) as { messages: { payload: { parts: unknown[] } }[] };
+    expect(full.messages[0].payload.parts).toHaveLength(1);
+    expect(fake.violations).toEqual([]);
+  });
+  it("an unknown page token answers 400 invalidArgument", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    expect((await fake.checkedFetch(`${G}/threads?q=after%3A0&pageToken=nope`, { method: "GET", headers: auth })).status).toBe(400);
+  });
+  it("refuses threads.list with afterDate and threads.get with fields2 (undeclared query parameters)", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    const a = put(3);
+    await expect(fake.checkedFetch(`${G}/threads?afterDate=1`, { method: "GET", headers: auth })).rejects.toThrow(/threads.list has no query parameter "afterDate"/);
+    await expect(fake.checkedFetch(`${G}/threads/${a.threadId}?fields2=x`, { method: "GET", headers: auth })).rejects.toThrow(/threads.get has no query parameter "fields2"/);
+    fake.violations.length = 0;
+  });
+  it("refuses a threads.list answer with a property ListThreadsResponse or Thread lacks", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    put(3);
+    fake.tamper((b) => ({ ...b, total: 1 }));
+    await expect(fake.checkedFetch(`${G}/threads?q=after%3A0`, { method: "GET", headers: auth })).rejects.toThrow(/no property "total" in ListThreadsResponse/);
+    fake.tamper((b) => ({ ...b, threads: (b.threads as object[]).map((t) => ({ ...t, subject: "x" })) }));
+    await expect(fake.checkedFetch(`${G}/threads?q=after%3A0`, { method: "GET", headers: auth })).rejects.toThrow(/no property "subject" in Thread/);
+    fake.violations.length = 0;
+  });
+});
+
+// covers SF-128 FR-007, SC-005, T019: Gmail's slow-down answer and how the app reads it.
+describe("SF-128 slow-down", () => {
+  it("fake.slowDown(30): the next Gmail call answers 429 RESOURCE_EXHAUSTED rateLimitExceeded with Retry-After: 30, then calls work", async () => {
+    const auth = { authorization: `Bearer ${await accessToken()}` };
+    fake.slowDown(30);
+    const res = await fake.checkedFetch(`${G}/profile`, { method: "GET", headers: auth });
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("30");
+    const body = (await res.json()) as { error: { code: number; status: string; message: string; errors: { reason: string; domain: string; message: string }[] } };
+    // Google's JSON error shape (the discovery file has no error schema): exactly code, message, errors, status.
+    expect(Object.keys(body)).toEqual(["error"]);
+    expect(Object.keys(body.error).sort()).toEqual(["code", "errors", "message", "status"]);
+    expect(body.error).toMatchObject({ code: 429, status: "RESOURCE_EXHAUSTED", errors: [{ reason: "rateLimitExceeded" }] });
+    expect((await fake.checkedFetch(`${G}/profile`, { method: "GET", headers: auth })).status).toBe(200);
+  });
+  it("failWith: 429 and 403 rateLimitExceeded / userRateLimitExceeded → GmailSlowDown (a GoogleUnavailable); 403 insufficientPermissions → GoogleKeyRefused", async () => {
+    const { failWith, GmailSlowDown, GoogleKeyRefused, GoogleUnavailable } = await import("@/server/gmail/google-api");
+    const err = (status: number, reason: string, retry?: string) =>
+      new Response(JSON.stringify({ error: { code: status, message: "x", errors: [{ reason, domain: "usageLimits", message: "x" }], status: "X" } }), {
+        status,
+        headers: retry ? { "retry-after": retry } : {},
+      });
+    const caught = async (r: Response) => failWith(r).catch((e: unknown) => e);
+    const a = await caught(err(429, "rateLimitExceeded", "12"));
+    expect(a).toBeInstanceOf(GmailSlowDown);
+    expect(a).toBeInstanceOf(GoogleUnavailable);
+    expect((a as InstanceType<typeof GmailSlowDown>).seconds).toBe(12);
+    for (const reason of ["rateLimitExceeded", "userRateLimitExceeded"]) {
+      const e = await caught(err(403, reason));
+      expect(e).toBeInstanceOf(GmailSlowDown);
+      expect((e as InstanceType<typeof GmailSlowDown>).seconds).toBe(30);
+    }
+    expect(await caught(err(403, "insufficientPermissions"))).toBeInstanceOf(GoogleKeyRefused);
+    expect(await caught(err(500, "backendError"))).not.toBeInstanceOf(GmailSlowDown);
   });
 });

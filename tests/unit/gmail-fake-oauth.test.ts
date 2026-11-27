@@ -64,6 +64,12 @@ describe("token endpoint (RFC 6749 §5.1, §5.2; RFC 7636)", () => {
     expect(await exchange(code(), { client_secret: "wrong" })).toEqual({ status: 401, body: expect.objectContaining({ error: "invalid_client" }) });
     expect(await exchange(code(), { code_verifier: "" })).toEqual({ status: 400, body: expect.objectContaining({ error: "invalid_request" }) });
   });
+  it("is invalid_request for a refresh with a wrong field name (refresh_tokn), as the download's refresh would get", async () => {
+    // covers SF-127 T012 (the attachment download refreshes the mailbox's access token through this endpoint)
+    const r = (await exchange(code())).body!;
+    const res = await post("https://oauth2.googleapis.com/token", { grant_type: "refresh_token", refresh_tokn: r.refresh_token as string, client_id: fake.options.clientId, client_secret: fake.options.clientSecret });
+    expect(res).toEqual({ status: 400, body: expect.objectContaining({ error: "invalid_request" }) });
+  });
   it("refreshes, and is invalid_grant for a revoked or refused refresh token (§6)", async () => {
     const r = (await exchange(code())).body!;
     expect((await refresh(r.refresh_token as string)).status).toBe(200);

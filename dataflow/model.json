@@ -495,6 +495,38 @@
       "sources": [
         "src/server/calendar/calendar-api.ts"
       ]
+    },
+    {
+      "id": "gmail-past",
+      "label": "Fetch past emails",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/gmail/past.ts",
+        "src/app/(app)/settings/PastFetchRunner.tsx"
+      ]
+    },
+    {
+      "id": "email-timeline",
+      "label": "Email on the timeline",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/emails/process.ts",
+        "src/server/emails/timeline.ts",
+        "src/server/emails/conversations.ts",
+        "src/app/(app)/emails/actions.ts"
+      ]
+    },
+    {
+      "id": "email-attachments",
+      "label": "Email attachment download",
+      "zone": "app",
+      "group": "gmail",
+      "sources": [
+        "src/server/emails/attachments.ts",
+        "src/app/(app)/emails/attachments/[id]/download/route.ts"
+      ]
     }
   ],
   "stores": [
@@ -756,7 +788,8 @@
       "zone": "app",
       "group": "gmail",
       "sources": [
-        "migrations/0016_gmail.sql"
+        "migrations/0016_gmail.sql",
+        "migrations/0020_past_email_fetches.sql"
       ]
     },
     {
@@ -766,6 +799,15 @@
       "group": "gmail",
       "sources": [
         "migrations/0019_calendar.sql"
+      ]
+    },
+    {
+      "id": "email-conversations-tables",
+      "label": "Email conversations and links",
+      "zone": "postgres",
+      "group": "gmail",
+      "sources": [
+        "migrations/0020_email_timeline.sql"
       ]
     }
   ],
@@ -2815,6 +2857,116 @@
       "sources": [
         "src/server/activities/activities.ts",
         "src/server/calendar/soon.ts"
+      ]
+    },
+    {
+      "from": "gmail-tables",
+      "to": "gmail-past",
+      "data": "sealed token, fetch cursor",
+      "sources": [
+        "src/server/gmail/past.ts"
+      ]
+    },
+    {
+      "from": "gmail-past",
+      "to": "gmail-client",
+      "data": "thread list and metadata reads",
+      "sources": [
+        "src/server/gmail/past.ts",
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "gmail-past",
+      "to": "gmail-tables",
+      "data": "past conversations, fetch progress",
+      "sources": [
+        "src/server/gmail/past.ts",
+        "src/server/gmail/sync.ts"
+      ]
+    },
+    {
+      "from": "gmail-sync",
+      "to": "gmail-past",
+      "data": "15-minute past-fetch part",
+      "sources": [
+        "src/server/gmail/past.ts"
+      ]
+    },
+    {
+      "from": "gmail-sync",
+      "to": "email-timeline",
+      "data": "each stored email to process",
+      "sources": [
+        "src/server/gmail/sync.ts",
+        "src/server/emails/process.ts"
+      ]
+    },
+    {
+      "from": "email-timeline",
+      "to": "email-conversations-tables",
+      "data": "conversations, addresses, links",
+      "sources": [
+        "src/server/emails/process.ts",
+        "src/server/emails/conversations.ts"
+      ]
+    },
+    {
+      "from": "email-conversations-tables",
+      "to": "email-timeline",
+      "data": "conversations and emails for timelines",
+      "sources": [
+        "src/server/emails/timeline.ts",
+        "src/server/emails/conversations.ts"
+      ]
+    },
+    {
+      "from": "email-timeline",
+      "to": "persons-table",
+      "data": "Last contacted raised from emails",
+      "sources": [
+        "src/server/emails/process.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "email-timeline",
+      "data": "link or unlink a record",
+      "sources": [
+        "src/app/(app)/emails/actions.ts"
+      ]
+    },
+    {
+      "from": "staff",
+      "to": "email-attachments",
+      "data": "attachment download request",
+      "sources": [
+        "src/app/(app)/emails/attachments/[id]/download/route.ts"
+      ]
+    },
+    {
+      "from": "gmail-tables",
+      "to": "email-attachments",
+      "data": "attachment names, mailbox token",
+      "sources": [
+        "src/server/emails/attachments.ts"
+      ]
+    },
+    {
+      "from": "email-attachments",
+      "to": "gmail-client",
+      "data": "attachment fetch from Gmail",
+      "sources": [
+        "src/server/emails/attachments.ts",
+        "src/server/gmail/google-api.ts"
+      ]
+    },
+    {
+      "from": "migrate",
+      "to": "email-conversations-tables",
+      "data": "schema",
+      "sources": [
+        "migrations/0020_email_timeline.sql"
       ]
     }
   ]

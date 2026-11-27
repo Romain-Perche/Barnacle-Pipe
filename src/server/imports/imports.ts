@@ -19,6 +19,7 @@ import {
   type Skip,
 } from "@/server/imports/plan";
 import { col, inChunks, insertCustomValues, newIds } from "@/server/imports/bulk";
+import { linkForPeople } from "@/server/emails/process";
 import { splitMulti } from "@/server/imports/rows";
 import type { Names } from "@/server/imports/text";
 import { CONSENTS, normaliseEmail, type Consent } from "@/server/records/rules";
@@ -398,6 +399,8 @@ export async function runImport(viewerId: number, id: number, consentChoice: str
       return fieldId !== null && !fields.some((f) => f.id === fieldId) ? [c.customName ?? ""] : [];
     });
     await insertEvents(db, viewerId, events);
+    // SF-127 FR-009: emails already copied with the new people's addresses are linked to them.
+    if (p.kind === "people") await linkForPeople(db, events.flatMap((e) => (e.kind === "imported" && e.personId !== null ? [e.personId] : [])));
     const report: ImportReport = {
       imported: p.plan.adds.length,
       organisationsAdded: p.plan.newOrganisations.length,

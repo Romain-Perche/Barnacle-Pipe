@@ -4,6 +4,7 @@
 // behaves exactly like a missing one.
 import { cleanupPathsFor, sweepFileCleanup } from "@/server/files/files";
 import { sql, type Sql } from "@/server/db";
+import { linkForPeople } from "@/server/emails/process";
 import {
   direction,
   isActiveAdmin,
@@ -266,6 +267,8 @@ export async function createPerson(actorId: number, form: PersonForm): Promise<S
       if (value.ambassador) await recordEvent(db, { personId: row.id, kind: "ambassador_added", actorId });
       await recordReferral(db, { personId: row.id }, actorId, null, referredById);
       if (org.id !== null) await recordEvent(db, { organisationId: org.id, kind: "person_linked", actorId, relatedPersonId: row.id });
+      // SF-127 FR-009: emails already copied with one of their addresses are linked to them.
+      await linkForPeople(db, [row.id]);
       return { status: "saved" as const, id: row.id };
     });
   } catch (err) {
@@ -344,6 +347,10 @@ export async function updatePerson(actorId: number, id: number, version: number,
           await recordEvent(db, { organisationId: after.organisationId, kind: "person_linked", actorId, relatedPersonId: id });
         }
       }
+      // SF-127 FR-009: emails already copied with an address this save added are linked to them (conversations
+      // linked before keep their links: a new organisation is linked by later emails only).
+      const hadEmails = new Set(current.emails.map((e) => e.email.toLowerCase()));
+      await linkForPeople(db, [id], after.emails.map((e) => e.email.toLowerCase()).filter((e) => !hadEmails.has(e)));
       // The save may hide the person from the actor (private, now neither creator nor owner): SF-92 FR-003.
       const [still] = await db<{ name: string; visible: boolean }[]>`
         select ${NAME()} as name, ${visiblePerson(db, actorId)} as visible from persons p where p.id = ${id}`;

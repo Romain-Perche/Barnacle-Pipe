@@ -55,7 +55,11 @@ export type FakeState = {
   access: Record<string, { email: string; scopes: string[]; refresh: string | null; expires: number; dead: boolean }>;
   failWatch: boolean;
   offsetMs: number;
+  // SF-128: the next `calls` Gmail API calls answer 429 with Retry-After `seconds` (optional: older state files).
+  slowDown?: { seconds: number; calls: number } | null;
   key: { kid: string; privatePem: string };
+  // SF-127: attachment bytes (base64url) by "<message id>/<attachment id>", served by messages.attachments.get.
+  attachmentData?: Record<string, string>;
 } & CalendarState; // SF-124: the fake Google Calendar (src/server/calendar/fake-calendar.ts)
 
 export interface StateStore {
@@ -105,7 +109,9 @@ export type NewMessage = {
   subject?: string;
   text?: string | null;
   html?: string | null;
-  attachments?: { name: string; size: number; type?: string }[];
+  // SF-127: `data` the bytes (default: `size` bytes of a fake pattern); `inline` puts them in the part's body.data with no
+  // attachmentId, as Gmail does for small parts.
+  attachments?: { name: string; size: number; type?: string; data?: string | Uint8Array; inline?: boolean }[];
   labels?: string[];
   internalDate?: Date;
   threadId?: string | null;
@@ -123,6 +129,8 @@ const gmailError = (code: number, status: string, message: string, reason: strin
   json(code, { error: { code, message, errors: [{ message, domain: "global", reason }], status } });
 const b64url = (b: Buffer | string) => Buffer.from(b).toString("base64url");
 const header = (name: string, value: string) => ({ name, value });
+// `size` bytes of a fixed fake pattern (an attachment added without its bytes).
+const fakeBytes = (size: number) => (size > 0 ? Buffer.alloc(size, "FAKE-ATTACHMENT\n") : Buffer.alloc(0));
 
 // A small RFC 5322/MIME reader for messages.send: headers, and a body that is text, or multipart with base64 parts.
 function parseMime(raw: string): { headers: { name: string; value: string }[]; parts: GmailPart[] } {
@@ -227,6 +235,10 @@ export class FakeGoogleMail {
       for (const t of Object.values(s.refresh)) if (t.email === who && t.status === "active") t.status = "refused";
       for (const t of Object.values(s.access)) if (t.email === who) t.dead = true;
     });
+  }
+  // SF-128: Gmail asks to slow down: the next `calls` Gmail API calls answer 429 rateLimitExceeded with Retry-After.
+  slowDown(seconds: number, calls = 1) {
+    this.change((s) => void (s.slowDown = { seconds, calls }));
   }
   // users.watch answers 500 (a renewal failure that is not about the key).
   failWatch(on = true) {
@@ -388,13 +400,17 @@ export class FakeGoogleMail {
       let n = 0;
       if (m.text != null) parts.push({ partId: String(n++), mimeType: "text/plain", filename: "", headers: [header("Content-Type", 'text/plain; charset="UTF-8"')], body: { size: Buffer.byteLength(m.text), data: b64url(m.text) } });
       if (m.html != null) parts.push({ partId: String(n++), mimeType: "text/html", filename: "", headers: [header("Content-Type", 'text/html; charset="UTF-8"')], body: { size: Buffer.byteLength(m.html), data: b64url(m.html) } });
+      const stored: [string, string][] = [];
       for (const a of m.attachments ?? []) {
+        const bytes = a.data === undefined ? fakeBytes(a.size) : Buffer.from(a.data);
+        const attachmentId = `ANGjdJ${randomBytes(12).toString("hex")}`;
+        if (!a.inline) stored.push([attachmentId, b64url(bytes)]);
         parts.push({
           partId: String(n++),
           mimeType: a.type ?? "application/octet-stream",
           filename: a.name,
           headers: [header("Content-Type", a.type ?? "application/octet-stream"), header("Content-Disposition", `attachment; filename="${a.name}"`)],
-          body: { size: a.size, attachmentId: `ANGjdJ${randomBytes(12).toString("hex")}` },
+          body: a.inline ? { size: a.size, data: b64url(bytes) } : { size: a.size, attachmentId },
         });
       }
       const msg = this.add(s, email, {
@@ -403,7 +419,17 @@ export class FakeGoogleMail {
         internalDate: String(date.getTime()),
         payload: { partId: "", mimeType: "multipart/mixed", filename: "", headers, body: { size: 0 }, parts },
       });
+      s.attachmentData ??= {};
+      for (const [attachmentId, data] of stored) s.attachmentData[`${msg.id}/${attachmentId}`] = data;
       return { id: msg.id, threadId: msg.threadId, historyId: msg.historyId };
+    });
+  }
+
+  // SF-127: the message is deleted for good from the mailbox (messages.get and its attachments answer 404).
+  deleteMessage(email: string, messageId: string) {
+    this.change((s) => {
+      const box = this.box(s, email);
+      box.messages = box.messages.filter((x) => x.id !== messageId);
     });
   }
 
@@ -561,6 +587,16 @@ export class FakeGoogleMail {
       const isSend = route === "messages/send" && req.method === "POST";
       const allowed = a.scopes.includes(MODIFY) || (isSend && a.scopes.includes(SEND));
       if (!allowed) return gmailError(403, "PERMISSION_DENIED", "Request had insufficient authentication scopes.", "insufficientPermissions");
+      if (s.slowDown && s.slowDown.calls > 0) {
+        const { seconds } = s.slowDown;
+        s.slowDown.calls -= 1;
+        if (s.slowDown.calls <= 0) s.slowDown = null;
+        return json(
+          429,
+          { error: { code: 429, message: "Too many concurrent requests for user.", errors: [{ message: "Too many concurrent requests for user.", domain: "usageLimits", reason: "rateLimitExceeded" }], status: "RESOURCE_EXHAUSTED" } },
+          { "retry-after": String(seconds) },
+        );
+      }
       const box = this.box(s, a.email);
       const q = url.searchParams;
       if (req.method === "GET" && route === "profile") {
@@ -604,16 +640,52 @@ export class FakeGoogleMail {
         const page = all.slice(from, from + max).map((x) => ({ id: x.id, threadId: x.threadId }));
         return json(200, { ...(page.length ? { messages: page } : {}), resultSizeEstimate: all.length, ...(from + max < all.length ? { nextPageToken: String(from + max) } : {}) });
       }
+      // SF-127: users.messages.attachments.get → MessagePartBody { size, data } (base64url).
+      const att = /^messages\/([^/]+)\/attachments\/([^/]+)$/.exec(route);
+      if (req.method === "GET" && att) {
+        const msg = box.messages.find((x) => x.id === att[1]);
+        const data = msg ? s.attachmentData?.[`${msg.id}/${att[2]}`] : undefined;
+        if (!msg || data === undefined) return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");
+        return json(200, { size: Buffer.from(data, "base64url").length, data });
+      }
       const one = /^messages\/([^/]+)$/.exec(route);
       if (req.method === "GET" && one && one[1] !== "send") {
         const msg = box.messages.find((x) => x.id === one[1]);
         if (!msg) return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");
         return json(200, { id: msg.id, threadId: msg.threadId, labelIds: msg.labelIds, snippet: "", historyId: msg.historyId, internalDate: msg.internalDate, payload: msg.payload, sizeEstimate: msg.sizeEstimate });
       }
+      // SF-128: threads.list: `after:` / `before:` (epoch seconds, on internalDate: a thread is listed when one of its
+      // messages is within), spam and bin left out unless includeSpamTrash, the threads by their newest message.
+      if (req.method === "GET" && route === "threads") {
+        const text = q.get("q") ?? "";
+        const after = /(?:^|\s)after:(\d+)/.exec(text)?.[1];
+        const before = /(?:^|\s)before:(\d+)/.exec(text)?.[1];
+        const spamTrash = q.get("includeSpamTrash") === "true";
+        const max = Math.min(Number(q.get("maxResults") ?? 100) || 100, 500);
+        const token = q.get("pageToken");
+        const newest = new Map<string, number>();
+        for (const x of box.messages) {
+          const t = Number(x.internalDate);
+          if (after !== undefined && !(t / 1000 > Number(after))) continue;
+          if (before !== undefined && !(t / 1000 < Number(before))) continue;
+          if (!spamTrash && x.labelIds.some((l) => l === "SPAM" || l === "TRASH")) continue;
+          newest.set(x.threadId, Math.max(newest.get(x.threadId) ?? -Infinity, t));
+        }
+        const all = [...newest.entries()].sort((x, y) => y[1] - x[1]).map(([id]) => id);
+        if (token !== null && (!/^\d+$/.test(token) || Number(token) > all.length)) return gmailError(400, "INVALID_ARGUMENT", "Invalid pageToken", "invalidArgument");
+        const from = Number(token ?? 0);
+        const page = all.slice(from, from + max).map((id) => {
+          const last = box.messages.filter((x) => x.threadId === id).reduce((h, x) => Math.max(h, Number(x.historyId)), 0);
+          return { id, snippet: "", historyId: String(last) };
+        });
+        return json(200, { ...(page.length ? { threads: page } : {}), ...(from + max < all.length ? { nextPageToken: String(from + max) } : {}), resultSizeEstimate: all.length });
+      }
       const thread = /^threads\/([^/]+)$/.exec(route);
       if (req.method === "GET" && thread) {
         const msgs = box.messages.filter((x) => x.threadId === thread[1]);
         if (msgs.length === 0) return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");
+        const format = q.get("format") ?? "full";
+        if (!["minimal", "metadata", "full"].includes(format)) return gmailError(400, "INVALID_ARGUMENT", "Invalid format", "invalidArgument");
         const wanted = q.getAll("metadataHeaders").map((h) => h.toLowerCase());
         return json(200, {
           id: thread[1],
@@ -624,7 +696,12 @@ export class FakeGoogleMail {
             labelIds: x.labelIds,
             historyId: x.historyId,
             internalDate: x.internalDate,
-            payload: { mimeType: x.payload.mimeType, headers: (x.payload.headers ?? []).filter((h) => wanted.length === 0 || wanted.includes(h.name.toLowerCase())) },
+            sizeEstimate: x.sizeEstimate,
+            ...(format === "minimal"
+              ? {}
+              : format === "metadata"
+                ? { payload: { mimeType: x.payload.mimeType, headers: (x.payload.headers ?? []).filter((h) => wanted.length === 0 || wanted.includes(h.name.toLowerCase())) } }
+                : { payload: x.payload }),
           })),
         });
       }

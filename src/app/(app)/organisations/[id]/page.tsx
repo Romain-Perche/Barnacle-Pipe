@@ -1,4 +1,5 @@
-// An organisation's page, design C: header, // DETAILS, // PEOPLE, // TIMELINE.
+// An organisation's page, design C: header, then (SF-127 FR-015) // DETAILS, // MORE DETAILS and // PEOPLE on the left, the
+// note box, // NEXT ACTIVITIES, // FILES and // TIMELINE on the right (.recordcols, stacked under 1000 px).
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
@@ -10,6 +11,7 @@ import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { RecordHeader } from "../../records/RecordHeader";
 import { NoteNotices } from "../../records/NoteNotices";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { TimelineNoteBox } from "../../records/TimelineNoteBox";
 import { FileOverlays } from "../../records/FileOverlays";
 import { FilesSection } from "../../records/FilesSection";
 import { ActivityNotices } from "../../activities/ActivityNotices";
@@ -70,61 +72,67 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
       <NoteNotices error={first(query, "error")} />
       <ActivityNotices error={first(query, "error")} />
 
-      <section aria-label="Details">
-        <div className="label sect">
-          <span className="c">//</span> DETAILS
+      <div className="recordcols">
+        <div className="recordleft">
+          <section aria-label="Details">
+            <div className="label sect">
+              <span className="c">//</span> DETAILS
         </div>
-        <dl className="details">
-          {rows.map(([k, v]) => (
-            <div key={k}>
-              <dt>{k}</dt>
-              <dd>{v}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-      <MoreDetails details={org.custom} />
-
-      <section aria-label="People">
-        <div className="label sect">
-          <span className="c">//</span> PEOPLE
-        </div>
-        {people.length === 0 ? (
-          <p className="muted">{messages.no_people_yet}</p>
-        ) : (
-          <table className="users">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Email</th>
-              </tr>
-            </thead>
-            <tbody>
-              {people.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <Link href={`/people/${p.id}`}>{p.name}</Link>
-                  </td>
-                  <td>{p.role ?? "—"}</td>
-                  <td>{p.email ?? "—"}</td>
-                </tr>
+            <dl className="details">
+              {rows.map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
               ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+            </dl>
+          </section>
+          <MoreDetails details={org.custom} />
 
-      <NextActivities viewerId={user.id} target={{ organisationId: id }} archived={org.archived} back={href} />
+          <section aria-label="People">
+            <div className="label sect">
+              <span className="c">//</span> PEOPLE
+        </div>
+            {people.length === 0 ? (
+              <p className="muted">{messages.no_people_yet}</p>
+            ) : (
+              <table className="users">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {people.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <Link href={`/people/${p.id}`}>{p.name}</Link>
+                      </td>
+                      <td>{p.role ?? "—"}</td>
+                      <td>{p.email ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        </div>
+        <div className="recordright">
+          <TimelineNoteBox viewerId={user.id} target={{ organisationId: id }} archived={org.archived} />
+          <NextActivities viewerId={user.id} target={{ organisationId: id }} archived={org.archived} back={href} />
 
-      <FilesSection viewerId={user.id} target={{ organisationId: id }} archived={org.archived} back={href} error={first(query, "error")} />
+          <FilesSection viewerId={user.id} target={{ organisationId: id }} archived={org.archived} back={href} error={first(query, "error")} />
 
-      <RecordTimeline
-        viewerId={user.id}
-        target={{ organisationId: id }}
-        archived={org.archived}
-        query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
-      />
+          <RecordTimeline
+            viewerId={user.id}
+            target={{ organisationId: id }}
+            archived={org.archived}
+            query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+          />
+        </div>
+      </div>
       <ActivityOverlays
         viewerId={user.id}
         target={{ organisationId: id }}

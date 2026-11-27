@@ -3,7 +3,9 @@
 // state), Gmail's history since history_id (or, when Gmail no longer has it, a listing since the last sync), the pure
 // decideCopy, then one transaction per stored message. Unique indexes keep every message once per account.
 // runGmailCheck: the 15-minute job (/cron/gmail): every working connection, then the daily watch renewal; SF-124: then
-// its calendar sync and the daily renewal of its Calendar notice channel (runCalendarCheck).
+// its calendar sync and the daily renewal of its Calendar notice channel (runCalendarCheck); SF-128: then the running
+// past-email fetches (runPastFetches). SF-127: storeMessage processes each stored email (processMessage); runGmailCheck
+// first links the emails not processed yet (catchUpEmails).
 import { sql, type Sql } from "@/server/db";
 import { gmailConfig } from "@/server/env";
 import { loadKey, markNeedsReconnect } from "@/server/gmail/connections";
@@ -20,6 +22,8 @@ import {
 } from "@/server/gmail/google-api";
 import { decideCopy, readMessage, type ReadMessage } from "@/server/gmail/rules";
 import { runCalendarCheck } from "@/server/calendar/sync";
+import { catchUpEmails, processMessage } from "@/server/emails/process";
+import { runPastFetches } from "@/server/gmail/past";
 
 const LEASE_MS = 2 * 60 * 1000;
 export const MAX_GETS_PER_RUN = 300;
@@ -77,12 +81,21 @@ async function reported(access: string, lease: Leased): Promise<Reported> {
   return { ids: ids.reverse().map((id) => ({ id, history: null })), historyId: profile.historyId, catchUp: true };
 }
 
-async function storeMessage(connectionId: number, m: ReadMessage): Promise<boolean> {
+// One message in one transaction. SF-128 (research.md §3): with a past-email fetch's id, the fetch's `copied` rises by 1
+// in the same transaction when this message created the conversation (whoever creates the thread row first owns it,
+// decided by the unique index), so a count is never lost nor repeated. The live sync passes no fetch.
+export async function storeMessage(connectionId: number, m: ReadMessage, opts: { fetchId?: number } = {}): Promise<boolean> {
   return sql.begin(async (tx) => {
     const db = tx as unknown as Sql;
-    await db`
+    const created = await db`
       insert into email_threads (connection_id, gmail_thread_id, subject) values (${connectionId}, ${m.gmailThreadId}, ${m.subject})
-      on conflict (connection_id, gmail_thread_id) do nothing`;
+      on conflict (connection_id, gmail_thread_id) do nothing
+      returning id`;
+    if (created.length > 0 && opts.fetchId !== undefined) {
+      await db`
+        update past_email_fetches set copied = copied + 1, updated_at = now()
+        where id = ${opts.fetchId} and state = 'running'`;
+    }
     const [thread] = await db<{ id: string }[]>`
       select id::text as id from email_threads where connection_id = ${connectionId} and gmail_thread_id = ${m.gmailThreadId}`;
     const [msg] = await db<{ id: string }[]>`
@@ -99,6 +112,8 @@ async function storeMessage(connectionId: number, m: ReadMessage): Promise<boole
         insert into email_attachments (message_id, position, name, content_type, size)
         values (${msg.id}, ${position}, ${a.name}, ${a.contentType}, ${a.size})`;
     }
+    // SF-127: its conversation, links and the Last contacted of the people in it, in the same transaction.
+    await processMessage(db, Number(msg.id));
     return true;
   });
 }
@@ -234,6 +249,12 @@ export async function renewWatch(connectionId: number, now = new Date()): Promis
 // Stops starting new connections after 240 s (the function may run 300 s).
 export async function runGmailCheck(now = new Date()): Promise<void> {
   if (gmailConfig().mode === "off") return;
+  try {
+    // SF-127: emails copied before email on the timeline (or whose processing failed) are linked first.
+    await catchUpEmails();
+  } catch {
+    // Never stops the check.
+  }
   const started = Date.now();
   const rows = await sql<{ id: string }[]>`
     select id::text as id from gmail_connections where state = 'working' order by last_synced_at asc nulls first, id`;
@@ -251,4 +272,6 @@ export async function runGmailCheck(now = new Date()): Promise<void> {
       // One connection's failure never stops the others; the next check tries again.
     }
   }
+  // SF-128 (research.md §6): running past-email fetches carry on with what is left of the check's time.
+  await runPastFetches(now, started + CHECK_BUDGET_MS);
 }

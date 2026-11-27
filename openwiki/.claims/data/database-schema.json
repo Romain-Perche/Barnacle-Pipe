@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:65390b7ca4f5bc3e3bee38034b40427b77bb5d47b66ac7f6567ac231eb286677",
+  "pageVersion": "sha256:7e4119ed4c852c205d84ba6e2cce9975e9d779630948044ac111c2b7dff28d20",
   "claims": [
     {
       "id": "claim_cbbf090fe3c64924bdc6ffa2ea651cc4",
@@ -211,10 +211,20 @@
           "version": "repo-file-v1:sha256:aac63def2296271356766f5f0c1578bf00fb6f7ee921472ca3fba8d4569b3684"
         }
       ]
+    },
+    {
+      "id": "claim_546fac61c6fb4173ac581b6fb0da702c",
+      "statement": "past_email_fetches has one row per Gmail connection (unique connection_id, cascade delete) with state running or ended.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0020_past_email_fetches.sql",
+          "version": "repo-file-v1:sha256:7a8ecbc5d8c1068335290a128fa3b810086947fbb0d553b9e9c72a3e0b941974"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-25T11:47:45.053Z"
+    "at": "2026-11-26T16:45:42.910Z"
   }
 }

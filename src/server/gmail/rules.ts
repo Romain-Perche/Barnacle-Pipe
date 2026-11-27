@@ -218,28 +218,45 @@ function internalDateOf(m: GmailMessage): Date {
   return Number.isFinite(ms) && m.internalDate !== undefined && m.internalDate !== "" ? new Date(ms) : new Date(NaN);
 }
 
+const isAttachmentPart = (part: GmailPart) => (part.filename ?? "") !== "" || Boolean(part.body?.attachmentId);
+
+// Every part of a message, depth first (the one walk of readMessage and of an attachment's download).
+function allParts(part: GmailPart, out: GmailPart[] = []): GmailPart[] {
+  out.push(part);
+  for (const child of part.parts ?? []) allParts(child, out);
+  return out;
+}
+
+// SF-127 (contracts/gmail.md): the parts read as attachments, in walk order. email_attachments.position is the index
+// in this list, so the download finds the part again in a fresh messages.get.
+export function attachmentParts(payload: GmailPart): GmailPart[] {
+  return allParts(payload).filter(isAttachmentPart);
+}
+
+// The name an attachment part is stored under.
+export function attachmentName(part: GmailPart): string {
+  return clean(decodeHeader(part.filename ?? "")).slice(0, NAME_MAX) || "(no name)";
+}
+
 export function readMessage(m: GmailMessage): ReadMessage {
   const headers = m.payload?.headers ?? [];
   let textBody: string | null = null;
   let htmlBody: string | null = null;
-  const attachments: Attachment[] = [];
-  const walk = (part: GmailPart) => {
-    const isAttachment = (part.filename ?? "") !== "" || Boolean(part.body?.attachmentId);
+  const parts = m.payload ? allParts(m.payload) : [];
+  for (const part of parts) {
+    if (isAttachmentPart(part)) continue;
     const type = (part.mimeType ?? "").toLowerCase();
-    if (isAttachment) {
-      attachments.push({
-        name: clean(decodeHeader(part.filename ?? "")).slice(0, NAME_MAX) || "(no name)",
-        contentType: (part.mimeType || "application/octet-stream").slice(0, NAME_MAX),
-        size: Math.max(0, Number(part.body?.size ?? 0) || 0),
-      });
-    } else if (type === "text/plain" && textBody === null && part.body?.data !== undefined) {
+    if (type === "text/plain" && textBody === null && part.body?.data !== undefined) {
       textBody = clean(decodeBytes(Buffer.from(part.body.data, "base64url"), charsetOf(part)));
     } else if (type === "text/html" && htmlBody === null && part.body?.data !== undefined) {
       htmlBody = clean(decodeBytes(Buffer.from(part.body.data, "base64url"), charsetOf(part)));
     }
-    for (const child of part.parts ?? []) walk(child);
-  };
-  if (m.payload) walk(m.payload);
+  }
+  const attachments: Attachment[] = (m.payload ? attachmentParts(m.payload) : []).map((part) => ({
+    name: attachmentName(part),
+    contentType: (part.mimeType || "application/octet-stream").slice(0, NAME_MAX),
+    size: Math.max(0, Number(part.body?.size ?? 0) || 0),
+  }));
   const from = parseAddressList(headerValue(headers, "From"))[0] ?? null;
   const to = parseAddressList(headerValue(headers, "To"));
   const cc = parseAddressList(headerValue(headers, "Cc"));
@@ -284,6 +301,62 @@ export function decideCopy(input: {
   if (!(input.internalDate.getTime() >= input.connectedAt.getTime())) return "skip";
   if (input.threadKnown) return "copy";
   return input.addresses.some((a) => input.crmAddresses.has(a)) ? "copy" : "skip";
+}
+
+// SF-128 (research.md §1, spec Clarifications): the 12 months of a past-email fetch, fixed at the press: from the
+// same moment 12 calendar months earlier (UTC) to the press.
+export function pastWindow(now: Date): { start: Date; end: Date } {
+  const start = new Date(now.getTime());
+  start.setUTCFullYear(start.getUTCFullYear() - 1);
+  return { start, end: new Date(now.getTime()) };
+}
+
+// SF-128 data-model.md § Copy rule: the decision on one whole thread. Candidates are its messages that are not drafts,
+// spam or bin and are dated (Gmail's own date) within the window; when one of them has a CRM address (addresses only,
+// never display names), the candidates not stored yet are copied, oldest first; otherwise nothing.
+export function planPastThread(input: {
+  messages: { id: string; labelIds: string[]; internalDate: Date; addresses: string[] }[];
+  windowStart: Date;
+  windowEnd: Date;
+  crmAddresses: ReadonlySet<string>;
+  stored: ReadonlySet<string>;
+}): string[] {
+  const from = input.windowStart.getTime();
+  const to = input.windowEnd.getTime();
+  const candidates = input.messages.filter((m) => {
+    const t = m.internalDate.getTime();
+    return !m.labelIds.some((l) => SKIP_LABELS.includes(l)) && t >= from && t <= to;
+  });
+  if (!candidates.some((m) => m.addresses.some((a) => input.crmAddresses.has(a)))) return [];
+  return candidates
+    .filter((m) => !input.stored.has(m.id))
+    .sort((a, b) => a.internalDate.getTime() - b.internalDate.getTime())
+    .map((m) => m.id);
+}
+
+// SF-128 data-model.md § Card state: what the "// PAST EMAILS" part shows, from the fetch row (none before any press on
+// this connection) and the connection's state.
+export type PastFetchView =
+  | { state: "none" }
+  | { state: "running"; copied: number; paused: boolean; unreachable: boolean; waitSeconds: number }
+  | { state: "ended"; copied: number; endedAt: Date };
+
+export function pastFetchView(
+  row: { state: string | null; copied: number | null; problem: string | null; wait_until: Date | null; ended_at: Date | null } | null,
+  connectionState: string,
+  now: Date,
+): PastFetchView {
+  if (!row?.state) return { state: "none" };
+  if (row.state === "ended" && row.ended_at) return { state: "ended", copied: row.copied ?? 0, endedAt: row.ended_at };
+  const wait = row.wait_until ? Math.max(0, Math.ceil((row.wait_until.getTime() - now.getTime()) / 1000)) : 0;
+  return { state: "running", copied: row.copied ?? 0, paused: connectionState === "needs_reconnect", unreachable: row.problem === "unavailable", waitSeconds: wait };
+}
+
+// SF-128 contracts/google.md § Errors: how long Gmail asks to wait: a numeric Retry-After rounded up, else 30 seconds,
+// within 1 to 300.
+export function slowDownSeconds(header: string | null): number {
+  const n = header !== null && /^\s*\d+(\.\d+)?\s*$/.test(header) ? Math.ceil(Number(header)) : 30;
+  return Math.min(300, Math.max(1, n));
 }
 
 // What a refused Google call means (research.md §5): the key is no longer accepted, or Google can't be used right now.

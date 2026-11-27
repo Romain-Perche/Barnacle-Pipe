@@ -5,6 +5,8 @@
 // answers "This deal doesn't exist or you can't see it." (not-found.tsx). SF-109: // NEXT ACTIVITIES above the timeline;
 // ?activity= / ?followup= / ?delete-activity= open the activity box (ActivityOverlays). SF-116: // FILES between them
 // and the timeline; ?file= / ?delete-file= open the image preview box / the delete confirmation (FileOverlays).
+// SF-127 (FR-015): the actions above two columns: the stage bar, strip and // DETAILS on the left; the note box,
+// // NEXT ACTIVITIES, // FILES and // TIMELINE (with EMAIL entries) on the right.
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
@@ -19,6 +21,7 @@ import { readFlash } from "@/server/records/flash";
 import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { PersonPicker } from "../../records/PersonPicker";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { TimelineNoteBox } from "../../records/TimelineNoteBox";
 import { FileOverlays } from "../../records/FileOverlays";
 import { FilesSection } from "../../records/FilesSection";
 import { ReferredBy } from "../../records/ReferredBy";
@@ -124,31 +127,6 @@ export default async function DealPage({ params, searchParams }: { params: Promi
       <ActivityNotices error={error} />
       {confirmDelete && <DeleteConfirm name={deal.title} id={deal.id} action={deleteDeal} cancelHref={here} back="list" />}
 
-      <StageBar items={stageBar(seconds, deal.stage.id)} dealId={deal.id} version={deal.version} stageId={deal.stage.id} canMove={open} />
-
-      <dl className="strip">
-        <div>
-          <dt>Value</dt>
-          <dd>{formatMoney(deal.valuePence)}</dd>
-        </div>
-        <div>
-          <dt>Owner</dt>
-          <dd>{ownerName(deal.owner)}</dd>
-        </div>
-        <div>
-          <dt>Expected close</dt>
-          <dd>{deal.expectedClose ? day(deal.expectedClose) : "—"}</dd>
-        </div>
-        <div>
-          <dt>Status</dt>
-          <dd>
-            <span className={`result ${deal.status}`}>{resultText(deal)}</span>
-            {deal.archivedAt && <span className="result archived">Archived · {formatDate(deal.archivedAt)}</span>}
-          </dd>
-        </div>
-      </dl>
-      {deal.status === "lost" && deal.lostReason && <p className="lost-reason">Lost because: {deal.lostReason}</p>}
-
       <div className="deal-acts">
         {deal.archived ? (
           <form action={restoreDeal}>
@@ -186,107 +164,138 @@ export default async function DealPage({ params, searchParams }: { params: Promi
         )}
       </div>
 
-      <section aria-label="Details">
-        <div className="label sect">
-          <span className="c">//</span> DETAILS
+      <div className="recordcols">
+        <div className="recordleft">
+          <StageBar items={stageBar(seconds, deal.stage.id)} dealId={deal.id} version={deal.version} stageId={deal.stage.id} canMove={open} />
+
+          <dl className="strip">
+            <div>
+              <dt>Value</dt>
+              <dd>{formatMoney(deal.valuePence)}</dd>
         </div>
-        <dl className="details">
-          <div>
-            <dt>Pipeline · Stage</dt>
-            <dd>
-              {deal.pipeline.name} · {deal.stage.name}
-            </dd>
-          </div>
-          <div>
-            <dt>Organisation</dt>
-            <dd>
-              {deal.organisation ? (
-                <>
-                  <Link href={`/organisations/${deal.organisation.id}`}>{deal.organisation.name}</Link>
-                  {deal.organisation.archived && <span className="badge off tag">Archived</span>}
-                </>
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt>Main person</dt>
-            <dd>
-              {deal.person ? (
-                <>
-                  <Link href={`/people/${deal.person.id}`}>{deal.person.name}</Link>
-                  {deal.person.archived && <span className="badge off tag">Archived</span>}
-                </>
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt>Other people</dt>
-            <dd>
-              {deal.otherPeople.length === 0 && deal.archived && "—"}
-              <ul className="people-list" aria-label="Other people">
-                {deal.otherPeople.map((p) => (
-                  <li key={p.id}>
-                    <Link href={`/people/${p.id}`}>{p.name}</Link>
-                    {p.archived && <span className="badge off tag">Archived</span>}
-                    {!deal.archived && (
-                      <form action={unlinkPerson}>
-                        <Hidden id={deal.id} />
-                        <input type="hidden" name="personId" value={p.id} />
-                        <button className="btn link red" type="submit" aria-label={`Unlink ${p.name}`}>
-                          [ UNLINK ]
-                        </button>
-                      </form>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {!deal.archived && (
-                <form action={linkPerson} className="link-person">
-                  <Hidden id={deal.id} />
-                  <PersonPicker people={people} initialId="" />
-                  <button className="btn" type="submit">
-                    [ LINK PERSON ]
-                  </button>
-                </form>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt>Referred by</dt>
-            <dd>
-              <ReferredBy referrer={deal.referredBy} />
-            </dd>
-          </div>
-          <div>
-            <dt>Labels</dt>
-            <dd>{deal.labels.length > 0 ? deal.labels.map((l) => l.name).join(", ") : "—"}</dd>
-          </div>
-          <div>
-            <dt>Followers</dt>
-            <dd>{deal.followers.length > 0 ? deal.followers.map((f) => ownerName(f)).join(", ") : "—"}</dd>
-          </div>
-          <div>
-            <dt>Date added</dt>
-            <dd>{formatDate(deal.createdAt)}</dd>
-          </div>
-        </dl>
-      </section>
-      <MoreDetails details={deal.custom} />
+            <div>
+              <dt>Owner</dt>
+              <dd>{ownerName(deal.owner)}</dd>
+        </div>
+            <div>
+              <dt>Expected close</dt>
+              <dd>{deal.expectedClose ? day(deal.expectedClose) : "—"}</dd>
+        </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                <span className={`result ${deal.status}`}>{resultText(deal)}</span>
+                {deal.archivedAt && <span className="result archived">Archived · {formatDate(deal.archivedAt)}</span>}
+              </dd>
+        </div>
+          </dl>
+          {deal.status === "lost" && deal.lostReason && <p className="lost-reason">Lost because: {deal.lostReason}</p>}
 
-      <NextActivities viewerId={user.id} target={{ dealId: deal.id }} archived={deal.archived} back={here} />
+          <section aria-label="Details">
+            <div className="label sect">
+              <span className="c">//</span> DETAILS
+        </div>
+            <dl className="details">
+              <div>
+                <dt>Pipeline · Stage</dt>
+                <dd>
+                  {deal.pipeline.name} · {deal.stage.name}
+                </dd>
+              </div>
+              <div>
+                <dt>Organisation</dt>
+                <dd>
+                  {deal.organisation ? (
+                    <>
+                      <Link href={`/organisations/${deal.organisation.id}`}>{deal.organisation.name}</Link>
+                      {deal.organisation.archived && <span className="badge off tag">Archived</span>}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Main person</dt>
+                <dd>
+                  {deal.person ? (
+                    <>
+                      <Link href={`/people/${deal.person.id}`}>{deal.person.name}</Link>
+                      {deal.person.archived && <span className="badge off tag">Archived</span>}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Other people</dt>
+                <dd>
+                  {deal.otherPeople.length === 0 && deal.archived && "—"}
+                  <ul className="people-list" aria-label="Other people">
+                    {deal.otherPeople.map((p) => (
+                      <li key={p.id}>
+                        <Link href={`/people/${p.id}`}>{p.name}</Link>
+                        {p.archived && <span className="badge off tag">Archived</span>}
+                        {!deal.archived && (
+                          <form action={unlinkPerson}>
+                            <Hidden id={deal.id} />
+                            <input type="hidden" name="personId" value={p.id} />
+                            <button className="btn link red" type="submit" aria-label={`Unlink ${p.name}`}>
+                              [ UNLINK ]
+                            </button>
+                          </form>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {!deal.archived && (
+                    <form action={linkPerson} className="link-person">
+                      <Hidden id={deal.id} />
+                      <PersonPicker people={people} initialId="" />
+                      <button className="btn" type="submit">
+                        [ LINK PERSON ]
+                      </button>
+                    </form>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Referred by</dt>
+                <dd>
+                  <ReferredBy referrer={deal.referredBy} />
+                </dd>
+              </div>
+              <div>
+                <dt>Labels</dt>
+                <dd>{deal.labels.length > 0 ? deal.labels.map((l) => l.name).join(", ") : "—"}</dd>
+              </div>
+              <div>
+                <dt>Followers</dt>
+                <dd>{deal.followers.length > 0 ? deal.followers.map((f) => ownerName(f)).join(", ") : "—"}</dd>
+              </div>
+              <div>
+                <dt>Date added</dt>
+                <dd>{formatDate(deal.createdAt)}</dd>
+              </div>
+            </dl>
+          </section>
+          <MoreDetails details={deal.custom} />
+        </div>
+        <div className="recordright">
+          <TimelineNoteBox viewerId={user.id} target={{ dealId: deal.id }} archived={deal.archived} />
+          <NextActivities viewerId={user.id} target={{ dealId: deal.id }} archived={deal.archived} back={here} />
 
-      <FilesSection viewerId={user.id} target={{ dealId: deal.id }} archived={deal.archived} back={here} error={error} />
+          <FilesSection viewerId={user.id} target={{ dealId: deal.id }} archived={deal.archived} back={here} error={error} />
 
-      <RecordTimeline
-        viewerId={user.id}
-        target={{ dealId: deal.id }}
-        archived={deal.archived}
-        query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
-      />
+          <RecordTimeline
+            viewerId={user.id}
+            target={{ dealId: deal.id }}
+            archived={deal.archived}
+            query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+          />
+        </div>
+      </div>
 
       <ActivityOverlays
         viewerId={user.id}

@@ -1,4 +1,5 @@
-// A person's page, design C: header, // DETAILS in two columns, // TIMELINE.
+// A person's page, design C: header, then (SF-127 FR-015) the details on the left and the note box, // NEXT
+// ACTIVITIES, // FILES and // TIMELINE on the right (.recordcols, stacked under 1000 px).
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
@@ -10,6 +11,7 @@ import { DeleteConfirm } from "../../records/DeleteConfirm";
 import { RecordHeader } from "../../records/RecordHeader";
 import { NoteNotices } from "../../records/NoteNotices";
 import { RecordTimeline } from "../../records/RecordTimeline";
+import { TimelineNoteBox } from "../../records/TimelineNoteBox";
 import { FileOverlays } from "../../records/FileOverlays";
 import { FilesSection } from "../../records/FilesSection";
 import { ReferredBy } from "../../records/ReferredBy";
@@ -64,108 +66,114 @@ export default async function PersonPage({ params, searchParams }: Props) {
       <NoteNotices error={first(query, "error")} />
       <ActivityNotices error={first(query, "error")} />
 
-      <section aria-label="Details">
-        <div className="label sect">
-          <span className="c">//</span> DETAILS
+      <div className="recordcols">
+        <div className="recordleft">
+          <section aria-label="Details">
+            <div className="label sect">
+              <span className="c">//</span> DETAILS
         </div>
-        <dl className="details">
-          <div>
-            <dt>Email addresses</dt>
-            <dd>
-              {person.emails.length === 0
-                ? "—"
-                : person.emails.map((e) => (
-                    <span key={e.email} className="multi">
-                      {e.email} <span className="kind">{KIND_LABELS[e.kind]}</span>
-                    </span>
-                  ))}
-            </dd>
-          </div>
-          <div>
-            <dt>Phone numbers</dt>
-            <dd>
-              {person.phones.length === 0
-                ? "—"
-                : person.phones.map((p, i) => (
-                    <span key={i} className="multi">
-                      {p.phone} <span className="kind">{KIND_LABELS[p.kind]}</span>
-                    </span>
-                  ))}
-            </dd>
-          </div>
-          <div>
-            <dt>Organisation</dt>
-            <dd>
-              {person.organisation ? (
-                <>
-                  <Link href={`/organisations/${person.organisation.id}`}>{person.organisation.name}</Link>
-                  {person.organisation.archived && <span className="badge off tag">Archived</span>}
-                </>
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt>Role</dt>
-            <dd>{person.role ?? "—"}</dd>
-          </div>
-          <div>
-            <dt>Lead source</dt>
-            <dd>{person.leadSource?.name ?? "—"}</dd>
-          </div>
-          <div>
-            <dt>Referred by</dt>
-            <dd>
-              <ReferredBy referrer={person.referredBy} />
-            </dd>
-          </div>
-          <div>
-            <dt>LinkedIn</dt>
-            <dd>
-              {person.linkedin ? (
-                <a href={person.linkedin} target="_blank" rel="noopener noreferrer">
-                  {person.linkedin}
-                </a>
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt>Owner</dt>
-            <dd>{person.owner.active ? person.owner.name : `${person.owner.name} (deactivated)`}</dd>
-          </div>
-          <div>
-            <dt>Labels</dt>
-            <dd>{person.labels.length > 0 ? person.labels.map((l) => l.name).join(", ") : "—"}</dd>
-          </div>
-          <div>
-            <dt>Consent</dt>
-            <dd>{CONSENT_LABELS[person.consent]}</dd>
-          </div>
-          <div>
-            <dt>Date added</dt>
-            <dd>{formatDate(person.createdAt)}</dd>
-          </div>
-          <div>
-            <dt>Last contacted</dt>
-            <dd>{person.lastContactedAt ? formatDate(person.lastContactedAt) : "Never"}</dd>
-          </div>
-        </dl>
-      </section>
-      <MoreDetails details={person.custom} />
+            <dl className="details">
+              <div>
+                <dt>Email addresses</dt>
+                <dd>
+                  {person.emails.length === 0
+                    ? "—"
+                    : person.emails.map((e) => (
+                        <span key={e.email} className="multi">
+                          {e.email} <span className="kind">{KIND_LABELS[e.kind]}</span>
+                        </span>
+                      ))}
+                </dd>
+              </div>
+              <div>
+                <dt>Phone numbers</dt>
+                <dd>
+                  {person.phones.length === 0
+                    ? "—"
+                    : person.phones.map((p, i) => (
+                        <span key={i} className="multi">
+                          {p.phone} <span className="kind">{KIND_LABELS[p.kind]}</span>
+                        </span>
+                      ))}
+                </dd>
+              </div>
+              <div>
+                <dt>Organisation</dt>
+                <dd>
+                  {person.organisation ? (
+                    <>
+                      <Link href={`/organisations/${person.organisation.id}`}>{person.organisation.name}</Link>
+                      {person.organisation.archived && <span className="badge off tag">Archived</span>}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Role</dt>
+                <dd>{person.role ?? "—"}</dd>
+              </div>
+              <div>
+                <dt>Lead source</dt>
+                <dd>{person.leadSource?.name ?? "—"}</dd>
+              </div>
+              <div>
+                <dt>Referred by</dt>
+                <dd>
+                  <ReferredBy referrer={person.referredBy} />
+                </dd>
+              </div>
+              <div>
+                <dt>LinkedIn</dt>
+                <dd>
+                  {person.linkedin ? (
+                    <a href={person.linkedin} target="_blank" rel="noopener noreferrer">
+                      {person.linkedin}
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Owner</dt>
+                <dd>{person.owner.active ? person.owner.name : `${person.owner.name} (deactivated)`}</dd>
+              </div>
+              <div>
+                <dt>Labels</dt>
+                <dd>{person.labels.length > 0 ? person.labels.map((l) => l.name).join(", ") : "—"}</dd>
+              </div>
+              <div>
+                <dt>Consent</dt>
+                <dd>{CONSENT_LABELS[person.consent]}</dd>
+              </div>
+              <div>
+                <dt>Date added</dt>
+                <dd>{formatDate(person.createdAt)}</dd>
+              </div>
+              <div>
+                <dt>Last contacted</dt>
+                <dd>{person.lastContactedAt ? formatDate(person.lastContactedAt) : "Never"}</dd>
+              </div>
+            </dl>
+          </section>
+          <MoreDetails details={person.custom} />
+        </div>
+        <div className="recordright">
+          <TimelineNoteBox viewerId={user.id} target={{ personId: id }} archived={person.archived} />
+          <NextActivities viewerId={user.id} target={{ personId: id }} archived={person.archived} back={href} />
 
-      <NextActivities viewerId={user.id} target={{ personId: id }} archived={person.archived} back={href} />
+          <FilesSection viewerId={user.id} target={{ personId: id }} archived={person.archived} back={href} error={first(query, "error")} />
 
-      <FilesSection viewerId={user.id} target={{ personId: id }} archived={person.archived} back={href} error={first(query, "error")} />
-
-      <RecordTimeline
-        viewerId={user.id}
-        target={{ personId: id }}
-        archived={person.archived}
-        query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
-      />
+          <RecordTimeline
+            viewerId={user.id}
+            target={{ personId: id }}
+            archived={person.archived}
+            query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
+          />
+        </div>
+      </div>
       <ActivityOverlays
         viewerId={user.id}
         target={{ personId: id }}

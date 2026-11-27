@@ -1,10 +1,10 @@
-// // TIMELINE of a deal, person or organisation (SF-102 design B, contracts/routes.md § Pages): the note box above
-// (not on archived records, not in the drawer), then the entries newest first under one heading per UK day, each
+// // TIMELINE of a deal, person or organisation (SF-102 design B, contracts/routes.md § Pages): the entries newest first under one heading per UK day, each
 // with a NOTE, DEAL or CHANGE tag and its time. A person's and an organisation's timeline also hold their deals'
 // entries (DEAL: the deal's title links to it; read-only there). `?note=` / `?delete-note=` only pick which of the
 // notes shown is in edit / confirm mode; nothing from the address is shown. SF-109: a done activity is an ACTIVITY
 // entry (type, subject, note as text, "Done by <name>") with its box to untick it, except on archived records (its own or a linked one) and in the drawer.
 // SF-116: FILE entries (a file added or deleted); the name of a file that still exists links to it.
+// SF-127: EMAIL entries (EmailEntry.tsx); the note box moved out to TimelineNoteBox.tsx, first in the right column.
 import Link from "next/link";
 import { formatTime } from "@/server/format";
 import { templates } from "@/server/messages";
@@ -13,11 +13,12 @@ import { mentionCandidates, noteForEdit, type NoteTarget } from "@/server/record
 import { parseShown } from "@/server/records/notes-rules";
 import { readTimeline, type TimelineEntry } from "@/server/records/timeline";
 import { entryTag, groupByDay } from "@/server/records/timeline-view";
-import { addNote, editNote } from "./note-actions";
+import { editNote } from "./note-actions";
 import { NoteBox } from "./NoteBox";
 import { NoteDeleteConfirm } from "./NoteDeleteConfirm";
 import { targetId as idOf, targetKind, targetPath } from "./note-target";
 import { Line } from "./Timeline";
+import { EmailEntry } from "./EmailEntry";
 import { TypeTag } from "../activities/ActivityBits";
 import { DoneBox } from "../activities/DoneBox";
 
@@ -44,10 +45,7 @@ export function NoteText({ entry }: { entry: TimelineEntry }) {
 export async function RecordTimeline({ viewerId, target, archived, readOnly = false, query = {} }: Props) {
   const limit = readOnly ? 50 : parseShown(query.timeline);
   const canChange = !readOnly && !archived;
-  const [page, candidates] = await Promise.all([
-    readTimeline(viewerId, target, limit),
-    canChange ? mentionCandidates(viewerId, target) : Promise.resolve([]),
-  ]);
+  const page = await readTimeline(viewerId, target, limit);
   const path = targetPath(target);
   const kind = targetKind(target);
   const id = idOf(target);
@@ -60,6 +58,7 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
   const editId = pick(query.note);
   const deleteId = editId === null ? pick(query.deleteNote) : null;
   const editing = editId === null ? null : await noteForEdit(viewerId, target, editId);
+  const candidates = editing ? await mentionCandidates(viewerId, target) : [];
   const back = (entryId: number) => `${path}${keep ? `?${keep}` : ""}#entry-${entryId}`;
   const withParam = (param: string, entryId: number) => `${path}?${param}=${entryId}${keep ? `&${keep}` : ""}#entry-${entryId}`;
   const onDealPage = kind === "deal";
@@ -70,7 +69,6 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
       <div className="label sect">
         <span className="c">//</span> TIMELINE
       </div>
-      {canChange && <NoteBox action={addNote} target={kind} targetId={id} candidates={candidates} />}
       {groupByDay(page.entries, new Date()).map((group) => (
         <div key={group.key} className="daygroup">
           <div className="day">
@@ -80,6 +78,7 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
             {group.entries.map((e) => {
               const tag = entryTag(e);
               const author = e.actorName ? (e.authorActive ? e.actorName : `${e.actorName} (deactivated)`) : "";
+              if (e.email) return <EmailEntry key={`email-${e.id}`} entry={e} from={`${kind}-${id}`} />;
               if (e.activity) {
                 const a = e.activity;
                 return (
@@ -150,7 +149,7 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
       ))}
       {page.more && last && (
         <div className="more">
-          <Link className="btn" href={readOnly ? `${path}?timeline=100` : `${path}?timeline=${limit + 50}#${last.kind === "activity" ? "activity" : "entry"}-${last.id}`} scroll={false}>
+          <Link className="btn" href={readOnly ? `${path}?timeline=100` : `${path}?timeline=${limit + 50}#${last.kind === "activity" ? "activity" : last.kind === "email" ? "email" : "entry"}-${last.id}`} scroll={false}>
             [ SHOW MORE ]
           </Link>
         </div>
