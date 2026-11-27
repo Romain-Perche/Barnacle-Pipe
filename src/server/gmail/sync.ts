@@ -7,7 +7,9 @@
 // past-email fetches (runPastFetches). SF-127: storeMessage processes each stored email (processMessage); runGmailCheck
 // first links the emails not processed yet (catchUpEmails). SF-129: storeMessage also runs for a message already stored
 // (processMessage is then a no-op) and ends with completePendingSend, so an email written from a record gets its hand
-// link whoever stores it first: the send path or the sync.
+// link whoever stores it first: the send path or the sync. SF-130: storeMessage first places a pending reply's new thread
+// in the answered email's conversation (placePendingReply), and runOnce copies a message the CRM is sending from this
+// mailbox (decideCopy's pendingSend) even with no CRM address in a new thread.
 import { sql, type Sql } from "@/server/db";
 import { gmailConfig } from "@/server/env";
 import { loadKey, markNeedsReconnect } from "@/server/gmail/connections";
@@ -27,6 +29,7 @@ import { runCalendarCheck } from "@/server/calendar/sync";
 import { catchUpEmails, processMessage } from "@/server/emails/process";
 import { runPastFetches } from "@/server/gmail/past";
 import { completePendingSend } from "@/server/emails/compose";
+import { placePendingReply } from "@/server/emails/reply";
 
 const LEASE_MS = 2 * 60 * 1000;
 export const MAX_GETS_PER_RUN = 300;
@@ -120,6 +123,8 @@ export async function storeMessage(connectionId: number, m: ReadMessage, opts: {
       }
       return false;
     }
+    // SF-130: a reply starting a new Gmail thread joins the conversation of the email it answers.
+    await placePendingReply(db, connectionId, Number(thread.id), m);
     for (const [position, a] of m.attachments.entries()) {
       await db`
         insert into email_attachments (message_id, position, name, content_type, size)
@@ -174,8 +179,21 @@ async function runOnce(connectionId: number, lease: Leased, now: Date): Promise<
       : await sql<{ id: string }[]>`select gmail_thread_id as id from email_threads where connection_id = ${connectionId} and gmail_thread_id = any(${threadIds})`) {
       knownThreads.add(r.id);
     }
+    // SF-130: messages this mailbox is sending through the CRM (a pending ledger row), by Gmail id or Message-ID.
+    const gmailIds = fetched.map((m) => m.gmailMessageId);
+    const rfcIds = fetched.map((m) => m.rfcMessageId).filter((x): x is string => x !== null);
+    const pending = new Set(
+      fetched.length === 0
+        ? []
+        : (
+            await sql<{ g: string | null; r: string }[]>`
+              select gmail_message_id as g, rfc_message_id as r from email_sends
+              where connection_id = ${connectionId} and state = 'sending' and (gmail_message_id = any(${gmailIds}) or rfc_message_id = any(${rfcIds}))`
+          ).flatMap((x) => [x.g, x.r]),
+    );
     for (const m of fetched) {
       const decision = decideCopy({
+        pendingSend: pending.has(m.gmailMessageId) || (m.rfcMessageId !== null && pending.has(m.rfcMessageId)),
         labelIds: m.labelIds,
         internalDate: m.receivedAt,
         connectedAt: lease.connectedAt,

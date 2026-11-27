@@ -6,6 +6,7 @@
 // - GoogleUnavailable: anything else (network, time-out, 5xx, other 4xx, Gmail off); SF-128: its GmailSlowDown for a
 //   429 or a rate-limit 403;
 // - HistoryGone: history.list answered 404 (the start id is older than the history Gmail keeps).
+import { randomBytes } from "node:crypto";
 import { gmailConfig } from "@/server/env";
 import { CERTS_URL, fakeGmail, REVOKE_URL, TOKEN_URL } from "@/server/gmail/fake-gmail";
 import { askedScopes, classifyGoogleError, slowDownSeconds, type GmailMessage } from "@/server/gmail/rules";
@@ -276,23 +277,26 @@ export async function getThreadMessages(accessToken: string, threadId: string): 
   return (body?.messages ?? []).filter((m) => typeof m?.id === "string" && typeof m.threadId === "string");
 }
 
-// The Message-ID, References and Subject headers of each message of a thread (to reply in it).
-export async function getThreadMetadata(accessToken: string, threadId: string): Promise<{ name: string; value: string }[][]> {
-  const t = await gmailJson<{ messages?: { payload?: { headers?: { name: string; value: string }[] } }[] }>(accessToken, "GET", `threads/${encodeURIComponent(threadId)}`, {
-    query: [["format", "metadata"], ["metadataHeaders", "Message-ID"], ["metadataHeaders", "References"], ["metadataHeaders", "Subject"]],
-  });
-  return (t?.messages ?? []).map((m) => m.payload?.headers ?? []);
-}
-
-export async function sendRaw(accessToken: string, raw: string, threadId?: string | null): Promise<{ id: string; threadId: string }> {
-  const sent = await gmailJson<{ id?: unknown; threadId?: unknown }>(accessToken, "POST", "messages/send", { body: threadId ? { raw, threadId } : { raw } });
-  if (typeof sent?.id !== "string" || typeof sent.threadId !== "string") throw new GoogleUnavailable(200, "bad_send");
-  return { id: sent.id, threadId: sent.threadId };
-}
-
 // SF-129: the RFC 5322 bytes as they are (message/rfc822), 40 s; Gmail answers the Message (id, threadId).
-export async function sendRawUpload(accessToken: string, mime: Uint8Array<ArrayBuffer>): Promise<{ id: string; threadId: string }> {
-  const res = await call(GMAIL_UPLOAD_SEND, { method: "POST", headers: { authorization: `Bearer ${accessToken}`, "content-type": "message/rfc822" }, body: mime }, SEND_TIMEOUT_MS);
+// SF-130 (contracts/google.md): with a threadId, the multipart upload: a JSON Message part { threadId } then the
+// message/rfc822 part, so a reply stays in the user's Gmail thread with attachments up to Gmail's upload limit.
+export async function sendRawUpload(accessToken: string, mime: Uint8Array<ArrayBuffer>, threadId?: string | null): Promise<{ id: string; threadId: string }> {
+  let url = GMAIL_UPLOAD_SEND;
+  let type = "message/rfc822";
+  let body: Uint8Array<ArrayBuffer> = mime;
+  if (threadId) {
+    const boundary = `crm-${randomBytes(12).toString("hex")}`;
+    const head = Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ threadId })}\r\n--${boundary}\r\nContent-Type: message/rfc822\r\n\r\n`, "utf8");
+    const tail = Buffer.from(`\r\n--${boundary}--\r\n`, "utf8");
+    const all = new Uint8Array(head.length + mime.length + tail.length);
+    all.set(head, 0);
+    all.set(mime, head.length);
+    all.set(tail, head.length + mime.length);
+    url = GMAIL_UPLOAD_SEND.replace("uploadType=media", "uploadType=multipart");
+    type = `multipart/related; boundary="${boundary}"`;
+    body = all;
+  }
+  const res = await call(url, { method: "POST", headers: { authorization: `Bearer ${accessToken}`, "content-type": type }, body }, SEND_TIMEOUT_MS);
   if (!res.ok) return failWith(res);
   const sent = (await readJson(res)) as { id?: unknown; threadId?: unknown } | null;
   if (typeof sent?.id !== "string" || typeof sent.threadId !== "string") throw new GoogleUnavailable(200, "bad_send");

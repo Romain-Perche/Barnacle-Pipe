@@ -76,3 +76,29 @@ describe("buildMime recipient names", () => {
     expect(() => buildMime({ ...plain, to: [{ email: "ana@example.test", name: "Ana\r\nBcc: x@example.test" }] })).toThrow(BadHeader);
   });
 });
+
+// covers SF-130 FR-010, US1 scenario 7, contracts/google.md, edge case "Email with no Message-ID"
+describe("buildMime reply headers (SF-130)", () => {
+  const headerBlock = (mime: string) => mime.split("\r\n\r\n")[0];
+  it("In-Reply-To only when it is a Message-ID", () => {
+    expect(buildMime({ ...plain, inReplyTo: "<ana-1@example.test>" })).toContain("In-Reply-To: <ana-1@example.test>\r\n");
+    expect(buildMime({ ...plain, inReplyTo: "ana-1@example.test" })).not.toContain("In-Reply-To");
+    expect(buildMime({ ...plain, inReplyTo: "<a b@x>" })).not.toContain("In-Reply-To");
+    expect(buildMime({ ...plain, inReplyTo: null })).not.toContain("In-Reply-To");
+  });
+  it("References from a list, joined by spaces; absent when empty", () => {
+    expect(buildMime({ ...plain, references: ["<a@x.test>", "<b@x.test>"] })).toContain("References: <a@x.test> <b@x.test>\r\n");
+    expect(buildMime({ ...plain, references: [] })).not.toContain("References");
+  });
+  it("200 ids: folded at spaces, every line at most 998 octets, unfolded gives every id in order", () => {
+    const ids = Array.from({ length: 200 }, (_, i) => `<message-${i}-${"x".repeat(40)}@mail.example.test>`);
+    const head = headerBlock(buildMime({ ...plain, references: ids }));
+    for (const line of head.split("\r\n")) expect(Buffer.byteLength(line)).toBeLessThanOrEqual(998);
+    const refs = /\r\nReferences: ((?:[^\r]*)(?:\r\n [^\r]*)*)/.exec(head)![1];
+    expect(refs).toContain("\r\n ");
+    expect(refs.replace(/\r\n /g, " ").split(" ")).toEqual(ids);
+  });
+  it("a call without them builds the same text as before", () => {
+    expect(buildMime({ ...plain, inReplyTo: null, references: [] })).toBe(buildMime(plain));
+  });
+});

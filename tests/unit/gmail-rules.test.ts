@@ -255,6 +255,15 @@ describe("decideCopy", () => {
     expect(nameOnly.addresses).toEqual(["other@example.test"]);
     expect(decideCopy({ ...base, addresses: nameOnly.addresses, crmAddresses: new Set(["ana fake"]) })).toBe("skip");
   });
+  // covers SF-130 FR-016, edge case "Sent but the CRM could not record it" (T030)
+  it("copies a message the CRM is sending (pending ledger row) in an unknown thread with no CRM address, after the label and date rules", () => {
+    const ed = { ...base, addresses: ["ed@example.test"], crmAddresses: new Set<string>() };
+    expect(decideCopy(ed)).toBe("skip");
+    expect(decideCopy({ ...ed, pendingSend: true })).toBe("copy");
+    expect(decideCopy({ ...ed, pendingSend: false })).toBe("skip");
+    expect(decideCopy({ ...ed, pendingSend: true, labelIds: ["SENT", "TRASH"] })).toBe("skip");
+    expect(decideCopy({ ...ed, pendingSend: true, internalDate: new Date("2026-11-23T10:00:00Z") })).toBe("skip");
+  });
 });
 
 describe("buildMime", () => {

@@ -297,7 +297,7 @@ export default async function DealPage({ params, searchParams }: { params: Promi
             target={{ dealId: deal.id }}
             archived={deal.archived}
             query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
-            emailHref={`${here}?email=new`}
+            emailBase={`${here}?email=`}
           />
         </div>
       </div>

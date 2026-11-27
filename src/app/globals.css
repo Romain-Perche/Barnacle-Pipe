@@ -671,3 +671,11 @@ table.campaigns-list .acts form + a { margin-left: 14px; }
   border-top: 0.5px solid var(--line); padding-top: 10px; font-size: 13px; }
 .emailform .ftr .acts { display: flex; gap: 8px; }
 .emailform .err { margin: 0; }
+
+/* SF-130 reply and forward, design B: small framed buttons at the right of an email's top line; the read-only quote. */
+.eh { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.eh > :first-child { min-width: 0; }
+.acts.mini { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; flex-shrink: 0; }
+.acts.mini .btn { font-size: 10px; padding: 3px 6px; letter-spacing: 0.08em; }
+.emailform pre.quote { margin: 0; padding: 6px 0 6px 12px; border-left: 2px solid var(--line-soft); color: var(--muted);
+  font-family: var(--sans); font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 280px; overflow-y: auto; }

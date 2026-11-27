@@ -14,8 +14,8 @@ export async function seedSentEmails(sql: Sql): Promise<string[]> {
   if (!ada) return ["Sent email fake data skipped (no Ada Fake)."];
   const [done] = await sql`select 1 from email_sends where user_id = ${ada.id} and send_key = ${SEED_SEND_KEY}`;
   if (done) return ["already there sent email"];
-  const [deal] = await sql<{ id: number }[]>`
-    select d.id::int as id from deals d join persons p on p.id = d.person_id
+  const [deal] = await sql<{ id: number; title: string }[]>`
+    select d.id::int as id, d.title from deals d join persons p on p.id = d.person_id
     where not d.private and d.archived_at is null and not p.private and p.archived_at is null
       and exists (select 1 from person_emails e where e.person_id = p.id)
     order by d.id limit 1`;
@@ -26,5 +26,5 @@ export async function seedSentEmails(sql: Sql): Promise<string[]> {
     target: { kind: "deal", id: deal.id }, sendKey: SEED_SEND_KEY, to: box.to, cc: [], bcc: [], subject: "Fake next steps",
     text: "Hello,\n\nHere are the fake next steps we talked about.\n\nAda Fake", fileIds: [], uploadIds: [],
   });
-  return result.status === "sent" ? [`1 sent email on the deal "${box.record.name}"`] : [`Sent email fake data skipped (${result.status}).`];
+  return result.status === "sent" ? [`1 sent email on the deal "${deal.title}"`] : [`Sent email fake data skipped (${result.status}).`];
 }

@@ -8,6 +8,7 @@ import { randomBytes } from "node:crypto";
 import { calendarConfig } from "@/server/env";
 import { messages } from "@/server/messages";
 import { HEADER_ADDRESS } from "@/server/gmail/address";
+import { MESSAGE_ID } from "@/server/emails/reply-rules";
 export { isHeaderAddress } from "@/server/gmail/address";
 
 export const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"] as const;
@@ -298,10 +299,13 @@ export function decideCopy(input: {
   threadKnown: boolean;
   addresses: string[];
   crmAddresses: ReadonlySet<string>;
+  // SF-130 research.md §1: an email the CRM is sending from this mailbox (a pending email_sends row) is copied even with
+  // no CRM address in a new thread (a forward to an outside address), so the sync catches up a send it could not store.
+  pendingSend?: boolean;
 }): "copy" | "skip" {
   if (input.labelIds.some((l) => SKIP_LABELS.includes(l))) return "skip";
   if (!(input.internalDate.getTime() >= input.connectedAt.getTime())) return "skip";
-  if (input.threadKnown) return "copy";
+  if (input.threadKnown || input.pendingSend) return "copy";
   return input.addresses.some((a) => input.crmAddresses.has(a)) ? "copy" : "skip";
 }
 
@@ -392,8 +396,10 @@ export type MimeInput = {
   subject: string;
   text: string;
   html?: string | null;
+  // SF-130: In-Reply-To written only when it is a Message-ID; References a list (SF-118's one string still read),
+  // written folded at spaces with every line at most 998 octets, left out when empty.
   inReplyTo?: string | null;
-  references?: string | null;
+  references?: string | string[] | null;
   date?: Date;
   // SF-129: the sender's name ("Ada Fake <ada@barnacle.ai>"), the CRM's own Message-ID, and files sent with the email
   // (multipart/mixed). None given: the same text as SF-118 built (Gmail sets its own Message-ID).
@@ -459,6 +465,21 @@ function attachmentPart(a: MimeAttachment): string[] {
   ];
 }
 
+// "<Name>: a b c", folded (CRLF + one space) before a word that would take the line over 998 octets (RFC 5322 §2.1.1).
+function folded(name: string, words: string[]): string {
+  const lines: string[] = [];
+  let line = `${name}:`;
+  for (const w of words) {
+    if (line !== `${name}:` && Buffer.byteLength(`${line} ${w}`) > 998) {
+      lines.push(line);
+      line = "";
+    }
+    line += ` ${w}`;
+  }
+  lines.push(line);
+  return lines.join("\r\n");
+}
+
 // RFC 5322 date, e.g. "Tue, 24 Nov 2026 10:00:00 +0000".
 function rfcDate(d: Date): string {
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -480,8 +501,10 @@ export function buildMime(input: MimeInput): string {
   if (bcc.length) lines.push(`Bcc: ${bcc.join(", ")}`);
   lines.push(`Subject: ${encodeSubject(noBreak(input.subject))}`, `Date: ${rfcDate(input.date ?? new Date())}`);
   if (input.messageId) lines.push(`Message-ID: ${noBreak(input.messageId)}`);
-  if (input.inReplyTo) lines.push(`In-Reply-To: ${noBreak(input.inReplyTo)}`);
-  if (input.references) lines.push(`References: ${noBreak(input.references)}`);
+  if (input.inReplyTo && MESSAGE_ID.test(noBreak(input.inReplyTo).trim())) lines.push(`In-Reply-To: ${input.inReplyTo.trim()}`);
+  const refs = typeof input.references === "string" ? noBreak(input.references).split(/\s+/) : (input.references ?? []).map(noBreak);
+  const ids = refs.map((r) => r.trim()).filter((r) => r !== "" && MESSAGE_ID.test(r));
+  if (ids.length > 0) lines.push(folded("References", ids));
   lines.push("MIME-Version: 1.0");
   const files = (input.attachments ?? []).map(attachmentPart);
   const textPart = ['Content-Type: text/plain; charset="UTF-8"', "Content-Transfer-Encoding: base64", "", base64Lines(input.text)];

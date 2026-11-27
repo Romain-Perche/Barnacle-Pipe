@@ -5,7 +5,8 @@
 // entry (type, subject, note as text, "Done by <name>") with its box to untick it, except on archived records (its own or a linked one) and in the drawer.
 // SF-116: FILE entries (a file added or deleted); the name of a file that still exists links to it.
 // SF-127: EMAIL entries (EmailEntry.tsx); the note box moved out to TimelineNoteBox.tsx, first in the right column.
-// SF-129: [ WRITE EMAIL ] in the heading (`emailHref`: the page's address with email=new), never on an archived record.
+// SF-129: [ WRITE EMAIL ] in the heading, never on an archived record. SF-130: `emailBase` (the page's address ending
+// with `email=`) gives `${emailBase}new` and each EMAIL entry's reply buttons (replyState read once per timeline).
 import Link from "next/link";
 import { formatTime } from "@/server/format";
 import { messages, templates } from "@/server/messages";
@@ -20,6 +21,7 @@ import { NoteDeleteConfirm } from "./NoteDeleteConfirm";
 import { targetId as idOf, targetKind, targetPath } from "./note-target";
 import { Line } from "./Timeline";
 import { EmailEntry } from "./EmailEntry";
+import { replyState } from "@/server/emails/reply";
 import { TypeTag } from "../activities/ActivityBits";
 import { DoneBox } from "../activities/DoneBox";
 
@@ -32,8 +34,9 @@ type Props = {
   // The deal drawer: the newest 50 entries, no note box, no [ EDIT ] / [ DELETE ]; more on the deal page.
   readOnly?: boolean;
   query?: Query;
-  // SF-129: where [ WRITE EMAIL ] goes (the drawer too); no button without it.
-  emailHref?: string;
+  // SF-129 / SF-130: the page's address ending with `email=` ([ WRITE EMAIL ] and the reply buttons, the drawer too);
+  // no button without it.
+  emailBase?: string;
 };
 
 export function NoteText({ entry }: { entry: TimelineEntry }) {
@@ -45,7 +48,7 @@ export function NoteText({ entry }: { entry: TimelineEntry }) {
   );
 }
 
-export async function RecordTimeline({ viewerId, target, archived, readOnly = false, query = {}, emailHref }: Props) {
+export async function RecordTimeline({ viewerId, target, archived, readOnly = false, query = {}, emailBase }: Props) {
   const limit = readOnly ? 50 : parseShown(query.timeline);
   const canChange = !readOnly && !archived;
   const page = await readTimeline(viewerId, target, limit);
@@ -66,6 +69,7 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
   const withParam = (param: string, entryId: number) => `${path}?${param}=${entryId}${keep ? `&${keep}` : ""}#entry-${entryId}`;
   const onDealPage = kind === "deal";
   const last = page.entries[page.entries.length - 1];
+  const reply = emailBase && !archived && page.entries.some((e) => e.email) ? { state: await replyState(viewerId), base: emailBase } : null;
 
   return (
     <section aria-label="Timeline" className="timeline">
@@ -73,8 +77,8 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
         <span>
           <span className="c">//</span> TIMELINE
         </span>
-        {emailHref && !archived && (
-          <Link className="btn solid" href={emailHref} scroll={false}>
+        {emailBase && !archived && (
+          <Link className="btn solid" href={`${emailBase}new`} scroll={false}>
             {messages.compose_write}
           </Link>
         )}
@@ -88,7 +92,7 @@ export async function RecordTimeline({ viewerId, target, archived, readOnly = fa
             {group.entries.map((e) => {
               const tag = entryTag(e);
               const author = e.actorName ? (e.authorActive ? e.actorName : `${e.actorName} (deactivated)`) : "";
-              if (e.email) return <EmailEntry key={`email-${e.id}`} entry={e} from={`${kind}-${id}`} />;
+              if (e.email) return <EmailEntry key={`email-${e.id}`} entry={e} from={`${kind}-${id}`} reply={reply} />;
               if (e.activity) {
                 const a = e.activity;
                 return (

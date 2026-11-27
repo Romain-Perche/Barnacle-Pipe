@@ -64,6 +64,8 @@ export type FakeState = {
   attachmentData?: Record<string, string>;
   // SF-129: the Bcc header of each message sent with one (Gmail keeps it in the sender's copy; read by sentMessages).
   sentBcc?: Record<string, string>;
+  // SF-130 (tests): messages.attachments.get answers 503 (a forwarded attachment Gmail can't give right now).
+  failAttachments?: boolean;
 } & CalendarState; // SF-124: the fake Google Calendar (src/server/calendar/fake-calendar.ts)
 
 export interface StateStore {
@@ -203,9 +205,27 @@ function parseMime(raw: string): ParsedMime {
   return { headers: top.headers, payload: root, attachments };
 }
 
+// SF-130: the parts of a multipart/related body (RFC 2387): each part's Content-Type and body; null when it is not one.
+export function readRelated(contentType: string, body: string): { type: string; body: string }[] | null {
+  if (!/^multipart\/related\s*;/i.test(contentType)) return null;
+  const boundary = /boundary="?([^";]+)"?/i.exec(contentType)?.[1];
+  if (!boundary) return null;
+  const chunks = body.split(`--${boundary}`);
+  if (chunks.length < 3 || !chunks[chunks.length - 1].startsWith("--")) return null;
+  return chunks.slice(1, -1).map((c) => {
+    const part = c.replace(/^\r\n/, "").replace(/\r\n$/, "");
+    const at = part.indexOf("\r\n\r\n");
+    const head = at < 0 ? part : part.slice(0, at);
+    const type = /^content-type:\s*(.+)$/im.exec(head)?.[1]?.trim() ?? "";
+    return { type, body: at < 0 ? "" : part.slice(at + 4) };
+  });
+}
+
 // SF-129: what tests read back from a sent message (sentMessages).
+// SF-130: In-Reply-To and References as written (References unfolded).
 export type SentMessage = {
   id: string; threadId: string; from: string; to: string; cc: string; bcc: string; subject: string; messageId: string; text: string;
+  inReplyTo: string; references: string;
   attachments: { name: string; type: string; bytes: Buffer }[];
 };
 
@@ -331,6 +351,10 @@ export class FakeGoogleMail {
   // ---- calendar (SF-124) ------------------------------------------------------------------------------------------
   // Every Google call (token endpoint included) fails as a network error / works again; kept in the state so every
   // route of a dev server sees it.
+  // SF-130 (tests, US4 scenario 7): attachment reads fail with 503 while on.
+  failAttachments(on = true) {
+    this.change((s) => void (s.failAttachments = on));
+  }
   setUnreachable(on: boolean) {
     this.change((s) => void (s.unreachable = on));
   }
@@ -642,12 +666,30 @@ export class FakeGoogleMail {
   }
 
   // SF-129: the simple media upload of users.messages.send (contracts/google.md): uploadType=media, a message/* body of
-  // at most 36,700,160 bytes (413 above), the same scopes and switches as every Gmail call.
-  private upload(req: Request, url: URL, text: string): Response {
+  // at most 36,700,160 bytes (413 above), the same scopes and switches as every Gmail call. SF-130: uploadType=multipart,
+  // a multipart/related body of a JSON Message part (its threadId kept when it is a thread of that mailbox) then the
+  // message/* part.
+  private upload(req: Request, url: URL, body: string): Response {
     const m = /^\/upload\/gmail\/v1\/users\/([^/]+)\/messages\/send$/.exec(url.pathname);
     if (!m || m[1] !== "me" || req.method !== "POST") return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");
-    if (url.searchParams.get("uploadType") !== "media") return gmailError(400, "INVALID_ARGUMENT", "Invalid uploadType", "invalidArgument");
-    if (!/^message\//i.test(req.headers.get("content-type") ?? "")) return gmailError(400, "INVALID_ARGUMENT", "Media type not accepted", "badContent");
+    const uploadType = url.searchParams.get("uploadType");
+    let text = body;
+    let askedThread: unknown;
+    if (uploadType === "multipart") {
+      const parts = readRelated(req.headers.get("content-type") ?? "", body);
+      if (!parts || parts.length !== 2 || !/^application\/json/i.test(parts[0].type)) return gmailError(400, "INVALID_ARGUMENT", "Invalid multipart request", "invalidArgument");
+      try {
+        askedThread = (JSON.parse(parts[0].body) as { threadId?: unknown } | null)?.threadId;
+      } catch {
+        return gmailError(400, "INVALID_ARGUMENT", "Invalid JSON payload received.", "invalidArgument");
+      }
+      if (!/^message\//i.test(parts[1].type)) return gmailError(400, "INVALID_ARGUMENT", "Media type not accepted", "badContent");
+      text = parts[1].body;
+    } else if (uploadType !== "media") {
+      return gmailError(400, "INVALID_ARGUMENT", "Invalid uploadType", "invalidArgument");
+    } else if (!/^message\//i.test(req.headers.get("content-type") ?? "")) {
+      return gmailError(400, "INVALID_ARGUMENT", "Media type not accepted", "badContent");
+    }
     if (Buffer.byteLength(text, "utf8") > MAX_UPLOAD_BYTES) return gmailError(413, "FAILED_PRECONDITION", "Request too large", "uploadTooLarge");
     const auth = /^Bearer (.+)$/.exec(req.headers.get("authorization") ?? "")?.[1] ?? "";
     return this.change((s) => {
@@ -655,7 +697,7 @@ export class FakeGoogleMail {
       if (!a || a.dead || a.expires < this.now()) return gmailError(401, "UNAUTHENTICATED", "Request had invalid authentication credentials.", "authError");
       if (!a.scopes.includes(MODIFY) && !a.scopes.includes(SEND)) return gmailError(403, "PERMISSION_DENIED", "Request had insufficient authentication scopes.", "insufficientPermissions");
       if (text === "") return gmailError(400, "INVALID_ARGUMENT", "Missing message", "invalidArgument");
-      return this.storeSent(s, a.email, text, undefined);
+      return this.storeSent(s, a.email, text, askedThread);
     });
   }
 
@@ -680,6 +722,8 @@ export class FakeGoogleMail {
         bcc: s.sentBcc?.[msg.id] ?? "",
         subject: get("Subject"),
         messageId: get("Message-ID"),
+        inReplyTo: get("In-Reply-To"),
+        references: get("References"),
         text: textPart?.body?.data ? Buffer.from(textPart.body.data, "base64url").toString("utf8") : "",
         attachments: leaves
           .filter((p) => p.filename)
@@ -755,6 +799,7 @@ export class FakeGoogleMail {
       // SF-127: users.messages.attachments.get → MessagePartBody { size, data } (base64url).
       const att = /^messages\/([^/]+)\/attachments\/([^/]+)$/.exec(route);
       if (req.method === "GET" && att) {
+        if (s.failAttachments) return gmailError(503, "UNAVAILABLE", "The service is currently unavailable.", "backendError");
         const msg = box.messages.find((x) => x.id === att[1]);
         const data = msg ? s.attachmentData?.[`${msg.id}/${att[2]}`] : undefined;
         if (!msg || data === undefined) return gmailError(404, "NOT_FOUND", "Requested entity was not found.", "notFound");

@@ -141,7 +141,7 @@ export default async function OrganisationPage({ params, searchParams }: Props) 
             target={{ organisationId: id }}
             archived={org.archived}
             query={{ timeline: first(query, "timeline"), note: first(query, "note"), deleteNote: first(query, "delete-note") }}
-            emailHref={`${href}?email=new`}
+            emailBase={`${href}?email=`}
           />
         </div>
       </div>
