@@ -188,6 +188,49 @@ record parts in `src/app/(app)/records/`.
    the hand link to the written-from record, the panel files, the upload send path); no `docs/DECISIONS.md` line (no
    blueprint exception).
 
+## Fix round 1
+
+The AI review (2026-11-27) found four problems: three are the build not doing what `spec.md` says, one is a missing docs line.
+
+1. **Recipient names on the EMAIL entry** (US2 scenario 1). *Problem*: the entry reads "Ada Fake → ana@example.test · Cc
+   ben@example.test" instead of "Ada Fake → Ana Fake · Cc Ben Fake". *Cause*: this plan (§7) had `sentMessage` store
+   To / Cc / Bcc with `name: null`, and `buildMime` writes bare addresses; SF-127's `recipientsLine` shows a recipient's
+   name only when the stored address has one. *Fix*: in `sendFromRecord`, after the checks and before the ledger claim,
+   one query names each normalised address: the `persons.name` of a person the sender can see (`visiblePerson(actorId)`,
+   archived people included) with a `person_emails` row equal to it ignoring case; several such people → the lowest
+   person id; none → no name. The names go both into the email's headers (`To` / `Cc` / `Bcc` written as
+   `mailbox(name, address)`, the RFC 2047 path that `From` already uses: `MimeInput.to` / `cc` / `bcc` also accept
+   `{ email, name }`) and into `sentMessage`'s stored copy, so the sync's copy (edge case "The sync stored it first") and
+   the CRM's copy say the same. A name the header cannot hold (`BadHeader`) is dropped for that address, never a refusal.
+   A private person of another user is never named (not visible to the sender). The "Email sent to …" notice keeps
+   listing addresses.
+2. **Over 25 MB** (US3 scenario 3, FR-012). *Problem*: a computer file that would take the total over 25 MB is dropped
+   at once (so `[ SEND ]` then sends without it), and a record file that takes the total over shows no message until
+   `[ SEND ]`. *Cause*: `EmailBox.attachFromComputer` refuses any file larger than the room left; the message is only set
+   from a send answer. *Fix*: a computer file is refused at pick time only when it alone is over 25 MB (edge case "Big
+   files from the computer", unchanged); any other file is uploaded and listed. The box shows
+   `compose_attachments_too_large` for as long as the attached total (record and computer files) is over 25 MB, derived
+   from the list (not a one-shot error), and `[ SEND ]` while over shows it again and calls nothing (the server check
+   stays). Pure, client-safe helpers in `compose-rules.ts`: `refusedOnPick(size)` and `overAttachmentLimit(total)`.
+3. **Key refused at send time** (US4 scenario 3, FR-008, SC-006). *Problem*: the box shows the reconnect message but
+   the To, Subject and text fields disappear. *Cause*: a `gmail` answer sets the box's Gmail state, and the box renders
+   either the message or the form. *Fix*: the box keeps two states: the Gmail state it opened with (not `ok` → message
+   only, as US4 scenarios 1, 2 and 4) and a refusal from a send answer (→ the form stays, with every address, the subject,
+   the text and the attachments, the reconnect message and `[ GO TO SETTINGS ]` above it, and no `[ SEND ]`). Pure
+   `panelView(opened, refused)` → `"message" | "form" | "form-refused"` in `compose-rules.ts`. `router.refresh()` stays
+   (the sidebar "!"); it does not remount the box.
+4. **No SF-129 line in `docs/DECISIONS.md`** (code review 1). *Cause*: §12 above said none was needed; the repo records
+   each issue's design and clarified choices there. *Fix*: SF-129 lines for: design B right-side panel; sending raises
+   Last contacted (through SF-127); computer files go only in the email, deleted after sending or 24 hours after being
+   chosen; an organisation starts with an empty To; the sender's CRM name with their Gmail address, and recipients named
+   as the sender's CRM people; subject required, 100 addresses, 250 / 100,000 characters; "Email sent to" names 5
+   addresses then "and n more"; the 25 MB is counted on the files' own sizes; each email starts a new conversation; Bcc
+   shows on the entry as the sender's copy holds it (SF-127).
+
+Files: `src/server/emails/compose.ts`, `src/server/emails/compose-rules.ts`, `src/server/gmail/rules.ts` (`MimeInput`,
+`buildMime`), `src/app/(app)/records/EmailBox.tsx`, `docs/DECISIONS.md`, `AGENTS.md` (one clause: recipient names),
+the tests of T045. No migration, no new dependency, no new outside service.
+
 ## Outside services
 
 - Gmail API, `users.messages.send` through the simple media upload (`/upload/gmail/v1/users/me/messages/send?uploadType=media`, `message/rfc822`), plus the unchanged token refresh: schema https://github.com/googleapis/google-api-go-client/blob/3f740bc15212818d4d0eb041b02c951457ff63fa/gmail/v1/gmail-api.json

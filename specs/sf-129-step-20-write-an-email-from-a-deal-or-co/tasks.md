@@ -419,6 +419,38 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ---
 
+## Fix round 1 (AI review 2026-11-27, plan.md § Fix round 1)
+
+- [ ] T045 Write the failing tests first. `tests/integration/compose-names.test.ts` (`// covers US2 scenario 1, Edge case 8`):
+  Ada Fake sends from "Fake Deal Ltd renewal" To ana@example.test (Ana Fake), Cc ben@example.test (Ben Fake) and
+  pia@example.test (another user's private person), Bcc stranger@nowhere.test (no CRM person); the fake Sent message's
+  To header is "Ana Fake <ana@example.test>", Cc holds "Ben Fake <ben@example.test>" and the bare Pia address; the stored
+  `email_messages` row has those names (stranger and Pia null); `recipientsLine` of the deal's `readTimeline` EMAIL entry
+  starts "Ada Fake → Ana Fake · Cc Ben Fake"; a send To ana@example.test Cc ana.k@example.test gives one entry on Ana's
+  page reading "Ada Fake → Ana Fake · Cc Ana Fake"; a non-ASCII name ("Zoë Fake") reaches the header as RFC 2047 and the
+  stored copy as "Zoë Fake". `tests/unit/compose-rules.test.ts` (`// covers US3 scenario 3, Edge case 13, US4 scenario 3,
+  FR-008, FR-012`): `refusedOnPick` false for 2 MB and for exactly 25 MB, true for 25 MB + 1 byte;
+  `overAttachmentLimit` false at exactly 25 MB, true at 26 MB; `panelView("ok", null)` = "form",
+  `panelView("needs_reconnect", null)` = "message", `panelView("not_connected", null)` = "message",
+  `panelView("ok", "needs_reconnect")` = "form-refused". `tests/unit/gmail-mime.test.ts`: `To` / `Cc` / `Bcc`
+  given as `{ email, name }` give `Name <address>`, the quoted form and the RFC 2047 form, as `From` does.
+  All fail now (functions missing, names null).
+- [ ] T046 `src/server/gmail/rules.ts`: `MimeInput.to` / `cc` / `bcc` accept `string | { email: string; name: string | null }`,
+  written through `mailbox()`; SF-118 callers unchanged.
+- [ ] T047 `src/server/emails/compose.ts`: name the normalised addresses (plan § Fix round 1, item 1: `visiblePerson`,
+  case-insensitive, lowest id), pass them to `sendGmail` and to `sentMessage` (which stores `{ email, name }`); a
+  `BadHeader` name is dropped for its address.
+- [ ] T048 `src/server/emails/compose-rules.ts`: `refusedOnPick(size)`, `overAttachmentLimit(total)`,
+  `panelView(opened, refused)` (client-safe, no server import).
+- [ ] T049 `src/app/(app)/records/EmailBox.tsx`: a computer file refused at pick time only by `refusedOnPick`; the size
+  message shown while `overAttachmentLimit(used)` (record and computer files); `[ SEND ]` while over shows it and sends
+  nothing; a `gmail` answer sets the refusal state, and `panelView` keeps the form with all input, shows the reconnect
+  message and `[ GO TO SETTINGS ]` above it, and hides `[ SEND ]`.
+- [ ] T050 [P] `docs/DECISIONS.md`: the SF-129 lines of plan § Fix round 1, item 4. `AGENTS.md` SF-129 paragraph: one clause
+  "recipients named from the sender's visible CRM people, in the headers and the stored copy".
+- [ ] T051 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test
+  DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; all green.
+
 ## Dependencies & Execution Order
 
 - **T000** first: the plan is written against main with SF-127.
@@ -450,7 +482,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ## Notes
 
-- **Task count**: 43 (T000–T044; T028 and T029 were removed in the re-plan on SF-127: SF-127 does their work).
+- **Task count**: 50 (T000–T051; fix round 1 adds T045–T051; T028 and T029 were removed in the re-plan on SF-127: SF-127 does their work).
   - Setup 4 (T000–T003), Foundational 10.
   - US1 11, US2 3, US3 6, US4 2, US5 2.
   - Polish 5.
