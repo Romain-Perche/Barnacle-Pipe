@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6225c5af71e7ffd3dec91ab39ecd405b35fe086c6feaceb027a7c178e0d24c70",
+  "pageVersion": "sha256:3f23bbcdb37c0a4ce1499032f50d7e5ffaf37456d8c441342af3ff00f3978b49",
   "claims": [
     {
       "id": "claim_26dddd940894480690668615756bf371",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:8e0f01abe3bde5b26cee6c469d7acbe7505a8500e5e53ca58e438f9cdec6605f"
+          "version": "repo-file-v1:sha256:43e09ff8a104924a9573961c96ac2c63af0c6fdc12fda3d5837bd29f3f6278da"
         }
       ]
     },
@@ -64,7 +64,7 @@
         },
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:8e0f01abe3bde5b26cee6c469d7acbe7505a8500e5e53ca58e438f9cdec6605f"
+          "version": "repo-file-v1:sha256:43e09ff8a104924a9573961c96ac2c63af0c6fdc12fda3d5837bd29f3f6278da"
         }
       ]
     },
@@ -88,17 +88,35 @@
         },
         {
           "resource": "repo://src/server/emails/compose.ts",
-          "version": "repo-file-v1:sha256:9b3d78ec92f158ab7c12f970bcd61572ce2b572ddb5663304b45a92ee2174fcd"
+          "version": "repo-file-v1:sha256:6a12ddfce09d07df0b0afc34d22f1cabbf964579329e496f22393b3a58964e63"
         },
         {
           "resource": "repo://src/server/gmail/sync.ts",
-          "version": "repo-file-v1:sha256:8e0f01abe3bde5b26cee6c469d7acbe7505a8500e5e53ca58e438f9cdec6605f"
+          "version": "repo-file-v1:sha256:43e09ff8a104924a9573961c96ac2c63af0c6fdc12fda3d5837bd29f3f6278da"
+        }
+      ]
+    },
+    {
+      "id": "claim_feff2153fc3049798c63a28e0a255ab7",
+      "statement": "sendReply hands over to compose.ts deliver with email_sends.reply_message_id set and no record, so a reply or forward makes no hand link; placePendingReply in storeMessage joins the new thread row to the answered email's conversation.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0022_email_reply.sql",
+          "version": "repo-file-v1:sha256:e733f1e2de964b8f5c53d27f8ffdb12df90a7bdefe5771d557647a085200b9a7"
+        },
+        {
+          "resource": "repo://src/server/emails/reply.ts",
+          "version": "repo-file-v1:sha256:931e25b3960310209306fe7442723c3dc19ec9d2929f5c31cff3877c15776660"
+        },
+        {
+          "resource": "repo://src/server/gmail/sync.ts",
+          "version": "repo-file-v1:sha256:43e09ff8a104924a9573961c96ac2c63af0c6fdc12fda3d5837bd29f3f6278da"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-27T14:26:45.943Z"
+    "at": "2026-11-27T16:27:33.613Z"
   }
 }

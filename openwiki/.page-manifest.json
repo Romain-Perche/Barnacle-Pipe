@@ -65,11 +65,11 @@
       "completedRunId": "bb1fde7c-fa51-4d40-afd4-2546263effa9"
     },
     "/openwiki/features/gmail.md": {
-      "pageVersion": "sha256:6225c5af71e7ffd3dec91ab39ecd405b35fe086c6feaceb027a7c178e0d24c70",
+      "pageVersion": "sha256:3f23bbcdb37c0a4ce1499032f50d7e5ffaf37456d8c441342af3ff00f3978b49",
       "completedBy": "claude-code",
-      "completedRunId": "53a1f2a1-a079-48e4-a1a1-aee4044af7f7",
-      "gitHead": "110430e3a7c8c51a90e12781a94878defe8fd81c",
-      "sourceFingerprint": "sha256:fe55647d864a5f2a18712a96d1d4d989e8a1153231c0d24ebd9cbcb6782ce3cf"
+      "completedRunId": "078e4f28-285f-4034-9578-7b9347c72c81",
+      "gitHead": "3c2336f03e5486a1f63c166048e947b5d26dd668",
+      "sourceFingerprint": "sha256:75e1b92d08511290c2f6763b56832fc6886e86d252b8f383888afefde0c1a3ca"
     },
     "/openwiki/features/people-and-organisations.md": {
       "gitHead": "c5ea965bf4f3588e8d84adb5ea412b1774d93b80",
