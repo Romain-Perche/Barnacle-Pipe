@@ -830,6 +830,20 @@
     so `panelView` turns to "message" and the typed fields go.
     Round 3 (after fix round 2): same commands, fresh data; 43 of 43 pass (US4 3 keeps the subject and text after the key
     refusal and the refresh; sidebar "SETTINGS!").
+  - SF-130 AI review (reply and forward, all 48 scenarios, ~6 min): `bash .factory/run/sf130-fresh.sh` (fresh fake Gmail /
+    Storage, `reset-db.sh`, `sf129-setup.sql`), the app on :3000 (`start-app.sh`) and the Gmail-off app on :3003 (as SF-129, US5 3).
+    Then `NODE_PATH=/opt/playwright/node_modules node .factory/run/scenarios-sf130-a.js` (puts the emails in Ada's fake mailbox
+    through /dev/fake-gmail, adds Cat Fake and Zed Org Ltd; US1, US2 2/6, US3) and `… scenarios-sf130-b.js` on the same data (its
+    own emails; US4, US2 1/3/4/5, US5, edges 1-17; Linus connects Gmail there). `ONLY="…"` runs some, `SKIP_DATA=1` skips the
+    mailbox puts on a re-run. Emails put in the fake mailbox must NOT have a negative date offset: SF-118 copies only email
+    dated after the connection (the seed connects Ada at seed time). Helpers `sf130-lib.js` (`entryOf` matches the exact
+    subject: "Pricing" must not match "Re: Re: Pricing"; the reply panel is `section.sidepanel[aria-label="Reply"]`, but a missing
+    or hidden email opens it as "New email" with "// NEW EMAIL") and `sf130-ctl.ts` (`sent <email>` with threadId, In-Reply-To,
+    References and attachment sha256; `box`; `att <email> <subject>`; `failatt on|off` the fake's attachment 503). Edge 5 clears
+    the sender by SQL (the fake page always writes a From); edge 2 / edge 3 / US2 3 change visibility, archive and links by SQL;
+    edge 15 fails storing with a trigger on `email_messages` for "Re: Not recorded", dropped before the 15-minute check.
+    Round 1: 47 of 48 pass; US1 2 fails on its text only: the notice is "Email sent to ana@example.test." (SF-129's sentNotice
+    lists addresses), the spec asks "Email sent to Ana Fake.".
 ## Smoke checks
 1. npm run -s test:schemas >/dev/null && test -s .factory/schemas/oauth2-api.json && test -s .factory/schemas/storage_v0_openapi.json && test -s .factory/schemas/pipedrive_v2_openapi.json && test -s .factory/schemas/pipedrive_v1_openapi.yml && test -s .factory/schemas/pipedrive_v1_full_openapi.yml && test -s .factory/schemas/gmail-api.json && test -s .factory/schemas/pubsub-api.json && test -s .factory/schemas/calendar-api.json
 2. /usr/lib/postgresql/17/bin/pg_isready -h localhost -p 5432
