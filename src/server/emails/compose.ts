@@ -152,13 +152,34 @@ export async function startEmailUpload(actorId: number, file: { name: string; si
   return { status: "ok", id, url, contentType };
 }
 
+export type Named = { email: string; name: string | null };
+type NamedRecipients = { to: Named[]; cc: Named[]; bcc: Named[] };
+
+// Each address named as a person the sender can see (archived included) with that address, ignoring case; several →
+// the lowest person id; none → no name. A name an email header cannot hold (a line break) is dropped for that address.
+async function nameRecipients(actorId: number, r: { to: string[]; cc: string[]; bcc: string[] }): Promise<NamedRecipients> {
+  const keys = [...new Set(allAddresses(r).map((a) => a.toLowerCase()))];
+  const rows = await sql<{ key: string; name: string }[]>`
+    select distinct on (lower(pe.email)) lower(pe.email) as key, btrim(p.first_name || ' ' || p.last_name) as name
+    from person_emails pe join persons p on p.id = pe.person_id
+    where lower(pe.email) = any(${keys}::text[]) and ${visiblePerson(sql, actorId)}
+    order by lower(pe.email), p.id`;
+  const names = new Map(rows.map((row) => [row.key, row.name]));
+  const named = (list: string[]) =>
+    list.map((email) => {
+      const name = names.get(email.toLowerCase()) ?? "";
+      return { email, name: name === "" || /[\r\n]/.test(name) ? null : name };
+    });
+  return { to: named(r.to), cc: named(r.cc), bcc: named(r.bcc) };
+}
+
 // SF-118's ReadMessage of what was sent (stored by storeMessage, processed by SF-127 like any copied email).
 export function sentMessage(m: {
   gmailMessageId: string; gmailThreadId: string; rfcMessageId: string; from: { email: string; name: string };
-  to: string[]; cc: string[]; bcc: string[]; subject: string; text: string;
+  to: (string | Named)[]; cc: (string | Named)[]; bcc: (string | Named)[]; subject: string; text: string;
   attachments: { name: string; contentType: string; size: number }[]; now: Date;
 }): ReadMessage {
-  const list = (a: string[]) => a.map((email) => ({ email, name: null }));
+  const list = (a: (string | Named)[]) => a.map((x) => (typeof x === "string" ? { email: x, name: null } : { email: x.email, name: x.name }));
   return {
     gmailMessageId: m.gmailMessageId,
     gmailThreadId: m.gmailThreadId,
@@ -175,7 +196,7 @@ export function sentMessage(m: {
     htmlBody: null,
     attachments: m.attachments.map((a) => ({ name: a.name, contentType: a.contentType, size: a.size })),
     labelIds: ["SENT"],
-    addresses: [m.from.email, ...m.to, ...m.cc, ...m.bcc].map((a) => a.toLowerCase()),
+    addresses: [m.from.email, ...[...m.to, ...m.cc, ...m.bcc].map((x) => (typeof x === "string" ? x : x.email))].map((a) => a.toLowerCase()),
   };
 }
 
@@ -243,6 +264,9 @@ export async function sendFromRecord(actorId: number, input: SendInput, now = ne
   const attached: Attached[] = [...inOrder(files, fileIds).map((f) => ({ ...f, contentType: uploadContentType(f.name) })), ...inOrder(uploads, uploadIds)];
   if (totalBytes(attached.map((a) => a.size)) > MAX_ATTACHMENT_BYTES) return refused({ code: "compose_attachments_too_large" });
 
+  // Recipients named as the sender's CRM people (fix round 1): the same names in the headers and the stored copy.
+  const named = await nameRecipients(actorId, r);
+
   // 5. The ledger claim: a second press (same box, same key) sends nothing.
   const [user] = await sql<{ name: string }[]>`select name from users where id = ${actorId}`;
   const rfcMessageId = `<crm-${randomBytes(12).toString("hex")}@barnacle.ai>`;
@@ -278,7 +302,7 @@ export async function sendFromRecord(actorId: number, input: SendInput, now = ne
   let sent: { messageId: string; threadId: string };
   try {
     sent = await sendGmail(actorId, {
-      ...r, subject: input.subject, text: input.text, fromName: user?.name ?? null, messageId: rfcMessageId, attachments: mimeFiles, date: now,
+      ...named, subject: input.subject, text: input.text, fromName: user?.name ?? null, messageId: rfcMessageId, attachments: mimeFiles, date: now,
     });
   } catch (e) {
     await unclaim();
@@ -297,7 +321,7 @@ export async function sendFromRecord(actorId: number, input: SendInput, now = ne
       connection!.id,
       sentMessage({
         gmailMessageId: sent.messageId, gmailThreadId: sent.threadId, rfcMessageId, from: { email: connection!.email, name: user?.name ?? "" },
-        ...r, subject: input.subject, text: input.text, attachments: attached, now,
+        ...named, subject: input.subject, text: input.text, attachments: attached, now,
       }),
     );
   } catch (e) {

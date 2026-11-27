@@ -60,3 +60,19 @@ describe("buildMime, SF-129 additions", () => {
     expect(() => buildMime({ ...plain, messageId: "<a>\r\nBcc: x@example.test" })).toThrow(BadHeader);
   });
 });
+
+// covers SF-129 US2 scenario 1 (fix round 1): recipients named as the From name is.
+describe("buildMime recipient names", () => {
+  it("To / Cc / Bcc given as { email, name } give Name <address>, the quoted form and the RFC 2047 form", () => {
+    const mime = buildMime({
+      ...plain,
+      to: [{ email: "ana@example.test", name: "Ana Fake" }, "bare@example.test"],
+      cc: [{ email: "ben@example.test", name: "Fake, Ben" }, { email: "pia@example.test", name: null }],
+      bcc: [{ email: "zoe@example.test", name: "Zoë Fake" }],
+    });
+    expect(mime).toContain("To: Ana Fake <ana@example.test>, bare@example.test\r\n");
+    expect(mime).toContain('Cc: "Fake, Ben" <ben@example.test>, pia@example.test\r\n');
+    expect(mime).toContain(`Bcc: =?UTF-8?B?${Buffer.from("Zoë Fake").toString("base64")}?= <zoe@example.test>\r\n`);
+    expect(() => buildMime({ ...plain, to: [{ email: "ana@example.test", name: "Ana\r\nBcc: x@example.test" }] })).toThrow(BadHeader);
+  });
+});

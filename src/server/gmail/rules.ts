@@ -385,9 +385,10 @@ export class BadHeader extends Error {
 
 export type MimeInput = {
   from: string;
-  to: string[];
-  cc?: string[];
-  bcc?: string[];
+  // SF-129 fix round 1: a recipient may carry a name, written as `From`'s is.
+  to: MimeRecipient[];
+  cc?: MimeRecipient[];
+  bcc?: MimeRecipient[];
   subject: string;
   text: string;
   html?: string | null;
@@ -400,6 +401,7 @@ export type MimeInput = {
   messageId?: string | null;
   attachments?: MimeAttachment[];
 };
+export type MimeRecipient = string | { email: string; name: string | null };
 export type MimeAttachment = { name: string; contentType: string; bytes: Uint8Array };
 
 const noBreak = (v: string) => {
@@ -468,10 +470,11 @@ function rfcDate(d: Date): string {
 // The RFC 5322 text Gmail's messages.send takes (SF-118: base64url-encoded by the caller; SF-129: as it is through the
 // upload endpoint). Without a `messageId` Gmail sets its own Message-ID.
 export function buildMime(input: MimeInput): string {
-  const to = input.to.map(address);
+  const recipient = (r: MimeRecipient) => (typeof r === "string" ? address(r) : mailbox(r.name, address(r.email)));
+  const to = input.to.map(recipient);
   if (to.length === 0) throw new BadHeader();
-  const cc = (input.cc ?? []).map(address);
-  const bcc = (input.bcc ?? []).map(address);
+  const cc = (input.cc ?? []).map(recipient);
+  const bcc = (input.bcc ?? []).map(recipient);
   const lines = [`From: ${mailbox(input.fromName, address(input.from))}`, `To: ${to.join(", ")}`];
   if (cc.length) lines.push(`Cc: ${cc.join(", ")}`);
   if (bcc.length) lines.push(`Bcc: ${bcc.join(", ")}`);

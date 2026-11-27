@@ -88,7 +88,7 @@ describe("US1 scenarios 3–5: [ SEND ]", () => {
     const r = await c.send(w.ada, deal());
     expect(r).toEqual({ status: "sent", notice: { name: "ana@example.test", count: 1 } });
     const [m] = fake.sentMessages(e.ADA);
-    expect(m).toMatchObject({ from: `Ada Fake <${e.ADA}>`, to: "ana@example.test", cc: "", bcc: "", subject: "Next steps", text: "Hi Ana,\n\nHere is the plan." });
+    expect(m).toMatchObject({ from: `Ada Fake <${e.ADA}>`, to: "Ana Example <ana@example.test>", cc: "", bcc: "", subject: "Next steps", text: "Hi Ana,\n\nHere is the plan." });
     expect(m.messageId).toMatch(/^<crm-[0-9a-f]{24}@barnacle\.ai>$/);
     const [row] = await c.messageRows();
     expect(row).toMatchObject({ direction: "sent", gmail_message_id: m.id, rfc_message_id: m.messageId, from_name: "Ada Fake", from_address: e.ADA, subject: "Next steps" });
@@ -103,7 +103,7 @@ describe("US1 scenarios 3–5: [ SEND ]", () => {
     const ben = "ben@example.test";
     await c.send(w.ada, deal(), { to: [ben], cc: ["cat@example.test"], bcc: ["dan@example.test"] });
     const [m] = fake.sentMessages(e.ADA);
-    expect([m.to, m.cc, m.bcc]).toEqual([ben, "cat@example.test", "dan@example.test"]);
+    expect([m.to, m.cc, m.bcc]).toEqual([`Ben Example <${ben}>`, "cat@example.test", "dan@example.test"]);
     expect((await e.emailEntries(w.ada, { personId: w.ana }))).toHaveLength(0);
     expect((await e.emailEntries(w.ada, { personId: w.ben }))).toHaveLength(1);
   });

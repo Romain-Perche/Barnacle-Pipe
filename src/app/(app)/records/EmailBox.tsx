@@ -3,13 +3,16 @@
 // From (the user's Gmail), To / Cc / Bcc as chips (Enter, comma, semicolon, space or paste adds; × removes), Subject,
 // the plain Text, the attachments (the record's own files, files from the computer sent straight to Storage with their
 // progress, 25 MB in total), then [ CANCEL ] / [ SEND ]. A refusal keeps everything typed; after sending the page
-// goes back (the flash says "Email sent to …"). Without a working Gmail: the message and [ GO TO SETTINGS ] only.
+// goes back (the flash says "Email sent to …"). Opened without a working Gmail: the message and [ GO TO SETTINGS ] only;
+// Gmail refusing at send time keeps the form and everything in it, with the message above and no [ SEND ] (panelView).
+// The size message shows for as long as the attachments are over 25 MB in total; only a single computer file over
+// 25 MB is refused when picked.
 // Everything typed or read from the database is rendered as text nodes.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import type { EmailBox as Box, GmailState, Refusal } from "@/server/emails/compose";
-import { MAX_ATTACHMENT_BYTES, splitAddresses, totalBytes } from "@/server/emails/compose-rules";
+import { overAttachmentLimit, panelView, refusedOnPick, splitAddresses, totalBytes } from "@/server/emails/compose-rules";
 import { validateFile } from "@/server/files/rules";
 import { formatFileSize } from "@/server/format";
 import { messages, templates } from "@/server/messages";
@@ -71,7 +74,7 @@ function Addresses({ label, list, draft, onDraft, onAdd, onRemove }: {
 export function EmailBox({ box, back }: { box: Box; back: string }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
-  const [gmail, setGmail] = useState<GmailState>(box.gmail);
+  const [refusedBy, setRefusedBy] = useState<Exclude<GmailState, "ok"> | null>(null);
   const [fields, setFields] = useState<Record<Field, string[]>>({ to: box.to, cc: [], bcc: [] });
   const [drafts, setDrafts] = useState<Record<Field, string>>({ to: "", cc: "", bcc: "" });
   const [subject, setSubject] = useState("");
@@ -85,6 +88,9 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
   const files = fileIds.map((id) => box.files.find((f) => f.id === id)!).filter(Boolean);
   const used = totalBytes([...files.map((f) => f.size), ...uploads.map((u) => u.size)]);
   const offered = box.files.filter((f) => !fileIds.includes(f.id));
+  const over = overAttachmentLimit(used);
+  const view = panelView(box.gmail, refusedBy);
+  const gmail = refusedBy ?? box.gmail;
 
   const add = (field: Field, raw: string) => {
     const more = splitAddresses(raw);
@@ -95,9 +101,8 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
 
   async function attachFromComputer(list: File[]) {
     const refused: string[] = [];
-    let room = MAX_ATTACHMENT_BYTES - used;
     for (const file of list) {
-      if (file.size > room) {
+      if (refusedOnPick(file.size)) {
         refused.push(messages.compose_attachments_too_large);
         continue;
       }
@@ -117,7 +122,6 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
         refused.push(templates.file_upload_failed(file.name));
         continue;
       }
-      room -= file.size;
       setUploads((u) => [...u, { id: start.id, name: file.name, size: file.size }]);
     }
     setProgress(null);
@@ -131,8 +135,10 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
     for (const f of ["to", "cc", "bcc"] as Field[]) all[f] = [...all[f], ...splitAddresses(drafts[f])];
     setFields(all);
     setDrafts({ to: "", cc: "", bcc: "" });
-    setPending(true);
     setErrors([]);
+    // Over 25 MB: the size message is already shown; nothing is sent (the server checks again).
+    if (over) return;
+    setPending(true);
     const answer = await sendEmailFromRecord({
       target: box.record.kind, id: box.record.id, sendKey: box.sendKey, ...all, subject, text,
       fileIds, uploadIds: uploads.map((u) => u.id), back,
@@ -145,11 +151,11 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
       return;
     }
     if (answer.status === "gmail") {
-      setGmail(answer.state);
+      setRefusedBy(answer.state);
       router.refresh();
       return;
     }
-    setErrors([...new Set(answer.errors.map(refusalText))]);
+    setErrors([...new Set(answer.errors.map(refusalText))].filter((t) => t !== messages.compose_attachments_too_large || !over));
   }
 
   const heading = (
@@ -167,7 +173,7 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
     <div className="overlay sideoverlay">
       <section className="sidepanel" role="dialog" aria-modal="true" aria-label="New email">
         {heading}
-        {gmail !== "ok" ? (
+        {gmail !== "ok" && (
           <>
             <p className="notice warn" role="alert">
               {GMAIL_TEXT[gmail]}
@@ -178,12 +184,13 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
               </Link>
             )}
           </>
-        ) : (
+        )}
+        {view !== "message" && (
           <form
             className="emailform"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!pending && !progress) void send();
+              if (view === "form" && !pending && !progress) void send();
             }}
           >
             <div className="frm">
@@ -266,9 +273,10 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
                 {progress}
               </p>
             )}
-            {errors.length > 0 && (
+            {(over || errors.length > 0) && (
               <div role="alert">
-                {errors.map((t) => (
+                {over && <p className="err">{messages.compose_attachments_too_large}</p>}
+                {errors.filter((t) => !over || t !== messages.compose_attachments_too_large).map((t) => (
                   <p key={t} className="err">
                     {t}
                   </p>
@@ -281,9 +289,11 @@ export function EmailBox({ box, back }: { box: Box; back: string }) {
                 <Link className="btn" href={back} scroll={false}>
                   {messages.compose_cancel}
                 </Link>
-                <button className="btn solid" type="submit" disabled={pending || progress !== null}>
-                  {pending ? messages.compose_sending : messages.compose_send}
-                </button>
+                {view === "form" && (
+                  <button className="btn solid" type="submit" disabled={pending || progress !== null}>
+                    {pending ? messages.compose_sending : messages.compose_send}
+                  </button>
+                )}
               </span>
             </div>
           </form>

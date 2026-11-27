@@ -72,7 +72,7 @@ describe("the form's checks (data-model.md § Validation)", () => {
   it("duplicates are removed silently, the first kept", async () => {
     await c.send(w.ada, deal(), { to: ["Ana@Example.test"], cc: ["ana@example.test", "ben@example.test"], bcc: ["BEN@example.test"] });
     const [m] = fake.sentMessages(e.ADA);
-    expect([m.to, m.cc, m.bcc]).toEqual(["Ana@Example.test", "ben@example.test", ""]);
+    expect([m.to, m.cc, m.bcc]).toEqual(["Ana Example <Ana@Example.test>", "Ben Example <ben@example.test>", ""]);
   });
 });
 

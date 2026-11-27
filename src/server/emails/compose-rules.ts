@@ -81,3 +81,16 @@ export function sentNotice(addresses: string[]): { name: string; count: number }
   }
   return { name: shown.join(", "), count: addresses.length };
 }
+
+// SF-129 fix round 1 (the email box): a computer file is refused when picked only when it alone is over 25 MB; any
+// other is attached, and the size message shows for as long as the attached total is over.
+export const refusedOnPick = (size: number) => size > MAX_ATTACHMENT_BYTES;
+export const overAttachmentLimit = (total: number) => total > MAX_ATTACHMENT_BYTES;
+
+// The box opened without working Gmail shows only the message; a refusal from a send answer keeps the form (every
+// input kept) with the message above it and no [ SEND ].
+export type PanelGmail = "ok" | "off" | "not_connected" | "needs_reconnect";
+export function panelView(opened: PanelGmail, refused: Exclude<PanelGmail, "ok"> | null): "message" | "form" | "form-refused" {
+  if (opened !== "ok") return "message";
+  return refused ? "form-refused" : "form";
+}

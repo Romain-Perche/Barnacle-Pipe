@@ -2,7 +2,7 @@
 // box (src/server/emails/compose-rules.ts) and the "Email sent to …" notice.
 import { describe, expect, it } from "vitest";
 import {
-  normaliseRecipients, sentNotice, splitAddresses, totalBytes, validateCompose,
+  normaliseRecipients, overAttachmentLimit, panelView, refusedOnPick, sentNotice, splitAddresses, totalBytes, validateCompose,
 } from "@/server/emails/compose-rules";
 import { templates } from "@/server/messages";
 
@@ -77,5 +77,27 @@ describe("sentNotice and templates.email_sent", () => {
     expect(n.name.length).toBeLessThanOrEqual(300);
     expect(n.name.split(", ")).toHaveLength(2);
     expect(templates.email_sent(n.name, n.count)).toMatch(/ and 3 more\.$/);
+  });
+});
+
+// covers SF-129 US3 scenario 3, Edge case 13, US4 scenario 3, FR-008, FR-012 (fix round 1).
+describe("the box's size and Gmail states", () => {
+  const MB = 1024 * 1024;
+  it("refusedOnPick: only a file alone over 25 MB", () => {
+    expect(refusedOnPick(2 * MB)).toBe(false);
+    expect(refusedOnPick(25 * MB)).toBe(false);
+    expect(refusedOnPick(25 * MB + 1)).toBe(true);
+  });
+  it("overAttachmentLimit: over 25 MB in total", () => {
+    expect(overAttachmentLimit(25 * MB)).toBe(false);
+    expect(overAttachmentLimit(26 * MB)).toBe(true);
+  });
+  it("panelView: the opening state gives the message; a refusal at send keeps the form", () => {
+    expect(panelView("ok", null)).toBe("form");
+    expect(panelView("needs_reconnect", null)).toBe("message");
+    expect(panelView("not_connected", null)).toBe("message");
+    expect(panelView("off", null)).toBe("message");
+    expect(panelView("ok", "needs_reconnect")).toBe("form-refused");
+    expect(panelView("ok", "not_connected")).toBe("form-refused");
   });
 });

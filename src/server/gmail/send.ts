@@ -8,7 +8,7 @@
 import { sql } from "@/server/db";
 import { loadKey, markNeedsReconnect } from "@/server/gmail/connections";
 import { getThreadMetadata, GoogleKeyRefused, GoogleUnavailable, refreshAccessToken, sendRaw, sendRawUpload } from "@/server/gmail/google-api";
-import { buildMime, type MimeAttachment, type MimeInput } from "@/server/gmail/rules";
+import { buildMime, type MimeAttachment, type MimeInput, type MimeRecipient } from "@/server/gmail/rules";
 
 // users.messages.send mediaUpload.maxSize in the pinned gmail-api.json (35 MiB).
 export const MAX_RAW_BYTES = 36_700_160;
@@ -40,7 +40,7 @@ export class GmailTooLarge extends Error {
 }
 
 export type SendInput = {
-  to: string[]; cc?: string[]; bcc?: string[]; subject: string; text: string; html?: string | null; threadId?: string | null;
+  to: MimeRecipient[]; cc?: MimeRecipient[]; bcc?: MimeRecipient[]; subject: string; text: string; html?: string | null; threadId?: string | null;
   fromName?: string | null; messageId?: string | null; attachments?: MimeAttachment[]; date?: Date;
 };
 

@@ -421,7 +421,7 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
 
 ## Fix round 1 (AI review 2026-11-27, plan.md § Fix round 1)
 
-- [ ] T045 Write the failing tests first. `tests/integration/compose-names.test.ts` (`// covers US2 scenario 1, Edge case 8`):
+- [x] T045 Write the failing tests first. `tests/integration/compose-names.test.ts` (`// covers US2 scenario 1, Edge case 8`):
   Ada Fake sends from "Fake Deal Ltd renewal" To ana@example.test (Ana Fake), Cc ben@example.test (Ben Fake) and
   pia@example.test (another user's private person), Bcc stranger@nowhere.test (no CRM person); the fake Sent message's
   To header is "Ana Fake <ana@example.test>", Cc holds "Ben Fake <ben@example.test>" and the bare Pia address; the stored
@@ -435,20 +435,20 @@ record SF-127 links, hidden by `visibleConversation()`, once even after the Gmai
   `panelView("ok", "needs_reconnect")` = "form-refused". `tests/unit/gmail-mime.test.ts`: `To` / `Cc` / `Bcc`
   given as `{ email, name }` give `Name <address>`, the quoted form and the RFC 2047 form, as `From` does.
   All fail now (functions missing, names null).
-- [ ] T046 `src/server/gmail/rules.ts`: `MimeInput.to` / `cc` / `bcc` accept `string | { email: string; name: string | null }`,
+- [x] T046 `src/server/gmail/rules.ts`: `MimeInput.to` / `cc` / `bcc` accept `string | { email: string; name: string | null }`,
   written through `mailbox()`; SF-118 callers unchanged.
-- [ ] T047 `src/server/emails/compose.ts`: name the normalised addresses (plan § Fix round 1, item 1: `visiblePerson`,
+- [x] T047 `src/server/emails/compose.ts`: name the normalised addresses (plan § Fix round 1, item 1: `visiblePerson`,
   case-insensitive, lowest id), pass them to `sendGmail` and to `sentMessage` (which stores `{ email, name }`); a
   `BadHeader` name is dropped for its address.
-- [ ] T048 `src/server/emails/compose-rules.ts`: `refusedOnPick(size)`, `overAttachmentLimit(total)`,
+- [x] T048 `src/server/emails/compose-rules.ts`: `refusedOnPick(size)`, `overAttachmentLimit(total)`,
   `panelView(opened, refused)` (client-safe, no server import).
-- [ ] T049 `src/app/(app)/records/EmailBox.tsx`: a computer file refused at pick time only by `refusedOnPick`; the size
+- [x] T049 `src/app/(app)/records/EmailBox.tsx`: a computer file refused at pick time only by `refusedOnPick`; the size
   message shown while `overAttachmentLimit(used)` (record and computer files); `[ SEND ]` while over shows it and sends
   nothing; a `gmail` answer sets the refusal state, and `panelView` keeps the form with all input, shows the reconnect
   message and `[ GO TO SETTINGS ]` above it, and hides `[ SEND ]`.
-- [ ] T050 [P] `docs/DECISIONS.md`: the SF-129 lines of plan § Fix round 1, item 4. `AGENTS.md` SF-129 paragraph: one clause
+- [x] T050 [P] `docs/DECISIONS.md`: the SF-129 lines of plan § Fix round 1, item 4. `AGENTS.md` SF-129 paragraph: one clause
   "recipients named from the sender's visible CRM people, in the headers and the stored copy".
-- [ ] T051 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test
+- [x] T051 Run `npm run test:schemas && npm test && npm run typecheck` with `APP_ENV=test
   DATABASE_URL=postgres://postgres@localhost:5432/crm_test`; all green.
 
 ## Dependencies & Execution Order
