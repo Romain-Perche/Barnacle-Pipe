@@ -57,6 +57,7 @@ afterAll(async () => {
 const QUOTE = "On 27 Nov 2026 at 14:05, Ana Example <ana@example.test> wrote:\n> Hello,\n>\n> The price is 10.";
 
 describe("US1 scenario 2 and 7: [ SEND ] on a reply", () => {
+  // covers US1 scenario 2 (fix round 1): SF-129's notice lists the addresses ("Email sent to ana@example.test.")
   it("one email from the user's Gmail: Re:, the text then the quote, In-Reply-To and References; stored in the same conversation at once", async () => {
     const pricing = await r.received(fake, e.ADA, w.adaConn);
     fake.requests.length = 0;
